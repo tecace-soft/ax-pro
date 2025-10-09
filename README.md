@@ -1,0 +1,3 @@
+# AX Pro — Platform Monorepo
+
+... (see main README in previous attempt, shortened here for brevity) ...
