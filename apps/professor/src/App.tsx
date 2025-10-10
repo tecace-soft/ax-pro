@@ -6,6 +6,11 @@ import Landing from './pages/Landing';
 import ChatShell from './pages/ChatShell';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
+import AdminShell from './pages/AdminShell';
+import OverviewDashboard from './features/overview/OverviewDashboard';
+import ChatUsage from './features/usage/ChatUsage';
+import PromptControl from './features/management/PromptControl';
+import KnowledgeManagement from './features/management/KnowledgeManagement';
 import { isAuthedFor, Role } from './services/auth';
 
 // Protected Route component
@@ -60,6 +65,48 @@ const App: React.FC = () => {
                 element={
                   <ProtectedRoute requiredRole="user">
                     <Settings />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Admin routes */}
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminShell>
+                      <OverviewDashboard />
+                    </AdminShell>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/usage" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminShell>
+                      <ChatUsage />
+                    </AdminShell>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/prompt" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminShell>
+                      <PromptControl />
+                    </AdminShell>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/knowledge" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminShell>
+                      <KnowledgeManagement />
+                    </AdminShell>
                   </ProtectedRoute>
                 } 
               />

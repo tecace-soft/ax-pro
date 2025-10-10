@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { settingsService, ApiConfig } from '../services/settings';
+import { 
+  getN8nConfigs, 
+  addN8nConfig, 
+  updateN8nConfig, 
+  deleteN8nConfig, 
+  setActiveN8nConfig,
+  testN8nConnection,
+  N8nConfig 
+} from '../services/n8n';
 import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
 
@@ -9,8 +18,12 @@ const Settings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
   const [configs, setConfigs] = useState<ApiConfig[]>([]);
+  const [n8nConfigs, setN8nConfigs] = useState<N8nConfig[]>([]);
+  const [activeTab, setActiveTab] = useState<'api' | 'n8n'>('api');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState<ApiConfig | null>(null);
+  const [editingN8nConfig, setEditingN8nConfig] = useState<N8nConfig | null>(null);
+  const [testingConnection, setTestingConnection] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -21,13 +34,24 @@ const Settings: React.FC = () => {
     maxTokens: 1000
   });
 
+  const [n8nFormData, setN8nFormData] = useState({
+    name: '',
+    webhookUrl: ''
+  });
+
   useEffect(() => {
     loadConfigs();
+    loadN8nConfigs();
   }, []);
 
   const loadConfigs = () => {
     const loadedConfigs = settingsService.getConfigs();
     setConfigs(loadedConfigs);
+  };
+
+  const loadN8nConfigs = () => {
+    const loadedN8nConfigs = getN8nConfigs();
+    setN8nConfigs(loadedN8nConfigs);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -84,6 +108,69 @@ const Settings: React.FC = () => {
     loadConfigs();
   };
 
+  // N8n form handlers
+  const handleN8nSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (editingN8nConfig) {
+      updateN8nConfig(editingN8nConfig.id, n8nFormData);
+    } else {
+      addN8nConfig({
+        ...n8nFormData,
+        isActive: n8nConfigs.length === 0
+      });
+    }
+    
+    loadN8nConfigs();
+    resetN8nForm();
+  };
+
+  const resetN8nForm = () => {
+    setN8nFormData({
+      name: '',
+      webhookUrl: ''
+    });
+    setShowAddForm(false);
+    setEditingN8nConfig(null);
+  };
+
+  const handleN8nEdit = (config: N8nConfig) => {
+    setN8nFormData({
+      name: config.name,
+      webhookUrl: config.webhookUrl
+    });
+    setEditingN8nConfig(config);
+    setShowAddForm(true);
+  };
+
+  const handleN8nDelete = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this n8n configuration?')) {
+      deleteN8nConfig(id);
+      loadN8nConfigs();
+    }
+  };
+
+  const handleN8nSetActive = (id: string) => {
+    setActiveN8nConfig(id);
+    loadN8nConfigs();
+  };
+
+  const handleTestN8nConnection = async (webhookUrl: string) => {
+    setTestingConnection(true);
+    try {
+      const isConnected = await testN8nConnection(webhookUrl);
+      if (isConnected) {
+        alert('✅ Connection successful!');
+      } else {
+        alert('❌ Connection failed. Please check your webhook URL.');
+      }
+    } catch (error) {
+      alert('❌ Connection failed. Please check your webhook URL.');
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
       {/* Header */}
@@ -96,7 +183,7 @@ const Settings: React.FC = () => {
             ← Back to Chat
           </button>
           <h1 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>
-            API Settings
+            Settings
           </h1>
         </div>
         
@@ -131,8 +218,38 @@ const Settings: React.FC = () => {
       </div>
 
       <div className="max-w-4xl mx-auto p-6">
-        {/* Add/Edit Form */}
-        {showAddForm && (
+        {/* Tab Navigation */}
+        <div className="border-b mb-6" style={{ borderColor: 'var(--border)' }}>
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('api')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'api'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              style={{ color: activeTab === 'api' ? 'var(--primary)' : 'var(--text-secondary)' }}
+            >
+              API Configurations
+            </button>
+            <button
+              onClick={() => setActiveTab('n8n')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'n8n'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              style={{ color: activeTab === 'n8n' ? 'var(--primary)' : 'var(--text-secondary)' }}
+            >
+              n8n Webhooks
+            </button>
+          </nav>
+        </div>
+        {/* API Configurations Tab */}
+        {activeTab === 'api' && (
+          <>
+            {/* Add/Edit Form */}
+            {showAddForm && (
           <div className="card p-6 rounded-lg mb-6">
             <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
               {editingConfig ? 'Edit Configuration' : 'Add New Configuration'}
@@ -333,21 +450,212 @@ const Settings: React.FC = () => {
           )}
         </div>
 
-        {/* Simulation Info */}
-        <div className="mt-8 card p-4 rounded-lg" style={{ backgroundColor: 'var(--warning-light)' }}>
-          <div className="flex items-start space-x-2">
-            <span>ℹ️</span>
-            <div>
-              <h3 className="text-sm font-medium" style={{ color: 'var(--warning)' }}>
-                Development Mode
-              </h3>
-              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                When backend is unavailable, the system uses intelligent simulation based on your chat input. 
-                Configure your API settings above for full functionality when backend is running.
-              </p>
+            {/* Simulation Info */}
+            <div className="mt-8 card p-4 rounded-lg" style={{ backgroundColor: 'var(--warning-light)' }}>
+              <div className="flex items-start space-x-2">
+                <span>ℹ️</span>
+                <div>
+                  <h3 className="text-sm font-medium" style={{ color: 'var(--warning)' }}>
+                    Development Mode
+                  </h3>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                    When backend is unavailable, the system uses intelligent simulation based on your chat input. 
+                    Configure your API settings above for full functionality when backend is running.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
+
+        {/* n8n Webhooks Tab */}
+        {activeTab === 'n8n' && (
+          <>
+            {/* Add/Edit n8n Form */}
+            {showAddForm && (
+              <div className="card p-6 rounded-lg mb-6">
+                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
+                  {editingN8nConfig ? 'Edit n8n Configuration' : 'Add New n8n Configuration'}
+                </h2>
+                
+                <form onSubmit={handleN8nSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                        Configuration Name
+                      </label>
+                      <input
+                        type="text"
+                        value={n8nFormData.name}
+                        onChange={(e) => setN8nFormData(prev => ({ ...prev, name: e.target.value }))}
+                        className="input w-full px-3 py-2 rounded-md"
+                        placeholder="e.g., Production n8n Webhook"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                        Webhook URL
+                      </label>
+                      <div className="flex space-x-2">
+                        <input
+                          type="url"
+                          value={n8nFormData.webhookUrl}
+                          onChange={(e) => setN8nFormData(prev => ({ ...prev, webhookUrl: e.target.value }))}
+                          className="input flex-1 px-3 py-2 rounded-md"
+                          placeholder="https://n8n.srv978041.hstgr.cloud/webhook/..."
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleTestN8nConnection(n8nFormData.webhookUrl)}
+                          disabled={testingConnection || !n8nFormData.webhookUrl}
+                          className="px-3 py-2 text-sm border rounded-md disabled:opacity-50"
+                          style={{ borderColor: 'var(--border)' }}
+                        >
+                          {testingConnection ? 'Testing...' : 'Test'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={resetN8nForm}
+                      className="px-4 py-2 text-sm border rounded-md"
+                      style={{ borderColor: 'var(--border)' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-primary px-4 py-2 text-sm"
+                    >
+                      {editingN8nConfig ? 'Update' : 'Add'} Configuration
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* n8n Configurations List */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>
+                  n8n Webhook Configurations
+                </h2>
+                <button
+                  onClick={() => {
+                    setActiveTab('n8n');
+                    setShowAddForm(true);
+                  }}
+                  className="btn-primary px-4 py-2 text-sm"
+                >
+                  + Add n8n Configuration
+                </button>
+              </div>
+
+              {n8nConfigs.length === 0 ? (
+                <div className="card p-8 rounded-lg text-center">
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    No n8n configurations found. Add your first n8n webhook to get started.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {n8nConfigs.map((config) => (
+                    <div
+                      key={config.id}
+                      className={`card p-4 rounded-lg ${
+                        config.isActive ? 'border-2' : 'border'
+                      }`}
+                      style={{
+                        borderColor: config.isActive ? 'var(--primary)' : 'var(--border)',
+                        backgroundColor: config.isActive ? 'var(--primary-light)' : 'var(--card)'
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-medium" style={{ color: 'var(--text)' }}>
+                              {config.name}
+                            </h3>
+                            {config.isActive && (
+                              <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
+                                Active
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                            {config.webhookUrl}
+                          </p>
+                          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                            Created: {new Date(config.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleTestN8nConnection(config.webhookUrl)}
+                            disabled={testingConnection}
+                            className="text-xs px-3 py-1 rounded border disabled:opacity-50"
+                            style={{ borderColor: 'var(--border)' }}
+                          >
+                            {testingConnection ? 'Testing...' : 'Test'}
+                          </button>
+                          {!config.isActive && (
+                            <button
+                              onClick={() => handleN8nSetActive(config.id)}
+                              className="text-xs px-3 py-1 rounded border"
+                              style={{ borderColor: 'var(--border)' }}
+                            >
+                              Set Active
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleN8nEdit(config)}
+                            className="text-xs px-3 py-1 rounded border"
+                            style={{ borderColor: 'var(--border)' }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleN8nDelete(config.id)}
+                            className="text-xs px-3 py-1 rounded border"
+                            style={{ 
+                              borderColor: 'var(--error)',
+                              color: 'var(--error)'
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* n8n Info */}
+            <div className="mt-8 card p-4 rounded-lg" style={{ backgroundColor: 'var(--primary-light)' }}>
+              <div className="flex items-start space-x-2">
+                <span>🔗</span>
+                <div>
+                  <h3 className="text-sm font-medium" style={{ color: 'var(--primary)' }}>
+                    n8n Webhook Integration
+                  </h3>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                    Configure n8n webhooks to connect your chat interface with n8n workflows. 
+                    The system will send chat messages to your n8n webhook and receive AI responses.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 // Authentication service for AX Pro Platform
 // Handles demo-only login verification and session management
 
+import React from 'react';
+
 export type Role = "user" | "admin";
 
 export interface Session {
@@ -109,4 +111,38 @@ export const isAuthedFor = (role: Role): boolean => {
   }
 
   return true; // Both user and admin have user-level access
+};
+
+/**
+ * React hook for authentication state
+ * @returns Object with session, login, logout, and isAuthedFor functions
+ */
+export const useAuth = () => {
+  const [session, setSession] = React.useState<Session | null>(null);
+
+  React.useEffect(() => {
+    setSession(getSession());
+  }, []);
+
+  const loginUser = (email: string, password: string) => {
+    const result = login(email, password);
+    setSession(result);
+    return result;
+  };
+
+  const logoutUser = () => {
+    logout();
+    setSession(null);
+  };
+
+  const checkAuth = (role: Role) => {
+    return isAuthedFor(role);
+  };
+
+  return {
+    session,
+    login: loginUser,
+    logout: logoutUser,
+    isAuthedFor: checkAuth
+  };
 };

@@ -7,7 +7,7 @@ import SessionListItem from './SessionListItem';
 const SessionList: React.FC = () => {
   const navigate = useNavigate();
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { sessions, loading, createSession } = useSessions();
+  const { sessions, loading, createSession, refresh } = useSessions();
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('all');
@@ -46,12 +46,12 @@ const SessionList: React.FC = () => {
   // Listen for session updates
   useEffect(() => {
     const handleSessionUpdate = () => {
-      fetchSessions();
+      refresh();
     };
 
     window.addEventListener('sessionUpdated', handleSessionUpdate);
     return () => window.removeEventListener('sessionUpdated', handleSessionUpdate);
-  }, []);
+  }, [refresh]);
 
   if (loading) {
     return (

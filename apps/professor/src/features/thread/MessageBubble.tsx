@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ChatMessage } from '../../services/chat';
 import References from './References';
 import FeedbackBar from './FeedbackBar';
@@ -31,13 +33,67 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           }`}
         >
           <div 
-            className="whitespace-pre-wrap" 
+            className="prose prose-sm max-w-none" 
             style={{ 
               fontSize: '14px',
-              lineHeight: '1.5'
+              lineHeight: '1.5',
+              color: 'var(--text)'
             }}
           >
-            {message.content || 'No content available'}
+            {message.content && message.content.trim() ? (
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // Custom styling for markdown elements
+                  p: ({ children }) => <p style={{ margin: '0 0 8px 0' }}>{children}</p>,
+                  code: ({ children, className }) => {
+                    const isInline = !className;
+                    return isInline ? (
+                      <code style={{ 
+                        backgroundColor: 'var(--bg-secondary)', 
+                        padding: '2px 4px', 
+                        borderRadius: '3px',
+                        fontSize: '0.9em'
+                      }}>
+                        {children}
+                      </code>
+                    ) : (
+                      <pre style={{ 
+                        backgroundColor: 'var(--bg-secondary)', 
+                        padding: '8px', 
+                        borderRadius: '4px',
+                        overflow: 'auto',
+                        margin: '8px 0'
+                      }}>
+                        <code>{children}</code>
+                      </pre>
+                    );
+                  },
+                  ul: ({ children }) => <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>,
+                  ol: ({ children }) => <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>,
+                  li: ({ children }) => <li style={{ margin: '4px 0' }}>{children}</li>,
+                  blockquote: ({ children }) => (
+                    <blockquote style={{ 
+                      borderLeft: '3px solid var(--border)', 
+                      paddingLeft: '12px', 
+                      margin: '8px 0',
+                      fontStyle: 'italic'
+                    }}>
+                      {children}
+                    </blockquote>
+                  ),
+                  h1: ({ children }) => <h1 style={{ fontSize: '1.2em', fontWeight: 'bold', margin: '8px 0' }}>{children}</h1>,
+                  h2: ({ children }) => <h2 style={{ fontSize: '1.1em', fontWeight: 'bold', margin: '8px 0' }}>{children}</h2>,
+                  h3: ({ children }) => <h3 style={{ fontSize: '1em', fontWeight: 'bold', margin: '8px 0' }}>{children}</h3>,
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            ) : (
+              <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                {message.role === 'assistant' ? 'Thinking...' : 'No content available'}
+              </span>
+            )}
           </div>
         </div>
 

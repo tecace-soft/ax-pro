@@ -14,8 +14,8 @@ const ThreadView: React.FC<ThreadViewProps> = ({ sessionId, isClosed = false }) 
 
   // Debug: Log messages
   React.useEffect(() => {
-    console.log('ThreadView messages:', messages);
-  }, [messages]);
+    console.log('ThreadView messages for sessionId:', sessionId, messages);
+  }, [messages, sessionId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -57,22 +57,6 @@ const ThreadView: React.FC<ThreadViewProps> = ({ sessionId, isClosed = false }) 
               console.log('Rendering message:', message);
               return <MessageBubble key={message.id} message={message} />;
             })}
-            {sending && (
-              <div className="flex justify-start">
-                <div className="card p-4 max-w-xs">
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-pulse flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    </div>
-                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      Assistant is typing...
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
             <div ref={messagesEndRef} />
           </>
         )}

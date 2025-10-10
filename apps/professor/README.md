@@ -24,6 +24,11 @@ A production-ready React + TypeScript chat application with Teams-like interface
 - **⚙️ API Settings**: Secure configuration management for multiple APIs
 - **🎭 Smart Simulation**: Intelligent message simulation based on input content
 - **🔐 Secure Storage**: Encrypted API key storage with inspector protection
+- **🔗 n8n Integration**: Webhook support for n8n workflow automation
+- **📝 Markdown Support**: Rich text formatting with code blocks, lists, and more
+- **🔄 Session Persistence**: Messages persist when switching between chats
+- **🏷️ Auto-naming**: Chat titles automatically generated from first message
+- **🗑️ Permanent Delete**: Enhanced delete functionality for closed chats
 
 ## 🚀 Demo Credentials
 
@@ -79,7 +84,9 @@ src/
 ├── pages/
 │   ├── Landing.tsx              # Login page with theme/i18n controls
 │   ├── ChatShell.tsx           # Teams-like two-pane chat interface
-│   └── Dashboard.tsx           # Admin console
+│   ├── Dashboard.tsx            # Admin console
+│   ├── Settings.tsx             # API and n8n configuration
+│   └── AdminShell.tsx           # Admin dashboard layout
 ├── features/
 │   ├── sessions/
 │   │   ├── SessionList.tsx     # Left rail session list
@@ -92,10 +99,22 @@ src/
 │       ├── FeedbackBar.tsx     # Thumbs up/down feedback
 │       ├── Composer.tsx        # Message input with streaming
 │       └── useThread.ts        # Thread management hooks
+├── features/
+│   ├── overview/
+│   │   └── OverviewDashboard.tsx # Admin analytics dashboard
+│   ├── usage/
+│   │   └── ChatUsage.tsx        # Chat usage analytics
+│   └── management/
+│       ├── PromptControl.tsx    # System prompt management
+│       └── KnowledgeManagement.tsx # Knowledge base management
 ├── services/
 │   ├── auth.ts                 # Authentication service
 │   ├── api.ts                  # API client with auth cookies
-│   └── chat.ts                 # Chat service with SSE streaming
+│   ├── chat.ts                 # Chat service with SSE streaming
+│   ├── n8n.ts                  # n8n webhook integration
+│   ├── settings.ts             # API configuration management
+│   ├── simulation.ts           # Message simulation service
+│   └── devMode.ts              # Development mode utilities
 ├── theme/
 │   └── ThemeProvider.tsx       # Theme context with light/dark support
 ├── i18n/
@@ -165,6 +184,62 @@ The app uses CSS variables for dynamic theming:
 - **Local Storage**: Sessions and messages persist in simulation mode
 - **Seamless Switching**: No code changes needed between modes
 
+## 🔗 n8n Integration
+
+### Webhook Configuration
+- **Multiple n8n Configs**: Manage multiple n8n webhook endpoints
+- **Active Configuration**: Set which webhook to use for chat requests
+- **Connection Testing**: Test webhook connectivity before saving
+- **Secure Storage**: Webhook URLs stored securely in localStorage
+
+### Chat Flow
+- **Automatic Fallback**: Backend → n8n → Simulation (in order)
+- **Request Format**: Structured JSON payloads for n8n workflows
+- **Response Handling**: Parse n8n responses with citations and content
+- **Error Handling**: Graceful fallback when webhooks fail
+
+## 📝 Markdown Support
+
+### Supported Features
+- **Code Blocks**: Inline `code` and ```code blocks```
+- **Lists**: Bulleted and numbered lists
+- **Headers**: H1, H2, H3 with proper sizing
+- **Quotes**: Blockquotes with left border styling
+- **Bold/Italic**: **bold** and *italic* text formatting
+- **Tables**: GitHub-flavored markdown tables
+
+### Styling
+- **Theme Integration**: Markdown elements use CSS variables
+- **Responsive Design**: Code blocks scroll horizontally on mobile
+- **Accessibility**: Proper contrast ratios and semantic HTML
+
+## 🏢 Admin Dashboard
+
+### Overview Dashboard
+- **Performance Radar**: Multi-metric performance visualization
+- **Timeline Charts**: Daily/weekly performance trends
+- **Activity Metrics**: User vs assistant message counts
+- **Date Range Filters**: 7d, 30d, 90d analytics periods
+
+### Chat Usage Analytics
+- **Recent Conversations**: Sortable table with session details
+- **Message History**: Full conversation thread viewer
+- **Feedback Analysis**: Admin and user feedback tracking
+- **Session Management**: Bulk operations and filtering
+
+### Chatbot Management
+- **Prompt Control**: System prompt editor with live testing
+- **Model Configuration**: Endpoint and parameter management
+- **Knowledge Base**: File library and indexing system
+- **Sync Overview**: Knowledge base synchronization status
+
+### UI Components
+- **Responsive Tables**: Sortable columns with pagination
+- **Interactive Charts**: Recharts-based data visualization
+- **Modal Drawers**: Full message content viewer
+- **Status Badges**: Visual status indicators
+- **Empty States**: Helpful placeholder content
+
 ## 🔐 Authentication Flow
 
 1. **Landing Page**: Clean login form with theme/language controls
@@ -183,6 +258,10 @@ The app uses CSS variables for dynamic theming:
 - **CSS Variables**: Dynamic theming without JavaScript frameworks
 - **Context API**: Theme and i18n state management
 - **Cookie Authentication**: Secure server-side session management
+- **React Markdown**: Rich text rendering with GitHub-flavored markdown
+- **Recharts**: Interactive data visualization for admin dashboard
+- **n8n Integration**: Webhook-based workflow automation
+- **LocalStorage**: Client-side persistence for settings and sessions
 
 ## 🎯 Acceptance Tests
 
@@ -198,6 +277,12 @@ The app uses CSS variables for dynamic theming:
 ✅ **Message Feedback**: Thumbs up/down with optional notes  
 ✅ **Session Search**: Search through conversation history  
 ✅ **Persistent Storage**: Messages and sessions persist across refreshes  
+✅ **n8n Integration**: Webhook configuration and testing  
+✅ **Markdown Support**: Rich text formatting with code blocks and lists  
+✅ **Session Persistence**: Messages persist when switching between chats  
+✅ **Auto-naming**: Chat titles automatically generated from first message  
+✅ **Admin Dashboard**: Analytics, usage tracking, and management tools  
+✅ **API Settings**: Multiple API configuration with secure storage  
 
 ## 📜 Available Scripts
 

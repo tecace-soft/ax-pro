@@ -59,7 +59,11 @@ const SessionListItem: React.FC<SessionListItemProps> = ({ session, isActive, on
   };
 
   const handlePermanentDelete = async () => {
-    if (window.confirm('Are you sure you want to permanently delete this conversation? This action cannot be undone.')) {
+    const confirmMessage = session.status === 'closed' 
+      ? 'Are you sure you want to permanently delete this closed conversation? This action cannot be undone.'
+      : 'Are you sure you want to permanently delete this conversation? This action cannot be undone.';
+    
+    if (window.confirm(confirmMessage)) {
       try {
         await deleteSession(session.id);
       } catch (error) {
@@ -206,7 +210,7 @@ const SessionListItem: React.FC<SessionListItemProps> = ({ session, isActive, on
               className="w-full text-left px-4 py-2 text-sm hover:bg-red-50"
               style={{ color: 'var(--error)' }}
             >
-              🗑️ Delete permanently
+              {session.status === 'closed' ? '🗑️ Delete permanently' : '🗑️ Delete permanently'}
             </button>
           </div>
         </div>

@@ -4,9 +4,11 @@ export const isBackendAvailable = async (): Promise<boolean> => {
     const response = await fetch('http://localhost:3001/api/auth/me', {
       method: 'GET',
       credentials: 'include',
+      mode: 'cors',
     });
-    return response.status !== 0; // 0 means network error
-  } catch {
+    return response.ok;
+  } catch (error) {
+    console.log('Backend not available, will use n8n or simulation:', error);
     return false;
   }
 };

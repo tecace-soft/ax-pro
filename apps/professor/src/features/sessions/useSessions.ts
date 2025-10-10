@@ -81,7 +81,24 @@ export const useSessions = () => {
 
   const updateSession = async (id: string, updates: { title?: string; status?: string }) => {
     try {
-      await sessionsApi.update(id, updates);
+      const backendAvailable = await isBackendAvailable();
+      
+      if (backendAvailable) {
+        await sessionsApi.update(id, updates);
+      } else {
+        // Update local session for simulation mode
+        const localSessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
+        const sessionIndex = localSessions.findIndex((s: Session) => s.id === id);
+        if (sessionIndex !== -1) {
+          localSessions[sessionIndex] = {
+            ...localSessions[sessionIndex],
+            ...updates,
+            updatedAt: new Date().toISOString()
+          };
+          localStorage.setItem('axpro_sim_sessions', JSON.stringify(localSessions));
+        }
+      }
+      
       await fetchSessions(); // Refresh list
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update session');
@@ -91,7 +108,20 @@ export const useSessions = () => {
 
   const deleteSession = async (id: string) => {
     try {
-      await sessionsApi.delete(id);
+      const backendAvailable = await isBackendAvailable();
+      
+      if (backendAvailable) {
+        await sessionsApi.delete(id);
+      } else {
+        // Delete local session for simulation mode
+        const localSessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
+        const updatedSessions = localSessions.filter((s: Session) => s.id !== id);
+        localStorage.setItem('axpro_sim_sessions', JSON.stringify(updatedSessions));
+        
+        // Also delete associated messages
+        localStorage.removeItem(`axpro_sim_messages_${id}`);
+      }
+      
       await fetchSessions(); // Refresh list
       
       // If we deleted the current session, navigate to the most recent one
