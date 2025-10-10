@@ -108,30 +108,41 @@ export const useSessions = () => {
 
   const deleteSession = async (id: string) => {
     try {
+      console.log('deleteSession called with id:', id);
       const backendAvailable = await isBackendAvailable();
+      console.log('Backend available:', backendAvailable);
       
       if (backendAvailable) {
+        console.log('Deleting via backend API');
         await sessionsApi.delete(id);
       } else {
+        console.log('Deleting from localStorage');
         // Delete local session for simulation mode
         const localSessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
+        console.log('Current sessions before delete:', localSessions.length);
         const updatedSessions = localSessions.filter((s: Session) => s.id !== id);
+        console.log('Sessions after delete:', updatedSessions.length);
         localStorage.setItem('axpro_sim_sessions', JSON.stringify(updatedSessions));
         
         // Also delete associated messages
         localStorage.removeItem(`axpro_sim_messages_${id}`);
+        console.log('Deleted associated messages for session:', id);
       }
       
+      console.log('Refreshing sessions list');
       await fetchSessions(); // Refresh list
       
       // If we deleted the current session, navigate to the most recent one
       const remainingSessions = sessions.filter(s => s.id !== id);
+      console.log('Remaining sessions:', remainingSessions.length);
       if (remainingSessions.length > 0) {
         navigate(`/chat/${remainingSessions[0].id}`);
       } else {
         navigate('/chat');
       }
+      console.log('Delete session completed successfully');
     } catch (err) {
+      console.error('Error in deleteSession:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete session');
       throw err;
     }

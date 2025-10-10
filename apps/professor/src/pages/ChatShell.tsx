@@ -7,12 +7,14 @@ import { getSession, logout } from '../services/auth';
 import { isBackendAvailable } from '../services/devMode';
 import SessionList from '../features/sessions/SessionList';
 import ThreadView from '../features/thread/ThreadView';
+import { useUICustomization } from '../hooks/useUICustomization';
 
 const ChatShell: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
+  const { customization } = useUICustomization();
   const [user, setUser] = useState<{ email: string; role: string } | null>(null);
   const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
   const [currentSession, setCurrentSession] = useState<any>(null);
@@ -79,14 +81,17 @@ const ChatShell: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
       {/* Left Rail - Session List */}
-      <div className="w-80 border-r flex flex-col" style={{ borderColor: 'var(--border)' }}>
+      <div className="w-80 border-r flex flex-col h-full" style={{ borderColor: 'var(--border)' }}>
         {/* Header */}
-        <div className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
+        <div className="p-4 border-b flex-shrink-0 sticky top-0 z-10" style={{ 
+          borderColor: 'var(--border)',
+          backgroundColor: 'var(--bg)'
+        }}>
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>
-              {t('chat.title')}
+              {customization.chatTitle}
             </h1>
             <div className="flex items-center space-x-2">
               {/* Theme Toggle */}
@@ -126,26 +131,26 @@ const ChatShell: React.FC = () => {
                 {user.email}
               </p>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {user.role === 'admin' ? 'Administrator' : 'User'}
+                {user.role === 'admin' ? 'Administrator' : t('ui.user')}
               </p>
             </div>
             <button
               onClick={() => navigate('/settings')}
               className="text-sm link"
             >
-              Settings
+              {t('ui.settings')}
             </button>
             <button
               onClick={handleLogout}
               className="text-sm link"
             >
-              Sign Out
+              {t('ui.signOut')}
             </button>
           </div>
         </div>
 
         {/* Session List */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
           {!backendAvailable && (
             <div className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
               <div className="card rounded-md p-3" style={{ backgroundColor: 'var(--warning-light)' }}>
@@ -153,10 +158,10 @@ const ChatShell: React.FC = () => {
                   <span>⚠️</span>
                   <div>
                     <p className="text-sm font-medium" style={{ color: 'var(--warning)' }}>
-                      Demo Mode
+                      {t('ui.demoMode')}
                     </p>
                     <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      Backend not running. Chat features limited.
+                      {t('ui.demoModeDescription')}
                     </p>
                   </div>
                 </div>
@@ -168,14 +173,17 @@ const ChatShell: React.FC = () => {
       </div>
 
       {/* Main Content - Thread View */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col h-full">
         {sessionId ? (
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col h-full">
             {/* Chat Header */}
-            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-center justify-between p-4 border-b flex-shrink-0 sticky top-0 z-10" style={{ 
+              borderColor: 'var(--border)',
+              backgroundColor: 'var(--bg)'
+            }}>
               <div className="flex items-center space-x-3">
                 <h2 className="text-lg font-medium" style={{ color: 'var(--text)' }}>
-                  {currentSession?.title || 'Current Chat'}
+                  {currentSession?.title || t('ui.newChatTitle')}
                 </h2>
                 {currentSession?.status === 'closed' && (
                   <span className="text-xs px-2 py-1 rounded bg-gray-100" style={{ color: 'var(--text-muted)' }}>
@@ -212,7 +220,7 @@ const ChatShell: React.FC = () => {
                     color: 'var(--text-secondary)'
                   }}
                 >
-                  {currentSession?.status === 'closed' ? '🔄 Reopen Chat' : '🔒 Close Chat'}
+                  {currentSession?.status === 'closed' ? `🔄 ${t('context.reopen')} ${t('ui.newChatTitle')}` : `🔒 ${t('ui.closeChat')}`}
                 </button>
               </div>
             </div>
@@ -225,7 +233,7 @@ const ChatShell: React.FC = () => {
                 {t('chat.welcome')}
               </h2>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                Select a conversation from the sidebar or start a new chat
+                {t('ui.selectConversation')}
               </p>
             </div>
           </div>

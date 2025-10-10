@@ -12,6 +12,7 @@ import {
 } from '../services/n8n';
 import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
+import { useUICustomization } from '../hooks/useUICustomization';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
@@ -19,11 +20,12 @@ const Settings: React.FC = () => {
   const { language, setLanguage, t } = useTranslation();
   const [configs, setConfigs] = useState<ApiConfig[]>([]);
   const [n8nConfigs, setN8nConfigs] = useState<N8nConfig[]>([]);
-  const [activeTab, setActiveTab] = useState<'api' | 'n8n'>('api');
+  const [activeTab, setActiveTab] = useState<'api' | 'n8n' | 'ui'>('api');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState<ApiConfig | null>(null);
   const [editingN8nConfig, setEditingN8nConfig] = useState<N8nConfig | null>(null);
   const [testingConnection, setTestingConnection] = useState(false);
+  const { customization, updateCustomization, updateQuestion, resetCustomization } = useUICustomization();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -242,6 +244,17 @@ const Settings: React.FC = () => {
               style={{ color: activeTab === 'n8n' ? 'var(--primary)' : 'var(--text-secondary)' }}
             >
               n8n Webhooks
+            </button>
+            <button
+              onClick={() => setActiveTab('ui')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'ui'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              style={{ color: activeTab === 'ui' ? 'var(--primary)' : 'var(--text-secondary)' }}
+            >
+              UI Customization
             </button>
           </nav>
         </div>
@@ -655,6 +668,201 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </>
+        )}
+
+        {/* UI Customization Tab */}
+        {activeTab === 'ui' && (
+          <div className="space-y-6">
+            <div className="card p-6 rounded-lg">
+              <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
+                Chat Interface Customization
+              </h2>
+              
+              <div className="space-y-6">
+                {/* Chat Title */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                    Chat Interface Title
+                  </label>
+                  <input
+                    type="text"
+                    value={customization.chatTitle}
+                    onChange={(e) => updateCustomization({ chatTitle: e.target.value })}
+                    className="input w-full px-3 py-2 rounded-md"
+                    placeholder="e.g., Chat Interface, AI Assistant, etc."
+                  />
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                    This title appears at the top of the empty chat screen
+                  </p>
+                </div>
+
+                {/* Chat Subtitle */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                    Chat Interface Subtitle
+                  </label>
+                  <input
+                    type="text"
+                    value={customization.chatSubtitle}
+                    onChange={(e) => updateCustomization({ chatSubtitle: e.target.value })}
+                    className="input w-full px-3 py-2 rounded-md"
+                    placeholder="e.g., Select a conversation from the sidebar or start a new chat"
+                  />
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                    This subtitle appears below the title on the empty chat screen
+                  </p>
+                </div>
+
+                {/* Suggested Questions */}
+                <div>
+                  <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
+                    Suggested Questions
+                  </h3>
+                  <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                    Customize the suggested questions that appear on the empty chat screen
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                        Question 1
+                      </label>
+                      <input
+                        type="text"
+                        value={customization.suggestedQuestions.question1}
+                        onChange={(e) => updateQuestion('question1', e.target.value)}
+                        className="input w-full px-3 py-2 rounded-md"
+                        placeholder="What is artificial intelligence?"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                        Question 2
+                      </label>
+                      <input
+                        type="text"
+                        value={customization.suggestedQuestions.question2}
+                        onChange={(e) => updateQuestion('question2', e.target.value)}
+                        className="input w-full px-3 py-2 rounded-md"
+                        placeholder="How does machine learning work?"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                        Question 3
+                      </label>
+                      <input
+                        type="text"
+                        value={customization.suggestedQuestions.question3}
+                        onChange={(e) => updateQuestion('question3', e.target.value)}
+                        className="input w-full px-3 py-2 rounded-md"
+                        placeholder="Explain quantum computing"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                        Question 4
+                      </label>
+                      <input
+                        type="text"
+                        value={customization.suggestedQuestions.question4}
+                        onChange={(e) => updateQuestion('question4', e.target.value)}
+                        className="input w-full px-3 py-2 rounded-md"
+                        placeholder="What are the benefits of cloud computing?"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reset Button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to reset all UI customizations to default values?')) {
+                        resetCustomization();
+                      }
+                    }}
+                    className="px-4 py-2 text-sm border rounded-md"
+                    style={{ 
+                      borderColor: 'var(--error)',
+                      color: 'var(--error)'
+                    }}
+                  >
+                    Reset to Defaults
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="card p-6 rounded-lg">
+              <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
+                Preview
+              </h3>
+              <div className="border rounded-lg p-6" style={{ 
+                borderColor: 'var(--border)',
+                backgroundColor: 'var(--bg)'
+              }}>
+                <div className="text-center">
+                  <h1 className="text-4xl font-light mb-4" style={{ color: 'var(--text)' }}>
+                    {customization.chatTitle}
+                  </h1>
+                  <p className="text-lg mb-8" style={{ color: 'var(--text-secondary)' }}>
+                    {customization.chatSubtitle}
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl mx-auto">
+                    <div className="p-4 text-left rounded-lg border" style={{ 
+                      borderColor: 'var(--border)',
+                      backgroundColor: 'var(--card)',
+                      color: 'var(--text)'
+                    }}>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">🤖</span>
+                        <span className="text-sm">{customization.suggestedQuestions.question1}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 text-left rounded-lg border" style={{ 
+                      borderColor: 'var(--border)',
+                      backgroundColor: 'var(--card)',
+                      color: 'var(--text)'
+                    }}>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">🧠</span>
+                        <span className="text-sm">{customization.suggestedQuestions.question2}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 text-left rounded-lg border" style={{ 
+                      borderColor: 'var(--border)',
+                      backgroundColor: 'var(--card)',
+                      color: 'var(--text)'
+                    }}>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">⚛️</span>
+                        <span className="text-sm">{customization.suggestedQuestions.question3}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 text-left rounded-lg border" style={{ 
+                      borderColor: 'var(--border)',
+                      backgroundColor: 'var(--card)',
+                      color: 'var(--text)'
+                    }}>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">☁️</span>
+                        <span className="text-sm">{customization.suggestedQuestions.question4}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

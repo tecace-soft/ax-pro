@@ -16,7 +16,7 @@ export interface SimulationResponse {
 }
 
 // Simulate different types of responses based on input
-const generateSimulatedResponse = (input: string): SimulationResponse => {
+export const generateSimulatedResponse = (input: string): SimulationResponse => {
   const lowerInput = input.toLowerCase();
   
   // PSDAP program specific response
@@ -109,13 +109,11 @@ What specific area would you like to explore? Feel free to ask detailed question
     };
   }
 
-  // Default response - make it simpler
+  // Default response - make it more professional
   return {
-    reply: `Hello! I received your message: "${input}"
+    reply: `I understand you're asking about "${input}". I'm here to help you with your questions and provide assistance.
 
-This is a simulation response. I'm here to help with your questions and provide assistance.
-
-What would you like to know?`,
+How can I help you further?`,
     citations: [
       {
         sourceType: 'web',

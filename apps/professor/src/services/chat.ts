@@ -1,13 +1,13 @@
 import { messagesApi } from './api';
-import { sendToN8n, getActiveN8nConfig, N8nRequest, N8nResponse } from './n8n';
 import { isBackendAvailable } from './devMode';
+import { getActiveN8nConfig, sendToN8n, N8nRequest, N8nResponse } from './n8n';
 
 export interface ChatMessage {
   id: string;
   sessionId: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  meta: Record<string, any>;
+  meta?: Record<string, any>;
   createdAt: string;
   citations?: MessageCitation[];
 }
@@ -15,47 +15,50 @@ export interface ChatMessage {
 export interface MessageCitation {
   id: string;
   messageId: string;
-  sourceType: 'web' | 'document' | 'kb' | 'blob';
-  sourceId?: string;
-  title?: string;
-  snippet?: string;
-  metadata: Record<string, any>;
+  sourceType: 'web' | 'document' | 'knowledge';
+  title: string;
+  snippet: string;
+  sourceId: string;
+  metadata?: Record<string, any>;
 }
 
 export interface StreamEvent {
-  type: 'delta' | 'final' | 'error';
+  type: 'delta' | 'final';
   text?: string;
   messageId?: string;
   citations?: MessageCitation[];
-  message?: string;
 }
 
-// SSE stream reader
 export class ChatStreamReader {
   private reader: ReadableStreamDefaultReader<Uint8Array>;
-  private decoder: TextDecoder;
 
   constructor(response: Response) {
     this.reader = response.body!.getReader();
-    this.decoder = new TextDecoder();
   }
 
   async *read(): AsyncGenerator<StreamEvent> {
+    const decoder = new TextDecoder();
+    let buffer = '';
+
     try {
       while (true) {
         const { done, value } = await this.reader.read();
         if (done) break;
 
-        const chunk = this.decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') return;
+
             try {
-              const data = JSON.parse(line.slice(6));
-              yield data;
+              const parsed = JSON.parse(data);
+              yield parsed;
             } catch (e) {
-              console.warn('Failed to parse SSE data:', line);
+              console.warn('Failed to parse SSE data:', data);
             }
           }
         }
@@ -73,7 +76,7 @@ export const chatService = {
     content: string,
     onStream?: (event: StreamEvent) => void
   ): Promise<{ messageId: string; citations: MessageCitation[] }> {
-    // Check if backend is available
+    
     const backendAvailable = await isBackendAvailable();
     console.log('Backend available:', backendAvailable);
     
@@ -101,8 +104,8 @@ export const chatService = {
         // Use non-streaming
         const result = await messagesApi.send(sessionId, content, false);
         return {
-          messageId: result.messageId,
-          citations: result.citations
+          messageId: result.messageId || `backend_${Date.now()}`,
+          citations: result.citations || []
         };
       }
     } else {
@@ -120,87 +123,118 @@ export const chatService = {
             chatInput: content
           };
 
-                  const response: N8nResponse = await sendToN8n(request);
-                  console.log('n8n response received:', response);
-                  
-                  // Simulate streaming for n8n response
-                  const messageId = `n8n_${Date.now()}`;
-                  if (onStream) {
-                    const answerText = response.answer || 'No response from n8n';
-                    console.log('Streaming answer text:', answerText);
-                    const words = answerText.split(' ');
-                    let accumulatedText = '';
-                    
-                    for (let i = 0; i < words.length; i++) {
-                      accumulatedText += (i > 0 ? ' ' : '') + words[i];
-                      
-                      onStream({
-                        type: 'delta',
-                        text: words[i] + (i < words.length - 1 ? ' ' : '')
-                      });
-                      
-                      // Small delay to simulate streaming
-                      await new Promise(resolve => setTimeout(resolve, 50));
-                    }
-                    
-                    onStream({
-                      type: 'final',
-                      messageId: messageId,
-                      citations: response.citationTitle ? [{
-                        id: `citation_${Date.now()}`,
-                        messageId: messageId,
-                        sourceType: 'document',
-                        title: response.citationTitle,
-                        snippet: response.citationContent,
-                        metadata: {}
-                      }] : []
-                    });
-                  }
+          console.log('=== CHAT SERVICE DEBUG ===');
+          console.log('Sending request to n8n:', request);
+          const response: N8nResponse = await sendToN8n(request);
+          console.log('n8n response received successfully:', response);
+          console.log('Response type:', typeof response);
+          console.log('Response has answer?', !!response?.answer);
+          console.log('Response answer:', response?.answer);
+          console.log('==========================');
+          
+          // Check if response is valid
+          if (!response || !response.answer) {
+            console.error('Invalid n8n response:', response);
+            throw new Error('Invalid response from n8n webhook');
+          }
+          
+          // Simulate streaming for n8n response
+          const messageId = `n8n_${Date.now()}`;
+          if (onStream) {
+            const answerText = response.answer;
+            console.log('Streaming answer text:', answerText);
+            const words = answerText.split(' ');
+            
+            for (let i = 0; i < words.length; i++) {
+              onStream({
+                type: 'delta',
+                text: words[i] + (i < words.length - 1 ? ' ' : '')
+              });
+              
+              // Small delay to simulate streaming
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            onStream({
+              type: 'final',
+              messageId: messageId,
+        citations: response.citationTitle ? [{
+          id: `citation_${Date.now()}`,
+          messageId: messageId,
+          sourceType: 'document' as const,
+          title: response.citationTitle,
+          snippet: response.citationContent || '',
+          sourceId: `doc_${Date.now()}`,
+          metadata: {}
+        }] : []
+            });
+          }
 
           return {
             messageId: messageId,
             citations: response.citationTitle ? [{
               id: `citation_${Date.now()}`,
               messageId: messageId,
-              sourceType: 'document',
+              sourceType: 'document' as const,
               title: response.citationTitle,
-              snippet: response.citationContent,
+              snippet: response.citationContent || '',
+              sourceId: `doc_${Date.now()}`,
               metadata: {}
             }] : []
           };
         } catch (error) {
           console.error('Failed to send to n8n:', error);
-          throw new Error('Failed to connect to n8n webhook. Please check your configuration.');
+          console.log('n8n failed, falling back to simulation');
+          // Fall back to simulation instead of throwing error
         }
       } else {
         console.log('No n8n config found or webhook URL missing, falling back to simulation');
         console.log('n8n config was:', n8nConfig);
-        // Fall back to simulation
-        const { generateSimulatedResponse } = await import('./simulation');
-        const simulatedResponse = generateSimulatedResponse(content);
-        
-        if (onStream) {
-          const words = simulatedResponse.split(' ');
-          for (let i = 0; i < words.length; i++) {
-            onStream({
-              type: 'delta',
-              text: words[i] + (i < words.length - 1 ? ' ' : '')
-            });
-            await new Promise(resolve => setTimeout(resolve, 50));
-          }
-          
+      }
+      
+      // Fall back to simulation (either no n8n config or n8n failed)
+      console.log('Falling back to simulation');
+      const simulationModule = await import('./simulation');
+      const simulatedResponse = simulationModule.generateSimulatedResponse(content);
+      const responseText = simulatedResponse.reply;
+      
+      if (onStream) {
+        const words = responseText.split(' ');
+        for (let i = 0; i < words.length; i++) {
           onStream({
-            type: 'final',
-            messageId: `sim_${Date.now()}`,
-            citations: []
+            type: 'delta',
+            text: words[i] + (i < words.length - 1 ? ' ' : '')
           });
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
         
-        return {
+        onStream({
+          type: 'final',
           messageId: `sim_${Date.now()}`,
-          citations: []
-        };
+          citations: (simulatedResponse.citations || []).map((citation, index) => ({
+            id: `sim_citation_${Date.now()}_${index}`,
+            messageId: `sim_${Date.now()}`,
+            sourceType: citation.sourceType as 'web' | 'document' | 'knowledge',
+            title: citation.title,
+            snippet: citation.snippet,
+            sourceId: citation.sourceId || `sim_${Date.now()}`,
+            metadata: {}
+          }))
+        });
       }
+      
+      return {
+        messageId: `sim_${Date.now()}`,
+        citations: (simulatedResponse.citations || []).map((citation, index) => ({
+          id: `sim_citation_${Date.now()}_${index}`,
+          messageId: `sim_${Date.now()}`,
+          sourceType: citation.sourceType as 'web' | 'document' | 'knowledge',
+          title: citation.title,
+          snippet: citation.snippet,
+          sourceId: citation.sourceId || `sim_${Date.now()}`,
+          metadata: {}
+        }))
+      };
     }
   },
 
@@ -210,6 +244,14 @@ export const chatService = {
     cursor?: string,
     direction = 'older'
   ): Promise<ChatMessage[]> {
-    return messagesApi.list(sessionId, limit, cursor, direction);
+    const backendAvailable = await isBackendAvailable();
+    
+    if (backendAvailable) {
+      return await messagesApi.list(sessionId, limit, cursor, direction);
+    } else {
+      // Use local messages for simulation mode
+      const localMessages = JSON.parse(localStorage.getItem(`axpro_sim_messages_${sessionId}`) || '[]');
+      return localMessages;
+    }
   }
 };

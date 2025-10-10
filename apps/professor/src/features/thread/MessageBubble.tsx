@@ -37,7 +37,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             style={{ 
               fontSize: '14px',
               lineHeight: '1.5',
-              color: 'var(--text)'
+              color: isUser ? '#ffffff' : 'var(--text)'
             }}
           >
             {message.content && message.content.trim() ? (
@@ -50,7 +50,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                     const isInline = !className;
                     return isInline ? (
                       <code style={{ 
-                        backgroundColor: 'var(--bg-secondary)', 
+                        backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', 
+                        color: isUser ? '#ffffff' : 'var(--text)',
                         padding: '2px 4px', 
                         borderRadius: '3px',
                         fontSize: '0.9em'
@@ -59,7 +60,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                       </code>
                     ) : (
                       <pre style={{ 
-                        backgroundColor: 'var(--bg-secondary)', 
+                        backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', 
+                        color: isUser ? '#ffffff' : 'var(--text)',
                         padding: '8px', 
                         borderRadius: '4px',
                         overflow: 'auto',
@@ -74,23 +76,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                   li: ({ children }) => <li style={{ margin: '4px 0' }}>{children}</li>,
                   blockquote: ({ children }) => (
                     <blockquote style={{ 
-                      borderLeft: '3px solid var(--border)', 
+                      borderLeft: `3px solid ${isUser ? 'rgba(255,255,255,0.3)' : 'var(--border)'}`, 
                       paddingLeft: '12px', 
                       margin: '8px 0',
-                      fontStyle: 'italic'
+                      fontStyle: 'italic',
+                      color: isUser ? '#ffffff' : 'var(--text)'
                     }}>
                       {children}
                     </blockquote>
                   ),
-                  h1: ({ children }) => <h1 style={{ fontSize: '1.2em', fontWeight: 'bold', margin: '8px 0' }}>{children}</h1>,
-                  h2: ({ children }) => <h2 style={{ fontSize: '1.1em', fontWeight: 'bold', margin: '8px 0' }}>{children}</h2>,
-                  h3: ({ children }) => <h3 style={{ fontSize: '1em', fontWeight: 'bold', margin: '8px 0' }}>{children}</h3>,
+                  h1: ({ children }) => <h1 style={{ fontSize: '1.2em', fontWeight: 'bold', margin: '8px 0', color: isUser ? '#ffffff' : 'var(--text)' }}>{children}</h1>,
+                  h2: ({ children }) => <h2 style={{ fontSize: '1.1em', fontWeight: 'bold', margin: '8px 0', color: isUser ? '#ffffff' : 'var(--text)' }}>{children}</h2>,
+                  h3: ({ children }) => <h3 style={{ fontSize: '1em', fontWeight: 'bold', margin: '8px 0', color: isUser ? '#ffffff' : 'var(--text)' }}>{children}</h3>,
                 }}
               >
                 {message.content}
               </ReactMarkdown>
             ) : (
-              <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+              <span style={{ color: isUser ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)', fontStyle: 'italic' }}>
                 {message.role === 'assistant' ? 'Thinking...' : 'No content available'}
               </span>
             )}

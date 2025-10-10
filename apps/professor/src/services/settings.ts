@@ -12,6 +12,18 @@ export interface ApiConfig {
   updatedAt: string;
 }
 
+// UI customization settings
+export interface UICustomization {
+  chatTitle: string;
+  chatSubtitle: string;
+  suggestedQuestions: {
+    question1: string;
+    question2: string;
+    question3: string;
+    question4: string;
+  };
+}
+
 // Simple encryption for API keys (in production, use proper encryption)
 const encrypt = (text: string): string => {
   return btoa(text); // Base64 encoding for demo
@@ -26,6 +38,7 @@ const decrypt = (encrypted: string): string => {
 };
 
 const SETTINGS_KEY = 'axpro_api_configs';
+const UI_CUSTOMIZATION_KEY = 'axpro_ui_customization';
 
 export const settingsService = {
   // Get all API configurations
@@ -127,5 +140,45 @@ export const settingsService = {
 
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(updatedConfigs));
     return true;
+  },
+
+  // UI Customization methods
+  getUICustomization(): UICustomization {
+    try {
+      const stored = localStorage.getItem(UI_CUSTOMIZATION_KEY);
+      if (!stored) {
+        // Return default values
+        return {
+          chatTitle: 'Chat Interface',
+          chatSubtitle: 'Select a conversation from the sidebar or start a new chat',
+          suggestedQuestions: {
+            question1: 'What is artificial intelligence?',
+            question2: 'How does machine learning work?',
+            question3: 'Explain quantum computing',
+            question4: 'What are the benefits of cloud computing?'
+          }
+        };
+      }
+      return JSON.parse(stored);
+    } catch {
+      return {
+        chatTitle: 'Chat Interface',
+        chatSubtitle: 'Select a conversation from the sidebar or start a new chat',
+        suggestedQuestions: {
+          question1: 'What is artificial intelligence?',
+          question2: 'How does machine learning work?',
+          question3: 'Explain quantum computing',
+          question4: 'What are the benefits of cloud computing?'
+        }
+      };
+    }
+  },
+
+  saveUICustomization(customization: UICustomization): void {
+    localStorage.setItem(UI_CUSTOMIZATION_KEY, JSON.stringify(customization));
+  },
+
+  resetUICustomization(): void {
+    localStorage.removeItem(UI_CUSTOMIZATION_KEY);
   }
 };

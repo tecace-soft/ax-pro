@@ -176,36 +176,94 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     throw new Error('No active n8n configuration found');
   }
 
+  // Skip the HEAD request test as it may cause CORS issues
+
   try {
     console.log('Making request to:', activeConfig.webhookUrl);
+    console.log('Request payload:', JSON.stringify([request]));
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log('n8n webhook request timed out after 30 seconds');
+      controller.abort();
+    }, 30000); // 30 second timeout
+    
     const response = await fetch(activeConfig.webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       },
-      body: JSON.stringify([request])
+      body: JSON.stringify([request]),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     console.log('Response status:', response.status);
     console.log('Response headers:', response.headers);
 
+    // Get response text first
+    const responseText = await response.text();
+    console.log('=== N8N WEBHOOK DEBUG ===');
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
+    console.log('Raw response text length:', responseText.length);
+    console.log('Raw response text:', responseText);
+    console.log('Response text trimmed:', responseText.trim());
+    console.log('Is empty?', !responseText || responseText.trim() === '');
+    console.log('Response URL:', response.url);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+    console.log('========================');
+    
+    // Force an alert to see what's happening
+    if (responseText.includes('No response from n8n webhook')) {
+      alert('ERROR: Webhook returned error message instead of actual response!');
+    }
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Response error:', errorText);
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      console.error('Response error:', responseText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${responseText}`);
+    }
+    
+    if (!responseText || responseText.trim() === '') {
+      console.warn('Empty response from n8n webhook');
+      return { answer: 'No response from n8n webhook. Please check your n8n workflow configuration.' };
     }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', parseError);
+      console.error('Response text was:', responseText);
+      throw new Error(`Invalid JSON response from n8n: ${responseText.substring(0, 100)}...`);
+    }
+    
     console.log('n8n response:', data);
     
     // Handle both array and object responses
     if (Array.isArray(data)) {
-      return data[0] || { answer: 'No response from n8n' };
+      return data[0] || { answer: 'No response from n8n webhook' };
     }
-    return data;
+    
+    // If it's an object, return it directly
+    if (data && typeof data === 'object') {
+      return data;
+    }
+    
+    // Fallback for unexpected format
+    return { answer: 'Unexpected response format from n8n webhook' };
   } catch (error) {
     console.error('Failed to send to n8n:', error);
-    throw error;
+    
+    if (error.name === 'AbortError') {
+      throw new Error('n8n webhook request timed out after 30 seconds');
+    } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('Network error: Unable to reach n8n webhook');
+    } else {
+      throw error;
+    }
   }
 };
 

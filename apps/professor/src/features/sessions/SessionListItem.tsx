@@ -1,20 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Session } from './useSessions';
-import { useSessions } from './useSessions';
 import { useT } from '../../i18n/I18nProvider';
 
 interface SessionListItemProps {
   session: Session;
   isActive: boolean;
   onClick: () => void;
+  updateSession: (id: string, updates: { title?: string; status?: string }) => Promise<void>;
+  deleteSession: (id: string) => Promise<void>;
+  closeSession: (id: string) => Promise<void>;
+  reopenSession: (id: string) => Promise<void>;
 }
 
-const SessionListItem: React.FC<SessionListItemProps> = ({ session, isActive, onClick }) => {
-  const { updateSession, deleteSession, closeSession, reopenSession } = useSessions();
+const SessionListItem: React.FC<SessionListItemProps> = ({ 
+  session, 
+  isActive, 
+  onClick, 
+  updateSession, 
+  deleteSession, 
+  closeSession, 
+  reopenSession 
+}) => {
   const t = useT();
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newTitle, setNewTitle] = useState(session.title || '');
+  const contextMenuRef = useRef<HTMLDivElement>(null);
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -60,18 +71,38 @@ const SessionListItem: React.FC<SessionListItemProps> = ({ session, isActive, on
 
   const handlePermanentDelete = async () => {
     const confirmMessage = session.status === 'closed' 
-      ? 'Are you sure you want to permanently delete this closed conversation? This action cannot be undone.'
-      : 'Are you sure you want to permanently delete this conversation? This action cannot be undone.';
+      ? t('context.confirmDeleteClosed')
+      : t('context.confirmDelete');
     
     if (window.confirm(confirmMessage)) {
       try {
+        console.log('Deleting session:', session.id);
         await deleteSession(session.id);
+        console.log('Session deleted successfully');
       } catch (error) {
         console.error('Failed to permanently delete session:', error);
+        alert(t('context.deleteFailed'));
       }
     }
     setShowContextMenu(false);
   };
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+        setShowContextMenu(false);
+      }
+    };
+
+    if (showContextMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showContextMenu]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -79,7 +110,7 @@ const SessionListItem: React.FC<SessionListItemProps> = ({ session, isActive, on
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
     
     if (diffInHours < 1) {
-      return 'Just now';
+      return t('ui.justNow');
     } else if (diffInHours < 24) {
       return `${Math.floor(diffInHours)}h ago`;
     } else if (diffInHours < 168) { // 7 days
@@ -145,7 +176,7 @@ const SessionListItem: React.FC<SessionListItemProps> = ({ session, isActive, on
                   <h3 className={`text-sm font-medium truncate ${
                     session.status === 'closed' ? 'opacity-60' : ''
                   }`} style={{ color: 'var(--text)' }}>
-                    {session.title || 'New Chat'}
+                    {session.title || t('ui.newChatTitle')}
                   </h3>
                   {session.status === 'closed' && (
                     <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100" style={{ color: 'var(--text-muted)' }}>
@@ -180,37 +211,46 @@ const SessionListItem: React.FC<SessionListItemProps> = ({ session, isActive, on
       {/* Context Menu */}
       {showContextMenu && !isRenaming && (
         <div
-          className="absolute right-0 top-0 z-10 w-48 card rounded-md shadow-lg border"
+          ref={contextMenuRef}
+          className="absolute right-0 top-0 z-20 w-48 card rounded-md shadow-lg border"
           style={{ 
             backgroundColor: 'var(--card)',
             borderColor: 'var(--border)'
           }}
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="py-1">
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setIsRenaming(true);
                 setShowContextMenu(false);
               }}
               className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
               style={{ color: 'var(--text)' }}
             >
-              ✏️ Rename
+              ✏️ {t('context.rename')}
             </button>
             <button
-              onClick={handleClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClose();
+              }}
               className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
               style={{ color: 'var(--text)' }}
             >
-              {session.status === 'closed' ? '🔄 Reopen' : '🔒 Close'}
+              {session.status === 'closed' ? `🔄 ${t('context.reopen')}` : `🔒 ${t('context.close')}`}
             </button>
             <hr className="my-1" style={{ borderColor: 'var(--border)' }} />
             <button
-              onClick={handlePermanentDelete}
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePermanentDelete();
+              }}
               className="w-full text-left px-4 py-2 text-sm hover:bg-red-50"
               style={{ color: 'var(--error)' }}
             >
-              {session.status === 'closed' ? '🗑️ Delete permanently' : '🗑️ Delete permanently'}
+              🗑️ {t('context.deletePermanently')}
             </button>
           </div>
         </div>

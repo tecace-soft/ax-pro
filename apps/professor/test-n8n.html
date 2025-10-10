@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>n8n Webhook Test</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        textarea { width: 100%; height: 150px; margin-bottom: 10px; }
+        button { padding: 10px 15px; cursor: pointer; }
+        pre { background-color: #eee; padding: 10px; border-radius: 5px; white-space: pre-wrap; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>n8n Webhook Test</h1>
+    <p>Enter your n8n webhook URL and a test message to send a request.</p>
+
+    <div>
+        <label for="webhookUrl">Webhook URL:</label><br>
+        <input type="text" id="webhookUrl" value="https://n8n.srv978041.hstgr.cloud/webhook/328757ba-62e6-465e-be1b-2fff0fd1d353" style="width: 100%; padding: 8px; margin-bottom: 10px;"><br>
+        
+        <label for="testMessage">Test Message:</label><br>
+        <textarea id="testMessage">Test connection from debug page</textarea><br>
+        
+        <button id="sendButton">Send Test Request</button>
+    </div>
+
+    <h2>Response:</h2>
+    <pre id="responseOutput"></pre>
+
+    <script>
+        document.getElementById('sendButton').addEventListener('click', async () => {
+            const webhookUrl = document.getElementById('webhookUrl').value;
+            const testMessage = document.getElementById('testMessage').value;
+            const responseOutput = document.getElementById('responseOutput');
+            responseOutput.textContent = 'Sending...';
+            responseOutput.className = '';
+
+            const requestBody = [{
+                sessionId: 'debug-session',
+                action: 'sendMessage',
+                chatInput: testMessage
+            }];
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    },
+                    body: JSON.stringify(requestBody),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                const responseText = await response.text();
+                console.log('Raw response text:', responseText);
+
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(responseText);
+                        responseOutput.textContent = `Status: ${response.status} OK\n\n${JSON.stringify(data, null, 2)}`;
+                        responseOutput.className = 'success';
+                    } catch (parseError) {
+                        responseOutput.textContent = `Status: ${response.status} OK\n\nError parsing JSON: ${parseError.message}\nRaw response: ${responseText}`;
+                        responseOutput.className = 'error';
+                    }
+                } else {
+                    responseOutput.textContent = `Error: ${response.status} ${response.statusText}\n${responseText}`;
+                    responseOutput.className = 'error';
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                if (error.name === 'AbortError') {
+                    responseOutput.textContent = 'Error: Request timed out after 10 seconds.';
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    responseOutput.textContent = 'Error: Network error. Unable to reach webhook.';
+                } else {
+                    responseOutput.textContent = `Error: ${error.message}`;
+                }
+                responseOutput.className = 'error';
+            }
+        });
+    </script>
+</body>
+</html>
