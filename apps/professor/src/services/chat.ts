@@ -124,6 +124,7 @@ export const chatService = {
                   console.log('n8n response received:', response);
                   
                   // Simulate streaming for n8n response
+                  const messageId = `n8n_${Date.now()}`;
                   if (onStream) {
                     const answerText = response.answer || 'No response from n8n';
                     console.log('Streaming answer text:', answerText);
@@ -144,10 +145,10 @@ export const chatService = {
                     
                     onStream({
                       type: 'final',
-                      messageId: `n8n_${Date.now()}`,
+                      messageId: messageId,
                       citations: response.citationTitle ? [{
                         id: `citation_${Date.now()}`,
-                        messageId: `n8n_${Date.now()}`,
+                        messageId: messageId,
                         sourceType: 'document',
                         title: response.citationTitle,
                         snippet: response.citationContent,
@@ -157,10 +158,10 @@ export const chatService = {
                   }
 
           return {
-            messageId: `n8n_${Date.now()}`,
+            messageId: messageId,
             citations: response.citationTitle ? [{
               id: `citation_${Date.now()}`,
-              messageId: `n8n_${Date.now()}`,
+              messageId: messageId,
               sourceType: 'document',
               title: response.citationTitle,
               snippet: response.citationContent,

@@ -197,6 +197,11 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
 
     const data = await response.json();
     console.log('n8n response:', data);
+    
+    // Handle both array and object responses
+    if (Array.isArray(data)) {
+      return data[0] || { answer: 'No response from n8n' };
+    }
     return data;
   } catch (error) {
     console.error('Failed to send to n8n:', error);

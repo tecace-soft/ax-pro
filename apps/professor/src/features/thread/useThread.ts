@@ -79,10 +79,12 @@ export const useThread = (sessionId: string) => {
       
       // Always use chatService - it handles backend/n8n/simulation fallback
       console.log('Using chatService for message sending');
+      let accumulatedContent = '';
       const result = await chatService.sendMessage(sessionId, content, (event) => {
         console.log('Stream event received:', event);
         if (event.type === 'delta' && event.text) {
           console.log('Delta text:', event.text);
+          accumulatedContent += event.text;
           setMessages(prev => prev.map(msg => {
             if (msg.id === assistantMessageId) {
               const newContent = (msg.content || '') + event.text!;
@@ -94,13 +96,14 @@ export const useThread = (sessionId: string) => {
           onStream?.(event.text);
         } else if (event.type === 'final') {
           console.log('Final event:', event);
+          console.log('Accumulated content for final event:', accumulatedContent);
           // Replace temporary message with real one
           setMessages(prev => prev.map(msg => {
             if (msg.id === assistantMessageId) {
               const finalMessage = { 
                 ...msg, 
                 id: event.messageId!,
-                content: msg.content || '',
+                content: msg.content || accumulatedContent,
                 citations: event.citations
               };
               console.log('Final message:', finalMessage);
@@ -126,7 +129,7 @@ export const useThread = (sessionId: string) => {
             id: result.messageId,
             sessionId,
             role: 'assistant' as const,
-            content: result.messageId.startsWith('n8n_') ? 'Response from n8n webhook' : 'Simulated response',
+            content: accumulatedContent || (result.messageId.startsWith('n8n_') ? 'Response from n8n webhook' : 'Simulated response'),
             meta: {},
             createdAt: new Date().toISOString(),
             citations: result.citations
