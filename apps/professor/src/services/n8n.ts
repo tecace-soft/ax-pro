@@ -9,6 +9,7 @@ export interface N8nConfig {
 
 export interface N8nRequest {
   sessionId: string;
+  userId: string;
   action: 'sendMessage';
   chatInput: string;
 }
@@ -216,9 +217,10 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     console.log('Response headers:', Object.fromEntries(response.headers.entries()));
     console.log('========================');
     
-    // Force an alert to see what's happening
+    // Log if we get the error message
     if (responseText.includes('No response from n8n webhook')) {
-      alert('ERROR: Webhook returned error message instead of actual response!');
+      console.error('ERROR: Webhook returned error message instead of actual response!');
+      console.error('This suggests the n8n workflow is not properly configured or is returning an error.');
     }
     
     if (!response.ok) {
@@ -241,19 +243,47 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     }
     
     console.log('n8n response:', data);
+    console.log('n8n response type:', typeof data);
+    console.log('n8n response is array:', Array.isArray(data));
     
-    // Handle both array and object responses
+    // Check if the response contains the error message
+    let responseData;
     if (Array.isArray(data)) {
-      return data[0] || { answer: 'No response from n8n webhook' };
+      responseData = data[0];
+      console.log('n8n array response data:', responseData);
+    } else if (data && typeof data === 'object') {
+      responseData = data;
+      console.log('n8n object response data:', responseData);
+    } else {
+      throw new Error('Unexpected response format from n8n webhook');
     }
     
-    // If it's an object, return it directly
-    if (data && typeof data === 'object') {
-      return data;
+    console.log('n8n responseData:', responseData);
+    console.log('n8n responseData.answer:', responseData?.answer);
+    console.log('n8n responseData.answer type:', typeof responseData?.answer);
+    
+    // Check if the response contains the error message
+    if (responseData && responseData.answer && responseData.answer.includes('No response from n8n webhook')) {
+      console.error('n8n webhook returned error message:', responseData.answer);
+      throw new Error('n8n webhook returned error: ' + responseData.answer);
     }
     
-    // Fallback for unexpected format
-    return { answer: 'Unexpected response format from n8n webhook' };
+    // Also check if the response is just the error message string
+    if (responseData && typeof responseData === 'string' && responseData.includes('No response from n8n webhook')) {
+      console.error('n8n webhook returned error message as string:', responseData);
+      throw new Error('n8n webhook returned error: ' + responseData);
+    }
+    
+    // Check if the response is an object with the error message in any field
+    if (responseData && typeof responseData === 'object') {
+      const responseString = JSON.stringify(responseData);
+      if (responseString.includes('No response from n8n webhook')) {
+        console.error('n8n webhook returned error message in object:', responseData);
+        throw new Error('n8n webhook returned error: ' + responseString);
+      }
+    }
+    
+    return responseData;
   } catch (error) {
     console.error('Failed to send to n8n:', error);
     
@@ -274,6 +304,7 @@ export const testN8nConnection = async (webhookUrl: string): Promise<boolean> =>
   try {
     const testRequest: N8nRequest = {
       sessionId: 'test-session',
+      userId: 'test-user',
       action: 'sendMessage',
       chatInput: 'Test connection'
     };

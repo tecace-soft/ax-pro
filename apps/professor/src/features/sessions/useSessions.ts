@@ -46,14 +46,18 @@ export const useSessions = () => {
 
   const createSession = async (title?: string) => {
     try {
+      console.log('Creating new session...');
       const backendAvailable = await isBackendAvailable();
+      console.log('Backend available:', backendAvailable);
       
       if (backendAvailable) {
+        console.log('Using backend API for session creation');
         const { id } = await sessionsApi.create(title);
         await fetchSessions(); // Refresh list
         navigate(`/chat/${id}`);
         return id;
       } else {
+        console.log('Using simulation mode for session creation');
         // Create local session for simulation mode
         const id = `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const newSession: Session = {

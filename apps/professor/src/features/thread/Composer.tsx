@@ -47,12 +47,13 @@ const Composer: React.FC<ComposerProps> = ({ onSend, disabled = false }) => {
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={t('ui.typeMessage')}
-          className="w-full resize-none rounded-xl px-4 py-3 pr-12 min-h-[52px] max-h-[200px] border-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          className="w-full resize-none rounded-2xl px-4 py-3 pr-12 min-h-[52px] max-h-[200px] border focus:outline-none focus:ring-0 focus:border-transparent transition-all"
           style={{
-            backgroundColor: 'var(--card)',
+            backgroundColor: 'var(--bg-secondary)',
             borderColor: 'var(--border)',
             color: 'var(--text)',
-            fontSize: '16px'
+            fontSize: '16px',
+            boxShadow: '0 0 0 1px var(--border)'
           }}
           disabled={disabled}
           rows={1}
@@ -60,7 +61,7 @@ const Composer: React.FC<ComposerProps> = ({ onSend, disabled = false }) => {
         <button
           type="submit"
           disabled={!content.trim() || disabled}
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           style={{
             backgroundColor: content.trim() && !disabled ? 'var(--primary)' : 'transparent',
             color: content.trim() && !disabled ? 'white' : 'var(--text-muted)'

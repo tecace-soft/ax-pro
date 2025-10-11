@@ -15,7 +15,7 @@ const ChatShell: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
   const { customization } = useUICustomization();
-  const [user, setUser] = useState<{ email: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ email: string; userId: string; role: string } | null>(null);
   const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
   const [currentSession, setCurrentSession] = useState<any>(null);
 
@@ -134,12 +134,14 @@ const ChatShell: React.FC = () => {
                 {user.role === 'admin' ? 'Administrator' : t('ui.user')}
               </p>
             </div>
-            <button
-              onClick={() => navigate('/settings')}
-              className="text-sm link"
-            >
-              {t('ui.settings')}
-            </button>
+            {user.role === 'admin' && (
+              <button
+                onClick={() => navigate('/settings')}
+                className="text-sm link"
+              >
+                {t('ui.settings')}
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="text-sm link"
@@ -154,8 +156,14 @@ const ChatShell: React.FC = () => {
           {!backendAvailable && (
             <div className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
               <div className="card rounded-md p-3" style={{ backgroundColor: 'var(--warning-light)' }}>
-                <div className="flex items-center space-x-2">
-                  <span>⚠️</span>
+                <div className="flex items-center space-x-3">
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--warning)' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                  </div>
                   <div>
                     <p className="text-sm font-medium" style={{ color: 'var(--warning)' }}>
                       {t('ui.demoMode')}
@@ -220,7 +228,25 @@ const ChatShell: React.FC = () => {
                     color: 'var(--text-secondary)'
                   }}
                 >
-                  {currentSession?.status === 'closed' ? `🔄 ${t('context.reopen')} ${t('ui.newChatTitle')}` : `🔒 ${t('ui.closeChat')}`}
+                  {currentSession?.status === 'closed' ? (
+                    <div className="flex items-center space-x-2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                        <path d="M21 3v5h-5"/>
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                        <path d="M3 21v-5h5"/>
+                      </svg>
+                      <span>{t('context.reopen')} {t('ui.newChatTitle')}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <path d="M9 9h6v6H9z"/>
+                      </svg>
+                      <span>{t('ui.closeChat')}</span>
+                    </div>
+                  )}
                 </button>
               </div>
             </div>

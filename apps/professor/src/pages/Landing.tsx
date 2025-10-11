@@ -22,18 +22,15 @@ const Landing: React.FC = () => {
   });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAdminMode, setIsAdminMode] = useState(false);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
 
   // Check if user is already logged in
   React.useEffect(() => {
     const session = getSession();
     if (session) {
-      if (session.role === 'admin') {
-        navigate('/dashboard');
-      } else {
-        navigate('/chat');
-      }
+      // Both admin and user should go to chat interface
+      // Admin will have settings visible, user won't
+      navigate('/chat');
     }
   }, [navigate]);
 
@@ -69,14 +66,9 @@ const Landing: React.FC = () => {
       const session = login(formData.email, formData.password);
       
       if (session) {
-        // Redirect based on role and mode
-        if (isAdminMode && session.role === 'admin') {
-          navigate('/dashboard');
-        } else if (!isAdminMode) {
-          navigate('/chat');
-        } else {
-          setError(t('auth.error'));
-        }
+        // Both admin and user go to chat interface
+        // Admin will have settings visible, user won't
+        navigate('/chat');
       } else {
         setError(t('auth.error'));
       }
@@ -87,14 +79,9 @@ const Landing: React.FC = () => {
       const session = login(formData.email, formData.password);
       
       if (session) {
-        // Redirect based on role and mode
-        if (isAdminMode && session.role === 'admin') {
-          navigate('/dashboard');
-        } else if (!isAdminMode) {
-          navigate('/chat');
-        } else {
-          setError(t('auth.error'));
-        }
+        // Both admin and user go to chat interface
+        // Admin will have settings visible, user won't
+        navigate('/chat');
       } else {
         setError(t('auth.error'));
       }
@@ -103,10 +90,6 @@ const Landing: React.FC = () => {
     }
   };
 
-  const toggleAdminMode = () => {
-    setIsAdminMode(!isAdminMode);
-    setError(null);
-  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
@@ -151,10 +134,10 @@ const Landing: React.FC = () => {
           {/* Header */}
           <div className="text-center">
             <h2 className="text-3xl font-light" style={{ color: 'var(--text)' }}>
-              {t(isAdminMode ? 'auth.title.admin' : 'auth.title.chat')}
+              {t('auth.title.chat')}
             </h2>
             <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-              {t(isAdminMode ? 'auth.subtitle.admin' : 'auth.subtitle.chat')}
+              {t('auth.subtitle.chat')}
             </p>
           </div>
 
@@ -243,8 +226,7 @@ const Landing: React.FC = () => {
             <div className="space-y-2 text-xs">
               <button
                 onClick={() => {
-                  setFormData({ email: 'demo@tecace.com', password: 'demo1234' });
-                  setIsAdminMode(false);
+                  setFormData({ email: 'chatbot-user@tecace.com', password: 'user1234' });
                 }}
                 className="w-full text-left p-2 rounded border hover:bg-gray-50 transition-colors"
                 style={{ 
@@ -253,12 +235,11 @@ const Landing: React.FC = () => {
                   color: 'var(--text)'
                 }}
               >
-                <strong>👤 User:</strong> demo@tecace.com / demo1234
+                <strong>👤 User:</strong> chatbot-user@tecace.com / user1234
               </button>
               <button
                 onClick={() => {
-                  setFormData({ email: 'admin@tecace.com', password: 'admin1234' });
-                  setIsAdminMode(true);
+                  setFormData({ email: 'chatbot-admin@tecace.com', password: 'admin1234' });
                 }}
                 className="w-full text-left p-2 rounded border hover:bg-gray-50 transition-colors"
                 style={{ 
@@ -267,20 +248,11 @@ const Landing: React.FC = () => {
                   color: 'var(--text)'
                 }}
               >
-                <strong>👑 Admin:</strong> admin@tecace.com / admin1234
+                <strong>👑 Admin:</strong> chatbot-admin@tecace.com / admin1234
               </button>
             </div>
           </div>
 
-          {/* Toggle Admin Mode */}
-          <div className="text-center">
-            <button
-              onClick={toggleAdminMode}
-              className="link text-sm underline"
-            >
-              {isAdminMode ? t('link.toChat') : t('link.toAdmin')}
-            </button>
-          </div>
         </div>
       </div>
     </div>

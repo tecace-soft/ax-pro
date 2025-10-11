@@ -112,9 +112,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             {message.citations && message.citations.length > 0 && (
               <button
                 onClick={() => setShowReferences(!showReferences)}
-                className="text-xs link flex items-center space-x-1"
+                className="text-xs link flex items-center space-x-2"
               >
-                <span>📚</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
                 <span>
                   {showReferences ? 'Hide' : 'Show'} References ({message.citations.length})
                 </span>

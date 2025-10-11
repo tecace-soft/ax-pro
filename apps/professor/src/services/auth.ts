@@ -7,19 +7,22 @@ export type Role = "user" | "admin";
 
 export interface Session {
   email: string;
+  userId: string;
   role: Role;
   createdAt: number;
 }
 
 // Demo credentials
 const DEMO_CREDENTIALS = {
-  'demo@tecace.com': {
-    password: 'demo1234',
-    role: 'user' as const
-  },
-  'admin@tecace.com': {
+  'chatbot-admin@tecace.com': {
     password: 'admin1234',
-    role: 'admin' as const
+    role: 'admin' as const,
+    userId: '409esj1923'
+  },
+  'chatbot-user@tecace.com': {
+    password: 'user1234',
+    role: 'user' as const,
+    userId: 'user123456'
   }
 };
 
@@ -42,6 +45,7 @@ export const login = (email: string, password: string): Session | null => {
   // Create session data
   const session: Session = {
     email: normalizedEmail,
+    userId: credentials.userId,
     role: credentials.role,
     createdAt: Date.now()
   };
@@ -81,7 +85,7 @@ export const getSession = (): Session | null => {
     const session: Session = JSON.parse(sessionData);
     
     // Validate session structure
-    if (!session.email || !session.role || !session.createdAt) {
+    if (!session.email || !session.userId || !session.role || !session.createdAt) {
       logout(); // Clear invalid session
       return null;
     }

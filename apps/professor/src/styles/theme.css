@@ -2,46 +2,46 @@
 
 :root[data-theme="light"] {
   --bg: #ffffff;
-  --bg-secondary: #f8fafc;
+  --bg-secondary: #f7f7f8;
   --card: #ffffff;
-  --text: #1f2937;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
-  --border: #e5e7eb;
-  --border-light: #f3f4f6;
-  --primary: #1f2937;
-  --primary-hover: #111827;
-  --primary-light: #f3f4f6;
-  --success: #10b981;
-  --success-light: #d1fae5;
-  --error: #ef4444;
-  --error-light: #fee2e2;
-  --warning: #f59e0b;
-  --warning-light: #fef3c7;
+  --text: #2d2d2d;
+  --text-secondary: #6e6e80;
+  --text-muted: #8e8ea0;
+  --border: #e5e5e5;
+  --border-light: #f0f0f0;
+  --primary: #2d2d2d;
+  --primary-hover: #1a1a1a;
+  --primary-light: #f0f0f0;
+  --success: #4caf50;
+  --success-light: #e8f5e8;
+  --error: #f44336;
+  --error-light: #ffebee;
+  --warning: #ff9800;
+  --warning-light: #fff3e0;
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 :root[data-theme="dark"] {
-  --bg: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --card: #2d2d2d;
-  --text: #ffffff;
-  --text-secondary: #d1d5db;
-  --text-muted: #9ca3af;
+  --bg: #212121;
+  --bg-secondary: #2f2f2f;
+  --card: #2f2f2f;
+  --text: #ececec;
+  --text-secondary: #b4b4b4;
+  --text-muted: #8a8a8a;
   --border: #404040;
   --border-light: #4a4a4a;
-  --primary: #ffffff;
-  --primary-hover: #e6e6e6;
+  --primary: #ececec;
+  --primary-hover: #ffffff;
   --primary-light: #404040;
-  --success: #10b981;
-  --success-light: #064e3b;
-  --error: #ef4444;
-  --error-light: #7f1d1d;
-  --warning: #f59e0b;
-  --warning-light: #78350f;
+  --success: #4caf50;
+  --success-light: #1b5e20;
+  --error: #f44336;
+  --error-light: #b71c1c;
+  --warning: #ff9800;
+  --warning-light: #e65100;
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
 }
 
 /* Base styles using CSS variables */
@@ -86,14 +86,16 @@ body {
 
 /* Message bubble styles */
 .message-user {
-  background-color: #374151 !important;
+  background-color: #40414f !important;
   color: #ffffff !important;
+  border-radius: 18px 18px 4px 18px;
 }
 
 .message-assistant {
-  background-color: var(--card);
+  background-color: var(--bg-secondary);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: none;
+  border-radius: 18px 18px 18px 4px;
 }
 
 .btn-primary:hover {

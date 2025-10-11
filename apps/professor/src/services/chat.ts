@@ -1,6 +1,7 @@
 import { messagesApi } from './api';
 import { isBackendAvailable } from './devMode';
 import { getActiveN8nConfig, sendToN8n, N8nRequest, N8nResponse } from './n8n';
+import { getSession } from './auth';
 
 export interface ChatMessage {
   id: string;
@@ -117,8 +118,10 @@ export const chatService = {
       if (n8nConfig && n8nConfig.webhookUrl) {
         console.log('Using n8n webhook:', n8nConfig.webhookUrl);
         try {
+          const session = getSession();
           const request: N8nRequest = {
             sessionId,
+            userId: session?.userId || 'unknown',
             action: 'sendMessage',
             chatInput: content
           };
@@ -158,15 +161,15 @@ export const chatService = {
             onStream({
               type: 'final',
               messageId: messageId,
-        citations: response.citationTitle ? [{
-          id: `citation_${Date.now()}`,
-          messageId: messageId,
-          sourceType: 'document' as const,
-          title: response.citationTitle,
-          snippet: response.citationContent || '',
-          sourceId: `doc_${Date.now()}`,
-          metadata: {}
-        }] : []
+              citations: response.citationTitle ? [{
+                id: `citation_${Date.now()}`,
+                messageId: messageId,
+                sourceType: 'document' as const,
+                title: response.citationTitle,
+                snippet: response.citationContent || '',
+                sourceId: `doc_${Date.now()}`,
+                metadata: {}
+              }] : []
             });
           }
 
