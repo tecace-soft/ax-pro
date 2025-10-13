@@ -9,6 +9,7 @@ export interface N8nConfig {
 
 export interface N8nRequest {
   sessionId: string;
+  chatId: string;
   userId: string;
   action: 'sendMessage';
   chatInput: string;
@@ -304,6 +305,7 @@ export const testN8nConnection = async (webhookUrl: string): Promise<boolean> =>
   try {
     const testRequest: N8nRequest = {
       sessionId: 'test-session',
+      chatId: 'test-chat-' + Date.now(),
       userId: 'test-user',
       action: 'sendMessage',
       chatInput: 'Test connection'

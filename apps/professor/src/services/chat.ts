@@ -119,8 +119,11 @@ export const chatService = {
         console.log('Using n8n webhook:', n8nConfig.webhookUrl);
         try {
           const session = getSession();
+          // Generate unique chatId for this message (for future feedback API)
+          const chatId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const request: N8nRequest = {
             sessionId,
+            chatId,
             userId: session?.userId || 'unknown',
             action: 'sendMessage',
             chatInput: content
