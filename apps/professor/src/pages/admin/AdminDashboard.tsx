@@ -7,6 +7,8 @@ import AdminSidebar from '../../components/admin/Sidebar'
 import PerformanceRadar from '../../components/admin/PerformanceRadar'
 import DailyMessageActivity from '../../components/admin/DailyMessageActivity'
 import PromptControl from '../../components/admin/PromptControl'
+import RecentConversations from '../../components/admin/RecentConversations'
+import UserFeedbackList from '../../components/admin/UserFeedbackList'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 
@@ -134,25 +136,17 @@ export default function AdminDashboard() {
             {/* Content sections */}
             <div className="content-module">
               <div id="recent-conversations" className="content-section">
-                <h2 className="section-title">Recent Conversations</h2>
-                <div className="admin-card">
-                  <p style={{ color: 'var(--admin-text-muted)' }}>
-                    Conversation data will be displayed here.
-                  </p>
-                </div>
+                <h2 className="section-title">{t('admin.recentConversations')}</h2>
+                <RecentConversations />
               </div>
 
               <div id="user-feedback" className="content-section">
-                <h2 className="section-title">User Feedback</h2>
-                <div className="admin-card">
-                  <p style={{ color: 'var(--admin-text-muted)' }}>
-                    User feedback data will be displayed here.
-                  </p>
-                </div>
+                <h2 className="section-title">{t('admin.userFeedback')}</h2>
+                <UserFeedbackList />
               </div>
 
               <div id="prompt-control" className="content-section">
-                <h2 className="section-title">Prompt Control</h2>
+                <h2 className="section-title">{t('admin.promptControl')}</h2>
                 <PromptControl />
               </div>
             </div>
