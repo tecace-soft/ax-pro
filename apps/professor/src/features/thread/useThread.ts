@@ -35,6 +35,14 @@ export const useThread = (sessionId: string) => {
     fetchMessages();
   }, [fetchMessages]);
 
+  // Generate title from first message
+  const generateTitle = (content: string): string => {
+    // Take first 50 characters or until first newline
+    const firstLine = content.split('\n')[0];
+    const truncated = firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine;
+    return truncated || 'New Chat';
+  };
+
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
 
@@ -139,6 +147,17 @@ export const useThread = (sessionId: string) => {
         }];
         console.log('Saving to localStorage:', allMessages);
         localStorage.setItem(`axpro_sim_messages_${sessionId}`, JSON.stringify(allMessages));
+        
+        // Auto-generate title from first message if session title is "New Chat"
+        const sessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
+        const currentSession = sessions.find((s: any) => s.id === sessionId);
+        if (currentSession && currentSession.title === 'New Chat' && messages.length === 0) {
+          const newTitle = generateTitle(content);
+          currentSession.title = newTitle;
+          currentSession.updatedAt = new Date().toISOString();
+          localStorage.setItem('axpro_sim_sessions', JSON.stringify(sessions));
+          console.log('Auto-generated title:', newTitle);
+        }
       }
 
     } catch (err) {
