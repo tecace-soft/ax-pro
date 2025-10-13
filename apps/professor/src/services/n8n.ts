@@ -181,7 +181,7 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
 
   try {
     console.log('Making request to:', activeConfig.webhookUrl);
-    console.log('Request payload:', JSON.stringify([request]));
+    console.log('Request payload:', JSON.stringify(request));
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       console.log('n8n webhook request timed out after 30 seconds');
@@ -195,7 +195,7 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       },
-      body: JSON.stringify([request]),
+      body: JSON.stringify(request),
       signal: controller.signal
     });
     
@@ -314,7 +314,7 @@ export const testN8nConnection = async (webhookUrl: string): Promise<boolean> =>
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify([testRequest])
+      body: JSON.stringify(testRequest)
     });
 
     return response.ok;
