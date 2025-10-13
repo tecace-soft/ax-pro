@@ -1,0 +1,33 @@
+:root {
+  --admin-bg: #0b1226;
+  --admin-bg-elevated: #0f1734;
+  --admin-bg-card: #121b3d;
+  --admin-text: #d3dcff;
+  --admin-text-muted: #9aa7cc;
+  --admin-primary: #29c3ff;
+  --admin-primary-600: #1aa7df;
+  --admin-accent: #7c8cff;
+  --admin-success: #22c55e;
+  --admin-warning: #f59e0b;
+  --admin-danger: #ef4444;
+  --admin-ring: #3be6ff;
+  --admin-card-shadow: 0 8px 30px rgba(3, 8, 28, 0.65), 0 0 0 1px rgba(59, 230, 255, 0.04);
+}
+
+.admin-layout {
+  min-height: 100vh;
+  background: radial-gradient(1200px 600px at 70% -10%, rgba(41,195,255,0.18), transparent 60%),
+    radial-gradient(900px 500px at 10% 0%, rgba(124,140,255,0.15), transparent 55%),
+    linear-gradient(180deg, #0c1330 0%, #0a1026 60%, #080e20 100%);
+  color: var(--admin-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+.admin-card {
+  background: linear-gradient(180deg, rgba(18,27,61,0.9), rgba(13,20,44,0.9));
+  border: 1px solid rgba(59, 230, 255, 0.06);
+  border-radius: 14px;
+  box-shadow: var(--admin-card-shadow);
+  padding: 20px;
+}
+

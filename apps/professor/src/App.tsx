@@ -7,6 +7,7 @@ import ChatShell from './pages/ChatShell';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import AdminShell from './pages/AdminShell';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import OverviewDashboard from './features/overview/OverviewDashboard';
 import ChatUsage from './features/usage/ChatUsage';
 import PromptControl from './features/management/PromptControl';
@@ -70,6 +71,14 @@ const App: React.FC = () => {
               />
               
               {/* Admin routes */}
+              <Route 
+                path="/admin/dashboard" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
               <Route 
                 path="/admin" 
                 element={
