@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useThread } from './useThread';
+import { submitUserFeedback } from '../../services/feedback';
+import { getSession } from '../../services/auth';
 
 interface FeedbackBarProps {
   messageId: string;
 }
 
 const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
-  const { submitFeedback } = useThread(messageId);
   const [rating, setRating] = useState<1 | -1 | null>(null);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [currentRating, setCurrentRating] = useState<1 | -1 | null>(null);
@@ -22,12 +22,28 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
     if (currentRating === null) return;
     
     try {
-      await submitFeedback(messageId, currentRating, note || undefined);
+      const session = getSession();
+      if (!session || !session.userId) {
+        console.error('No user session found');
+        alert('Please log in to submit feedback');
+        return;
+      }
+
+      // Use messageId as chat_id to link feedback to the specific message
+      const chatId = messageId;
+      const reaction = currentRating === 1 ? 'good' : 'bad';
+
+      console.log('Submitting feedback:', { chatId, userId: session.userId, reaction, feedbackText: note });
+
+      await submitUserFeedback(chatId, session.userId, reaction, note || undefined);
+
+      console.log('✅ Feedback submitted successfully');
       setRating(currentRating);
       setShowNoteModal(false);
       setNote('');
     } catch (error) {
       console.error('Failed to submit feedback:', error);
+      alert('Failed to submit feedback. Please try again.');
     }
   };
 
