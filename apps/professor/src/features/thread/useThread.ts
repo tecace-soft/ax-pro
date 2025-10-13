@@ -157,6 +157,9 @@ export const useThread = (sessionId: string) => {
           currentSession.updatedAt = new Date().toISOString();
           localStorage.setItem('axpro_sim_sessions', JSON.stringify(sessions));
           console.log('Auto-generated title:', newTitle);
+          
+          // Trigger session update event to refresh the session list
+          window.dispatchEvent(new Event('sessionUpdated'));
         }
       }
 
