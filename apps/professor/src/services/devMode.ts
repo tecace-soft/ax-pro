@@ -1,6 +1,21 @@
 // Development mode utilities
+
+/**
+ * Check if backend API server is available (for sessions, auth, etc.)
+ * This is different from n8n webhook availability
+ */
 export const isBackendAvailable = async (): Promise<boolean> => {
-  // Check if n8n webhook is configured (check both old and new storage methods)
+  // For now, always return false since we don't have a backend API server
+  // We only have n8n webhook for chat messages
+  console.log('Backend check: No backend API server, using local storage');
+  return false;
+};
+
+/**
+ * Check if n8n webhook is configured for chat messages
+ */
+export const isN8nWebhookAvailable = (): boolean => {
+  // Check both old and new storage methods
   const oldWebhook = localStorage.getItem('axpro_n8n_webhook_url');
   const n8nConfigs = localStorage.getItem('axpro_n8n_configs');
   
@@ -9,7 +24,7 @@ export const isBackendAvailable = async (): Promise<boolean> => {
     try {
       const configs = JSON.parse(n8nConfigs);
       if (Array.isArray(configs) && configs.length > 0 && configs[0].webhookUrl) {
-        console.log('Backend check: n8n webhook configured (multi-config), using real backend');
+        console.log('n8n webhook check: Configured (multi-config)');
         return true;
       }
     } catch (e) {
@@ -19,11 +34,11 @@ export const isBackendAvailable = async (): Promise<boolean> => {
   
   // Fall back to checking old single webhook URL
   if (oldWebhook && oldWebhook.trim()) {
-    console.log('Backend check: n8n webhook configured (legacy), using real backend');
+    console.log('n8n webhook check: Configured (legacy)');
     return true;
   }
   
-  console.log('Backend check: No n8n webhook configured, using simulation mode');
+  console.log('n8n webhook check: Not configured');
   return false;
 };
 

@@ -1,5 +1,5 @@
 import { messagesApi } from './api';
-import { isBackendAvailable } from './devMode';
+import { isBackendAvailable, isN8nWebhookAvailable } from './devMode';
 import { getActiveN8nConfig, sendToN8n, N8nRequest, N8nResponse } from './n8n';
 import { getSession } from './auth';
 
@@ -112,10 +112,12 @@ export const chatService = {
     } else {
       // Use n8n webhook if available
       console.log('Backend unavailable, trying n8n...');
+      const n8nAvailable = isN8nWebhookAvailable();
       const n8nConfig = getActiveN8nConfig();
+      console.log('n8n webhook available:', n8nAvailable);
       console.log('Active n8n config:', n8nConfig);
       
-      if (n8nConfig && n8nConfig.webhookUrl) {
+      if (n8nAvailable && n8nConfig && n8nConfig.webhookUrl) {
         console.log('Using n8n webhook:', n8nConfig.webhookUrl);
         try {
           const session = getSession();
