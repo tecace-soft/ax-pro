@@ -140,8 +140,8 @@ export const chatService = {
           
           // Check if response is valid
           if (!response || !response.answer) {
-            console.error('Invalid n8n response:', response);
-            throw new Error('Invalid response from n8n webhook');
+            console.error('Invalid webhook response:', response);
+            throw new Error('Invalid response from webhook');
           }
           
           // Simulate streaming for n8n response

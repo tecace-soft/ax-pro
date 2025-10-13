@@ -219,9 +219,9 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     console.log('========================');
     
     // Log if we get the error message
-    if (responseText.includes('No response from n8n webhook')) {
+    if (responseText.includes('No response from webhook')) {
       console.error('ERROR: Webhook returned error message instead of actual response!');
-      console.error('This suggests the n8n workflow is not properly configured or is returning an error.');
+      console.error('This suggests the workflow is not properly configured or is returning an error.');
     }
     
     if (!response.ok) {
@@ -230,8 +230,8 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     }
     
     if (!responseText || responseText.trim() === '') {
-      console.warn('Empty response from n8n webhook');
-      return { answer: 'No response from n8n webhook. Please check your n8n workflow configuration.' };
+      console.warn('Empty response from webhook');
+      throw new Error('Empty response from webhook. Please check your workflow configuration.');
     }
 
     let data;
@@ -264,23 +264,23 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     console.log('n8n responseData.answer type:', typeof responseData?.answer);
     
     // Check if the response contains the error message
-    if (responseData && responseData.answer && responseData.answer.includes('No response from n8n webhook')) {
-      console.error('n8n webhook returned error message:', responseData.answer);
-      throw new Error('n8n webhook returned error: ' + responseData.answer);
+    if (responseData && responseData.answer && responseData.answer.includes('No response from webhook')) {
+      console.error('Webhook returned error message:', responseData.answer);
+      throw new Error('Webhook returned error: ' + responseData.answer);
     }
     
     // Also check if the response is just the error message string
-    if (responseData && typeof responseData === 'string' && responseData.includes('No response from n8n webhook')) {
-      console.error('n8n webhook returned error message as string:', responseData);
-      throw new Error('n8n webhook returned error: ' + responseData);
+    if (responseData && typeof responseData === 'string' && responseData.includes('No response from webhook')) {
+      console.error('Webhook returned error message as string:', responseData);
+      throw new Error('Webhook returned error: ' + responseData);
     }
     
     // Check if the response is an object with the error message in any field
     if (responseData && typeof responseData === 'object') {
       const responseString = JSON.stringify(responseData);
-      if (responseString.includes('No response from n8n webhook')) {
-        console.error('n8n webhook returned error message in object:', responseData);
-        throw new Error('n8n webhook returned error: ' + responseString);
+      if (responseString.includes('No response from webhook')) {
+        console.error('Webhook returned error message in object:', responseData);
+        throw new Error('Webhook returned error: ' + responseString);
       }
     }
     
@@ -289,9 +289,9 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     console.error('Failed to send to n8n:', error);
     
     if (error.name === 'AbortError') {
-      throw new Error('n8n webhook request timed out after 30 seconds');
+      throw new Error('Webhook request timed out after 30 seconds');
     } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('Network error: Unable to reach n8n webhook');
+      throw new Error('Network error: Unable to reach webhook');
     } else {
       throw error;
     }
