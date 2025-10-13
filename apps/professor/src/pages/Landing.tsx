@@ -28,9 +28,12 @@ const Landing: React.FC = () => {
   React.useEffect(() => {
     const session = getSession();
     if (session) {
-      // Both admin and user should go to chat interface
-      // Admin will have settings visible, user won't
-      navigate('/chat');
+      // Admin goes to dashboard, user goes to chat
+      if (session.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/chat');
+      }
     }
   }, [navigate]);
 
@@ -66,9 +69,12 @@ const Landing: React.FC = () => {
       const session = login(formData.email, formData.password);
       
       if (session) {
-        // Both admin and user go to chat interface
-        // Admin will have settings visible, user won't
-        navigate('/chat');
+        // Admin goes to dashboard, user goes to chat
+        if (session.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/chat');
+        }
       } else {
         setError(t('auth.error'));
       }
@@ -79,9 +85,12 @@ const Landing: React.FC = () => {
       const session = login(formData.email, formData.password);
       
       if (session) {
-        // Both admin and user go to chat interface
-        // Admin will have settings visible, user won't
-        navigate('/chat');
+        // Admin goes to dashboard, user goes to chat
+        if (session.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/chat');
+        }
       } else {
         setError(t('auth.error'));
       }
@@ -221,34 +230,54 @@ const Landing: React.FC = () => {
           {/* Demo Credentials */}
           <div className="card rounded-md p-4" style={{ backgroundColor: 'var(--primary-light)' }}>
             <h3 className="text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-              Demo Credentials (Click to login)
+              Demo Credentials (Click to auto-fill)
             </h3>
             <div className="space-y-2 text-xs">
               <button
                 onClick={() => {
                   setFormData({ email: 'chatbot-user@tecace.com', password: 'user1234' });
                 }}
-                className="w-full text-left p-2 rounded border hover:bg-gray-50 transition-colors"
+                className="w-full text-left p-3 rounded border hover:bg-gray-50 transition-colors"
                 style={{ 
                   borderColor: 'var(--border)',
                   backgroundColor: 'var(--card)',
                   color: 'var(--text)'
                 }}
               >
-                <strong>👤 User:</strong> chatbot-user@tecace.com / user1234
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">👤 Regular User</div>
+                    <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                      chatbot-user@tecace.com
+                    </div>
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    → Chat Interface
+                  </div>
+                </div>
               </button>
               <button
                 onClick={() => {
                   setFormData({ email: 'chatbot-admin@tecace.com', password: 'admin1234' });
                 }}
-                className="w-full text-left p-2 rounded border hover:bg-gray-50 transition-colors"
+                className="w-full text-left p-3 rounded border hover:bg-gray-50 transition-colors"
                 style={{ 
                   borderColor: 'var(--border)',
                   backgroundColor: 'var(--card)',
                   color: 'var(--text)'
                 }}
               >
-                <strong>👑 Admin:</strong> chatbot-admin@tecace.com / admin1234
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">👑 Admin User</div>
+                    <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                      chatbot-admin@tecace.com
+                    </div>
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    → Admin Dashboard
+                  </div>
+                </div>
               </button>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { IconBell, IconMoon, IconUser, IconLogout } from '../../ui/icons'
+import { IconBell, IconMoon, IconUser, IconLogout, IconMessage } from '../../ui/icons'
 import { useNavigate } from 'react-router-dom'
 
 interface HeaderProps {
@@ -45,6 +45,14 @@ export default function AdminHeader({ performanceScore, performanceDate, current
         </div>
         
         <div className="header-actions">
+          <button 
+            className="icon-btn" 
+            aria-label="Go to Chat"
+            onClick={() => navigate('/chat')}
+            title="Go to Chat Interface"
+          >
+            <IconMessage size={18} />
+          </button>
           <button className="icon-btn" aria-label="Notifications">
             <IconBell size={18} />
           </button>

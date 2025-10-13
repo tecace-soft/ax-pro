@@ -151,12 +151,21 @@ const ChatShell: React.FC = () => {
               </p>
             </div>
             {user.role === 'admin' && (
-              <button
-                onClick={() => navigate('/settings')}
-                className="text-sm link"
-              >
-                {t('ui.settings')}
-              </button>
+              <>
+                <button
+                  onClick={() => navigate('/admin/dashboard')}
+                  className="text-sm link"
+                  title="Go to Admin Dashboard"
+                >
+                  📊 Dashboard
+                </button>
+                <button
+                  onClick={() => navigate('/settings')}
+                  className="text-sm link"
+                >
+                  {t('ui.settings')}
+                </button>
+              </>
             )}
             <button
               onClick={handleLogout}
