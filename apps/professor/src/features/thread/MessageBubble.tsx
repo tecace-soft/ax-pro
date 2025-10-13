@@ -143,8 +143,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               <References citations={message.citations} />
             )}
 
-            {/* Feedback Bar */}
-            <FeedbackBar messageId={message.id} />
+            {/* Feedback Bar - Only show for real messages (not simulated) */}
+            {!message.id.startsWith('sim_') && !message.id.startsWith('user-') && !message.id.startsWith('assistant-') && !message.id.startsWith('error-') && (
+              <FeedbackBar messageId={message.id} />
+            )}
           </div>
         )}
       </div>
