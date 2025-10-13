@@ -148,7 +148,7 @@ export const settingsService = {
     const defaultCustomization: UICustomization = {
       chatTitle: 'Chat Interface',
       chatSubtitle: 'Select a conversation from the sidebar or start a new chat',
-      avatarUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIyMCIgZmlsbD0iIzZCNzI4MCIvPjxwYXRoIGQ9Ik0yMCAxMkM4IDEyIDggMjggOCAyOEMxMiAyNCAxNiAyMiAyMCAyMkMyNCAyMiAyOCAyNCAzMiAyOEMzMiAyOCAzMiAxMiAyMCAxMloiIGZpbGw9IiNGRkZGRkYiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjE4IiByPSI2IiBmaWxsPSIjRkZGRkZGIi8+PC9zdmc+',
+      avatarUrl: '/default-profile-avatar.png',
       suggestedQuestions: {
         question1: 'What is artificial intelligence?',
         question2: 'How does machine learning work?',
