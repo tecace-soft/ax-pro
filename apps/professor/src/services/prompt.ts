@@ -1,39 +1,53 @@
+import { createClient } from '@supabase/supabase-js';
 import { getSupabaseConfig } from './supabase';
 
-interface PromptResponse {
-  content: string;
+interface Prompt {
+  id?: number;
+  prompt_text: string;
+  created_at?: string;
 }
 
 /**
- * Fetch system prompt from Supabase
+ * Get Supabase client instance
+ */
+function getSupabaseClient() {
+  const config = getSupabaseConfig();
+  
+  if (!config.url || !config.anonKey) {
+    throw new Error('Supabase configuration not set. Please configure in Settings > Database.');
+  }
+
+  return createClient(config.url, config.anonKey);
+}
+
+/**
+ * Fetch the latest system prompt from Supabase
  */
 export async function fetchSystemPrompt(): Promise<string> {
   try {
-    const config = getSupabaseConfig();
+    const supabase = getSupabaseClient();
     
-    if (!config.url || !config.anonKey) {
-      throw new Error('Supabase configuration not set. Please configure in Settings.');
+    console.log('Fetching latest prompt from Supabase...');
+    
+    const { data, error } = await supabase
+      .from('prompts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to fetch prompt: ${error.message}`);
     }
 
-    console.log('Fetching system prompt from Supabase...');
-    const response = await fetch(`${config.url}/rest/v1/rpc/get_system_prompt`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': config.anonKey,
-        'Authorization': `Bearer ${config.anonKey}`
-      }
-    });
-
-    console.log('Response status:', response.status);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch system prompt: ${response.status} ${response.statusText}`);
+    if (!data || data.length === 0) {
+      console.log('No prompts found in database');
+      return '';
     }
 
-    const data: PromptResponse = await response.json();
-    console.log('System prompt fetched successfully');
-    return data.content || '';
+    const latestPrompt = data[0] as Prompt;
+    console.log('✅ Latest prompt fetched:', latestPrompt.id);
+    return latestPrompt.prompt_text || '';
   } catch (error) {
     console.error('Failed to fetch system prompt:', error);
     throw error;
@@ -41,34 +55,26 @@ export async function fetchSystemPrompt(): Promise<string> {
 }
 
 /**
- * Update system prompt in Supabase
+ * Create/Insert a new system prompt in Supabase
  */
-export async function updateSystemPrompt(content: string): Promise<void> {
+export async function updateSystemPrompt(promptText: string): Promise<void> {
   try {
-    const config = getSupabaseConfig();
+    const supabase = getSupabaseClient();
     
-    if (!config.url || !config.anonKey) {
-      throw new Error('Supabase configuration not set. Please configure in Settings.');
+    console.log('💾 Creating new prompt in Supabase...');
+    
+    const { data, error } = await supabase
+      .from('prompts')
+      .insert([{ prompt_text: promptText }])
+      .select();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to create prompt: ${error.message}`);
     }
 
-    console.log('Updating system prompt...');
-    const response = await fetch(`${config.url}/rest/v1/rpc/update_system_prompt`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': config.anonKey,
-        'Authorization': `Bearer ${config.anonKey}`
-      },
-      body: JSON.stringify({ new_content: content })
-    });
-
-    console.log('Update response status:', response.status);
-
-    if (!response.ok) {
-      throw new Error(`Failed to update system prompt: ${response.status} ${response.statusText}`);
-    }
-
-    console.log('System prompt updated successfully');
+    const newPrompt = data[0] as Prompt;
+    console.log('✅ New prompt created:', newPrompt.id);
   } catch (error) {
     console.error('Failed to update system prompt:', error);
     throw error;

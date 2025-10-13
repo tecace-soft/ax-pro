@@ -4,8 +4,8 @@ const SUPABASE_URL_KEY = 'axpro_supabase_url';
 const SUPABASE_ANON_KEY_KEY = 'axpro_supabase_anon_key';
 
 // Default values (can be overridden in settings)
-const DEFAULT_SUPABASE_URL = '';
-const DEFAULT_SUPABASE_ANON_KEY = '';
+const DEFAULT_SUPABASE_URL = 'https://qpyteahuynkgkbmdasbv.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFweXRlYWh1eW5rZ2tibWRhc2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5NDk2NTcsImV4cCI6MjA3NTUyNTY1N30.qvp5ox6Xm0wYcZK89S2MYVu18fqyfYmT8nercIFMKOY';
 
 export interface SupabaseConfig {
   url: string;
@@ -48,9 +48,9 @@ export const testSupabaseConnection = async (config: SupabaseConfig): Promise<bo
       return false;
     }
 
-    // Try to fetch the system prompt as a connection test
-    const response = await fetch(`${config.url}/rest/v1/rpc/get_system_prompt`, {
-      method: 'POST',
+    // Try to query the prompts table as a connection test
+    const response = await fetch(`${config.url}/rest/v1/prompts?select=id&limit=1`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'apikey': config.anonKey,
@@ -58,6 +58,7 @@ export const testSupabaseConnection = async (config: SupabaseConfig): Promise<bo
       }
     });
 
+    console.log('Supabase connection test response:', response.status);
     return response.ok;
   } catch (error) {
     console.error('Supabase connection test failed:', error);
