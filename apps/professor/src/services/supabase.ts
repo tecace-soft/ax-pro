@@ -69,14 +69,12 @@ export const testSupabaseConnection = async (config: SupabaseConfig): Promise<bo
 // Type definitions for database tables
 export interface ChatData {
   id?: number;
-  request_id: string;
-  session_id: string;
-  input_text: string;
-  output_text: string;
+  chat_message: string;  // User's input message
+  response: string;      // Bot's response
+  user_id: string;       // User identifier
   admin_feedback?: AdminFeedbackData | null;
   user_feedback?: any | null;
   created_at?: string;
-  updated_at?: string;
 }
 
 export interface AdminFeedbackData {

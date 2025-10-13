@@ -24,7 +24,13 @@ export default function RecentConversations() {
       setConversations(data)
     } catch (error) {
       console.error('Failed to load conversations:', error)
-      setError(error instanceof Error ? error.message : 'Failed to load conversations')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load conversations'
+      // Check if it's a table access error
+      if (errorMessage.includes('Could not find the table') || errorMessage.includes('PGRST')) {
+        setError('Database table not accessible. Please check:\n1. Table "chat" exists in Supabase\n2. Row Level Security (RLS) policies allow SELECT\n3. Supabase URL and key are correct')
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -72,7 +78,19 @@ export default function RecentConversations() {
       <div className="admin-card">
         <div className="p-4" style={{ color: 'var(--admin-danger)' }}>
           <p className="font-semibold mb-2">{t('admin.error')}</p>
-          <p className="text-sm">{error}</p>
+          <p className="text-sm whitespace-pre-line mb-3">{error}</p>
+          {error.includes('Row Level Security') && (
+            <div className="mt-3 p-3 rounded text-xs" style={{ backgroundColor: 'rgba(0,0,0,0.2)', color: 'var(--admin-text-muted)' }}>
+              <p className="font-semibold mb-2">To fix RLS in Supabase:</p>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>Go to Supabase Dashboard → Table Editor</li>
+                <li>Select "chat" table</li>
+                <li>Click "RLS" tab</li>
+                <li>Add policy: "Enable read access for all users"</li>
+                <li>Policy command: <code>SELECT</code>, Target roles: <code>anon</code></li>
+              </ol>
+            </div>
+          )}
           <button 
             onClick={loadConversations}
             className="mt-3 px-4 py-2 rounded-md text-sm"
@@ -112,7 +130,7 @@ export default function RecentConversations() {
         <div className="space-y-3">
           {conversations.slice(0, 10).map((conversation) => (
             <div 
-              key={conversation.id || conversation.request_id}
+              key={conversation.id}
               className="p-4 rounded-lg border"
               style={{
                 backgroundColor: 'rgba(9, 14, 34, 0.4)',
@@ -122,7 +140,7 @@ export default function RecentConversations() {
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <p className="text-xs mb-1" style={{ color: 'var(--admin-text-muted)' }}>
-                    Session: {conversation.session_id}
+                    User: {conversation.user_id}
                   </p>
                   <p className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
                     {formatDate(conversation.created_at)}
@@ -133,19 +151,19 @@ export default function RecentConversations() {
               <div className="space-y-2">
                 <div>
                   <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-primary)' }}>
-                    User:
+                    User Message:
                   </p>
                   <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
-                    {truncateText(conversation.input_text)}
+                    {truncateText(conversation.chat_message)}
                   </p>
                 </div>
                 
                 <div>
                   <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-accent)' }}>
-                    AI:
+                    AI Response:
                   </p>
                   <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
-                    {truncateText(conversation.output_text)}
+                    {truncateText(conversation.response)}
                   </p>
                 </div>
               </div>

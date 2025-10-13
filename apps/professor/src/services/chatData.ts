@@ -21,7 +21,7 @@ export async function fetchAllChatData(limit: number = 100): Promise<ChatData[]>
     console.log('Fetching chat data from Supabase...');
     
     const { data, error } = await supabase
-      .from('chat_data')
+      .from('chat')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -47,7 +47,7 @@ export async function fetchChatDataBySession(sessionId: string): Promise<ChatDat
     const supabase = getSupabaseClient();
     
     const { data, error } = await supabase
-      .from('chat_data')
+      .from('chat')
       .select('*')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true });
@@ -72,7 +72,7 @@ export async function fetchChatDataByDateRange(startDate: string, endDate: strin
     const supabase = getSupabaseClient();
     
     const { data, error } = await supabase
-      .from('chat_data')
+      .from('chat')
       .select('*')
       .gte('created_at', startDate)
       .lte('created_at', endDate)
@@ -98,7 +98,7 @@ export async function getChatData(requestId: string): Promise<ChatData | null> {
     const supabase = getSupabaseClient();
     
     const { data, error } = await supabase
-      .from('chat_data')
+      .from('chat')
       .select('*')
       .eq('request_id', requestId)
       .single();
