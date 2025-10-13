@@ -53,11 +53,10 @@ export default function UserFeedbackList() {
   }
 
   const getReactionIcon = (reaction: string) => {
-    const normalizedReaction = reaction.toLowerCase()
-    if (normalizedReaction.includes('👍') || normalizedReaction.includes('like') || normalizedReaction.includes('positive')) {
+    if (reaction === 'good') {
       return <IconThumbsUp size={16} style={{ color: 'var(--admin-success)' }} />
     }
-    if (normalizedReaction.includes('👎') || normalizedReaction.includes('dislike') || normalizedReaction.includes('negative')) {
+    if (reaction === 'bad') {
       return <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)' }} />
     }
     return <span className="text-xs">{reaction}</span>
@@ -124,7 +123,7 @@ export default function UserFeedbackList() {
         <div className="space-y-3">
           {feedbacks.slice(0, 10).map((feedback) => (
             <div 
-              key={feedback.id || feedback.request_id}
+              key={feedback.id}
               className="p-4 rounded-lg border"
               style={{
                 backgroundColor: 'rgba(9, 14, 34, 0.4)',
@@ -135,7 +134,7 @@ export default function UserFeedbackList() {
                 <div className="flex items-center gap-2">
                   {getReactionIcon(feedback.reaction)}
                   <span className="text-sm font-medium" style={{ color: 'var(--admin-text)' }}>
-                    {feedback.user_name || 'Anonymous'}
+                    User: {feedback.user_id}
                   </span>
                 </div>
                 <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
@@ -143,21 +142,14 @@ export default function UserFeedbackList() {
                 </span>
               </div>
               
+              <p className="text-xs mb-2" style={{ color: 'var(--admin-text-muted)' }}>
+                Chat ID: {feedback.chat_id}
+              </p>
+              
               {feedback.feedback_text && (
-                <p className="text-sm mb-2" style={{ color: 'var(--admin-text)' }}>
+                <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
                   {truncateText(feedback.feedback_text)}
                 </p>
-              )}
-              
-              {feedback.chat_message && (
-                <div className="mt-2 p-2 rounded" style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
-                  <p className="text-xs mb-1" style={{ color: 'var(--admin-text-muted)' }}>
-                    User message:
-                  </p>
-                  <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
-                    {truncateText(feedback.chat_message, 100)}
-                  </p>
-                </div>
               )}
             </div>
           ))}

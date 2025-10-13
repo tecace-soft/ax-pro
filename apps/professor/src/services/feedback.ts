@@ -94,14 +94,14 @@ export async function fetchUserFeedbackByDateRange(startDate: string, endDate: s
 /**
  * Fetch admin feedback for a specific request
  */
-export async function getAdminFeedback(requestId: string): Promise<AdminFeedbackData | null> {
+export async function getAdminFeedback(chatId: string): Promise<AdminFeedbackData | null> {
   try {
     const supabase = getSupabaseClient();
     
     const { data, error } = await supabase
       .from('admin_feedback')
       .select('*')
-      .eq('request_id', requestId)
+      .eq('chat_id', chatId)
       .single();
 
     if (error) {
@@ -115,6 +115,46 @@ export async function getAdminFeedback(requestId: string): Promise<AdminFeedback
     return data;
   } catch (error) {
     console.error('Error fetching admin feedback:', error);
+    throw error;
+  }
+}
+
+/**
+ * Submit user feedback for a chat message
+ */
+export async function submitUserFeedback(
+  chatId: string,
+  userId: string,
+  reaction: 'good' | 'bad',
+  feedbackText?: string
+): Promise<UserFeedbackData> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log('Submitting user feedback:', { chatId, userId, reaction, feedbackText });
+    
+    const feedbackData = {
+      chat_id: chatId,
+      user_id: userId,
+      reaction,
+      feedback_text: feedbackText || null
+    };
+
+    const { data, error } = await supabase
+      .from('user_feedback')
+      .insert([feedbackData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to submit user feedback: ${error.message}`);
+    }
+
+    console.log('✅ User feedback submitted:', data);
+    return data as UserFeedbackData;
+  } catch (error) {
+    console.error('Failed to submit user feedback:', error);
     throw error;
   }
 }

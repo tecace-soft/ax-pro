@@ -79,27 +79,20 @@ export interface ChatData {
 
 export interface AdminFeedbackData {
   id?: number;
-  request_id: string;
+  chat_id: string;  // Links to chat table
+  updated_at?: string;  // When admin reviewed
   feedback_verdict: 'good' | 'bad';
   feedback_text: string;
   corrected_response?: string | null;
-  prompt_apply?: boolean;
   created_at?: string;
-  updated_at?: string;
 }
 
 export interface UserFeedbackData {
   id?: number;
-  request_id: string;
-  timestamp: string;
-  user_name: string;
+  chat_id: string;  // Links to chat table
   user_id: string;
-  conversation_id: string;
-  reaction: string;
-  feedback_text?: string | null;
-  raw_data: any;
+  reaction: 'good' | 'bad';  // good (thumbs up) or bad (thumbs down)
+  feedback_text?: string | null;  // Optional text feedback
   created_at?: string;
-  chat_message?: string | null;
-  chat_response?: string | null;
 }
 

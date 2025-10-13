@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { chatService, ChatMessage } from '../../services/chat';
 import { isBackendAvailable } from '../../services/devMode';
+import { submitUserFeedback } from '../../services/feedback';
+import { getSession } from '../../services/auth';
 
 export const useThread = (sessionId: string) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -187,11 +189,46 @@ export const useThread = (sessionId: string) => {
     }
   }, [sessionId, messages]);
 
+  const submitFeedback = useCallback(async (
+    messageId: string,
+    rating: 1 | -1,
+    feedbackText?: string
+  ) => {
+    try {
+      const session = getSession();
+      if (!session || !session.userId) {
+        console.error('No user session found');
+        throw new Error('Please log in to submit feedback');
+      }
+
+      // Find the message to get its chatId (if available from n8n response)
+      const message = messages.find(msg => msg.id === messageId);
+      if (!message) {
+        console.error('Message not found:', messageId);
+        throw new Error('Message not found');
+      }
+
+      // Use the messageId as chatId (this should be the chatId from n8n response)
+      const chatId = messageId;
+      const reaction = rating === 1 ? 'good' : 'bad';
+
+      console.log('Submitting feedback:', { chatId, userId: session.userId, reaction, feedbackText });
+
+      await submitUserFeedback(chatId, session.userId, reaction, feedbackText);
+
+      console.log('✅ Feedback submitted successfully');
+    } catch (error) {
+      console.error('Failed to submit feedback:', error);
+      throw error;
+    }
+  }, [messages]);
+
   return {
     messages,
     loading,
     sending,
     error,
-    sendMessage
+    sendMessage,
+    submitFeedback
   };
 };
