@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { ChatMessage } from '../../services/chat';
 import References from './References';
 import FeedbackBar from './FeedbackBar';
+import { useUICustomization } from '../../hooks/useUICustomization';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -11,6 +12,7 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const [showReferences, setShowReferences] = useState(false);
+  const { customization } = useUICustomization();
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
 
@@ -22,7 +24,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   };
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} gap-3`}>
+      {/* Avatar for assistant */}
+      {isAssistant && (
+        <div className="flex-shrink-0">
+          <img 
+            src={customization.avatarUrl} 
+            alt="Assistant" 
+            className="w-8 h-8 rounded-full"
+            style={{ objectFit: 'cover' }}
+          />
+        </div>
+      )}
+      
       <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${isUser ? 'order-2' : 'order-1'}`}>
         {/* Message Content */}
         <div

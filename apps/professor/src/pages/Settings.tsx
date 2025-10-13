@@ -722,6 +722,41 @@ const Settings: React.FC = () => {
                   </p>
                 </div>
 
+                {/* Avatar URL */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                    Chatbot Avatar URL
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0">
+                      <img 
+                        src={customization.avatarUrl} 
+                        alt="Avatar Preview" 
+                        className="w-12 h-12 rounded-full border-2"
+                        style={{ 
+                          borderColor: 'var(--border)',
+                          objectFit: 'cover'
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIyMCIgZmlsbD0iIzZCNzI4MCIvPjxwYXRoIGQ9Ik0yMCAxMkM4IDEyIDggMjggOCAyOEMxMiAyNCAxNiAyMiAyMCAyMkMyNCAyMiAyOCAyNCAzMiAyOEMzMiAyOCAzMiAxMiAyMCAxMloiIGZpbGw9IiNGRkZGRkYiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjE4IiByPSI2IiBmaWxsPSIjRkZGRkZGIi8+PC9zdmc+';
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={customization.avatarUrl}
+                        onChange={(e) => updateCustomization({ avatarUrl: e.target.value })}
+                        className="input w-full px-3 py-2 rounded-md"
+                        placeholder="https://example.com/avatar.png or data:image/svg+xml;base64,..."
+                      />
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                        Enter an image URL or data URI. This avatar appears next to assistant messages.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Suggested Questions */}
                 <div>
                   <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>

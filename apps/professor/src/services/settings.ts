@@ -16,6 +16,7 @@ export interface ApiConfig {
 export interface UICustomization {
   chatTitle: string;
   chatSubtitle: string;
+  avatarUrl: string;
   suggestedQuestions: {
     question1: string;
     question2: string;
@@ -144,33 +145,28 @@ export const settingsService = {
 
   // UI Customization methods
   getUICustomization(): UICustomization {
+    const defaultCustomization: UICustomization = {
+      chatTitle: 'Chat Interface',
+      chatSubtitle: 'Select a conversation from the sidebar or start a new chat',
+      avatarUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIyMCIgZmlsbD0iIzZCNzI4MCIvPjxwYXRoIGQ9Ik0yMCAxMkM4IDEyIDggMjggOCAyOEMxMiAyNCAxNiAyMiAyMCAyMkMyNCAyMiAyOCAyNCAzMiAyOEMzMiAyOCAzMiAxMiAyMCAxMloiIGZpbGw9IiNGRkZGRkYiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjE4IiByPSI2IiBmaWxsPSIjRkZGRkZGIi8+PC9zdmc+',
+      suggestedQuestions: {
+        question1: 'What is artificial intelligence?',
+        question2: 'How does machine learning work?',
+        question3: 'Explain quantum computing',
+        question4: 'What are the benefits of cloud computing?'
+      }
+    };
+
     try {
       const stored = localStorage.getItem(UI_CUSTOMIZATION_KEY);
       if (!stored) {
-        // Return default values
-        return {
-          chatTitle: 'Chat Interface',
-          chatSubtitle: 'Select a conversation from the sidebar or start a new chat',
-          suggestedQuestions: {
-            question1: 'What is artificial intelligence?',
-            question2: 'How does machine learning work?',
-            question3: 'Explain quantum computing',
-            question4: 'What are the benefits of cloud computing?'
-          }
-        };
+        return defaultCustomization;
       }
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      // Merge with defaults to handle missing fields
+      return { ...defaultCustomization, ...parsed };
     } catch {
-      return {
-        chatTitle: 'Chat Interface',
-        chatSubtitle: 'Select a conversation from the sidebar or start a new chat',
-        suggestedQuestions: {
-          question1: 'What is artificial intelligence?',
-          question2: 'How does machine learning work?',
-          question3: 'Explain quantum computing',
-          question4: 'What are the benefits of cloud computing?'
-        }
-      };
+      return defaultCustomization;
     }
   },
 
