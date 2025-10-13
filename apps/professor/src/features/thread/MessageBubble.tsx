@@ -15,6 +15,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const { customization } = useUICustomization();
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
+  const isSimulated = message.id.startsWith('sim_') || message.id.startsWith('assistant-') || message.id.startsWith('error-');
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString([], { 
@@ -114,9 +115,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           </div>
         </div>
 
-        {/* Timestamp */}
-        <div className={`text-xs mt-1 ${isUser ? 'text-right' : 'text-left'}`} style={{ color: 'var(--text-muted)' }}>
-          {formatTime(message.createdAt)}
+        {/* Timestamp and Simulation Badge */}
+        <div className={`flex items-center gap-2 mt-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            {formatTime(message.createdAt)}
+          </div>
+          {isSimulated && isAssistant && (
+            <div 
+              className="text-xs px-2 py-0.5 rounded"
+              style={{ 
+                backgroundColor: 'var(--warning-bg, rgba(255, 193, 7, 0.1))',
+                color: 'var(--warning-text, #ff9800)',
+                border: '1px solid var(--warning-border, rgba(255, 152, 0, 0.3))',
+                fontSize: '10px',
+                fontWeight: '500'
+              }}
+            >
+              SIMULATION MODE
+            </div>
+          )}
         </div>
 
         {/* Assistant-specific features */}
