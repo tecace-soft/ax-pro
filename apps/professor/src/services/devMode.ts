@@ -1,8 +1,14 @@
 // Development mode utilities
 export const isBackendAvailable = async (): Promise<boolean> => {
-  // For now, always return false since we don't have a real backend
-  // This forces the app to use simulation mode
-  console.log('Backend check: Forcing simulation mode (no real backend available)');
+  // Check if n8n webhook is configured
+  const n8nWebhook = localStorage.getItem('axpro_n8n_webhook_url');
+  
+  if (n8nWebhook && n8nWebhook.trim()) {
+    console.log('Backend check: n8n webhook configured, using real backend');
+    return true;
+  }
+  
+  console.log('Backend check: No n8n webhook configured, using simulation mode');
   return false;
 };
 
