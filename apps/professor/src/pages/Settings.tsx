@@ -13,6 +13,7 @@ import {
 import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
 import { useUICustomization } from '../hooks/useUICustomization';
+import { getSupabaseConfig, saveSupabaseConfig, testSupabaseConnection, SupabaseConfig } from '../services/supabase';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ const Settings: React.FC = () => {
   const { language, setLanguage, t } = useTranslation();
   const [configs, setConfigs] = useState<ApiConfig[]>([]);
   const [n8nConfigs, setN8nConfigs] = useState<N8nConfig[]>([]);
-  const [activeTab, setActiveTab] = useState<'api' | 'n8n' | 'ui'>('api');
+  const [activeTab, setActiveTab] = useState<'api' | 'n8n' | 'ui' | 'supabase'>('api');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState<ApiConfig | null>(null);
   const [editingN8nConfig, setEditingN8nConfig] = useState<N8nConfig | null>(null);
@@ -41,10 +42,24 @@ const Settings: React.FC = () => {
     webhookUrl: ''
   });
 
+  const [supabaseConfig, setSupabaseConfig] = useState<SupabaseConfig>({
+    url: '',
+    anonKey: ''
+  });
+
+  const [testingSupabase, setTestingSupabase] = useState(false);
+  const [supabaseTestResult, setSupabaseTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
   useEffect(() => {
     loadConfigs();
     loadN8nConfigs();
+    loadSupabaseConfig();
   }, []);
+
+  const loadSupabaseConfig = () => {
+    const config = getSupabaseConfig();
+    setSupabaseConfig(config);
+  };
 
   const loadConfigs = () => {
     const loadedConfigs = settingsService.getConfigs();
@@ -264,6 +279,20 @@ const Settings: React.FC = () => {
               }}
             >
               UI Customization
+            </button>
+            <button
+              onClick={() => setActiveTab('supabase')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'supabase'
+                  ? 'border-gray-800 text-gray-800'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              style={{ 
+                color: activeTab === 'supabase' ? 'var(--primary)' : 'var(--text-secondary)',
+                borderBottomColor: activeTab === 'supabase' ? 'var(--primary)' : 'transparent'
+              }}
+            >
+              Supabase
             </button>
           </nav>
         </div>
@@ -925,6 +954,103 @@ const Settings: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Supabase Configuration Tab */}
+        {activeTab === 'supabase' && (
+          <div className="card p-6 rounded-lg">
+            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
+              Supabase Configuration
+            </h2>
+            <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+              Configure your Supabase connection for prompt management and data storage.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                  Supabase URL
+                </label>
+                <input
+                  type="text"
+                  value={supabaseConfig.url}
+                  onChange={(e) => setSupabaseConfig({ ...supabaseConfig, url: e.target.value })}
+                  className="input w-full px-3 py-2 rounded-md"
+                  placeholder="https://your-project.supabase.co"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                  Supabase Anon Key
+                </label>
+                <input
+                  type="password"
+                  value={supabaseConfig.anonKey}
+                  onChange={(e) => setSupabaseConfig({ ...supabaseConfig, anonKey: e.target.value })}
+                  className="input w-full px-3 py-2 rounded-md"
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                />
+              </div>
+
+              {supabaseTestResult && (
+                <div 
+                  className="p-3 rounded-md"
+                  style={{
+                    backgroundColor: supabaseTestResult.success ? 'var(--success-light)' : 'var(--danger-light)',
+                    color: supabaseTestResult.success ? 'var(--success)' : 'var(--danger)'
+                  }}
+                >
+                  {supabaseTestResult.message}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setTestingSupabase(true);
+                    setSupabaseTestResult(null);
+                    try {
+                      const success = await testSupabaseConnection(supabaseConfig);
+                      setSupabaseTestResult({
+                        success,
+                        message: success 
+                          ? 'Connection successful!' 
+                          : 'Connection failed. Please check your credentials.'
+                      });
+                    } catch (error) {
+                      setSupabaseTestResult({
+                        success: false,
+                        message: 'Connection test failed: ' + (error instanceof Error ? error.message : 'Unknown error')
+                      });
+                    } finally {
+                      setTestingSupabase(false);
+                    }
+                  }}
+                  disabled={testingSupabase || !supabaseConfig.url || !supabaseConfig.anonKey}
+                  className="btn-ghost px-4 py-2 rounded-md"
+                >
+                  {testingSupabase ? 'Testing...' : 'Test Connection'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    saveSupabaseConfig(supabaseConfig);
+                    setSupabaseTestResult({
+                      success: true,
+                      message: 'Configuration saved successfully!'
+                    });
+                  }}
+                  disabled={!supabaseConfig.url || !supabaseConfig.anonKey}
+                  className="btn-primary px-4 py-2 rounded-md"
+                >
+                  Save Configuration
+                </button>
               </div>
             </div>
           </div>

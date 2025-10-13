@@ -4,6 +4,7 @@ import AdminHeader from '../../components/admin/Header'
 import AdminSidebar from '../../components/admin/Sidebar'
 import PerformanceRadar from '../../components/admin/PerformanceRadar'
 import DailyMessageActivity from '../../components/admin/DailyMessageActivity'
+import PromptControl from '../../components/admin/PromptControl'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 
@@ -145,11 +146,7 @@ export default function AdminDashboard() {
 
               <div id="prompt-control" className="content-section">
                 <h2 className="section-title">Prompt Control</h2>
-                <div className="admin-card">
-                  <p style={{ color: 'var(--admin-text-muted)' }}>
-                    Prompt management interface will be displayed here.
-                  </p>
-                </div>
+                <PromptControl />
               </div>
             </div>
           </main>
