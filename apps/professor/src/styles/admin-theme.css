@@ -1,9 +1,12 @@
-:root {
+/* Dark theme (default) */
+:root,
+[data-theme="dark"] {
   --admin-bg: #0b1226;
   --admin-bg-elevated: #0f1734;
   --admin-bg-card: #121b3d;
   --admin-text: #d3dcff;
   --admin-text-muted: #9aa7cc;
+  --admin-text-secondary: #8895b8;
   --admin-primary: #29c3ff;
   --admin-primary-600: #1aa7df;
   --admin-accent: #7c8cff;
@@ -12,22 +15,57 @@
   --admin-danger: #ef4444;
   --admin-ring: #3be6ff;
   --admin-card-shadow: 0 8px 30px rgba(3, 8, 28, 0.65), 0 0 0 1px rgba(59, 230, 255, 0.04);
+  --admin-border: rgba(59, 230, 255, 0.06);
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --admin-bg: #f8fafc;
+  --admin-bg-elevated: #ffffff;
+  --admin-bg-card: #ffffff;
+  --admin-text: #1e293b;
+  --admin-text-muted: #64748b;
+  --admin-text-secondary: #475569;
+  --admin-primary: #0ea5e9;
+  --admin-primary-600: #0284c7;
+  --admin-accent: #6366f1;
+  --admin-success: #22c55e;
+  --admin-warning: #f59e0b;
+  --admin-danger: #ef4444;
+  --admin-ring: #0ea5e9;
+  --admin-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --admin-border: rgba(0, 0, 0, 0.1);
 }
 
 .admin-layout {
   min-height: 100vh;
-  background: radial-gradient(1200px 600px at 70% -10%, rgba(41,195,255,0.18), transparent 60%),
-    radial-gradient(900px 500px at 10% 0%, rgba(124,140,255,0.15), transparent 55%),
-    linear-gradient(180deg, #0c1330 0%, #0a1026 60%, #080e20 100%);
+  background: var(--admin-bg);
   color: var(--admin-text);
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
+/* Dark theme background gradient */
+[data-theme="dark"] .admin-layout {
+  background: radial-gradient(1200px 600px at 70% -10%, rgba(41,195,255,0.18), transparent 60%),
+    radial-gradient(900px 500px at 10% 0%, rgba(124,140,255,0.15), transparent 55%),
+    linear-gradient(180deg, #0c1330 0%, #0a1026 60%, #080e20 100%);
+}
+
+/* Light theme background */
+[data-theme="light"] .admin-layout {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
 .admin-card {
-  background: linear-gradient(180deg, rgba(18,27,61,0.9), rgba(13,20,44,0.9));
-  border: 1px solid rgba(59, 230, 255, 0.06);
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
   border-radius: 14px;
   box-shadow: var(--admin-card-shadow);
   padding: 20px;
+}
+
+/* Dark theme card gradient */
+[data-theme="dark"] .admin-card {
+  background: linear-gradient(180deg, rgba(18,27,61,0.9), rgba(13,20,44,0.9));
 }
 

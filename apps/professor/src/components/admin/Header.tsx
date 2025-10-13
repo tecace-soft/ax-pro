@@ -1,5 +1,7 @@
-import { IconBell, IconMoon, IconUser, IconLogout, IconMessage } from '../../ui/icons'
+import { IconBell, IconMoon, IconSun, IconUser, IconLogout, IconMessage } from '../../ui/icons'
 import { useNavigate } from 'react-router-dom'
+import { useTheme } from '../../theme/ThemeProvider'
+import { useTranslation } from '../../i18n/I18nProvider'
 
 interface HeaderProps {
   performanceScore: number
@@ -10,6 +12,8 @@ interface HeaderProps {
 
 export default function AdminHeader({ performanceScore, performanceDate, currentTime, onSignOut }: HeaderProps) {
   const navigate = useNavigate()
+  const { theme, toggleTheme } = useTheme()
+  const { language, setLanguage } = useTranslation()
   
   const getPerformanceLabel = (score: number) => {
     if (score >= 90) return 'Excellent'
@@ -56,9 +60,31 @@ export default function AdminHeader({ performanceScore, performanceDate, current
           <button className="icon-btn" aria-label="Notifications">
             <IconBell size={18} />
           </button>
-          <button className="icon-btn" aria-label="Toggle theme">
-            <IconMoon size={18} />
+          <button 
+            className="icon-btn" 
+            aria-label="Toggle theme"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+          >
+            {theme === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />}
           </button>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
+            className="language-select"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--admin-border)',
+              borderRadius: '8px',
+              padding: '6px 10px',
+              color: 'var(--admin-text)',
+              fontSize: '13px',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="en">EN</option>
+            <option value="ko">KO</option>
+          </select>
           <button className="icon-btn" aria-label="User profile">
             <IconUser size={18} />
           </button>

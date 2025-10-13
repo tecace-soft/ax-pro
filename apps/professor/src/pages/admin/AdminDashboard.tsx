@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTheme } from '../../theme/ThemeProvider'
+import { useTranslation } from '../../i18n/I18nProvider'
 import AdminHeader from '../../components/admin/Header'
 import AdminSidebar from '../../components/admin/Sidebar'
 import PerformanceRadar from '../../components/admin/PerformanceRadar'
@@ -18,6 +20,8 @@ function formatDate(d: Date): string {
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { theme } = useTheme()
+  const { t } = useTranslation()
   
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [startDate, setStartDate] = useState<string>('')
@@ -87,7 +91,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="admin-layout">
+    <div className="admin-layout" data-theme={theme}>
       <div className="dashboard-layout">
         <AdminHeader 
           performanceScore={overallScore} 

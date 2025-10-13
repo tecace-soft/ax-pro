@@ -3,7 +3,8 @@ import {
 	LogOut, 
 	X, 
 	Bell, 
-	Moon, 
+	Moon,
+	Sun, 
 	User, 
 	Search, 
 	BarChart3, 
@@ -48,6 +49,7 @@ export const IconLogout = LogOut
 export const IconX = X
 export const IconBell = Bell
 export const IconMoon = Moon
+export const IconSun = Sun
 export const IconUser = User
 export const IconSearch = Search
 export const IconBarChart = BarChart3
