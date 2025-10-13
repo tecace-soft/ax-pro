@@ -206,6 +206,15 @@ const ChatShell: React.FC = () => {
               backgroundColor: 'var(--bg)'
             }}>
               <div className="flex items-center space-x-3">
+                <img 
+                  src={customization.avatarUrl} 
+                  alt="Chatbot Avatar" 
+                  className="w-10 h-10 rounded-full flex-shrink-0"
+                  style={{ objectFit: 'cover' }}
+                  onError={(e) => {
+                    e.currentTarget.src = '/default-profile-avatar.png';
+                  }}
+                />
                 <h2 className="text-lg font-medium" style={{ color: 'var(--text)' }}>
                   {currentSession?.title || t('ui.newChatTitle')}
                 </h2>
