@@ -9,26 +9,25 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
   const { submitFeedback } = useThread(messageId);
   const [rating, setRating] = useState<1 | -1 | null>(null);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [currentRating, setCurrentRating] = useState<1 | -1 | null>(null);
   const [note, setNote] = useState('');
 
-  const handleRating = async (newRating: 1 | -1) => {
-    try {
-      await submitFeedback(messageId, newRating, note || undefined);
-      setRating(newRating);
-      if (newRating === -1) {
-        setShowNoteModal(true);
-      }
-    } catch (error) {
-      console.error('Failed to submit feedback:', error);
-    }
+  const handleRating = (newRating: 1 | -1) => {
+    setCurrentRating(newRating);
+    setShowNoteModal(true);
+    setNote(''); // Reset note
   };
 
   const handleNoteSubmit = async () => {
+    if (currentRating === null) return;
+    
     try {
-      await submitFeedback(messageId, -1, note);
+      await submitFeedback(messageId, currentRating, note || undefined);
+      setRating(currentRating);
       setShowNoteModal(false);
+      setNote('');
     } catch (error) {
-      console.error('Failed to submit note:', error);
+      console.error('Failed to submit feedback:', error);
     }
   };
 
@@ -71,31 +70,56 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
         </button>
       </div>
 
-      {/* Note Modal */}
+      {/* Feedback Modal */}
       {showNoteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="card p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-medium mb-4" style={{ color: 'var(--text)' }}>
-              What could be improved?
-            </h3>
+          <div className="card p-6 rounded-lg max-w-md w-full mx-4" style={{ backgroundColor: 'var(--card)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>
+                Submit feedback to HR Ax Pro
+              </h3>
+              <button
+                onClick={() => setShowNoteModal(false)}
+                className="p-1 hover:bg-gray-100 rounded"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            
+            <p className="text-sm mb-3" style={{ color: 'var(--text)' }}>
+              What did you like?
+            </p>
+            
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Optional: Share specific feedback..."
-              className="input w-full h-24 resize-none"
+              placeholder="Give as much detail as you can, but don't include any private or sensitive information."
+              className="input w-full h-24 resize-none text-sm"
+              style={{
+                backgroundColor: 'var(--bg)',
+                color: 'var(--text)',
+                borderColor: 'var(--border)',
+                padding: '12px'
+              }}
               autoFocus
             />
-            <div className="flex justify-end space-x-2 mt-4">
-              <button
-                onClick={() => setShowNoteModal(false)}
-                className="px-4 py-2 text-sm border rounded-md"
-                style={{ borderColor: 'var(--border)' }}
-              >
-                Cancel
-              </button>
+            
+            <p className="text-xs mt-2 mb-4" style={{ color: 'var(--text-secondary)' }}>
+              We'll also share the content you're providing feedback on to help improve future responses.
+            </p>
+            
+            <div className="flex justify-end">
               <button
                 onClick={handleNoteSubmit}
-                className="btn-primary px-4 py-2 text-sm"
+                className="px-6 py-2 text-sm font-medium rounded-md"
+                style={{
+                  backgroundColor: 'var(--primary)',
+                  color: 'white'
+                }}
               >
                 Submit
               </button>
