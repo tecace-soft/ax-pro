@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { fetchSystemPrompt, updateSystemPrompt, forcePromptReload } from '../../services/prompt'
 import { IconRefresh } from '../../ui/icons'
+import { useTranslation } from '../../i18n/I18nProvider'
 
 export default function PromptControl() {
+  const { t } = useTranslation()
   const [promptText, setPromptText] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
@@ -114,19 +116,19 @@ export default function PromptControl() {
     <div className="admin-card">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-          System Prompt Control
+          {t('admin.systemPrompt')}
         </h3>
         <div className="flex items-center gap-3">
           {lastRefreshed && (
             <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
-              Last refreshed: {lastRefreshed.toLocaleString()}
+              {t('admin.lastRefreshed')}: {lastRefreshed.toLocaleString()}
             </span>
           )}
           <button 
             className="icon-btn"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            title="Refresh prompt from database"
+            title={t('actions.refresh')}
           >
             <IconRefresh size={18} className={isRefreshing ? 'animate-spin' : ''} />
           </button>
@@ -144,7 +146,7 @@ export default function PromptControl() {
             minHeight: '300px',
             resize: 'vertical'
           }}
-          placeholder={isLoading ? "Loading system prompt..." : "Enter your prompt instructions here..."}
+          placeholder={isLoading ? t('admin.loading') : "Enter your prompt instructions here..."}
           value={promptText}
           onChange={(e) => setPromptText(e.target.value)}
           disabled={isLoading}
@@ -162,7 +164,7 @@ export default function PromptControl() {
             onClick={handleUpdate}
             disabled={isLoading || isUpdating}
           >
-            {isLoading ? 'Loading...' : isUpdating ? 'Saving...' : 'Save Changes'}
+            {isLoading ? t('admin.loading') : isUpdating ? t('admin.saving') : t('admin.saveChanges')}
           </button>
         </div>
       </div>
@@ -178,10 +180,10 @@ export default function PromptControl() {
         >
           <div className="admin-card max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--admin-text)' }}>
-              Confirm Update
+              {t('admin.confirmUpdate')}
             </h3>
             <p className="mb-6" style={{ color: 'var(--admin-text-muted)' }}>
-              This will update the system prompt for the chatbot. Are you sure you would like to proceed?
+              {t('admin.confirmUpdateMessage')}
             </p>
             <div className="flex justify-end gap-3">
               <button 
@@ -193,7 +195,7 @@ export default function PromptControl() {
                 }}
                 onClick={handleCancelUpdate}
               >
-                Cancel
+                {t('admin.cancel')}
               </button>
               <button 
                 className="px-4 py-2 rounded-md"
@@ -203,7 +205,7 @@ export default function PromptControl() {
                 }}
                 onClick={handleConfirmUpdate}
               >
-                Confirm
+                {t('admin.confirm')}
               </button>
             </div>
           </div>
@@ -224,7 +226,7 @@ export default function PromptControl() {
               className="text-lg font-semibold mb-4" 
               style={{ color: responseModal.isSuccess ? 'var(--admin-success)' : 'var(--admin-danger)' }}
             >
-              {responseModal.isSuccess ? 'Success' : 'Error'}
+              {responseModal.isSuccess ? t('admin.success') : t('admin.error')}
             </h3>
             <p className="mb-6" style={{ color: 'var(--admin-text)' }}>
               {responseModal.message}
@@ -238,7 +240,7 @@ export default function PromptControl() {
                 }}
                 onClick={handleCloseResponseModal}
               >
-                Close
+                {t('admin.close')}
               </button>
             </div>
           </div>

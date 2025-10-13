@@ -71,8 +71,11 @@ export default function AdminDashboard() {
   }, [searchParams])
 
   const signOut = () => {
+    // Clear all auth-related storage
     localStorage.removeItem('authToken')
+    localStorage.removeItem('axpro_session')
     sessionStorage.removeItem('axAccess')
+    // Navigate to login page
     navigate('/', { replace: true })
   }
 

@@ -13,13 +13,13 @@ interface HeaderProps {
 export default function AdminHeader({ performanceScore, performanceDate, currentTime, onSignOut }: HeaderProps) {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
-  const { language, setLanguage } = useTranslation()
+  const { language, setLanguage, t } = useTranslation()
   
   const getPerformanceLabel = (score: number) => {
-    if (score >= 90) return 'Excellent'
-    if (score >= 80) return 'Good'
-    if (score >= 70) return 'Fair'
-    return 'Poor'
+    if (score >= 90) return t('admin.excellent')
+    if (score >= 80) return t('admin.good')
+    if (score >= 70) return t('admin.fair')
+    return t('admin.poor')
   }
 
   const handleLogoClick = () => {
@@ -51,20 +51,20 @@ export default function AdminHeader({ performanceScore, performanceDate, current
         <div className="header-actions">
           <button 
             className="icon-btn" 
-            aria-label="Go to Chat"
+            aria-label={t('admin.goToChat')}
             onClick={() => navigate('/chat')}
-            title="Go to Chat Interface"
+            title={t('admin.goToChat')}
           >
             <IconMessage size={18} />
           </button>
-          <button className="icon-btn" aria-label="Notifications">
+          <button className="icon-btn" aria-label={t('admin.notifications')}>
             <IconBell size={18} />
           </button>
           <button 
             className="icon-btn" 
-            aria-label="Toggle theme"
+            aria-label={t('admin.toggleTheme')}
             onClick={toggleTheme}
-            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            title={t('admin.toggleTheme')}
           >
             {theme === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />}
           </button>
@@ -85,14 +85,14 @@ export default function AdminHeader({ performanceScore, performanceDate, current
             <option value="en">EN</option>
             <option value="ko">KO</option>
           </select>
-          <button className="icon-btn" aria-label="User profile">
+          <button className="icon-btn" aria-label={t('admin.userProfile')}>
             <IconUser size={18} />
           </button>
           <button 
             className="icon-btn signout-btn" 
-            aria-label="Sign out" 
+            aria-label={t('admin.signOut')}
             onClick={onSignOut}
-            title="Sign Out"
+            title={t('admin.signOut')}
           >
             <IconLogout size={18} />
           </button>
