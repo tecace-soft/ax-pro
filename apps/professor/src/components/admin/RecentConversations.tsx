@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fetchAllChatData } from '../../services/chatData'
-import { submitAdminFeedback, updateAdminFeedback, getAdminFeedbackByChat } from '../../services/feedback'
+import { submitAdminFeedback, getAdminFeedbackByChat } from '../../services/feedback'
 import { ChatData, AdminFeedbackData } from '../../services/supabase'
 import { useTranslation } from '../../i18n/I18nProvider'
 import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
@@ -125,23 +125,13 @@ export default function RecentConversations() {
     
     setIsSubmitting(true)
     try {
-      if (feedbackModal.existingFeedback) {
-        // Update existing feedback
-        await updateAdminFeedback(
-          feedbackModal.existingFeedback.id!,
-          feedbackModal.verdict,
-          supervisorFeedback,
-          correctedResponse
-        )
-      } else {
-        // Create new feedback
-        await submitAdminFeedback(
-          feedbackModal.chatId,
-          feedbackModal.verdict,
-          supervisorFeedback,
-          correctedResponse
-        )
-      }
+      // Upsert handles both insert and update automatically
+      await submitAdminFeedback(
+        feedbackModal.chatId,
+        feedbackModal.verdict,
+        supervisorFeedback,
+        correctedResponse
+      )
       
       // Success - close modal
       setFeedbackModal(null)

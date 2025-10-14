@@ -189,6 +189,7 @@ export async function getAdminFeedbackByChat(chatId: string): Promise<AdminFeedb
 
 /**
  * Submit admin feedback for a chat message
+ * Uses upsert to handle both insert and update automatically
  */
 export async function submitAdminFeedback(
   chatId: string,
@@ -205,12 +206,17 @@ export async function submitAdminFeedback(
       chat_id: chatId,
       feedback_verdict: verdict,
       feedback_text: feedbackText || null,
-      corrected_response: correctedResponse || null
+      corrected_response: correctedResponse || null,
+      updated_at: new Date().toISOString()
     };
 
+    // Use upsert to insert or update if chat_id already exists
     const { data, error} = await supabase
       .from('admin_feedback')
-      .insert([feedbackData])
+      .upsert([feedbackData], { 
+        onConflict: 'chat_id',
+        ignoreDuplicates: false 
+      })
       .select()
       .single();
 
