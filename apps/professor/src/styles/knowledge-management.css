@@ -1,8 +1,8 @@
 /* Knowledge Management Styles */
 .knowledge-management {
   min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--admin-bg);
+  color: var(--admin-text);
   padding: 24px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
