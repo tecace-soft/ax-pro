@@ -8,7 +8,7 @@ import '../styles/knowledge-management.css';
 type TabType = 'file-library' | 'knowledge-index' | 'sync-overview';
 
 const KnowledgeManagement: React.FC = () => {
-  const { t, language, setLanguage } = useTranslation();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('file-library');
 
   const tabs = [
@@ -37,20 +37,6 @@ const KnowledgeManagement: React.FC = () => {
         <div className="km-title-section">
           <h1 className="km-title">{t('knowledge.title')}</h1>
           <p className="km-subtitle">{t('knowledge.subtitle')}</p>
-        </div>
-        <div className="km-language-selector">
-          <button
-            className={`lang-btn ${language === 'en' ? 'active' : ''}`}
-            onClick={() => setLanguage('en')}
-          >
-            EN
-          </button>
-          <button
-            className={`lang-btn ${language === 'ko' ? 'active' : ''}`}
-            onClick={() => setLanguage('ko')}
-          >
-            KO
-          </button>
         </div>
       </div>
 

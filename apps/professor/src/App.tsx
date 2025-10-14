@@ -125,9 +125,7 @@ const App: React.FC = () => {
                 path="/admin/knowledge-management" 
                 element={
                   <ProtectedRoute requiredRole="admin">
-                    <AdminShell>
-                      <KnowledgeManagementPage />
-                    </AdminShell>
+                    <AdminDashboard />
                   </ProtectedRoute>
                 } 
               />

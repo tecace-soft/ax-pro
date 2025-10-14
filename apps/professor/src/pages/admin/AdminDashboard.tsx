@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useTheme } from '../../theme/ThemeProvider'
 import { useTranslation } from '../../i18n/I18nProvider'
 import AdminHeader from '../../components/admin/Header'
@@ -11,6 +11,7 @@ import RecentConversations from '../../components/admin/RecentConversations'
 import UserFeedbackList from '../../components/admin/UserFeedbackList'
 import AdminFeedbackList from '../../components/admin/AdminFeedbackList'
 import RAGManagement from '../../components/admin/RAGManagement'
+import KnowledgeManagementPage from '../KnowledgeManagement'
 import { fetchDailyAggregatesWithMode, DailyRow, EstimationMode, filterSimulatedData } from '../../services/dailyAggregates'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
@@ -25,6 +26,7 @@ function formatDate(d: Date): string {
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
   const { theme } = useTheme()
   const { t } = useTranslation()
   
@@ -206,42 +208,48 @@ export default function AdminDashboard() {
 
             {/* Content sections */}
             <div className="content-module">
-              {/* Daily Message Activity */}
-              <div id="daily-message-activity" className="content-section">
-                <DailyMessageActivity 
-                  startDate={startDate}
-                  endDate={endDate}
-                />
-              </div>
+              {location.pathname === '/admin/knowledge-management' ? (
+                <KnowledgeManagementPage />
+              ) : (
+                <>
+                  {/* Daily Message Activity */}
+                  <div id="daily-message-activity" className="content-section">
+                    <DailyMessageActivity 
+                      startDate={startDate}
+                      endDate={endDate}
+                    />
+                  </div>
 
-              <div id="recent-conversations" className="content-section">
-                <h2 className="section-title">{t('admin.recentConversations')}</h2>
-                <RecentConversations 
-                  scrollToChatId={scrollToChatId}
-                  highlightedChatId={highlightedChatId}
-                  onScrollComplete={() => setScrollToChatId(null)}
-                />
-              </div>
+                  <div id="recent-conversations" className="content-section">
+                    <h2 className="section-title">{t('admin.recentConversations')}</h2>
+                    <RecentConversations 
+                      scrollToChatId={scrollToChatId}
+                      highlightedChatId={highlightedChatId}
+                      onScrollComplete={() => setScrollToChatId(null)}
+                    />
+                  </div>
 
-              <div id="admin-feedback" className="content-section">
-                <h2 className="section-title">Admin Feedback</h2>
-                <AdminFeedbackList />
-              </div>
+                  <div id="admin-feedback" className="content-section">
+                    <h2 className="section-title">Admin Feedback</h2>
+                    <AdminFeedbackList />
+                  </div>
 
-              <div id="user-feedback" className="content-section">
-                <h2 className="section-title">{t('admin.userFeedback')}</h2>
-                <UserFeedbackList onScrollToChat={handleScrollToChat} />
-              </div>
+                  <div id="user-feedback" className="content-section">
+                    <h2 className="section-title">{t('admin.userFeedback')}</h2>
+                    <UserFeedbackList onScrollToChat={handleScrollToChat} />
+                  </div>
 
-              <div id="prompt-control" className="content-section">
-                <h2 className="section-title">{t('admin.promptControl')}</h2>
-                <PromptControl />
-              </div>
+                  <div id="prompt-control" className="content-section">
+                    <h2 className="section-title">{t('admin.promptControl')}</h2>
+                    <PromptControl />
+                  </div>
 
-              <div id="rag-management" className="content-section">
-                <h2 className="section-title">{t('admin.ragManagement')}</h2>
-                <RAGManagement />
-              </div>
+                  <div id="rag-management" className="content-section">
+                    <h2 className="section-title">{t('admin.ragManagement')}</h2>
+                    <RAGManagement />
+                  </div>
+                </>
+              )}
             </div>
           </main>
         </div>
