@@ -108,7 +108,7 @@ export default function PerformanceRadar({
   const getLabelCoordinates = (index: number, total: number) => {
     const angleStep = 360 / total
     const angle = (index * angleStep) - 90
-    const labelRadius = maxRadius + 60
+    const labelRadius = maxRadius + 100 // 더 멀리 배치
     
     const x = Math.cos(angle * Math.PI / 180) * labelRadius
     const y = Math.sin(angle * Math.PI / 180) * labelRadius
@@ -263,15 +263,9 @@ export default function PerformanceRadar({
                 }}
               >
                 <div className="label-content">
-                  {isPromptInjection ? (
-                    <span className="label-name label-scrolling">
-                      <span className="scrolling-text">PROMPT INJECTION</span>
-                    </span>
-                  ) : (
-                    <span className="label-name" style={{ color: point.color }}>
-                      {point.label.toUpperCase()}
-                    </span>
-                  )}
+                  <span className="label-name" style={{ color: point.color }}>
+                    {isPromptInjection ? 'PROMPT INJECTION' : point.label.toUpperCase()}
+                  </span>
                   <span className="label-score" style={{ color: point.color }}>
                     {point.value}
                   </span>

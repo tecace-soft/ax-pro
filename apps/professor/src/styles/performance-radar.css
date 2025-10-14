@@ -102,12 +102,13 @@
   background: rgba(18, 27, 61, 0.4);
   border: 1px solid rgba(59, 230, 255, 0.15);
   border-radius: 16px;
-  padding: 32px;
-  overflow: hidden;
+  padding: 60px 40px; /* 상하 여백 증가 */
+  overflow: visible; /* 레이블이 잘리지 않도록 */
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   width: 100%;
+  min-height: 500px; /* 최소 높이 보장 */
 }
 
 .radar-chart-large {
@@ -218,13 +219,24 @@
     0 2px 4px rgba(0, 0, 0, 0.8),
     0 0 20px rgba(59, 230, 255, 0.3);
   line-height: 1;
-  width: clamp(100px, 18vw, 120px);
-  background: rgba(18, 27, 61, 0.9);
-  padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 12px);
-  border-radius: 20px;
-  border: 1px solid rgba(59, 230, 255, 0.3);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  min-width: clamp(120px, 20vw, 150px);
+  max-width: clamp(140px, 25vw, 180px);
+  background: rgba(18, 27, 61, 0.95);
+  padding: clamp(8px, 1.8vw, 10px) clamp(12px, 2.5vw, 16px);
+  border-radius: 25px;
+  border: 1px solid rgba(59, 230, 255, 0.4);
+  backdrop-filter: blur(15px);
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(59, 230, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.radar-label-clean:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(59, 230, 255, 0.3);
 }
 
 /* 레이블 내용 중앙 정렬 */
@@ -273,7 +285,33 @@
 }
 
 .radar-label-promptInjection {
-  text-align: right !important;
+  text-align: center !important;
+  min-width: clamp(140px, 25vw, 180px) !important;
+  max-width: clamp(160px, 30vw, 200px) !important;
+}
+
+.radar-label-promptInjection .label-name {
+  font-size: clamp(9px, 1.8vw, 11px) !important;
+  line-height: 1.2 !important;
+  word-break: keep-all;
+  white-space: normal;
+  text-align: center;
+  padding: 0 4px;
+}
+
+/* PROMPT INJECTION을 위한 특별한 스타일 */
+.label-scrolling {
+  display: inline-block;
+  animation: none;
+}
+
+.scrolling-text {
+  display: block;
+  font-size: clamp(9px, 1.8vw, 11px);
+  line-height: 1.2;
+  word-break: keep-all;
+  white-space: normal;
+  text-align: center;
 }
 
 /* Module Control 통합 - 레이더 차트 바로 아래에 배치, 간격 최소화 */
