@@ -124,20 +124,13 @@ export default function AdminDashboard() {
                 <div id="performance-radar">
                   <PerformanceRadar {...performanceData} />
                 </div>
-
-                <div id="daily-message-activity">
-                  <DailyMessageActivity 
-                    startDate={startDate}
-                    endDate={endDate}
-                  />
-                </div>
               </div>
             </div>
 
             {/* Content sections */}
             <div className="content-module">
               {/* Daily Message Activity */}
-              <div id="daily-message-activity-section" className="content-section">
+              <div id="daily-message-activity" className="content-section">
                 <DailyMessageActivity 
                   startDate={startDate}
                   endDate={endDate}
