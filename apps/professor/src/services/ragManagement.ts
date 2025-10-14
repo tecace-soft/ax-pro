@@ -2,15 +2,14 @@ import axios from 'axios';
 
 // RAG Management API configuration
 const RAG_WEBHOOK_URL = 'https://n8n.srv978041.hstgr.cloud/webhook/1f18f1aa-44c4-467f-b299-c87c9b6f9459';
-const RAG_API_BASE_URL = 'https://n8n.srv978041.hstgr.cloud/api/v1';
 
-// n8n endpoints for different operations
+// n8n webhook endpoints for different operations
 const ENDPOINTS = {
   UPLOAD: RAG_WEBHOOK_URL,
-  LIST_FILES: `${RAG_API_BASE_URL}/files`,
-  DELETE_FILE: `${RAG_API_BASE_URL}/files`,
-  REINDEX_FILE: `${RAG_API_BASE_URL}/files/reindex`,
-  GET_FILE_STATUS: `${RAG_API_BASE_URL}/files/status`,
+  LIST_FILES: 'https://n8n.srv978041.hstgr.cloud/webhook/list-files',
+  DELETE_FILE: 'https://n8n.srv978041.hstgr.cloud/webhook/delete-file',
+  REINDEX_FILE: 'https://n8n.srv978041.hstgr.cloud/webhook/reindex-file',
+  GET_FILE_STATUS: 'https://n8n.srv978041.hstgr.cloud/webhook/file-status',
 };
 
 export interface FileUploadResult {
@@ -104,7 +103,7 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
   try {
     console.log('Fetching files from n8n RAG system...');
     
-    const response = await axios.get(ENDPOINTS.LIST_FILES, {
+    const response = await axios.post(ENDPOINTS.LIST_FILES, {}, {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
@@ -114,18 +113,31 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
 
     console.log('Files fetched successfully:', response.data);
     
+    // Handle different response formats from n8n
+    let filesData = [];
+    if (Array.isArray(response.data)) {
+      filesData = response.data;
+    } else if (response.data.files && Array.isArray(response.data.files)) {
+      filesData = response.data.files;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      filesData = response.data.data;
+    } else {
+      console.warn('Unexpected response format from n8n:', response.data);
+      filesData = [];
+    }
+    
     // Transform the response to match our interface
-    const files: RAGFile[] = response.data.files?.map((file: any) => ({
-      id: file.id || file.fileId || `file-${Date.now()}`,
-      name: file.name || file.fileName || 'Unknown',
-      size: file.size || file.fileSize || 0,
-      type: file.type || file.contentType || 'application/octet-stream',
-      uploadedAt: file.uploadedAt || file.createdAt || file.uploadDate || new Date().toISOString(),
+    const files: RAGFile[] = filesData.map((file: any, index: number) => ({
+      id: file.id || file.fileId || file.file_id || `file-${Date.now()}-${index}`,
+      name: file.name || file.fileName || file.file_name || 'Unknown',
+      size: file.size || file.fileSize || file.file_size || 0,
+      type: file.type || file.contentType || file.content_type || 'application/octet-stream',
+      uploadedAt: file.uploadedAt || file.createdAt || file.uploadDate || file.created_at || new Date().toISOString(),
       status: file.status || 'ready',
-      url: file.url || file.downloadUrl,
-      lastModified: file.lastModified || file.updatedAt,
-      syncStatus: file.syncStatus || 'synced',
-    })) || [];
+      url: file.url || file.downloadUrl || file.download_url,
+      lastModified: file.lastModified || file.updatedAt || file.updated_at,
+      syncStatus: file.syncStatus || file.sync_status || 'synced',
+    }));
 
     return {
       success: true,
@@ -213,13 +225,15 @@ export function getFileIcon(fileType: string): string {
 }
 
 /**
- * Re-index a file via n8n API
+ * Re-index a file via n8n webhook
  */
 export async function reindexFile(fileId: string): Promise<{ success: boolean; message: string }> {
   try {
     console.log(`Re-indexing file via n8n: ${fileId}`);
     
-    const response = await axios.post(`${ENDPOINTS.REINDEX_FILE}/${fileId}`, {}, {
+    const response = await axios.post(ENDPOINTS.REINDEX_FILE, {
+      fileId: fileId
+    }, {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
@@ -243,13 +257,15 @@ export async function reindexFile(fileId: string): Promise<{ success: boolean; m
 }
 
 /**
- * Delete a file from the RAG system via n8n API
+ * Delete a file from the RAG system via n8n webhook
  */
 export async function deleteFileFromRAG(fileId: string): Promise<{ success: boolean; message: string }> {
   try {
     console.log(`Deleting file from RAG via n8n: ${fileId}`);
     
-    const response = await axios.delete(`${ENDPOINTS.DELETE_FILE}/${fileId}`, {
+    const response = await axios.post(ENDPOINTS.DELETE_FILE, {
+      fileId: fileId
+    }, {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',

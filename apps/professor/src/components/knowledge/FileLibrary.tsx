@@ -41,11 +41,16 @@ const FileLibrary: React.FC = () => {
         setUploadedFiles(response.files);
         console.log(`Loaded ${response.files.length} files from n8n`);
       } else {
-        setError(response.message || 'Failed to load files');
+        // If n8n endpoints don't exist yet, show a helpful message
+        if (response.message?.includes('404') || response.message?.includes('Not Found')) {
+          setError('n8n file management endpoints not configured yet. Please set up the following webhooks in n8n: list-files, delete-file, reindex-file');
+        } else {
+          setError(response.message || 'Failed to load files');
+        }
         console.error('Failed to load files:', response.message);
       }
     } catch (err) {
-      const errorMessage = 'Failed to connect to n8n service';
+      const errorMessage = 'Failed to connect to n8n service. Please ensure n8n webhooks are configured.';
       setError(errorMessage);
       console.error('Error loading files:', err);
     } finally {
