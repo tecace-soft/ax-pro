@@ -40,10 +40,6 @@ const KnowledgeManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Information Note */}
-      <div className="km-note">
-        <strong>Note:</strong> {t('knowledge.note')}
-      </div>
 
       {/* Tab Navigation */}
       <div className="km-tabs">
