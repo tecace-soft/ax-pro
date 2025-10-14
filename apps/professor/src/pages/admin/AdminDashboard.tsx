@@ -10,6 +10,7 @@ import PromptControl from '../../components/admin/PromptControl'
 import RecentConversations from '../../components/admin/RecentConversations'
 import UserFeedbackList from '../../components/admin/UserFeedbackList'
 import AdminFeedbackList from '../../components/admin/AdminFeedbackList'
+import { fetchDailyAggregatesWithMode, DailyRow, EstimationMode, filterSimulatedData } from '../../services/dailyAggregates'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 
@@ -29,6 +30,12 @@ export default function AdminDashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
+
+  // Performance Timeline state
+  const [radarData, setRadarData] = useState<DailyRow[]>([])
+  const [selectedRadarDate, setSelectedRadarDate] = useState<string>('')
+  const [includeSimulatedData, setIncludeSimulatedData] = useState(true)
+  const [estimationMode, setEstimationMode] = useState<EstimationMode>('simple')
 
   // Sample data
   const performanceData = {
@@ -61,7 +68,35 @@ export default function AdminDashboard() {
     start.setDate(today.getDate() - 6)
     setStartDate(formatDate(start))
     setEndDate(formatDate(today))
+
+    // Load Google Sheets data for Performance Timeline
+    loadRadarData()
   }, [])
+
+  // Load radar data when estimation mode changes
+  useEffect(() => {
+    loadRadarData()
+  }, [estimationMode])
+
+  const loadRadarData = async () => {
+    try {
+      console.log('📊 Loading Google Sheets data for Performance Timeline...')
+      const data = await fetchDailyAggregatesWithMode(estimationMode)
+      setRadarData(data)
+      
+      // Set initial selected date to the most recent date
+      if (data.length > 0) {
+        setSelectedRadarDate(data[data.length - 1].Date)
+      }
+      
+      console.log('✅ Loaded', data.length, 'days of performance data')
+    } catch (error) {
+      console.error('❌ Failed to load radar data:', error)
+    }
+  }
+
+  // Filter radar data based on includeSimulatedData setting
+  const filteredRadarData = filterSimulatedData(radarData, includeSimulatedData)
 
   // Handle section scrolling
   useEffect(() => {
@@ -122,7 +157,16 @@ export default function AdminDashboard() {
             <div className="dashboard-grid">
               <div className="grid-left">
                 <div id="performance-radar">
-                  <PerformanceRadar {...performanceData} />
+                  <PerformanceRadar 
+                    {...performanceData}
+                    timelineData={filteredRadarData}
+                    selectedDate={selectedRadarDate}
+                    onDateChange={setSelectedRadarDate}
+                    includeSimulatedData={includeSimulatedData}
+                    onIncludeSimulatedDataChange={setIncludeSimulatedData}
+                    estimationMode={estimationMode}
+                    onEstimationModeChange={setEstimationMode}
+                  />
                 </div>
               </div>
             </div>

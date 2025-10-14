@@ -1,5 +1,8 @@
 import { useState } from 'react'
+import PerformanceTimeline from './PerformanceTimeline'
+import { DailyRow, EstimationMode } from '../../services/dailyAggregates'
 import '../../styles/performance-radar.css'
+import '../../styles/performance-timeline.css'
 
 interface PerformanceRadarProps {
   relevance: number
@@ -8,6 +11,14 @@ interface PerformanceRadarProps {
   accuracy: number
   toxicity: number
   promptInjection: number
+  // Timeline props
+  timelineData?: DailyRow[]
+  selectedDate?: string
+  onDateChange?: (date: string) => void
+  includeSimulatedData?: boolean
+  onIncludeSimulatedDataChange?: (value: boolean) => void
+  estimationMode?: EstimationMode
+  onEstimationModeChange?: (mode: EstimationMode) => void
 }
 
 export default function PerformanceRadar({
@@ -17,6 +28,14 @@ export default function PerformanceRadar({
   accuracy,
   toxicity,
   promptInjection,
+  // Timeline props with defaults
+  timelineData = [],
+  selectedDate = '',
+  onDateChange = () => {},
+  includeSimulatedData = false,
+  onIncludeSimulatedDataChange = () => {},
+  estimationMode = 'simple',
+  onEstimationModeChange = () => {}
 }: PerformanceRadarProps) {
   
   const [toggles, setToggles] = useState({
@@ -294,6 +313,22 @@ export default function PerformanceRadar({
           </div>
         </div>
       </div>
+
+      {/* Performance Timeline */}
+      {timelineData && timelineData.length > 0 && (
+        <div className="timeline-section-wrapper" style={{ marginTop: '20px' }}>
+          <PerformanceTimeline
+            data={timelineData}
+            selectedDate={selectedDate}
+            onDateChange={onDateChange}
+            title="Performance Timeline"
+            includeSimulatedData={includeSimulatedData}
+            onIncludeSimulatedDataChange={onIncludeSimulatedDataChange}
+            estimationMode={estimationMode}
+            onEstimationModeChange={onEstimationModeChange}
+          />
+        </div>
+      )}
     </div>
   )
 }
