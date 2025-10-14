@@ -10,6 +10,7 @@ import {
 } from '../../ui/icons'
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useUICustomization } from '../../services/settings'
 
 interface SidebarProps {
   conversations: number
@@ -34,6 +35,7 @@ export default function AdminSidebar({
 }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { customization } = useUICustomization()
   
   const isDashboardPage = location.pathname === '/admin/dashboard'
   const [searchQuery, setSearchQuery] = useState('')
@@ -56,6 +58,175 @@ export default function AdminSidebar({
   return (
     <aside className={`dashboard-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-content">
+        {/* Avatar Section */}
+        <div className="sidebar-section" style={{ paddingBottom: '20px', borderBottom: '1px solid var(--admin-border)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+            {/* Avatar with status indicator */}
+            <div style={{ position: 'relative' }}>
+              <img 
+                src={customization.avatarUrl} 
+                alt="Chatbot Avatar"
+                style={{
+                  width: '100px',
+                  height: '100px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '3px solid var(--admin-primary)',
+                  boxShadow: '0 0 20px rgba(59, 230, 255, 0.3)'
+                }}
+                onError={(e) => {
+                  e.currentTarget.src = '/default-profile-avatar.png'
+                }}
+              />
+              {/* Active status indicator */}
+              <div 
+                style={{
+                  position: 'absolute',
+                  bottom: '5px',
+                  right: '5px',
+                  width: '20px',
+                  height: '20px',
+                  backgroundColor: 'var(--admin-success, #10b981)',
+                  border: '3px solid var(--admin-bg)',
+                  borderRadius: '50%'
+                }}
+              />
+            </div>
+            
+            {/* Bot Info */}
+            <div style={{ textAlign: 'center' }}>
+              <h3 style={{ 
+                fontSize: '16px', 
+                fontWeight: '600', 
+                color: 'var(--admin-text)',
+                marginBottom: '4px'
+              }}>
+                {customization.title || 'TecAce Ax Pro'}
+              </h3>
+              <p style={{ 
+                fontSize: '12px', 
+                color: 'var(--admin-text-muted)'
+              }}>
+                Main AI Assistant for HR Support
+              </p>
+            </div>
+
+            {/* Performance Badge */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              marginTop: '8px'
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ 
+                  fontSize: '24px', 
+                  fontWeight: '700',
+                  background: 'linear-gradient(135deg, var(--admin-primary), var(--admin-accent))',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>
+                  {performanceScore}%
+                </div>
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: 'var(--admin-text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Performance
+                </div>
+                <div style={{ 
+                  fontSize: '9px', 
+                  color: 'var(--admin-text-muted)'
+                }}>
+                  {performanceDate || '9/10'}
+                </div>
+              </div>
+
+              <div style={{
+                padding: '6px 12px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.3)'
+              }}>
+                <div style={{ 
+                  fontSize: '10px', 
+                  fontWeight: '600',
+                  color: 'var(--admin-success)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  ACTIVE
+                </div>
+                <div style={{ 
+                  fontSize: '9px', 
+                  color: 'var(--admin-text-muted)',
+                  textTransform: 'uppercase'
+                }}>
+                  STATUS
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <button
+                onClick={() => navigate('/settings')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  color: 'var(--admin-text)',
+                  backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                  border: '1px solid var(--admin-border)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(59, 230, 255, 0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(9, 14, 34, 0.6)'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Edit
+              </button>
+              <button
+                onClick={() => navigate('/settings')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  color: 'var(--admin-text)',
+                  backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                  border: '1px solid var(--admin-border)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(59, 230, 255, 0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(9, 14, 34, 0.6)'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                Photo
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Metrics */}
         <div className="sidebar-section">
           <h3 className="sidebar-section-title">Overview</h3>
