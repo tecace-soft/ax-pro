@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
-import { useAuth } from '../services/auth';
+import { useAuth, getSession } from '../services/auth';
 
 const AdminShell: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
-  const { logout, getSession } = useAuth();
+  const { logout } = useAuth();
   const [user, setUser] = useState<{ email: string; role: string } | null>(null);
 
   React.useEffect(() => {
