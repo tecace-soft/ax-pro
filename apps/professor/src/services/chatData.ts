@@ -101,13 +101,9 @@ export async function getChatData(requestId: string): Promise<ChatData | null> {
       .from('chat')
       .select('*')
       .eq('request_id', requestId)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows found
-        return null;
-      }
       throw error;
     }
 
@@ -115,6 +111,31 @@ export async function getChatData(requestId: string): Promise<ChatData | null> {
   } catch (error) {
     console.error('Error fetching chat data:', error);
     throw error;
+  }
+}
+
+/**
+ * Fetch chat data by ID (for linking with feedback)
+ */
+export async function fetchChatById(chatId: string): Promise<ChatData | null> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    const { data, error } = await supabase
+      .from('chat')
+      .select('*')
+      .eq('id', chatId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error fetching chat by ID:', error);
+    return null;
   }
 }
 

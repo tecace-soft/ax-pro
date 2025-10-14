@@ -16,6 +16,7 @@ interface AdminFeedbackModal {
 export default function RecentConversations() {
   const { t } = useTranslation()
   const [conversations, setConversations] = useState<ChatData[]>([])
+  const [filteredConversations, setFilteredConversations] = useState<ChatData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -23,10 +24,16 @@ export default function RecentConversations() {
   const [supervisorFeedback, setSupervisorFeedback] = useState('')
   const [correctedResponse, setCorrectedResponse] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [displayLimit, setDisplayLimit] = useState(10)
 
   useEffect(() => {
     loadConversations()
   }, [])
+
+  useEffect(() => {
+    applyFilters()
+  }, [conversations, searchTerm])
 
   const loadConversations = async () => {
     setIsLoading(true)
@@ -60,6 +67,23 @@ export default function RecentConversations() {
     } finally {
       setIsRefreshing(false)
     }
+  }
+
+  const applyFilters = () => {
+    let filtered = [...conversations]
+
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(c => 
+        c.user_id?.toLowerCase().includes(term) ||
+        c.id?.toLowerCase().includes(term) ||
+        c.chat_message?.toLowerCase().includes(term) ||
+        c.response?.toLowerCase().includes(term)
+      )
+    }
+
+    setFilteredConversations(filtered)
   }
 
   const formatDate = (dateString?: string) => {
@@ -200,11 +224,14 @@ export default function RecentConversations() {
     )
   }
 
+  const displayedConversations = filteredConversations.slice(0, displayLimit)
+
   return (
     <div className="admin-card">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-          {t('admin.recentConversations')}
+          {t('admin.recentConversations')} ({filteredConversations.length})
         </h3>
         <button 
           className="icon-btn"
@@ -216,13 +243,29 @@ export default function RecentConversations() {
         </button>
       </div>
 
-      {conversations.length === 0 ? (
+      {/* Search Bar */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search by user ID, chat ID, message, or response..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 rounded-md text-sm"
+          style={{
+            backgroundColor: 'rgba(9, 14, 34, 0.6)',
+            color: 'var(--admin-text)',
+            border: '1px solid var(--admin-border)'
+          }}
+        />
+      </div>
+
+      {displayedConversations.length === 0 ? (
         <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
-          <p>No conversations found</p>
+          <p>{searchTerm ? 'No conversations match your search' : 'No conversations found'}</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {conversations.slice(0, 10).map((conversation) => (
+          {displayedConversations.map((conversation) => (
             <div 
               key={conversation.id}
               className="p-4 rounded-lg border"
@@ -285,11 +328,19 @@ export default function RecentConversations() {
         </div>
       )}
       
-      {conversations.length > 10 && (
+      {/* Load More Button */}
+      {filteredConversations.length > displayLimit && (
         <div className="mt-4 text-center">
-          <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
-            Showing 10 of {conversations.length} conversations
-          </p>
+          <button
+            onClick={() => setDisplayLimit(prev => prev + 10)}
+            className="px-6 py-2 rounded-md text-sm font-medium"
+            style={{
+              background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
+              color: '#041220'
+            }}
+          >
+            Load More ({filteredConversations.length - displayLimit} remaining)
+          </button>
         </div>
       )}
 

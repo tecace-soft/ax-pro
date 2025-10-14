@@ -1,19 +1,33 @@
 import { useState, useEffect } from 'react'
 import { fetchAllUserFeedback } from '../../services/feedback'
-import { UserFeedbackData } from '../../services/supabase'
+import { fetchChatById } from '../../services/chatData'
+import { UserFeedbackData, ChatData } from '../../services/supabase'
 import { useTranslation } from '../../i18n/I18nProvider'
 import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
 
+interface FeedbackWithChat extends UserFeedbackData {
+  chatData?: ChatData | null
+  isExpanded?: boolean
+}
+
 export default function UserFeedbackList() {
   const { t } = useTranslation()
-  const [feedbacks, setFeedbacks] = useState<UserFeedbackData[]>([])
+  const [feedbacks, setFeedbacks] = useState<FeedbackWithChat[]>([])
+  const [filteredFeedbacks, setFilteredFeedbacks] = useState<FeedbackWithChat[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterReaction, setFilterReaction] = useState<'all' | 'good' | 'bad'>('all')
+  const [displayLimit, setDisplayLimit] = useState(10)
 
   useEffect(() => {
     loadFeedback()
   }, [])
+
+  useEffect(() => {
+    applyFilters()
+  }, [feedbacks, searchTerm, filterReaction])
 
   const loadFeedback = async () => {
     setIsLoading(true)
@@ -40,6 +54,45 @@ export default function UserFeedbackList() {
       setError(error instanceof Error ? error.message : 'Failed to refresh user feedback')
     } finally {
       setIsRefreshing(false)
+    }
+  }
+
+  const applyFilters = () => {
+    let filtered = [...feedbacks]
+
+    // Filter by reaction
+    if (filterReaction !== 'all') {
+      filtered = filtered.filter(f => f.reaction === filterReaction)
+    }
+
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(f => 
+        f.user_id?.toLowerCase().includes(term) ||
+        f.chat_id?.toLowerCase().includes(term) ||
+        f.feedback_text?.toLowerCase().includes(term)
+      )
+    }
+
+    setFilteredFeedbacks(filtered)
+  }
+
+  const toggleExpand = async (feedbackId: number) => {
+    const feedback = feedbacks.find(f => f.id === feedbackId)
+    if (!feedback) return
+
+    // If not expanded and no chat data, fetch it
+    if (!feedback.isExpanded && !feedback.chatData) {
+      const chatData = await fetchChatById(feedback.chat_id)
+      setFeedbacks(prev => prev.map(f => 
+        f.id === feedbackId ? { ...f, chatData, isExpanded: true } : f
+      ))
+    } else {
+      // Just toggle expand
+      setFeedbacks(prev => prev.map(f => 
+        f.id === feedbackId ? { ...f, isExpanded: !f.isExpanded } : f
+      ))
     }
   }
 
@@ -99,11 +152,14 @@ export default function UserFeedbackList() {
     )
   }
 
+  const displayedFeedbacks = filteredFeedbacks.slice(0, displayLimit)
+
   return (
     <div className="admin-card">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-          {t('admin.userFeedback')}
+          {t('admin.userFeedback')} ({filteredFeedbacks.length})
         </h3>
         <button 
           className="icon-btn"
@@ -115,55 +171,180 @@ export default function UserFeedbackList() {
         </button>
       </div>
 
-      {feedbacks.length === 0 ? (
+      {/* Search and Filters */}
+      <div className="mb-4 space-y-3">
+        {/* Search Bar */}
+        <input
+          type="text"
+          placeholder="Search by user ID, chat ID, or feedback text..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 rounded-md text-sm"
+          style={{
+            backgroundColor: 'rgba(9, 14, 34, 0.6)',
+            color: 'var(--admin-text)',
+            border: '1px solid var(--admin-border)'
+          }}
+        />
+
+        {/* Reaction Filter */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFilterReaction('all')}
+            className={`px-4 py-2 rounded-md text-sm transition-colors ${
+              filterReaction === 'all' ? 'font-semibold' : ''
+            }`}
+            style={{
+              backgroundColor: filterReaction === 'all' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
+              color: filterReaction === 'all' ? '#041220' : 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+          >
+            All ({feedbacks.length})
+          </button>
+          <button
+            onClick={() => setFilterReaction('good')}
+            className={`px-4 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
+              filterReaction === 'good' ? 'font-semibold' : ''
+            }`}
+            style={{
+              backgroundColor: filterReaction === 'good' ? 'var(--admin-success)' : 'rgba(9, 14, 34, 0.4)',
+              color: filterReaction === 'good' ? '#ffffff' : 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+          >
+            <IconThumbsUp size={14} /> Good ({feedbacks.filter(f => f.reaction === 'good').length})
+          </button>
+          <button
+            onClick={() => setFilterReaction('bad')}
+            className={`px-4 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
+              filterReaction === 'bad' ? 'font-semibold' : ''
+            }`}
+            style={{
+              backgroundColor: filterReaction === 'bad' ? 'var(--admin-danger)' : 'rgba(9, 14, 34, 0.4)',
+              color: filterReaction === 'bad' ? '#ffffff' : 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+          >
+            <IconThumbsDown size={14} /> Bad ({feedbacks.filter(f => f.reaction === 'bad').length})
+          </button>
+        </div>
+      </div>
+
+      {/* Feedback List */}
+      {displayedFeedbacks.length === 0 ? (
         <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
-          <p>No user feedback found</p>
+          <p>{searchTerm || filterReaction !== 'all' ? 'No feedback matches your filters' : 'No user feedback found'}</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {feedbacks.slice(0, 10).map((feedback) => (
+          {displayedFeedbacks.map((feedback) => (
             <div 
               key={feedback.id}
-              className="p-4 rounded-lg border"
+              className="rounded-lg border"
               style={{
                 backgroundColor: 'rgba(9, 14, 34, 0.4)',
                 borderColor: 'var(--admin-border)'
               }}
             >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {getReactionIcon(feedback.reaction)}
-                  <span className="text-sm font-medium" style={{ color: 'var(--admin-text)' }}>
-                    User: {feedback.user_id}
-                  </span>
+              {/* Feedback Header - Clickable */}
+              <div 
+                className="p-4 cursor-pointer hover:bg-opacity-60 transition-colors"
+                onClick={() => toggleExpand(feedback.id!)}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {getReactionIcon(feedback.reaction)}
+                    <span className="text-sm font-medium" style={{ color: 'var(--admin-text)' }}>
+                      User: {feedback.user_id}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                      {formatDate(feedback.created_at)}
+                    </span>
+                    <svg 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2"
+                      style={{ 
+                        color: 'var(--admin-text-muted)',
+                        transform: feedback.isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s'
+                      }}
+                    >
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
                 </div>
-                <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
-                  {formatDate(feedback.created_at)}
-                </span>
-              </div>
-              
-              <p className="text-xs mb-2" style={{ color: 'var(--admin-text-muted)' }}>
-                Chat ID: {feedback.chat_id}
-              </p>
-              
-              {feedback.feedback_text && (
-                <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
-                  {truncateText(feedback.feedback_text)}
+                
+                <p className="text-xs mb-2" style={{ color: 'var(--admin-text-muted)' }}>
+                  Chat ID: {feedback.chat_id}
                 </p>
+                
+                {feedback.feedback_text && (
+                  <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
+                    {truncateText(feedback.feedback_text)}
+                  </p>
+                )}
+              </div>
+
+              {/* Expanded Chat Details */}
+              {feedback.isExpanded && (
+                <div 
+                  className="border-t p-4"
+                  style={{ borderColor: 'var(--admin-border)' }}
+                >
+                  {feedback.chatData ? (
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-primary)' }}>
+                          User Message:
+                        </p>
+                        <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
+                          {feedback.chatData.chat_message}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-accent)' }}>
+                          AI Response:
+                        </p>
+                        <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
+                          {feedback.chatData.response}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
+                      Loading chat details...
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           ))}
         </div>
       )}
       
-      {feedbacks.length > 10 && (
+      {/* Load More Button */}
+      {filteredFeedbacks.length > displayLimit && (
         <div className="mt-4 text-center">
-          <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
-            Showing 10 of {feedbacks.length} feedback entries
-          </p>
+          <button
+            onClick={() => setDisplayLimit(prev => prev + 10)}
+            className="px-6 py-2 rounded-md text-sm font-medium"
+            style={{
+              background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
+              color: '#041220'
+            }}
+          >
+            Load More ({filteredFeedbacks.length - displayLimit} remaining)
+          </button>
         </div>
       )}
     </div>
   )
 }
-
