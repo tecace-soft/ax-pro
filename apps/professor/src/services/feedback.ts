@@ -166,21 +166,19 @@ export async function getAdminFeedbackByChat(chatId: string): Promise<AdminFeedb
   try {
     const supabase = getSupabaseClient();
     
+    // Use maybeSingle() instead of single() to avoid PGRST116 error when no rows found
     const { data, error } = await supabase
       .from('admin_feedback')
       .select('*')
       .eq('chat_id', chatId)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows found
-        return null;
-      }
+      console.error('Error fetching admin feedback:', error);
       throw error;
     }
 
-    return data as AdminFeedbackData;
+    return data as AdminFeedbackData | null;
   } catch (error) {
     console.error('Error fetching admin feedback by chat:', error);
     return null;
@@ -205,33 +203,39 @@ export async function submitAdminFeedback(
     // Check if feedback already exists for this chat
     const existingFeedback = await getAdminFeedbackByChat(chatId);
     
-    const feedbackData = {
-      chat_id: chatId,
-      feedback_verdict: verdict,
-      feedback_text: feedbackText || null,
-      corrected_response: correctedResponse || null,
-      updated_at: new Date().toISOString()
-    };
-
     let data, error;
     
     if (existingFeedback) {
-      // Update existing feedback
+      // Update existing feedback (don't include created_at or id)
+      const updateData = {
+        feedback_verdict: verdict,
+        feedback_text: feedbackText || null,
+        corrected_response: correctedResponse || null,
+        updated_at: new Date().toISOString()
+      };
+      
       const result = await supabase
         .from('admin_feedback')
-        .update(feedbackData)
+        .update(updateData)
         .eq('chat_id', chatId)
         .select()
-        .single();
+        .maybeSingle();
       data = result.data;
       error = result.error;
     } else {
-      // Insert new feedback
+      // Insert new feedback (let database auto-generate id)
+      const insertData = {
+        chat_id: chatId,
+        feedback_verdict: verdict,
+        feedback_text: feedbackText || null,
+        corrected_response: correctedResponse || null
+      };
+      
       const result = await supabase
         .from('admin_feedback')
-        .insert([feedbackData])
+        .insert([insertData])
         .select()
-        .single();
+        .maybeSingle();
       data = result.data;
       error = result.error;
     }
