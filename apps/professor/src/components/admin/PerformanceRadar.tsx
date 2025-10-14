@@ -172,18 +172,18 @@ export default function PerformanceRadar({
 
   return (
     <div className="performance-radar-section">
-      {/* Title and description */}
-      <div className="radar-header">
-        <h2 className="radar-title">{t('admin.performanceRadar')}</h2>
-        <p className="radar-description">
-          {t('admin.performanceRadarDesc')}
-        </p>
-      </div>
-      
       {/* Two column layout: Radar on left, Module Control on right */}
       <div className="radar-main-layout">
         {/* Left side: Radar chart */}
         <div className="radar-chart-section">
+          {/* Title and description - attached to radar */}
+          <div className="radar-header">
+            <h2 className="radar-title">{t('admin.performanceRadar')}</h2>
+            <p className="radar-description">
+              {t('admin.performanceRadarDesc')}
+            </p>
+          </div>
+          
           <div className="radar-chart-container">
             <div className="radar-chart-large">
               <svg className="radar-svg-large" width={chartSize} height={chartSize}>
