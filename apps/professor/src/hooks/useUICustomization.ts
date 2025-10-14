@@ -1,18 +1,54 @@
 import { useState, useEffect } from 'react';
 import { settingsService, UICustomization } from '../services/settings';
+import { fetchUICustomization, saveUICustomization } from '../services/uiCustomization';
 
 export const useUICustomization = () => {
   const [customization, setCustomization] = useState<UICustomization>(() => 
     settingsService.getUICustomization()
   );
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const updateCustomization = (updates: Partial<UICustomization>) => {
+  // Load customization from Supabase on mount
+  useEffect(() => {
+    loadCustomization();
+  }, []);
+
+  const loadCustomization = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchUICustomization();
+      setCustomization(data);
+      // Also save to localStorage as cache
+      settingsService.saveUICustomization(data);
+    } catch (error) {
+      console.error('Failed to load UI customization:', error);
+      // Fallback to localStorage
+      const localData = settingsService.getUICustomization();
+      setCustomization(localData);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateCustomization = async (updates: Partial<UICustomization>) => {
     setLoading(true);
     try {
       const updatedCustomization = { ...customization, ...updates };
-      settingsService.saveUICustomization(updatedCustomization);
-      setCustomization(updatedCustomization);
+      
+      // Save to Supabase first
+      const success = await saveUICustomization(updatedCustomization);
+      
+      if (success) {
+        // Update local state
+        setCustomization(updatedCustomization);
+        // Also save to localStorage as cache
+        settingsService.saveUICustomization(updatedCustomization);
+        console.log('✅ UI customization updated successfully');
+      } else {
+        console.error('Failed to save to Supabase, falling back to localStorage');
+        settingsService.saveUICustomization(updatedCustomization);
+        setCustomization(updatedCustomization);
+      }
     } catch (error) {
       console.error('Failed to update UI customization:', error);
     } finally {

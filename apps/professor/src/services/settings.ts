@@ -144,6 +144,7 @@ export const settingsService = {
   },
 
   // UI Customization methods
+  // NOTE: These are kept for backward compatibility, but should use Supabase for production
   getUICustomization(): UICustomization {
     const defaultCustomization: UICustomization = {
       chatTitle: 'Chat Interface',
