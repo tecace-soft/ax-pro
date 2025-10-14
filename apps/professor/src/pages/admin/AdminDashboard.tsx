@@ -37,20 +37,6 @@ export default function AdminDashboard() {
   const [includeSimulatedData, setIncludeSimulatedData] = useState(true)
   const [estimationMode, setEstimationMode] = useState<EstimationMode>('simple')
 
-  // Sample data
-  const performanceData = {
-    relevance: 85,
-    tone: 78,
-    length: 82,
-    accuracy: 92,
-    toxicity: 95,
-    promptInjection: 88
-  }
-
-  const overallScore = Math.round(
-    (performanceData.relevance + performanceData.tone + performanceData.length + 
-     performanceData.accuracy + performanceData.toxicity + performanceData.promptInjection) / 6
-  )
 
   const currentTime = new Date().toLocaleString('en-US', {
     weekday: 'short',
@@ -97,6 +83,32 @@ export default function AdminDashboard() {
 
   // Filter radar data based on includeSimulatedData setting
   const filteredRadarData = filterSimulatedData(radarData, includeSimulatedData)
+
+  // Get the selected row from the timeline
+  const selectedRadarRow = filteredRadarData.find(row => row.Date === selectedRadarDate) || filteredRadarData[filteredRadarData.length - 1]
+
+  // Calculate radar props from the selected date's data
+  const radarProps = selectedRadarRow ? {
+    relevance: Math.round(selectedRadarRow["Answer Relevancy"] * 100),
+    tone: Math.round(selectedRadarRow.Tone * 100),
+    length: Math.round(selectedRadarRow.Length * 100),
+    accuracy: Math.round(selectedRadarRow["Answer Correctness"] * 100),
+    toxicity: Math.round(selectedRadarRow.Toxicity * 100),
+    promptInjection: Math.round(selectedRadarRow["Prompt Injection"] * 100)
+  } : {
+    relevance: 85,
+    tone: 78,
+    length: 82,
+    accuracy: 92,
+    toxicity: 95,
+    promptInjection: 88
+  }
+
+  // Calculate overall score from radar props
+  const overallScore = Math.round(
+    (radarProps.relevance + radarProps.tone + radarProps.length + 
+     radarProps.accuracy + radarProps.toxicity + radarProps.promptInjection) / 6
+  )
 
   // Handle section scrolling
   useEffect(() => {
@@ -158,7 +170,7 @@ export default function AdminDashboard() {
               <div className="grid-left">
                 <div id="performance-radar">
                   <PerformanceRadar 
-                    {...performanceData}
+                    {...radarProps}
                     timelineData={filteredRadarData}
                     selectedDate={selectedRadarDate}
                     onDateChange={setSelectedRadarDate}
