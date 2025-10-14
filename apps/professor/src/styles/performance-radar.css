@@ -10,10 +10,17 @@
   backdrop-filter: blur(20px);
   position: relative;
   overflow: hidden;
-  width: calc(100% - 48px); /* 좌우 24px margin */
-  margin: 0 24px;
+  width: 100%;
+  margin: 0;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+}
+
+/* Light mode performance radar */
+[data-theme="light"] .performance-radar-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .performance-radar-section::before {
@@ -58,6 +65,18 @@
   max-width: 700px;
   margin: 0 auto;
   font-weight: 400;
+}
+
+/* Light mode radar header */
+[data-theme="light"] .radar-title {
+  background: linear-gradient(135deg, #0f172a 0%, #0ea5e9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="light"] .radar-description {
+  color: #475569;
 }
 
 .radar-chart-section {
@@ -318,6 +337,46 @@
 .module-control-content {
   padding: clamp(16px, 3vw, 24px);
   background: rgba(18, 27, 61, 0.6);
+  max-height: 1000px;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.module-control-content.collapsed {
+  max-height: 0;
+  padding: 0 clamp(16px, 3vw, 24px);
+}
+
+/* Light mode module control */
+[data-theme="light"] .module-control-integrated {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .module-control-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .module-control-content {
+  background: #f8fafc;
+}
+
+[data-theme="light"] .control-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .control-item {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .control-label {
+  color: #0f172a;
+}
+
+[data-theme="light"] .control-description {
+  color: #64748b;
 }
 
 .control-list {
