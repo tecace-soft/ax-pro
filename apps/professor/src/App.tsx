@@ -12,6 +12,7 @@ import OverviewDashboard from './features/overview/OverviewDashboard';
 import ChatUsage from './features/usage/ChatUsage';
 import PromptControl from './features/management/PromptControl';
 import KnowledgeManagement from './features/management/KnowledgeManagement';
+import RAGManagement from './components/admin/RAGManagement';
 import { isAuthedFor, Role } from './services/auth';
 
 // Protected Route component
@@ -115,6 +116,16 @@ const App: React.FC = () => {
                   <ProtectedRoute requiredRole="admin">
                     <AdminShell>
                       <KnowledgeManagement />
+                    </AdminShell>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/rag-management" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminShell>
+                      <RAGManagement />
                     </AdminShell>
                   </ProtectedRoute>
                 } 
