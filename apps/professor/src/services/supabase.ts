@@ -97,6 +97,7 @@ export const testSupabaseConnection = async (config: SupabaseConfig): Promise<bo
 export interface ChatData {
   id: number;  // Numeric primary key
   chat_id: string;  // String identifier (chat_1760402027275_ekb47d6kd format)
+  session_id?: string;  // Session identifier
   chat_message: string;  // User's input message
   response: string;      // Bot's response
   user_id: string;       // User identifier

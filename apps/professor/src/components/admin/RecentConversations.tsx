@@ -40,6 +40,8 @@ export default function RecentConversations({
   const [sortBy, setSortBy] = useState<SortOption>('date-desc')
   const [displayLimit, setDisplayLimit] = useState(10)
   const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON'>('CSV')
+  const [filterSessionId, setFilterSessionId] = useState<string | null>(null)
+  const [filterUserId, setFilterUserId] = useState<string | null>(null)
 
   useEffect(() => {
     loadConversations()
@@ -47,7 +49,7 @@ export default function RecentConversations({
 
   useEffect(() => {
     applyFiltersAndSort()
-  }, [conversations, searchTerm, sortBy])
+  }, [conversations, searchTerm, sortBy, filterSessionId, filterUserId])
 
   // Handle scroll to specific chat
   useEffect(() => {
@@ -100,6 +102,16 @@ export default function RecentConversations({
   const applyFiltersAndSort = () => {
     let filtered = [...conversations]
 
+    // Filter by session ID
+    if (filterSessionId) {
+      filtered = filtered.filter(c => c.session_id === filterSessionId)
+    }
+
+    // Filter by user ID
+    if (filterUserId) {
+      filtered = filtered.filter(c => c.user_id === filterUserId)
+    }
+
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
@@ -107,6 +119,7 @@ export default function RecentConversations({
         c.user_id?.toLowerCase().includes(term) ||
         String(c.id || '').toLowerCase().includes(term) ||
         c.chat_id?.toLowerCase().includes(term) ||
+        c.session_id?.toLowerCase().includes(term) ||
         c.chat_message?.toLowerCase().includes(term) ||
         c.response?.toLowerCase().includes(term)
       )
@@ -222,6 +235,30 @@ export default function RecentConversations({
     setFeedbackModal(null)
     setSupervisorFeedback('')
     setCorrectedResponse('')
+  }
+
+  const handleFilterBySession = (sessionId: string) => {
+    if (filterSessionId === sessionId) {
+      setFilterSessionId(null) // Clear filter if same session clicked
+    } else {
+      setFilterSessionId(sessionId)
+      setFilterUserId(null) // Clear user filter when filtering by session
+    }
+  }
+
+  const handleFilterByUser = (userId: string) => {
+    if (filterUserId === userId) {
+      setFilterUserId(null) // Clear filter if same user clicked
+    } else {
+      setFilterUserId(userId)
+      setFilterSessionId(null) // Clear session filter when filtering by user
+    }
+  }
+
+  const clearAllFilters = () => {
+    setFilterSessionId(null)
+    setFilterUserId(null)
+    setSearchTerm('')
   }
 
   const handleExport = () => {
@@ -375,6 +412,31 @@ export default function RecentConversations({
           />
         </div>
 
+        {/* Filter Indicators */}
+        {(filterSessionId || filterUserId) && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>Filters:</span>
+            {filterSessionId && (
+              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: 'var(--admin-success)' }}>
+                Session: {filterSessionId}
+              </span>
+            )}
+            {filterUserId && (
+              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: 'var(--admin-primary)' }}>
+                User: {filterUserId}
+              </span>
+            )}
+            <button
+              onClick={clearAllFilters}
+              className="px-2 py-1 rounded text-xs hover:bg-gray-500/20"
+              style={{ color: 'var(--admin-text-muted)' }}
+              title="Clear all filters"
+            >
+              ✕ Clear
+            </button>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <select
@@ -430,11 +492,38 @@ export default function RecentConversations({
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <p className="text-xs mb-1" style={{ color: 'var(--admin-text-muted)' }}>
-                    User: {conversation.user_id}
+                    User: 
+                    <button
+                      onClick={() => handleFilterByUser(conversation.user_id)}
+                      className={`ml-1 hover:underline cursor-pointer ${
+                        filterUserId === conversation.user_id 
+                          ? 'text-blue-400 font-semibold' 
+                          : 'text-blue-300'
+                      }`}
+                      title="Click to filter by this user"
+                    >
+                      {conversation.user_id}
+                    </button>
                   </p>
                   <p className="text-xs mb-1" style={{ color: 'var(--admin-text-muted)' }}>
                     Chat ID: {conversation.chat_id}
                   </p>
+                  {conversation.session_id && (
+                    <p className="text-xs mb-1" style={{ color: 'var(--admin-text-muted)' }}>
+                      Session: 
+                      <button
+                        onClick={() => handleFilterBySession(conversation.session_id!)}
+                        className={`ml-1 hover:underline cursor-pointer ${
+                          filterSessionId === conversation.session_id 
+                            ? 'text-green-400 font-semibold' 
+                            : 'text-green-300'
+                        }`}
+                        title="Click to filter by this session"
+                      >
+                        {conversation.session_id}
+                      </button>
+                    </p>
+                  )}
                   <p className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
                     {formatDate(conversation.created_at)}
                   </p>
