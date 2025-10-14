@@ -147,7 +147,7 @@ const KnowledgeIndex: React.FC = () => {
         <table className="ki-table">
           <thead>
             <tr>
-              <th>{t('knowledge.title')}</th>
+              <th>{t('knowledge.documentTitle')}</th>
               <th>{t('knowledge.parentId')}</th>
               <th>{t('knowledge.chunkId')}</th>
               <th>{t('knowledge.url')}</th>
