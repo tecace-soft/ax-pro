@@ -1,3 +1,5 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+
 // Supabase configuration
 // These will be configurable in settings
 const SUPABASE_URL_KEY = 'axpro_supabase_url';
@@ -11,6 +13,31 @@ export interface SupabaseConfig {
   url: string;
   anonKey: string;
 }
+
+// Singleton Supabase client to avoid multiple instances
+let supabaseClient: SupabaseClient | null = null;
+let currentConfig: string | null = null;
+
+/**
+ * Get or create a singleton Supabase client
+ */
+export const getSupabaseClient = (): SupabaseClient => {
+  const config = getSupabaseConfig();
+  const configKey = `${config.url}:${config.anonKey}`;
+  
+  // Only create a new client if config changed or client doesn't exist
+  if (!supabaseClient || currentConfig !== configKey) {
+    if (!config.url || !config.anonKey) {
+      throw new Error('Supabase configuration not set. Please configure in Settings > Database.');
+    }
+    
+    supabaseClient = createClient(config.url, config.anonKey);
+    currentConfig = configKey;
+    console.log('✅ Supabase client initialized');
+  }
+  
+  return supabaseClient;
+};
 
 /**
  * Get Supabase configuration from localStorage
@@ -68,7 +95,7 @@ export const testSupabaseConnection = async (config: SupabaseConfig): Promise<bo
 
 // Type definitions for database tables
 export interface ChatData {
-  id?: number;
+  id: string;  // Changed from number to string (chat_1760402027275_ekb47d6kd format)
   chat_message: string;  // User's input message
   response: string;      // Bot's response
   user_id: string;       // User identifier

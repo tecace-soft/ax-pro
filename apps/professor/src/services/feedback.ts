@@ -1,15 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import { getSupabaseConfig, AdminFeedbackData, UserFeedbackData } from './supabase';
-
-function getSupabaseClient() {
-  const config = getSupabaseConfig();
-  
-  if (!config.url || !config.anonKey) {
-    throw new Error('Supabase configuration not set. Please configure in Settings > Database.');
-  }
-
-  return createClient(config.url, config.anonKey);
-}
+import { getSupabaseClient } from './supabase';
+import type { AdminFeedbackData, UserFeedbackData } from './supabase';
 
 /**
  * Fetch all admin feedback ordered by most recent first

@@ -1,23 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
-import { getSupabaseConfig } from './supabase';
+import { getSupabaseClient } from './supabase';
 
 interface Prompt {
   id?: number;
   prompt_text: string;
   created_at?: string;
-}
-
-/**
- * Get Supabase client instance
- */
-function getSupabaseClient() {
-  const config = getSupabaseConfig();
-  
-  if (!config.url || !config.anonKey) {
-    throw new Error('Supabase configuration not set. Please configure in Settings > Database.');
-  }
-
-  return createClient(config.url, config.anonKey);
 }
 
 /**
