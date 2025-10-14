@@ -106,20 +106,49 @@ export async function getChatData(requestId: string): Promise<ChatData | null> {
 
 /**
  * Fetch chat data by ID (for linking with feedback)
+ * Handles both string and numeric chat IDs
  */
 export async function fetchChatById(chatId: string): Promise<ChatData | null> {
   try {
     const supabase = getSupabaseClient();
     
-    const { data, error } = await supabase
+    // First try to find by exact string match (for string IDs)
+    let { data, error } = await supabase
       .from('chat')
       .select('*')
       .eq('id', chatId)
       .maybeSingle();
 
+    // If that fails and chatId looks like a string ID, try to extract numeric part
+    if (error && chatId.startsWith('chat_')) {
+      console.log(`String ID lookup failed for ${chatId}, trying alternative approach...`);
+      
+      // Try to find by partial match or different field
+      const { data: altData, error: altError } = await supabase
+        .from('chat')
+        .select('*')
+        .ilike('id', `%${chatId}%`)
+        .maybeSingle();
+      
+      if (!altError && altData) {
+        console.log(`✅ Found chat using alternative lookup for ${chatId}`);
+        return altData;
+      }
+      
+      // If still no match, return null with a helpful message
+      console.warn(`No chat found for ID: ${chatId}. This might be due to a chat_id mismatch between feedback and chat tables.`);
+      return null;
+    }
+
     if (error) {
       console.error('Supabase error:', error);
       return null;
+    }
+
+    if (data) {
+      console.log(`✅ Found chat for ID: ${chatId}`);
+    } else {
+      console.warn(`No chat found for ID: ${chatId}`);
     }
 
     return data;

@@ -102,10 +102,21 @@ export default function UserFeedbackList() {
 
     // If not expanded and no chat data, fetch it
     if (!feedback.isExpanded && !feedback.chatData) {
+      console.log(`Fetching chat data for feedback ${feedbackId} with chat_id: ${feedback.chat_id}`);
       const chatData = await fetchChatById(feedback.chat_id)
-      setFeedbacks(prev => prev.map(f => 
-        f.id === feedbackId ? { ...f, chatData, isExpanded: true } : f
-      ))
+      
+      if (chatData) {
+        console.log(`✅ Successfully loaded chat data for ${feedback.chat_id}`);
+        setFeedbacks(prev => prev.map(f => 
+          f.id === feedbackId ? { ...f, chatData, isExpanded: true } : f
+        ))
+      } else {
+        console.warn(`❌ Could not load chat data for ${feedback.chat_id}. This might be due to a chat_id mismatch.`);
+        // Still expand to show the error state
+        setFeedbacks(prev => prev.map(f => 
+          f.id === feedbackId ? { ...f, chatData: null, isExpanded: true } : f
+        ))
+      }
     } else {
       // Just toggle expand
       setFeedbacks(prev => prev.map(f => 
@@ -442,6 +453,18 @@ export default function UserFeedbackList() {
                           {feedback.chatData.response}
                         </p>
                       </div>
+                    </div>
+                  ) : feedback.chatData === null ? (
+                    <div className="p-3 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                      <p className="text-sm font-medium mb-1" style={{ color: 'var(--admin-danger)' }}>
+                        ⚠️ Chat data not found
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                        The chat associated with this feedback could not be loaded. This might be due to a mismatch between the feedback chat_id and the chat table ID format.
+                      </p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--admin-text-muted)' }}>
+                        Chat ID: {feedback.chat_id}
+                      </p>
                     </div>
                   ) : (
                     <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
