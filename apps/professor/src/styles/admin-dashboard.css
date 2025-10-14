@@ -1744,7 +1744,7 @@ input:checked + .toggle-slider::before {
   margin-right: 0.2rem; }
 .hexagon-outer{ width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #3be6ff, #29c3ff);
+  background: #3be6ff;
   clip-path: polygon(50% 0%, 90% 22%, 90% 78%, 50% 100%, 10% 78%, 10% 22%);
   display: flex;
   align-items: center;
@@ -1752,7 +1752,7 @@ input:checked + .toggle-slider::before {
   box-shadow: 0 0 8px rgba(59, 230, 255, 0.2); }
 .hexagon-inner{ width: 80%;
   height: 80%;
-  background: linear-gradient(135deg, #1a2332, #0f1419);
+  background: #0a0e1a;
   clip-path: polygon(50% 0%, 90% 22%, 90% 78%, 50% 100%, 10% 78%, 10% 22%);
   display: flex;
   align-items: center;
