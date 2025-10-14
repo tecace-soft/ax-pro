@@ -99,16 +99,26 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   background: rgba(18, 27, 61, 0.4);
   border: 1px solid rgba(59, 230, 255, 0.15);
   border-radius: 16px;
-  padding: 60px 40px; /* 상하 여백 증가 */
-  overflow: visible; /* 레이블이 잘리지 않도록 */
+  padding: 80px 60px; /* 충분한 여백 */
+  overflow: visible;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   width: 100%;
-  min-height: 500px; /* 최소 높이 보장 */
+  min-height: 600px; /* 충분한 높이 */
+}
+
+.radar-chart-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .radar-chart-large {
@@ -118,7 +128,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto; /* 중앙 정렬 */
+  margin: 0;
 }
 
 /* 중앙 점수 스타일 - 반응형 */
@@ -865,10 +875,11 @@
 /* SVG 정확도 향상 - 점과 라인 꼭지점 정렬 */
 .radar-svg-large {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  height: 400px;
   z-index: 2;
   filter: drop-shadow(0 0 20px rgba(59, 230, 255, 0.3));
 }

@@ -108,7 +108,7 @@ export default function PerformanceRadar({
   const getLabelCoordinates = (index: number, total: number) => {
     const angleStep = 360 / total
     const angle = (index * angleStep) - 90
-    const labelRadius = maxRadius + 100 // 더 멀리 배치
+    const labelRadius = maxRadius + 80 // 적절한 거리
     
     const x = Math.cos(angle * Math.PI / 180) * labelRadius
     const y = Math.sin(angle * Math.PI / 180) * labelRadius
@@ -184,95 +184,103 @@ export default function PerformanceRadar({
       <div className="radar-main-layout">
         {/* Left side: Radar chart */}
         <div className="radar-chart-section">
-          <div className="radar-chart-large">
-            <svg className="radar-svg-large" width={chartSize} height={chartSize}>
-              {/* Background grid */}
-              {createBackgroundGrid()}
+          <div className="radar-chart-container">
+            <div className="radar-chart-large">
+              <svg className="radar-svg-large" width={chartSize} height={chartSize}>
+                {/* Background grid */}
+                {createBackgroundGrid()}
+                
+                {/* Radar polygon */}
+                <path
+                  d={createRadarPath()}
+                  fill="rgba(59, 230, 255, 0.1)"
+                  stroke="rgba(59, 230, 255, 0.8)"
+                  strokeWidth="2"
+                />
+                
+                {/* Data points */}
+                {activeDataPoints.map((point, index) => {
+                  const coords = getPointCoordinates(index, activeDataPoints.length, point.value)
+                  return (
+                    <g key={index} className="radar-point-large">
+                      <circle
+                        className="point-dot-large"
+                        cx={coords.x + center}
+                        cy={coords.y + center}
+                        r="6"
+                        fill={point.color}
+                        stroke="white"
+                        strokeWidth="2"
+                      />
+                      <text
+                        x={coords.x + center}
+                        y={coords.y + center - 15}
+                        textAnchor="middle"
+                        className="point-score-box"
+                        fill={point.color}
+                        fontSize="12"
+                        fontWeight="bold"
+                      >
+                        {point.value}
+                      </text>
+                    </g>
+                  )
+                })}
+              </svg>
               
-              {/* Radar polygon */}
-              <path
-                d={createRadarPath()}
-                fill="rgba(59, 230, 255, 0.1)"
-                stroke="rgba(59, 230, 255, 0.8)"
-                strokeWidth="2"
-              />
-              
-              {/* Data points */}
-              {activeDataPoints.map((point, index) => {
-                const coords = getPointCoordinates(index, activeDataPoints.length, point.value)
-                return (
-                  <g key={index} className="radar-point-large">
-                    <circle
-                      className="point-dot-large"
-                      cx={coords.x + center}
-                      cy={coords.y + center}
-                      r="6"
-                      fill={point.color}
-                      stroke="white"
-                      strokeWidth="2"
-                    />
-                    <text
-                      x={coords.x + center}
-                      y={coords.y + center - 15}
-                      textAnchor="middle"
-                      className="point-score-box"
-                      fill={point.color}
-                      fontSize="12"
-                      fontWeight="bold"
-                    >
-                      {point.value}
-                    </text>
-                  </g>
-                )
-              })}
-            </svg>
-            
-            {/* Center score */}
-            <div 
-              className="radar-center-large"
-              style={{
-                position: 'absolute',
-                top: `${centerY}px`,
-                left: `${center}px`,
-                transform: 'translate(-50%, -50%)'
-              }}
-            >
-              <div className="center-score-large">{averageScore}</div>
-              <div className="center-label-large">OVERALL</div>
-            </div>
-          </div>
-          
-          {/* Labels */}
-          {allDataPoints.map((point, index) => {
-            const labelCoords = getLabelCoordinates(index, allDataPoints.length)
-            const isActive = toggles[point.key as keyof typeof toggles]
-            const isPromptInjection = point.key === 'promptInjection'
-            
-            return (
-              <div
-                key={index}
-                className={`radar-label-clean radar-label-${point.key.toLowerCase()} ${!isActive ? 'label-inactive' : ''}`}
+              {/* Center score */}
+              <div 
+                className="radar-center-large"
                 style={{
                   position: 'absolute',
-                  left: `${labelCoords.x + center}px`,
-                  top: `${labelCoords.y + centerY}px`,
-                  transform: 'translate(-50%, -50%)',
-                  zIndex: 10,
-                  borderColor: point.color,
-                  opacity: isActive ? 1 : 0.5
+                  top: `${centerY}px`,
+                  left: `${center}px`,
+                  transform: 'translate(-50%, -50%)'
                 }}
               >
-                <div className="label-content">
-                  <span className="label-name" style={{ color: point.color }}>
-                    {isPromptInjection ? 'PROMPT INJECTION' : point.label.toUpperCase()}
-                  </span>
-                  <span className="label-score" style={{ color: point.color }}>
-                    {point.value}
-                  </span>
-                </div>
+                <div className="center-score-large">{averageScore}</div>
+                <div className="center-label-large">OVERALL</div>
               </div>
-            )
-          })}
+            </div>
+            
+            {/* Labels */}
+            {allDataPoints.map((point, index) => {
+              const labelCoords = getLabelCoordinates(index, allDataPoints.length)
+              const isActive = toggles[point.key as keyof typeof toggles]
+              const isPromptInjection = point.key === 'promptInjection'
+              
+              // 컨테이너 중앙을 기준으로 절대 위치 계산
+              const containerCenterX = 200 // 400px / 2
+              const containerCenterY = 200 // 400px / 2
+              const labelX = containerCenterX + labelCoords.x
+              const labelY = containerCenterY + labelCoords.y
+              
+              return (
+                <div
+                  key={index}
+                  className={`radar-label-clean radar-label-${point.key.toLowerCase()} ${!isActive ? 'label-inactive' : ''}`}
+                  style={{
+                    position: 'absolute',
+                    left: `${labelX}px`,
+                    top: `${labelY}px`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 10,
+                    borderColor: point.color,
+                    opacity: isActive ? 1 : 0.5
+                  }}
+                >
+                  <div className="label-content">
+                    <span className="label-name" style={{ color: point.color }}>
+                      {isPromptInjection ? 'PROMPT INJECTION' : point.label.toUpperCase()}
+                    </span>
+                    <span className="label-score" style={{ color: point.color }}>
+                      {point.value}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
         
         {/* Right side: Module Control panel (always visible) */}
