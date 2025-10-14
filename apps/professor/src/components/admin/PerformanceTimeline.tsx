@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from '../../i18n/I18nProvider';
 import { DailyRow, EstimationMode } from '../../services/dailyAggregates';
 
 interface PerformanceTimelineProps {
@@ -22,6 +23,7 @@ export default function PerformanceTimeline({
   estimationMode,
   onEstimationModeChange
 }: PerformanceTimelineProps) {
+  const { t } = useTranslation();
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [playSpeed, setPlaySpeed] = useState(800);
@@ -90,7 +92,7 @@ export default function PerformanceTimeline({
         <div className="timeline-controls-compact">
           {/* Date Selector */}
           <div className="date-selector-compact">
-            <label>Date:</label>
+            <label>{t('admin.date')}:</label>
             <select 
               className="date-select-compact"
               value={selectedDate}
@@ -129,7 +131,7 @@ export default function PerformanceTimeline({
           {/* Data Indicator */}
           <div className="data-indicator-compact">
             <span className={`indicator ${selectedRow?.isSimulated ? 'estimated' : 'actual'}`}>
-              {selectedRow?.isSimulated ? '📊 Actual' : '📈 Actual'}
+              {selectedRow?.isSimulated ? `📊 ${t('admin.estimated')}` : `📈 ${t('admin.actual')}`}
             </span>
           </div>
 
@@ -152,20 +154,20 @@ export default function PerformanceTimeline({
                       checked={includeSimulatedData}
                       onChange={(e) => onIncludeSimulatedDataChange(e.target.checked)}
                     />
-                    Include Estimated Data
+                    {t('admin.estimated')} 데이터 포함
                   </label>
                 </div>
 
                 <div className="setting-item">
-                  <label className="select-label">Estimation Mode:</label>
+                  <label className="select-label">추정 모드:</label>
                   <select
                     className="mode-select"
                     value={estimationMode}
                     onChange={(e) => onEstimationModeChange(e.target.value as EstimationMode)}
                   >
-                    <option value="simple">Simple (±5%)</option>
-                    <option value="improved">Improved (±4% + pattern)</option>
-                    <option value="realistic">Realistic (trend + weekly)</option>
+                    <option value="simple">간단 (±5%)</option>
+                    <option value="improved">개선 (±4% + 패턴)</option>
+                    <option value="realistic">현실적 (트렌드 + 주간)</option>
                   </select>
                 </div>
               </div>
@@ -201,7 +203,7 @@ export default function PerformanceTimeline({
                 onClick={() => onDateChange(row.Date)}
                 onMouseEnter={() => setHoveredBar(row.Date)}
                 onMouseLeave={() => setHoveredBar(null)}
-                title={`${row.Date}: ${score}% ${isSimulated ? '(Estimated)' : '(Actual)'}`}
+                title={`${row.Date}: ${score}% ${isSimulated ? `(${t('admin.estimated')})` : `(${t('admin.actual')})`}`}
               >
                 <span className="bar-value">{score}</span>
                 
@@ -209,7 +211,7 @@ export default function PerformanceTimeline({
                   <div className="bar-hover-info">
                     <div className="hover-date">{row.Date}</div>
                     <div className="hover-score">{score}%</div>
-                    <div className="hover-type">{isSimulated ? 'Estimated' : 'Actual'}</div>
+                    <div className="hover-type">{isSimulated ? t('admin.estimated') : t('admin.actual')}</div>
                   </div>
                 )}
               </div>

@@ -52,12 +52,12 @@ export default function PerformanceRadar({
   const [isModuleControlExpanded, setIsModuleControlExpanded] = useState(false)
 
   const allDataPoints = [
-    { key: 'relevance', label: 'Relevance', value: relevance, description: 'Content Matching', icon: '⚡', color: '#ff6b6b' },
-    { key: 'tone', label: 'Tone', value: tone, description: 'Response Style', icon: '🎭', color: '#4ecdc4' },
-    { key: 'length', label: 'Length', value: length, description: 'Response Size', icon: '📏', color: '#45b7d1' },
-    { key: 'accuracy', label: 'Accuracy', value: accuracy, description: 'Correct Answers', icon: '✓', color: '#96ceb4' },
-    { key: 'toxicity', label: 'Toxicity', value: toxicity, description: 'Safety Check', icon: '🛡️', color: '#feca57' },
-    { key: 'promptInjection', label: 'Prompt injection', value: promptInjection, description: 'Security Filter', icon: '🔒', color: '#ff9ff3' }
+    { key: 'relevance', label: t('admin.relevance'), value: relevance, description: t('admin.contentMatching'), icon: '⚡', color: '#ff6b6b' },
+    { key: 'tone', label: t('admin.tone'), value: tone, description: t('admin.responseStyle'), icon: '🎭', color: '#4ecdc4' },
+    { key: 'length', label: t('admin.length'), value: length, description: t('admin.responseSize'), icon: '📏', color: '#45b7d1' },
+    { key: 'accuracy', label: t('admin.accuracy'), value: accuracy, description: t('admin.correctAnswers'), icon: '✓', color: '#96ceb4' },
+    { key: 'toxicity', label: t('admin.toxicity'), value: toxicity, description: t('admin.safetyCheck'), icon: '🛡️', color: '#feca57' },
+    { key: 'promptInjection', label: t('admin.promptInjection'), value: promptInjection, description: t('admin.securityFilter'), icon: '🔒', color: '#ff9ff3' }
   ]
 
   const activeDataPoints = allDataPoints.filter(point => toggles[point.key as keyof typeof toggles])
@@ -284,7 +284,7 @@ export default function PerformanceRadar({
         {/* Right side: Module Control panel (always visible) */}
         <div className="module-control-panel">
           <div className="module-control-header-side">
-            <span className="control-title">Module Control</span>
+            <span className="control-title">{t('admin.moduleControl')}</span>
             <span className="control-badge">{activeCount} / {allDataPoints.length}</span>
           </div>
           

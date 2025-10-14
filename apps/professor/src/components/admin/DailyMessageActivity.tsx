@@ -271,13 +271,13 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
           }}
         >
           <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>
-            Total Messages
+            {t('admin.totalMessages')}
           </div>
           <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--admin-primary)' }}>
             {stats.totalMessages}
           </div>
           <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>
-            Avg: {stats.avgPerDay}/day
+            평균: {stats.avgPerDay}/{t('admin.avgPerDay')}
           </div>
         </div>
 
@@ -290,13 +290,13 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
           }}
         >
           <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>
-            User Feedback
+            {t('admin.userFeedbackCount')}
           </div>
           <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--admin-success)' }}>
             {stats.totalUserFeedback}
           </div>
           <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>
-            {stats.userSatisfaction}% positive
+            {stats.userSatisfaction}% {t('admin.satisfaction')}
           </div>
         </div>
 
@@ -309,13 +309,13 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
           }}
         >
           <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>
-            Admin Reviews
+            {t('admin.adminReviews')}
           </div>
           <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--admin-accent)' }}>
             {stats.totalAdminFeedback}
           </div>
           <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>
-            {stats.adminApproval}% approved
+            {stats.adminApproval}% {t('admin.approval')}
           </div>
         </div>
 
@@ -328,13 +328,13 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
           }}
         >
           <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>
-            Corrected
+            {t('admin.corrected')}
           </div>
           <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--admin-warning, #ff9800)' }}>
             {stats.totalCorrected}
           </div>
           <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>
-            {stats.uniqueUsers} unique users
+            {stats.uniqueUsers} {t('admin.uniqueUsers')}
           </div>
         </div>
       </div>
@@ -352,7 +352,7 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
             border: '1px solid var(--admin-border)'
           }}
         >
-          Messages
+          {t('admin.messages')}
         </button>
         <button
           onClick={() => setViewMode('feedback')}
@@ -365,7 +365,7 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
             border: '1px solid var(--admin-border)'
           }}
         >
-          User Feedback
+          {t('admin.userFeedbackCount')}
         </button>
         <button
           onClick={() => setViewMode('admin')}
@@ -378,7 +378,7 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
             border: '1px solid var(--admin-border)'
           }}
         >
-          Admin Reviews
+          {t('admin.adminReviews')}
         </button>
       </div>
 
