@@ -106,6 +106,7 @@ export default function RecentConversations({
       filtered = filtered.filter(c => 
         c.user_id?.toLowerCase().includes(term) ||
         String(c.id || '').toLowerCase().includes(term) ||
+        c.chat_id?.toLowerCase().includes(term) ||
         c.chat_message?.toLowerCase().includes(term) ||
         c.response?.toLowerCase().includes(term)
       )
@@ -412,16 +413,16 @@ export default function RecentConversations({
           {displayedConversations.map((conversation) => (
             <div 
               key={conversation.id}
-              id={`chat-${conversation.id}`}
+              id={`chat-${conversation.chat_id}`}
               className="p-4 rounded-lg border transition-all duration-500"
               style={{
-                backgroundColor: highlightedChatId === conversation.id 
+                backgroundColor: highlightedChatId === conversation.chat_id 
                   ? 'rgba(59, 230, 255, 0.15)' 
                   : 'rgba(9, 14, 34, 0.4)',
-                borderColor: highlightedChatId === conversation.id 
+                borderColor: highlightedChatId === conversation.chat_id 
                   ? 'var(--admin-primary)' 
                   : 'var(--admin-border)',
-                boxShadow: highlightedChatId === conversation.id 
+                boxShadow: highlightedChatId === conversation.chat_id 
                   ? '0 0 20px rgba(59, 230, 255, 0.3)' 
                   : 'none'
               }}
@@ -430,6 +431,9 @@ export default function RecentConversations({
                 <div className="flex-1">
                   <p className="text-xs mb-1" style={{ color: 'var(--admin-text-muted)' }}>
                     User: {conversation.user_id}
+                  </p>
+                  <p className="text-xs mb-1" style={{ color: 'var(--admin-text-muted)' }}>
+                    Chat ID: {conversation.chat_id}
                   </p>
                   <p className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
                     {formatDate(conversation.created_at)}

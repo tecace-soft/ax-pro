@@ -95,7 +95,8 @@ export const testSupabaseConnection = async (config: SupabaseConfig): Promise<bo
 
 // Type definitions for database tables
 export interface ChatData {
-  id: string;  // Changed from number to string (chat_1760402027275_ekb47d6kd format)
+  id: number;  // Numeric primary key
+  chat_id: string;  // String identifier (chat_1760402027275_ekb47d6kd format)
   chat_message: string;  // User's input message
   response: string;      // Bot's response
   user_id: string;       // User identifier
