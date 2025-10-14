@@ -33,9 +33,10 @@ interface Stats {
   adminApproval: number
 }
 
-type DateRange = '7d' | '30d' | '90d' | '6m' | '1y' | 'custom'
+type DateRange = '3d' | '7d' | '30d' | '90d' | '6m' | '1y' | 'custom'
 
 const DATE_RANGE_OPTIONS = [
+  { value: '3d' as DateRange, label: 'Last 3 days' },
   { value: '7d' as DateRange, label: 'Last 7 days' },
   { value: '30d' as DateRange, label: 'Last 30 days' },
   { value: '90d' as DateRange, label: 'Last 3 months' },
@@ -74,6 +75,9 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
     const start = new Date()
 
     switch (dateRange) {
+      case '3d':
+        start.setDate(end.getDate() - 3)
+        break
       case '7d':
         start.setDate(end.getDate() - 7)
         break
@@ -234,6 +238,20 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
         totalUserFeedbacks: userFeedbacks.length,
         totalAdminFeedbacks: adminFeedbacks.length
       })
+
+      // Debug: Log sample day data to see if feedback is being distributed
+      const sampleDay = Array.from(dayMap.values()).find(d => d.userFeedbackCount > 0 || d.adminFeedbackCount > 0)
+      if (sampleDay) {
+        console.log('📊 Sample day with feedback:', {
+          date: sampleDay.date,
+          messages: sampleDay.messageCount,
+          userFeedback: sampleDay.userFeedbackCount,
+          adminFeedback: sampleDay.adminFeedbackCount,
+          corrected: sampleDay.correctedResponseCount
+        })
+      } else {
+        console.log('⚠️ No days with feedback data found')
+      }
       
       console.log('💡 To fix: Add chat_id column to Supabase chat table to match feedback.chat_id')
 
@@ -340,13 +358,20 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
               <input
                 type="date"
                 value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
+                onChange={(e) => {
+                  setCustomStartDate(e.target.value)
+                  // Auto-set end date to today if not set
+                  if (!customEndDate) {
+                    setCustomEndDate(new Date().toISOString().split('T')[0])
+                  }
+                }}
                 className="px-2 py-1 text-xs rounded border"
                 style={{
                   backgroundColor: 'var(--admin-bg)',
                   color: 'var(--admin-text)',
                   borderColor: 'var(--admin-border)'
                 }}
+                max={new Date().toISOString().split('T')[0]}
               />
               <span style={{ color: 'var(--admin-text-muted)' }}>to</span>
               <input
@@ -359,6 +384,8 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
                   color: 'var(--admin-text)',
                   borderColor: 'var(--admin-border)'
                 }}
+                min={customStartDate}
+                max={new Date().toISOString().split('T')[0]}
               />
             </div>
           )}
@@ -523,6 +550,19 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
               const value = getValue(item)
               const score = getScore(item)
               const heightPercent = maxValue > 0 ? (value / maxValue) * 100 : 0
+              
+              // Debug: Log values for first few items
+              if (index < 3) {
+                console.log(`📊 Day ${index} (${item.date}):`, {
+                  viewMode,
+                  value,
+                  score,
+                  messageCount: item.messageCount,
+                  userFeedbackCount: item.userFeedbackCount,
+                  adminFeedbackCount: item.adminFeedbackCount,
+                  correctedCount: item.correctedResponseCount
+                })
+              }
               
               return (
                 <div 
