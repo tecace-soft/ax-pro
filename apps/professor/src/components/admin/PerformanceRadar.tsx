@@ -108,7 +108,7 @@ export default function PerformanceRadar({
   const getLabelCoordinates = (index: number, total: number) => {
     const angleStep = 360 / total
     const angle = (index * angleStep) - 90
-    const labelRadius = maxRadius + 80 // 적절한 거리
+    const labelRadius = maxRadius + 50 // 간격 줄임 (80 → 50)
     
     const x = Math.cos(angle * Math.PI / 180) * labelRadius
     const y = Math.sin(angle * Math.PI / 180) * labelRadius

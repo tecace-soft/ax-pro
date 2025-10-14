@@ -3,7 +3,7 @@ import { fetchAllChatData } from '../../services/chatData'
 import { submitAdminFeedback, getAdminFeedbackByChat } from '../../services/feedback'
 import { ChatData, AdminFeedbackData } from '../../services/supabase'
 import { useTranslation } from '../../i18n/I18nProvider'
-import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
+import { IconRefresh, IconThumbsUp, IconThumbsDown, IconDownload } from '../../ui/icons'
 
 interface AdminFeedbackModal {
   chatId: string
@@ -198,6 +198,38 @@ export default function RecentConversations() {
     setCorrectedResponse('')
   }
 
+  const handleExportCSV = () => {
+    const headers = [
+      'Chat ID',
+      'User ID', 
+      'Created At',
+      'User Message',
+      'AI Response'
+    ]
+    
+    const csvData = filteredConversations.map(conversation => [
+      conversation.id,
+      conversation.user_id || '',
+      conversation.created_at || '',
+      `"${(conversation.chat_message || '').replace(/"/g, '""')}"`,
+      `"${(conversation.response || '').replace(/"/g, '""')}"`
+    ])
+    
+    const csvContent = [headers, ...csvData]
+      .map(row => row.join(','))
+      .join('\n')
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `recent-conversations-${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   if (isLoading) {
     return (
       <div className="admin-card">
@@ -250,14 +282,23 @@ export default function RecentConversations() {
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
           {t('admin.recentConversations')} ({filteredConversations.length})
         </h3>
-        <button 
-          className="icon-btn"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          title={t('actions.refresh')}
-        >
-          <IconRefresh size={18} className={isRefreshing ? 'animate-spin' : ''} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            className="icon-btn"
+            onClick={handleExportCSV}
+            title={t('admin.exportCSV')}
+          >
+            <IconDownload size={18} />
+          </button>
+          <button 
+            className="icon-btn"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            title={t('actions.refresh')}
+          >
+            <IconRefresh size={18} className={isRefreshing ? 'animate-spin' : ''} />
+          </button>
+        </div>
       </div>
 
       {/* Controls Bar */}
