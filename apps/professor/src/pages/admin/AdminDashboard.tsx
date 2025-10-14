@@ -9,6 +9,7 @@ import DailyMessageActivity from '../../components/admin/DailyMessageActivity'
 import PromptControl from '../../components/admin/PromptControl'
 import RecentConversations from '../../components/admin/RecentConversations'
 import UserFeedbackList from '../../components/admin/UserFeedbackList'
+import AdminFeedbackList from '../../components/admin/AdminFeedbackList'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 
@@ -135,6 +136,11 @@ export default function AdminDashboard() {
 
             {/* Content sections */}
             <div className="content-module">
+              <div id="admin-feedback" className="content-section">
+                <h2 className="section-title">Admin Feedback</h2>
+                <AdminFeedbackList />
+              </div>
+
               <div id="recent-conversations" className="content-section">
                 <h2 className="section-title">{t('admin.recentConversations')}</h2>
                 <RecentConversations />
