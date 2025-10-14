@@ -105,7 +105,7 @@ export default function RecentConversations({
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(c => 
         c.user_id?.toLowerCase().includes(term) ||
-        c.id?.toLowerCase().includes(term) ||
+        String(c.id || '').toLowerCase().includes(term) ||
         c.chat_message?.toLowerCase().includes(term) ||
         c.response?.toLowerCase().includes(term)
       )
