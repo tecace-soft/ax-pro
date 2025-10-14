@@ -1,7 +1,10 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from '../../i18n/I18nProvider';
 import { 
   uploadFilesToRAG, 
+  fetchFilesFromRAG,
+  deleteFileFromRAG,
+  reindexFile,
   validateFile, 
   formatFileSize, 
   getFileIcon,
@@ -19,6 +22,79 @@ const FileLibrary: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch files from n8n on component mount
+  useEffect(() => {
+    loadFiles();
+  }, []);
+
+  // Load files from n8n RAG system
+  const loadFiles = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetchFilesFromRAG();
+      if (response.success) {
+        setUploadedFiles(response.files);
+        console.log(`Loaded ${response.files.length} files from n8n`);
+      } else {
+        setError(response.message || 'Failed to load files');
+        console.error('Failed to load files:', response.message);
+      }
+    } catch (err) {
+      const errorMessage = 'Failed to connect to n8n service';
+      setError(errorMessage);
+      console.error('Error loading files:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle refresh button click
+  const handleRefresh = () => {
+    loadFiles();
+  };
+
+  // Handle file deletion
+  const handleDeleteFile = async (fileId: string, fileName: string) => {
+    if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
+      return;
+    }
+
+    try {
+      const result = await deleteFileFromRAG(fileId);
+      if (result.success) {
+        // Remove file from local state
+        setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+        console.log(`File ${fileName} deleted successfully`);
+      } else {
+        alert(`Failed to delete file: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      alert('Failed to delete file');
+    }
+  };
+
+  // Handle file re-indexing
+  const handleReindexFile = async (fileId: string, fileName: string) => {
+    try {
+      const result = await reindexFile(fileId);
+      if (result.success) {
+        alert(`File "${fileName}" re-indexed successfully`);
+        // Optionally refresh the file list
+        loadFiles();
+      } else {
+        alert(`Failed to re-index file: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error re-indexing file:', error);
+      alert('Failed to re-index file');
+    }
+  };
 
   // Handle file selection
   const handleFileSelect = useCallback((files: FileList | null) => {
@@ -71,6 +147,11 @@ const FileLibrary: React.FC = () => {
         }));
 
       setUploadedFiles(prev => [...newFiles, ...prev]);
+      
+      // Refresh the file list from n8n to get the actual uploaded files
+      setTimeout(() => {
+        loadFiles();
+      }, 1000);
     } catch (error) {
       console.error('Upload error:', error);
     } finally {
@@ -182,52 +263,112 @@ const FileLibrary: React.FC = () => {
             className="search-input"
           />
         </div>
-        <button className="refresh-btn">
+        <button className="refresh-btn" onClick={handleRefresh} disabled={isLoading}>
           <span className="refresh-icon">↻</span>
-          {t('knowledge.refresh')}
+          {isLoading ? t('knowledge.loading') || 'Loading...' : t('knowledge.refresh')}
         </button>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="error-message" style={{ 
+          padding: '12px', 
+          backgroundColor: '#fee', 
+          color: '#c33', 
+          borderRadius: '4px', 
+          marginBottom: '16px' 
+        }}>
+          {error}
+        </div>
+      )}
+
       {/* File List Table */}
       <div className="fl-table-container">
-        <table className="fl-table">
-          <thead>
-            <tr>
-              <th>{t('knowledge.fileName')}</th>
-              <th>{t('knowledge.size')}</th>
-              <th>{t('knowledge.lastModified')}</th>
-              <th>{t('knowledge.contentType')}</th>
-              <th>{t('knowledge.syncStatus')}</th>
-              <th>{t('knowledge.actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredAndSortedFiles.map(file => (
-              <tr key={file.id}>
-                <td className="file-name">
-                  <span className="file-icon">{getFileIcon(file.type)}</span>
-                  {file.name}
-                </td>
-                <td>{formatFileSize(file.size)}</td>
-                <td>{new Date(file.uploadedAt).toLocaleString()}</td>
-                <td>{file.type}</td>
-                <td>
-                  <span className="sync-status synced">✓</span>
-                </td>
-                <td>
-                  <div className="file-actions">
-                    <button className="action-btn download-btn" title={t('knowledge.download')}>
-                      ↓
-                    </button>
-                    <button className="action-btn delete-btn" title={t('knowledge.delete')}>
-                      🗑️
-                    </button>
-                  </div>
-                </td>
+        {isLoading ? (
+          <div className="loading-state" style={{ 
+            textAlign: 'center', 
+            padding: '40px', 
+            color: '#666' 
+          }}>
+            <div className="spinner" style={{
+              width: '24px',
+              height: '24px',
+              border: '2px solid #f3f3f3',
+              borderTop: '2px solid #333',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 16px'
+            }}></div>
+            Loading files from n8n...
+          </div>
+        ) : (
+          <table className="fl-table">
+            <thead>
+              <tr>
+                <th>{t('knowledge.fileName')}</th>
+                <th>{t('knowledge.size')}</th>
+                <th>{t('knowledge.lastModified')}</th>
+                <th>{t('knowledge.contentType')}</th>
+                <th>{t('knowledge.syncStatus')}</th>
+                <th>{t('knowledge.actions')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredAndSortedFiles.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                    {error ? 'Failed to load files' : 'No files found. Upload some files to get started.'}
+                  </td>
+                </tr>
+              ) : (
+                filteredAndSortedFiles.map(file => (
+                  <tr key={file.id}>
+                    <td className="file-name">
+                      <span className="file-icon">{getFileIcon(file.type)}</span>
+                      {file.name}
+                    </td>
+                    <td>{formatFileSize(file.size)}</td>
+                    <td>{new Date(file.uploadedAt).toLocaleString()}</td>
+                    <td>{file.type}</td>
+                    <td>
+                      <span className={`sync-status ${file.syncStatus || 'synced'}`}>
+                        {file.syncStatus === 'synced' ? '✓' : 
+                         file.syncStatus === 'pending' ? '⏳' : 
+                         file.syncStatus === 'error' ? '❌' : '✓'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="file-actions">
+                        <button 
+                          className="action-btn reindex-btn" 
+                          title="Re-index file"
+                          onClick={() => handleReindexFile(file.id, file.name)}
+                        >
+                          🔄
+                        </button>
+                        <button 
+                          className="action-btn download-btn" 
+                          title={t('knowledge.download')}
+                          onClick={() => file.url && window.open(file.url, '_blank')}
+                          disabled={!file.url}
+                        >
+                          ↓
+                        </button>
+                        <button 
+                          className="action-btn delete-btn" 
+                          title={t('knowledge.delete')}
+                          onClick={() => handleDeleteFile(file.id, file.name)}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

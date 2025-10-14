@@ -2,6 +2,16 @@ import axios from 'axios';
 
 // RAG Management API configuration
 const RAG_WEBHOOK_URL = 'https://n8n.srv978041.hstgr.cloud/webhook/1f18f1aa-44c4-467f-b299-c87c9b6f9459';
+const RAG_API_BASE_URL = 'https://n8n.srv978041.hstgr.cloud/api/v1';
+
+// n8n endpoints for different operations
+const ENDPOINTS = {
+  UPLOAD: RAG_WEBHOOK_URL,
+  LIST_FILES: `${RAG_API_BASE_URL}/files`,
+  DELETE_FILE: `${RAG_API_BASE_URL}/files`,
+  REINDEX_FILE: `${RAG_API_BASE_URL}/files/reindex`,
+  GET_FILE_STATUS: `${RAG_API_BASE_URL}/files/status`,
+};
 
 export interface FileUploadResult {
   success: boolean;
@@ -17,6 +27,16 @@ export interface RAGFile {
   type: string;
   uploadedAt: string;
   status: 'uploading' | 'processing' | 'ready' | 'error';
+  url?: string;
+  lastModified?: string;
+  syncStatus?: 'synced' | 'pending' | 'error';
+}
+
+export interface FileListResponse {
+  success: boolean;
+  files: RAGFile[];
+  total: number;
+  message?: string;
 }
 
 /**
@@ -75,6 +95,56 @@ export async function uploadFilesToRAG(files: File[]): Promise<FileUploadResult[
 export async function uploadSingleFileToRAG(file: File): Promise<FileUploadResult> {
   const results = await uploadFilesToRAG([file]);
   return results[0];
+}
+
+/**
+ * Fetch list of files from n8n RAG system
+ */
+export async function fetchFilesFromRAG(): Promise<FileListResponse> {
+  try {
+    console.log('Fetching files from n8n RAG system...');
+    
+    const response = await axios.get(ENDPOINTS.LIST_FILES, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      timeout: 10000, // 10 second timeout
+    });
+
+    console.log('Files fetched successfully:', response.data);
+    
+    // Transform the response to match our interface
+    const files: RAGFile[] = response.data.files?.map((file: any) => ({
+      id: file.id || file.fileId || `file-${Date.now()}`,
+      name: file.name || file.fileName || 'Unknown',
+      size: file.size || file.fileSize || 0,
+      type: file.type || file.contentType || 'application/octet-stream',
+      uploadedAt: file.uploadedAt || file.createdAt || file.uploadDate || new Date().toISOString(),
+      status: file.status || 'ready',
+      url: file.url || file.downloadUrl,
+      lastModified: file.lastModified || file.updatedAt,
+      syncStatus: file.syncStatus || 'synced',
+    })) || [];
+
+    return {
+      success: true,
+      files,
+      total: files.length,
+      message: 'Files fetched successfully'
+    };
+    
+  } catch (error: any) {
+    console.error('Error fetching files from RAG:', error);
+    
+    // Return empty list on error
+    return {
+      success: false,
+      files: [],
+      total: 0,
+      message: error.response?.data?.message || error.message || 'Failed to fetch files'
+    };
+  }
 }
 
 /**
@@ -143,49 +213,61 @@ export function getFileIcon(fileType: string): string {
 }
 
 /**
- * Re-index a file (placeholder for future implementation)
+ * Re-index a file via n8n API
  */
 export async function reindexFile(fileId: string): Promise<{ success: boolean; message: string }> {
-  // This would typically call a backend API to re-index a specific file
-  // For now, we'll simulate the operation
   try {
-    console.log(`Re-indexing file: ${fileId}`);
+    console.log(`Re-indexing file via n8n: ${fileId}`);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const response = await axios.post(`${ENDPOINTS.REINDEX_FILE}/${fileId}`, {}, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      timeout: 15000, // 15 second timeout for reindexing
+    });
+
+    console.log('Re-index response:', response.data);
     
     return {
       success: true,
-      message: 'File re-indexed successfully'
+      message: response.data.message || 'File re-indexed successfully'
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error re-indexing file:', error);
     return {
       success: false,
-      message: 'Failed to re-index file'
+      message: error.response?.data?.message || error.message || 'Failed to re-index file'
     };
   }
 }
 
 /**
- * Delete a file from the RAG system (placeholder for future implementation)
+ * Delete a file from the RAG system via n8n API
  */
 export async function deleteFileFromRAG(fileId: string): Promise<{ success: boolean; message: string }> {
-  // This would typically call a backend API to delete a file from the RAG system
-  // For now, we'll simulate the operation
   try {
-    console.log(`Deleting file from RAG: ${fileId}`);
+    console.log(`Deleting file from RAG via n8n: ${fileId}`);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const response = await axios.delete(`${ENDPOINTS.DELETE_FILE}/${fileId}`, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      timeout: 10000, // 10 second timeout
+    });
+
+    console.log('Delete response:', response.data);
     
     return {
       success: true,
-      message: 'File deleted successfully'
+      message: response.data.message || 'File deleted successfully'
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error deleting file:', error);
     return {
       success: false,
-      message: 'Failed to delete file'
+      message: error.response?.data?.message || error.message || 'Failed to delete file'
     };
   }
 }
