@@ -42,6 +42,7 @@ export default function RecentConversations({
   const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON'>('CSV')
   const [filterSessionId, setFilterSessionId] = useState<string | null>(null)
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
+  const [filterDate, setFilterDate] = useState<string | null>(null)
 
   useEffect(() => {
     loadConversations()
@@ -49,7 +50,7 @@ export default function RecentConversations({
 
   useEffect(() => {
     applyFiltersAndSort()
-  }, [conversations, searchTerm, sortBy, filterSessionId, filterUserId])
+  }, [conversations, searchTerm, sortBy, filterSessionId, filterUserId, filterDate])
 
   // Handle scroll to specific chat
   useEffect(() => {
@@ -110,6 +111,16 @@ export default function RecentConversations({
     // Filter by user ID
     if (filterUserId) {
       filtered = filtered.filter(c => c.user_id === filterUserId)
+    }
+
+    // Filter by date
+    if (filterDate) {
+      filtered = filtered.filter(c => {
+        if (!c.created_at) return false
+        const chatDate = new Date(c.created_at).toDateString()
+        const filterDateObj = new Date(filterDate).toDateString()
+        return chatDate === filterDateObj
+      })
     }
 
     // Filter by search term
@@ -255,9 +266,20 @@ export default function RecentConversations({
     }
   }
 
+  const handleFilterByDate = (dateString: string) => {
+    if (filterDate === dateString) {
+      setFilterDate(null) // Clear filter if same date clicked
+    } else {
+      setFilterDate(dateString)
+      setFilterSessionId(null) // Clear other filters when filtering by date
+      setFilterUserId(null)
+    }
+  }
+
   const clearAllFilters = () => {
     setFilterSessionId(null)
     setFilterUserId(null)
+    setFilterDate(null)
     setSearchTerm('')
   }
 
@@ -413,7 +435,7 @@ export default function RecentConversations({
         </div>
 
         {/* Filter Indicators */}
-        {(filterSessionId || filterUserId) && (
+        {(filterSessionId || filterUserId || filterDate) && (
           <div className="flex items-center gap-2">
             <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>Filters:</span>
             {filterSessionId && (
@@ -424,6 +446,11 @@ export default function RecentConversations({
             {filterUserId && (
               <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: 'var(--admin-primary)' }}>
                 User: {filterUserId}
+              </span>
+            )}
+            {filterDate && (
+              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(168, 85, 247, 0.2)', color: 'var(--admin-accent)' }}>
+                Date: {new Date(filterDate).toLocaleDateString()}
               </span>
             )}
             <button
@@ -525,7 +552,17 @@ export default function RecentConversations({
                     </p>
                   )}
                   <p className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
-                    {formatDate(conversation.created_at)}
+                    <button
+                      onClick={() => handleFilterByDate(conversation.created_at || '')}
+                      className={`hover:underline cursor-pointer ${
+                        filterDate === conversation.created_at 
+                          ? 'text-purple-400 font-semibold' 
+                          : 'text-purple-300'
+                      }`}
+                      title="Click to filter by this date"
+                    >
+                      {formatDate(conversation.created_at)}
+                    </button>
                   </p>
                 </div>
               </div>

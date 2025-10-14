@@ -22,6 +22,8 @@ export default function AdminFeedbackList() {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('date-desc')
   const [filterVerdict, setFilterVerdict] = useState<'all' | 'good' | 'bad'>('all')
+  const [filterUserId, setFilterUserId] = useState<string | null>(null)
+  const [filterDate, setFilterDate] = useState<string | null>(null)
 
   useEffect(() => {
     loadFeedback()
@@ -29,7 +31,7 @@ export default function AdminFeedbackList() {
 
   useEffect(() => {
     applyFiltersAndSort()
-  }, [feedbacks, searchTerm, sortBy, filterVerdict])
+  }, [feedbacks, searchTerm, sortBy, filterVerdict, filterUserId, filterDate])
 
   const loadFeedback = async () => {
     setIsLoading(true)
@@ -71,6 +73,22 @@ export default function AdminFeedbackList() {
       filtered = filtered.filter(f => f.feedback_verdict === filterVerdict)
     }
 
+    // Filter by user ID
+    if (filterUserId) {
+      filtered = filtered.filter(f => f.chatData?.user_id === filterUserId)
+    }
+
+    // Filter by date
+    if (filterDate) {
+      filtered = filtered.filter(f => {
+        const feedbackDate = f.updated_at || f.created_at
+        if (!feedbackDate) return false
+        const dateStr = new Date(feedbackDate).toDateString()
+        const filterDateObj = new Date(filterDate).toDateString()
+        return dateStr === filterDateObj
+      })
+    }
+
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
@@ -106,6 +124,31 @@ export default function AdminFeedbackList() {
     setFeedbacks(prev => prev.map(f => 
       f.id === feedbackId ? { ...f, isEnabled: !f.isEnabled } : f
     ))
+  }
+
+  const handleFilterByUser = (userId: string) => {
+    if (filterUserId === userId) {
+      setFilterUserId(null) // Clear filter if same user clicked
+    } else {
+      setFilterUserId(userId)
+      setFilterDate(null) // Clear date filter when filtering by user
+    }
+  }
+
+  const handleFilterByDate = (dateString: string) => {
+    if (filterDate === dateString) {
+      setFilterDate(null) // Clear filter if same date clicked
+    } else {
+      setFilterDate(dateString)
+      setFilterUserId(null) // Clear user filter when filtering by date
+    }
+  }
+
+  const clearAllFilters = () => {
+    setFilterUserId(null)
+    setFilterDate(null)
+    setSearchTerm('')
+    setFilterVerdict('all')
   }
 
   const formatDate = (dateString?: string) => {

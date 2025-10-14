@@ -28,6 +28,8 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
   const [filterReaction, setFilterReaction] = useState<'all' | 'good' | 'bad'>('all')
   const [displayLimit, setDisplayLimit] = useState(10)
   const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON'>('CSV')
+  const [filterUserId, setFilterUserId] = useState<string | null>(null)
+  const [filterDate, setFilterDate] = useState<string | null>(null)
 
   useEffect(() => {
     loadFeedback()
@@ -35,7 +37,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
   useEffect(() => {
     applyFiltersAndSort()
-  }, [feedbacks, searchTerm, sortBy, filterReaction])
+  }, [feedbacks, searchTerm, sortBy, filterReaction, filterUserId, filterDate])
 
   const loadFeedback = async () => {
     setIsLoading(true)
@@ -71,6 +73,21 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
     // Filter by reaction
     if (filterReaction !== 'all') {
       filtered = filtered.filter(f => f.reaction === filterReaction)
+    }
+
+    // Filter by user ID
+    if (filterUserId) {
+      filtered = filtered.filter(f => f.user_id === filterUserId)
+    }
+
+    // Filter by date
+    if (filterDate) {
+      filtered = filtered.filter(f => {
+        if (!f.created_at) return false
+        const feedbackDate = new Date(f.created_at).toDateString()
+        const filterDateObj = new Date(filterDate).toDateString()
+        return feedbackDate === filterDateObj
+      })
     }
 
     // Filter by search term
@@ -152,6 +169,31 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
     if (!text) return ''
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + '...'
+  }
+
+  const handleFilterByUser = (userId: string) => {
+    if (filterUserId === userId) {
+      setFilterUserId(null) // Clear filter if same user clicked
+    } else {
+      setFilterUserId(userId)
+      setFilterDate(null) // Clear date filter when filtering by user
+    }
+  }
+
+  const handleFilterByDate = (dateString: string) => {
+    if (filterDate === dateString) {
+      setFilterDate(null) // Clear filter if same date clicked
+    } else {
+      setFilterDate(dateString)
+      setFilterUserId(null) // Clear user filter when filtering by date
+    }
+  }
+
+  const clearAllFilters = () => {
+    setFilterUserId(null)
+    setFilterDate(null)
+    setSearchTerm('')
+    setFilterReaction('all')
   }
 
   const handleExport = () => {
@@ -299,6 +341,31 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
           />
         </div>
 
+        {/* Filter Indicators */}
+        {(filterUserId || filterDate) && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>Filters:</span>
+            {filterUserId && (
+              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: 'var(--admin-primary)' }}>
+                User: {filterUserId}
+              </span>
+            )}
+            {filterDate && (
+              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(168, 85, 247, 0.2)', color: 'var(--admin-accent)' }}>
+                Date: {new Date(filterDate).toLocaleDateString()}
+              </span>
+            )}
+            <button
+              onClick={clearAllFilters}
+              className="px-2 py-1 rounded text-xs hover:bg-gray-500/20"
+              style={{ color: 'var(--admin-text-muted)' }}
+              title="Clear all filters"
+            >
+              ✕ Clear
+            </button>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <select
@@ -396,13 +463,38 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                   <div className="flex items-center gap-2">
                     {getReactionIcon(feedback.reaction)}
                     <span className="text-sm font-medium" style={{ color: 'var(--admin-text)' }}>
-                      User: {feedback.user_id}
+                      User: 
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleFilterByUser(feedback.user_id)
+                        }}
+                        className={`ml-1 hover:underline cursor-pointer ${
+                          filterUserId === feedback.user_id 
+                            ? 'text-blue-400 font-semibold' 
+                            : 'text-blue-300'
+                        }`}
+                        title="Click to filter by this user"
+                      >
+                        {feedback.user_id}
+                      </button>
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleFilterByDate(feedback.created_at || '')
+                      }}
+                      className={`text-xs hover:underline cursor-pointer ${
+                        filterDate === feedback.created_at 
+                          ? 'text-purple-400 font-semibold' 
+                          : 'text-purple-300'
+                      }`}
+                      title="Click to filter by this date"
+                    >
                       {formatDate(feedback.created_at)}
-                    </span>
+                    </button>
                     <svg 
                       width="16" 
                       height="16" 
