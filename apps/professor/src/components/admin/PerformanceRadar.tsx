@@ -233,8 +233,8 @@ export default function PerformanceRadar({
                 className="radar-center-large"
                 style={{
                   position: 'absolute',
-                  top: `${centerY}px`,
-                  left: `${center}px`,
+                  top: '50%',
+                  left: '50%',
                   transform: 'translate(-50%, -50%)'
                 }}
               >
@@ -249,11 +249,11 @@ export default function PerformanceRadar({
               const isActive = toggles[point.key as keyof typeof toggles]
               const isPromptInjection = point.key === 'promptInjection'
               
-              // 컨테이너 중앙을 기준으로 절대 위치 계산
-              const containerCenterX = 200 // 400px / 2
-              const containerCenterY = 200 // 400px / 2
-              const labelX = containerCenterX + labelCoords.x
-              const labelY = containerCenterY + labelCoords.y
+              // SVG 중앙을 기준으로 절대 위치 계산 (SVG가 50% 50%에 있으므로)
+              const svgCenterX = 200 // 400px / 2
+              const svgCenterY = 200 // 400px / 2
+              const labelX = svgCenterX + labelCoords.x
+              const labelY = svgCenterY + labelCoords.y
               
               return (
                 <div
