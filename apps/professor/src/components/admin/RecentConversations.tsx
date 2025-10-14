@@ -169,7 +169,7 @@ export default function RecentConversations({
 
   const handleFeedbackClick = async (conversation: ChatData, verdict: 'good' | 'bad') => {
     // Check if feedback already exists
-    const existingFeedback = await getAdminFeedbackByChat(conversation.id)
+    const existingFeedback = await getAdminFeedbackByChat(conversation.chat_id)
     
     // If feedback exists and verdict is different, show confirmation
     if (existingFeedback && existingFeedback.feedback_verdict !== verdict) {
@@ -187,7 +187,7 @@ export default function RecentConversations({
     }
     
     setFeedbackModal({
-      chatId: conversation.id,
+      chatId: conversation.chat_id,
       userMessage: conversation.chat_message,
       aiResponse: conversation.response,
       verdict,
