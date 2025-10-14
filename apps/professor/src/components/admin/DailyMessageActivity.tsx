@@ -123,6 +123,10 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
       let userFeedbackMatches = 0
       let adminFeedbackMatches = 0
       
+      // WORKAROUND: Since chat table doesn't have chat_id field that matches feedback.chat_id,
+      // we'll distribute feedback proportionally across days based on message count
+      console.warn('⚠️ Chat table missing chat_id field - feedback will be estimated by day proportion')
+      
       chats.forEach(chat => {
         if (!chat.created_at) return
         
@@ -133,37 +137,46 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
           dayData.messageCount++
           dayData.uniqueUsers.add(chat.user_id)
           allUsers.add(chat.user_id)
-          
-          const userFbs = userFeedbackMap.get(chat.id) || []
-          if (userFbs.length > 0) {
-            userFeedbackMatches++
-            console.log('✅ User feedback match:', { chatId: chat.id, feedbackCount: userFbs.length })
-          }
-          userFbs.forEach(fb => {
-            dayData.userFeedbackCount++
-            if (fb.reaction === 'good') dayData.userGoodCount++
-            if (fb.reaction === 'bad') dayData.userBadCount++
-          })
-          
-          const adminFb = adminFeedbackMap.get(chat.id)
-          if (adminFb) {
-            adminFeedbackMatches++
-            console.log('✅ Admin feedback match:', { chatId: chat.id })
-            dayData.adminFeedbackCount++
-            if (adminFb.feedback_verdict === 'good') dayData.adminGoodCount++
-            if (adminFb.feedback_verdict === 'bad') dayData.adminBadCount++
-            if (adminFb.corrected_response) dayData.correctedResponseCount++
-          }
         }
       })
 
-      console.log('🔍 Feedback matching results:', {
+      // Distribute user feedback by date based on their created_at
+      userFeedbacks.forEach(fb => {
+        if (!fb.created_at) return
+        const fbDate = new Date(fb.created_at).toISOString().split('T')[0]
+        const dayData = dayMap.get(fbDate)
+        
+        if (dayData) {
+          dayData.userFeedbackCount++
+          if (fb.reaction === 'good') dayData.userGoodCount++
+          if (fb.reaction === 'bad') dayData.userBadCount++
+          userFeedbackMatches++
+        }
+      })
+
+      // Distribute admin feedback by date based on their updated_at or created_at
+      adminFeedbacks.forEach(fb => {
+        const fbDate = new Date(fb.updated_at || fb.created_at || '').toISOString().split('T')[0]
+        const dayData = dayMap.get(fbDate)
+        
+        if (dayData) {
+          dayData.adminFeedbackCount++
+          if (fb.feedback_verdict === 'good') dayData.adminGoodCount++
+          if (fb.feedback_verdict === 'bad') dayData.adminBadCount++
+          if (fb.corrected_response) dayData.correctedResponseCount++
+          adminFeedbackMatches++
+        }
+      })
+
+      console.log('🔍 Feedback distribution by date:', {
         totalChats: chats.length,
-        userFeedbackMatches,
-        adminFeedbackMatches,
+        userFeedbackDistributed: userFeedbackMatches,
+        adminFeedbackDistributed: adminFeedbackMatches,
         totalUserFeedbacks: userFeedbacks.length,
         totalAdminFeedbacks: adminFeedbacks.length
       })
+      
+      console.log('💡 To fix: Add chat_id column to Supabase chat table to match feedback.chat_id')
 
       const dayDataArray = Array.from(dayMap.values())
       setData(dayDataArray)
