@@ -26,6 +26,12 @@
   box-shadow: 0 0 30px rgba(59, 230, 255, 0.3);
 }
 
+/* Light mode score circle */
+[data-theme="light"] .score-circle {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(99, 102, 241, 0.1));
+  box-shadow: 0 0 30px rgba(14, 165, 233, 0.15);
+}
+
 .score-value {
   font-size: 36px;
   font-weight: 700;
@@ -65,6 +71,12 @@
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid rgba(59, 230, 255, 0.1);
+}
+
+/* Light mode metric bar container */
+[data-theme="light"] .metric-bar-container {
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
 }
 
 .metric-bar {
@@ -148,6 +160,12 @@
   transition: width 0.3s ease;
 }
 
+/* Light mode sidebar */
+[data-theme="light"] .dashboard-sidebar {
+  background: #ffffff;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 .dashboard-sidebar.collapsed {
   width: 80px;
 }
@@ -191,6 +209,17 @@
   border-color: rgba(59, 230, 255, 0.2);
 }
 
+/* Light mode metric cards */
+[data-theme="light"] .metric-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .metric-card:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
 .metric-icon {
   width: 36px;
   height: 36px;
@@ -200,6 +229,11 @@
   background: linear-gradient(135deg, rgba(59, 230, 255, 0.2), rgba(124, 140, 255, 0.2));
   border-radius: 8px;
   color: var(--admin-primary);
+}
+
+/* Light mode metric icon */
+[data-theme="light"] .metric-icon {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(99, 102, 241, 0.1));
 }
 
 .metric-content {
@@ -247,6 +281,17 @@
   transition: all 0.2s ease;
 }
 
+/* Light mode search input */
+[data-theme="light"] .search-input {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .search-input:focus {
+  background: #ffffff;
+  border-color: var(--admin-primary);
+}
+
 .search-input:focus {
   border-color: var(--admin-primary);
   box-shadow: 0 0 0 2px rgba(59, 230, 255, 0.15);
@@ -276,6 +321,11 @@
 .nav-item:hover {
   background: rgba(59, 230, 255, 0.1);
   color: var(--admin-primary);
+}
+
+/* Light mode nav items */
+[data-theme="light"] .nav-item:hover {
+  background: #f1f5f9;
 }
 
 .nav-item svg {
