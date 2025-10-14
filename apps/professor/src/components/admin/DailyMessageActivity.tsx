@@ -244,7 +244,7 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-          Daily Message Activity
+          {t('admin.dailyMessageActivity')}
         </h3>
         <div className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
           {startDate} to {endDate}

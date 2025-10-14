@@ -121,6 +121,9 @@ const translations = {
     'admin.toggleTheme': 'Toggle theme',
     'admin.userProfile': 'User profile',
     'admin.signOut': 'Sign out',
+    'admin.performanceRadar': 'Performance Radar',
+    'admin.performanceRadarDesc': 'Monitor AI response quality and security performance across 6 key metrics in real-time for optimal user experience',
+    'admin.dailyMessageActivity': 'Daily Message Activity',
   },
   ko: {
     'app.brand': 'AX PRO 플랫폼',
@@ -230,6 +233,9 @@ const translations = {
     'admin.toggleTheme': '테마 전환',
     'admin.userProfile': '사용자 프로필',
     'admin.signOut': '로그아웃',
+    'admin.performanceRadar': 'Performance Radar',
+    'admin.performanceRadarDesc': 'AI 응답 품질과 보안 성능을 6가지 핵심 지표로 실시간 모니터링하여 최적의 사용자 경험을 제공합니다',
+    'admin.dailyMessageActivity': '일일 메시지 활동',
   },
 };
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import PerformanceTimeline from './PerformanceTimeline'
 import { DailyRow, EstimationMode } from '../../services/dailyAggregates'
+import { useTranslation } from '../../i18n/I18nProvider'
 import '../../styles/performance-radar.css'
 import '../../styles/performance-timeline.css'
 
@@ -37,6 +38,7 @@ export default function PerformanceRadar({
   estimationMode = 'simple',
   onEstimationModeChange = () => {}
 }: PerformanceRadarProps) {
+  const { t } = useTranslation()
   
   const [toggles, setToggles] = useState({
     relevance: true,
@@ -172,9 +174,9 @@ export default function PerformanceRadar({
     <div className="performance-radar-section">
       {/* Title and description */}
       <div className="radar-header">
-        <h2 className="radar-title">Performance Radar</h2>
+        <h2 className="radar-title">{t('admin.performanceRadar')}</h2>
         <p className="radar-description">
-          AI 응답 품질과 보안 성능을 6가지 핵심 지표로 실시간 모니터링하여 최적의 사용자 경험을 제공합니다
+          {t('admin.performanceRadarDesc')}
         </p>
       </div>
       
