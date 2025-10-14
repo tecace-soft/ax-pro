@@ -159,3 +159,43 @@ export async function submitUserFeedback(
   }
 }
 
+/**
+ * Submit admin feedback for a chat message
+ */
+export async function submitAdminFeedback(
+  chatId: string,
+  rating: number,
+  supervisorFeedback: string,
+  correctedResponse: string
+): Promise<AdminFeedbackData> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log('Submitting admin feedback:', { chatId, rating, supervisorFeedback, correctedResponse });
+    
+    const feedbackData = {
+      chat_id: chatId,
+      rating,
+      supervisor_feedback: supervisorFeedback || null,
+      corrected_response: correctedResponse || null
+    };
+
+    const { data, error } = await supabase
+      .from('admin_feedback')
+      .insert([feedbackData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to submit admin feedback: ${error.message}`);
+    }
+
+    console.log('✅ Admin feedback submitted:', data);
+    return data as AdminFeedbackData;
+  } catch (error) {
+    console.error('Failed to submit admin feedback:', error);
+    throw error;
+  }
+}
+

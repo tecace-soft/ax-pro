@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react'
 import { fetchAllChatData } from '../../services/chatData'
+import { submitAdminFeedback } from '../../services/feedback'
 import { ChatData } from '../../services/supabase'
 import { useTranslation } from '../../i18n/I18nProvider'
-import { IconRefresh } from '../../ui/icons'
+import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
+
+interface AdminFeedbackModal {
+  chatId: string
+  userMessage: string
+  aiResponse: string
+  rating: 1 | -1
+}
 
 export default function RecentConversations() {
   const { t } = useTranslation()
@@ -10,6 +18,10 @@ export default function RecentConversations() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [feedbackModal, setFeedbackModal] = useState<AdminFeedbackModal | null>(null)
+  const [supervisorFeedback, setSupervisorFeedback] = useState('')
+  const [correctedResponse, setCorrectedResponse] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     loadConversations()
@@ -61,6 +73,50 @@ export default function RecentConversations() {
   const truncateText = (text: string, maxLength: number = 100) => {
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + '...'
+  }
+
+  const handleFeedbackClick = (conversation: ChatData, rating: 1 | -1) => {
+    setFeedbackModal({
+      chatId: conversation.id,
+      userMessage: conversation.chat_message,
+      aiResponse: conversation.response,
+      rating
+    })
+    setSupervisorFeedback('')
+    setCorrectedResponse('')
+  }
+
+  const handleSubmitFeedback = async () => {
+    if (!feedbackModal) return
+    
+    setIsSubmitting(true)
+    try {
+      await submitAdminFeedback(
+        feedbackModal.chatId,
+        feedbackModal.rating,
+        supervisorFeedback,
+        correctedResponse
+      )
+      
+      // Success - close modal
+      setFeedbackModal(null)
+      setSupervisorFeedback('')
+      setCorrectedResponse('')
+      
+      // Show success message
+      alert('Admin feedback submitted successfully!')
+    } catch (error) {
+      console.error('Failed to submit admin feedback:', error)
+      alert('Failed to submit feedback. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleCancelFeedback = () => {
+    setFeedbackModal(null)
+    setSupervisorFeedback('')
+    setCorrectedResponse('')
   }
 
   if (isLoading) {
@@ -167,6 +223,25 @@ export default function RecentConversations() {
                   </p>
                 </div>
               </div>
+              
+              {/* Admin Feedback Buttons */}
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
+                <span className="text-xs mr-2" style={{ color: 'var(--admin-text-muted)' }}>Admin Feedback:</span>
+                <button
+                  onClick={() => handleFeedbackClick(conversation, 1)}
+                  className="p-2 rounded transition-colors hover:bg-green-500/20"
+                  title="Thumbs up"
+                >
+                  <IconThumbsUp size={16} style={{ color: 'var(--admin-success, #10b981)' }} />
+                </button>
+                <button
+                  onClick={() => handleFeedbackClick(conversation, -1)}
+                  className="p-2 rounded transition-colors hover:bg-red-500/20"
+                  title="Thumbs down"
+                >
+                  <IconThumbsDown size={16} style={{ color: 'var(--admin-danger, #ef4444)' }} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -177,6 +252,139 @@ export default function RecentConversations() {
           <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
             Showing 10 of {conversations.length} conversations
           </p>
+        </div>
+      )}
+
+      {/* Admin Feedback Modal */}
+      {feedbackModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div 
+            className="rounded-lg max-w-2xl w-full mx-4"
+            style={{ 
+              backgroundColor: 'var(--admin-bg-card)',
+              border: '1px solid var(--admin-border)',
+              maxHeight: '90vh',
+              overflow: 'auto'
+            }}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
+                  Admin Feedback {feedbackModal.rating === 1 ? '👍' : '👎'}
+                </h3>
+                <button
+                  onClick={handleCancelFeedback}
+                  className="p-1 hover:bg-gray-100/10 rounded"
+                  style={{ color: 'var(--admin-text-secondary)' }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              
+              {/* User Message */}
+              <div className="mb-4">
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--admin-text-muted)' }}>
+                  User Message:
+                </p>
+                <div 
+                  className="p-3 rounded"
+                  style={{ 
+                    backgroundColor: 'rgba(9, 14, 34, 0.4)',
+                    border: '1px solid var(--admin-border)'
+                  }}
+                >
+                  <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
+                    {feedbackModal.userMessage}
+                  </p>
+                </div>
+              </div>
+              
+              {/* AI Response */}
+              <div className="mb-4">
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--admin-text-muted)' }}>
+                  AI Response:
+                </p>
+                <div 
+                  className="p-3 rounded"
+                  style={{ 
+                    backgroundColor: 'rgba(9, 14, 34, 0.4)',
+                    border: '1px solid var(--admin-border)'
+                  }}
+                >
+                  <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
+                    {feedbackModal.aiResponse}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Supervisor Feedback */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
+                  Supervisor Feedback:
+                </label>
+                <textarea
+                  value={supervisorFeedback}
+                  onChange={(e) => setSupervisorFeedback(e.target.value)}
+                  placeholder="Explain what was wrong with this response..."
+                  className="w-full h-24 resize-none text-sm p-3 rounded"
+                  style={{
+                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                    color: 'var(--admin-text)',
+                    border: '1px solid var(--admin-border)'
+                  }}
+                />
+              </div>
+              
+              {/* Corrected Response */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
+                  Corrected Response:
+                </label>
+                <textarea
+                  value={correctedResponse}
+                  onChange={(e) => setCorrectedResponse(e.target.value)}
+                  placeholder="Enter the corrected response..."
+                  className="w-full h-32 resize-none text-sm p-3 rounded"
+                  style={{
+                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                    color: 'var(--admin-text)',
+                    border: '1px solid var(--admin-border)'
+                  }}
+                />
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleCancelFeedback}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-sm font-medium rounded-md"
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--admin-border)',
+                    color: 'var(--admin-text)'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitFeedback}
+                  disabled={isSubmitting}
+                  className="px-6 py-2 text-sm font-medium rounded-md"
+                  style={{
+                    background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
+                    color: '#041220',
+                    opacity: isSubmitting ? 0.6 : 1
+                  }}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
