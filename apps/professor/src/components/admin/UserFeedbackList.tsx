@@ -12,7 +12,11 @@ interface FeedbackWithChat extends UserFeedbackData {
 
 type SortOption = 'date-desc' | 'date-asc' | 'user'
 
-export default function UserFeedbackList() {
+interface UserFeedbackListProps {
+  onScrollToChat?: (chatId: string) => void
+}
+
+export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListProps) {
   const { t } = useTranslation()
   const [feedbacks, setFeedbacks] = useState<FeedbackWithChat[]>([])
   const [filteredFeedbacks, setFilteredFeedbacks] = useState<FeedbackWithChat[]>([])
@@ -418,7 +422,14 @@ export default function UserFeedbackList() {
                 </div>
                 
                 <p className="text-xs mb-2" style={{ color: 'var(--admin-text-muted)' }}>
-                  Chat ID: {feedback.chat_id}
+                  Chat ID: 
+                  <button
+                    onClick={() => onScrollToChat?.(feedback.chat_id)}
+                    className="ml-1 text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                    title="Click to scroll to this chat in Recent Conversations"
+                  >
+                    {feedback.chat_id}
+                  </button>
                 </p>
                 
                 {feedback.feedback_text && (
@@ -449,9 +460,14 @@ export default function UserFeedbackList() {
                         <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-accent)' }}>
                           AI Response:
                         </p>
-                        <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
+                        <button
+                          onClick={() => onScrollToChat?.(feedback.chat_id)}
+                          className="text-sm text-left w-full p-2 rounded hover:bg-blue-500/10 transition-colors cursor-pointer"
+                          style={{ color: 'var(--admin-text)' }}
+                          title="Click to scroll to this chat in Recent Conversations"
+                        >
                           {feedback.chatData.response}
-                        </p>
+                        </button>
                       </div>
                     </div>
                   ) : feedback.chatData === null ? (

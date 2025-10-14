@@ -36,6 +36,10 @@ export default function AdminDashboard() {
   const [selectedRadarDate, setSelectedRadarDate] = useState<string>('')
   const [includeSimulatedData, setIncludeSimulatedData] = useState(true)
   const [estimationMode, setEstimationMode] = useState<EstimationMode>('simple')
+  
+  // Chat navigation state
+  const [highlightedChatId, setHighlightedChatId] = useState<string | null>(null)
+  const [scrollToChatId, setScrollToChatId] = useState<string | null>(null)
 
 
   const currentTime = new Date().toLocaleString('en-US', {
@@ -143,6 +147,22 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleScrollToChat = (chatId: string) => {
+    setScrollToChatId(chatId)
+    setHighlightedChatId(chatId)
+    
+    // Scroll to Recent Conversations section first
+    const section = document.getElementById('recent-conversations')
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' })
+    }
+    
+    // Clear highlight after 3 seconds
+    setTimeout(() => {
+      setHighlightedChatId(null)
+    }, 3000)
+  }
+
   return (
     <div className="admin-layout" data-theme={theme}>
       <div className="dashboard-layout">
@@ -195,7 +215,11 @@ export default function AdminDashboard() {
 
               <div id="recent-conversations" className="content-section">
                 <h2 className="section-title">{t('admin.recentConversations')}</h2>
-                <RecentConversations />
+                <RecentConversations 
+                  scrollToChatId={scrollToChatId}
+                  highlightedChatId={highlightedChatId}
+                  onScrollComplete={() => setScrollToChatId(null)}
+                />
               </div>
 
               <div id="admin-feedback" className="content-section">
@@ -205,7 +229,7 @@ export default function AdminDashboard() {
 
               <div id="user-feedback" className="content-section">
                 <h2 className="section-title">{t('admin.userFeedback')}</h2>
-                <UserFeedbackList />
+                <UserFeedbackList onScrollToChat={handleScrollToChat} />
               </div>
 
               <div id="prompt-control" className="content-section">

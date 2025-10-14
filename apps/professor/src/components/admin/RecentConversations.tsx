@@ -15,7 +15,17 @@ interface AdminFeedbackModal {
 
 type SortOption = 'date-desc' | 'date-asc' | 'user'
 
-export default function RecentConversations() {
+interface RecentConversationsProps {
+  scrollToChatId?: string | null
+  highlightedChatId?: string | null
+  onScrollComplete?: () => void
+}
+
+export default function RecentConversations({ 
+  scrollToChatId, 
+  highlightedChatId, 
+  onScrollComplete 
+}: RecentConversationsProps) {
   const { t } = useTranslation()
   const [conversations, setConversations] = useState<ChatData[]>([])
   const [filteredConversations, setFilteredConversations] = useState<ChatData[]>([])
@@ -38,6 +48,20 @@ export default function RecentConversations() {
   useEffect(() => {
     applyFiltersAndSort()
   }, [conversations, searchTerm, sortBy])
+
+  // Handle scroll to specific chat
+  useEffect(() => {
+    if (scrollToChatId) {
+      const chatElement = document.getElementById(`chat-${scrollToChatId}`)
+      if (chatElement) {
+        chatElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        })
+        onScrollComplete?.()
+      }
+    }
+  }, [scrollToChatId, onScrollComplete])
 
   const loadConversations = async () => {
     setIsLoading(true)
@@ -388,10 +412,18 @@ export default function RecentConversations() {
           {displayedConversations.map((conversation) => (
             <div 
               key={conversation.id}
-              className="p-4 rounded-lg border"
+              id={`chat-${conversation.id}`}
+              className="p-4 rounded-lg border transition-all duration-500"
               style={{
-                backgroundColor: 'rgba(9, 14, 34, 0.4)',
-                borderColor: 'var(--admin-border)'
+                backgroundColor: highlightedChatId === conversation.id 
+                  ? 'rgba(59, 230, 255, 0.15)' 
+                  : 'rgba(9, 14, 34, 0.4)',
+                borderColor: highlightedChatId === conversation.id 
+                  ? 'var(--admin-primary)' 
+                  : 'var(--admin-border)',
+                boxShadow: highlightedChatId === conversation.id 
+                  ? '0 0 20px rgba(59, 230, 255, 0.3)' 
+                  : 'none'
               }}
             >
               <div className="flex items-start justify-between mb-2">
