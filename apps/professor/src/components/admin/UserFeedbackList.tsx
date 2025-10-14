@@ -10,6 +10,8 @@ interface FeedbackWithChat extends UserFeedbackData {
   isExpanded?: boolean
 }
 
+type SortOption = 'date-desc' | 'date-asc' | 'user'
+
 export default function UserFeedbackList() {
   const { t } = useTranslation()
   const [feedbacks, setFeedbacks] = useState<FeedbackWithChat[]>([])
@@ -18,6 +20,7 @@ export default function UserFeedbackList() {
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState<SortOption>('date-desc')
   const [filterReaction, setFilterReaction] = useState<'all' | 'good' | 'bad'>('all')
   const [displayLimit, setDisplayLimit] = useState(10)
 
@@ -26,8 +29,8 @@ export default function UserFeedbackList() {
   }, [])
 
   useEffect(() => {
-    applyFilters()
-  }, [feedbacks, searchTerm, filterReaction])
+    applyFiltersAndSort()
+  }, [feedbacks, searchTerm, sortBy, filterReaction])
 
   const loadFeedback = async () => {
     setIsLoading(true)
@@ -57,7 +60,7 @@ export default function UserFeedbackList() {
     }
   }
 
-  const applyFilters = () => {
+  const applyFiltersAndSort = () => {
     let filtered = [...feedbacks]
 
     // Filter by reaction
@@ -74,6 +77,20 @@ export default function UserFeedbackList() {
         f.feedback_text?.toLowerCase().includes(term)
       )
     }
+
+    // Sort
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'date-desc':
+          return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+        case 'date-asc':
+          return new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime()
+        case 'user':
+          return (a.user_id || '').localeCompare(b.user_id || '')
+        default:
+          return 0
+      }
+    })
 
     setFilteredFeedbacks(filtered)
   }
@@ -159,7 +176,7 @@ export default function UserFeedbackList() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-          {t('admin.userFeedback')} ({filteredFeedbacks.length})
+          User Feedback ({filteredFeedbacks.length})
         </h3>
         <button 
           className="icon-btn"
@@ -171,64 +188,86 @@ export default function UserFeedbackList() {
         </button>
       </div>
 
-      {/* Search and Filters */}
-      <div className="mb-4 space-y-3">
-        {/* Search Bar */}
-        <input
-          type="text"
-          placeholder="Search by user ID, chat ID, or feedback text..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 rounded-md text-sm"
+      {/* Controls Bar */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        {/* Sort Dropdown */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Sort by:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="px-3 py-2 rounded-md text-sm"
+            style={{
+              backgroundColor: 'rgba(9, 14, 34, 0.6)',
+              color: 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+          >
+            <option value="date-desc">Date/Time (Newest)</option>
+            <option value="date-asc">Date/Time (Oldest)</option>
+            <option value="user">User ID</option>
+          </select>
+        </div>
+
+        {/* Search */}
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Search:</span>
+          <input
+            type="text"
+            placeholder="Search feedback..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 px-3 py-2 rounded-md text-sm"
+            style={{
+              backgroundColor: 'rgba(9, 14, 34, 0.6)',
+              color: 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Reaction Filter Tabs */}
+      <div className="mb-4 flex gap-2">
+        <button
+          onClick={() => setFilterReaction('all')}
+          className={`px-4 py-2 rounded-md text-sm transition-colors ${
+            filterReaction === 'all' ? 'font-semibold' : ''
+          }`}
           style={{
-            backgroundColor: 'rgba(9, 14, 34, 0.6)',
-            color: 'var(--admin-text)',
+            backgroundColor: filterReaction === 'all' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
+            color: filterReaction === 'all' ? '#041220' : 'var(--admin-text)',
             border: '1px solid var(--admin-border)'
           }}
-        />
-
-        {/* Reaction Filter */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFilterReaction('all')}
-            className={`px-4 py-2 rounded-md text-sm transition-colors ${
-              filterReaction === 'all' ? 'font-semibold' : ''
-            }`}
-            style={{
-              backgroundColor: filterReaction === 'all' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
-              color: filterReaction === 'all' ? '#041220' : 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
-            }}
-          >
-            All ({feedbacks.length})
-          </button>
-          <button
-            onClick={() => setFilterReaction('good')}
-            className={`px-4 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-              filterReaction === 'good' ? 'font-semibold' : ''
-            }`}
-            style={{
-              backgroundColor: filterReaction === 'good' ? 'var(--admin-success)' : 'rgba(9, 14, 34, 0.4)',
-              color: filterReaction === 'good' ? '#ffffff' : 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
-            }}
-          >
-            <IconThumbsUp size={14} /> Good ({feedbacks.filter(f => f.reaction === 'good').length})
-          </button>
-          <button
-            onClick={() => setFilterReaction('bad')}
-            className={`px-4 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-              filterReaction === 'bad' ? 'font-semibold' : ''
-            }`}
-            style={{
-              backgroundColor: filterReaction === 'bad' ? 'var(--admin-danger)' : 'rgba(9, 14, 34, 0.4)',
-              color: filterReaction === 'bad' ? '#ffffff' : 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
-            }}
-          >
-            <IconThumbsDown size={14} /> Bad ({feedbacks.filter(f => f.reaction === 'bad').length})
-          </button>
-        </div>
+        >
+          All ({feedbacks.length})
+        </button>
+        <button
+          onClick={() => setFilterReaction('good')}
+          className={`px-4 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
+            filterReaction === 'good' ? 'font-semibold' : ''
+          }`}
+          style={{
+            backgroundColor: filterReaction === 'good' ? 'var(--admin-success)' : 'rgba(9, 14, 34, 0.4)',
+            color: filterReaction === 'good' ? '#ffffff' : 'var(--admin-text)',
+            border: '1px solid var(--admin-border)'
+          }}
+        >
+          <IconThumbsUp size={14} /> Good ({feedbacks.filter(f => f.reaction === 'good').length})
+        </button>
+        <button
+          onClick={() => setFilterReaction('bad')}
+          className={`px-4 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
+            filterReaction === 'bad' ? 'font-semibold' : ''
+          }`}
+          style={{
+            backgroundColor: filterReaction === 'bad' ? 'var(--admin-danger)' : 'rgba(9, 14, 34, 0.4)',
+            color: filterReaction === 'bad' ? '#ffffff' : 'var(--admin-text)',
+            border: '1px solid var(--admin-border)'
+          }}
+        >
+          <IconThumbsDown size={14} /> Bad ({feedbacks.filter(f => f.reaction === 'bad').length})
+        </button>
       </div>
 
       {/* Feedback List */}

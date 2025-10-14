@@ -13,6 +13,8 @@ interface AdminFeedbackModal {
   existingFeedback: AdminFeedbackData | null
 }
 
+type SortOption = 'date-desc' | 'date-asc' | 'user'
+
 export default function RecentConversations() {
   const { t } = useTranslation()
   const [conversations, setConversations] = useState<ChatData[]>([])
@@ -25,6 +27,7 @@ export default function RecentConversations() {
   const [correctedResponse, setCorrectedResponse] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState<SortOption>('date-desc')
   const [displayLimit, setDisplayLimit] = useState(10)
 
   useEffect(() => {
@@ -32,8 +35,8 @@ export default function RecentConversations() {
   }, [])
 
   useEffect(() => {
-    applyFilters()
-  }, [conversations, searchTerm])
+    applyFiltersAndSort()
+  }, [conversations, searchTerm, sortBy])
 
   const loadConversations = async () => {
     setIsLoading(true)
@@ -69,7 +72,7 @@ export default function RecentConversations() {
     }
   }
 
-  const applyFilters = () => {
+  const applyFiltersAndSort = () => {
     let filtered = [...conversations]
 
     // Filter by search term
@@ -82,6 +85,20 @@ export default function RecentConversations() {
         c.response?.toLowerCase().includes(term)
       )
     }
+
+    // Sort
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'date-desc':
+          return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+        case 'date-asc':
+          return new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime()
+        case 'user':
+          return (a.user_id || '').localeCompare(b.user_id || '')
+        default:
+          return 0
+      }
+    })
 
     setFilteredConversations(filtered)
   }
@@ -231,7 +248,7 @@ export default function RecentConversations() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-          {t('admin.recentConversations')} ({filteredConversations.length})
+          Recent Conversations ({filteredConversations.length})
         </h3>
         <button 
           className="icon-btn"
@@ -243,20 +260,43 @@ export default function RecentConversations() {
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search by user ID, chat ID, message, or response..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 rounded-md text-sm"
-          style={{
-            backgroundColor: 'rgba(9, 14, 34, 0.6)',
-            color: 'var(--admin-text)',
-            border: '1px solid var(--admin-border)'
-          }}
-        />
+      {/* Controls Bar */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        {/* Sort Dropdown */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Sort by:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="px-3 py-2 rounded-md text-sm"
+            style={{
+              backgroundColor: 'rgba(9, 14, 34, 0.6)',
+              color: 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+          >
+            <option value="date-desc">Date/Time (Newest)</option>
+            <option value="date-asc">Date/Time (Oldest)</option>
+            <option value="user">User ID</option>
+          </select>
+        </div>
+
+        {/* Search */}
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Search:</span>
+          <input
+            type="text"
+            placeholder="Search conversations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 px-3 py-2 rounded-md text-sm"
+            style={{
+              backgroundColor: 'rgba(9, 14, 34, 0.6)',
+              color: 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+          />
+        </div>
       </div>
 
       {displayedConversations.length === 0 ? (

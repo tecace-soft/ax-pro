@@ -136,14 +136,14 @@ export default function AdminDashboard() {
 
             {/* Content sections */}
             <div className="content-module">
-              <div id="admin-feedback" className="content-section">
-                <h2 className="section-title">Admin Feedback</h2>
-                <AdminFeedbackList />
-              </div>
-
               <div id="recent-conversations" className="content-section">
                 <h2 className="section-title">{t('admin.recentConversations')}</h2>
                 <RecentConversations />
+              </div>
+
+              <div id="admin-feedback" className="content-section">
+                <h2 className="section-title">Admin Feedback</h2>
+                <AdminFeedbackList />
               </div>
 
               <div id="user-feedback" className="content-section">
