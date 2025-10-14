@@ -156,13 +156,20 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         adminApproval: totalAdminFeedback > 0 ? Math.round((totalAdminGood / totalAdminFeedback) * 100) : 0
       })
 
-      console.log('📈 Stats calculated:', {
+      console.log('📈 Daily Message Activity - Stats calculated:', {
         totalMessages,
         totalUserFeedback,
         totalAdminFeedback,
         totalCorrected,
-        uniqueUsers: allUsers.size
+        uniqueUsers: allUsers.size,
+        dateRange: `${startDate} to ${endDate}`,
+        daysWithData: dayDataArray.filter(d => d.messageCount > 0).length
       })
+      
+      // Log sample day data
+      if (dayDataArray.length > 0) {
+        console.log('📊 Sample day data:', dayDataArray[0])
+      }
     } catch (error) {
       console.error('Failed to load daily message activity:', error)
     } finally {
@@ -363,119 +370,141 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         </div>
       ) : (
         <div style={{ 
-          display: 'flex', 
-          alignItems: 'flex-end', 
-          justifyContent: 'space-around',
-          height: '220px',
-          padding: '20px 10px 40px',
-          gap: '4px',
-          position: 'relative'
+          position: 'relative',
+          height: '280px',
+          marginBottom: '20px'
         }}>
-          {data.map((item) => {
-            const value = getValue(item)
-            const heightPercent = maxValue > 0 ? (value / maxValue) * 100 : 0
-            const score = getScore(item)
-            
-            return (
-              <div 
-                key={item.date} 
-                style={{ 
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '6px',
-                  minWidth: '30px'
-                }}
-              >
-                {/* Count Badge */}
-                {value > 0 && (
-                  <div
-                    style={{
-                      backgroundColor: viewMode === 'messages' ? 'var(--admin-primary)' :
-                                     viewMode === 'feedback' ? 'var(--admin-success)' :
-                                     'var(--admin-accent)',
-                      color: viewMode === 'messages' ? '#041220' : '#ffffff',
-                      padding: '3px 6px',
-                      borderRadius: '10px',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      minWidth: '20px',
-                      textAlign: 'center'
-                    }}
-                  >
-                    {value}
-                  </div>
-                )}
-
-                {/* Bar */}
-                <div
-                  style={{
-                    width: '100%',
-                    height: value > 0 ? `${Math.max(heightPercent, 10)}%` : '5px',
-                    background: value > 0 ? 
-                      (viewMode === 'messages' ? 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))' :
-                       viewMode === 'feedback' ? 'linear-gradient(180deg, var(--admin-success), #0d9488)' :
-                       'linear-gradient(180deg, var(--admin-accent), #8b5cf6)') :
-                      'rgba(100, 116, 139, 0.2)',
-                    borderRadius: '6px 6px 0 0',
-                    position: 'relative',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  title={`${formatDate(item.date)}\n${value} ${viewMode}${score !== null ? `\n${score}% positive` : ''}\n${item.uniqueUsers.size} users`}
-                  onMouseEnter={(e) => {
-                    if (value > 0) {
-                      e.currentTarget.style.opacity = '0.8'
-                      e.currentTarget.style.transform = 'translateY(-2px)'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = '1'
-                    e.currentTarget.style.transform = 'translateY(0)'
+          {/* Chart Container */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'flex-end', 
+            justifyContent: 'space-around',
+            height: '200px',
+            padding: '30px 10px 0',
+            gap: '4px'
+          }}>
+            {data.map((item) => {
+              const value = getValue(item)
+              const heightPercent = maxValue > 0 ? (value / maxValue) * 100 : 0
+              const score = getScore(item)
+              
+              return (
+                <div 
+                  key={item.date} 
+                  style={{ 
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    minWidth: '30px',
+                    maxWidth: '80px'
                   }}
                 >
-                  {/* Score Indicator */}
-                  {score !== null && value > 0 && (
+                  {/* Count Badge */}
+                  {value > 0 && (
                     <div
                       style={{
-                        position: 'absolute',
-                        top: '-18px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        fontSize: '9px',
-                        fontWeight: '700',
-                        color: score >= 70 ? 'var(--admin-success)' : 
-                               score >= 50 ? 'var(--admin-warning, #ff9800)' : 
-                               'var(--admin-danger)',
-                        whiteSpace: 'nowrap'
+                        backgroundColor: viewMode === 'messages' ? 'var(--admin-primary)' :
+                                       viewMode === 'feedback' ? 'var(--admin-success)' :
+                                       'var(--admin-accent)',
+                        color: viewMode === 'messages' ? '#041220' : '#ffffff',
+                        padding: '3px 6px',
+                        borderRadius: '10px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        minWidth: '20px',
+                        textAlign: 'center'
                       }}
                     >
-                      {score}%
+                      {value}
                     </div>
                   )}
-                </div>
 
-                {/* Date Label */}
+                  {/* Bar */}
+                  <div
+                    style={{
+                      width: '100%',
+                      maxWidth: '50px',
+                      height: value > 0 ? `${Math.max(heightPercent, 10)}%` : '5px',
+                      background: value > 0 ? 
+                        (viewMode === 'messages' ? 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))' :
+                         viewMode === 'feedback' ? 'linear-gradient(180deg, var(--admin-success), #0d9488)' :
+                         'linear-gradient(180deg, var(--admin-accent), #8b5cf6)') :
+                        'rgba(100, 116, 139, 0.2)',
+                      borderRadius: '6px 6px 0 0',
+                      position: 'relative',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    title={`${formatDate(item.date)}\n${value} ${viewMode}${score !== null ? `\n${score}% positive` : ''}\n${item.uniqueUsers.size} users`}
+                    onMouseEnter={(e) => {
+                      if (value > 0) {
+                        e.currentTarget.style.opacity = '0.8'
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.opacity = '1'
+                      e.currentTarget.style.transform = 'translateY(0)'
+                    }}
+                  >
+                    {/* Score Indicator */}
+                    {score !== null && value > 0 && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '-18px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          fontSize: '9px',
+                          fontWeight: '700',
+                          color: score >= 70 ? 'var(--admin-success)' : 
+                                 score >= 50 ? 'var(--admin-warning, #ff9800)' : 
+                                 'var(--admin-danger)',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {score}%
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Date Labels - Separate row below chart */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-around',
+            paddingTop: '10px',
+            gap: '4px'
+          }}>
+            {data.map((item) => (
+              <div 
+                key={`label-${item.date}`}
+                style={{
+                  flex: 1,
+                  minWidth: '30px',
+                  maxWidth: '80px',
+                  textAlign: 'center'
+                }}
+              >
                 <div
                   style={{
-                    fontSize: '9px',
+                    fontSize: '10px',
                     color: 'var(--admin-text-muted)',
-                    textAlign: 'center',
                     whiteSpace: 'nowrap',
-                    position: 'absolute',
-                    bottom: '5px',
-                    left: '50%',
-                    transform: 'translateX(-50%) rotate(-45deg)',
-                    transformOrigin: 'center',
-                    width: '80px'
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
                   }}
                 >
                   {formatDate(item.date)}
                 </div>
               </div>
-            )
-          })}
+            ))}
+          </div>
         </div>
       )}
 
