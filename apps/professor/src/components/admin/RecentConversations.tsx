@@ -248,7 +248,7 @@ export default function RecentConversations() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-          Recent Conversations ({filteredConversations.length})
+          {t('admin.recentConversations')} ({filteredConversations.length})
         </h3>
         <button 
           className="icon-btn"
@@ -264,7 +264,7 @@ export default function RecentConversations() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
-          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Sort by:</span>
+          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>{t('admin.sortBy')}:</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -275,18 +275,18 @@ export default function RecentConversations() {
               border: '1px solid var(--admin-border)'
             }}
           >
-            <option value="date-desc">Date/Time (Newest)</option>
-            <option value="date-asc">Date/Time (Oldest)</option>
-            <option value="user">User ID</option>
+            <option value="date-desc">{t('admin.dateTimeNewest')}</option>
+            <option value="date-asc">{t('admin.dateTimeOldest')}</option>
+            <option value="user">{t('admin.user')} ID</option>
           </select>
         </div>
 
         {/* Search */}
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Search:</span>
+          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>{t('admin.search')}:</span>
           <input
             type="text"
-            placeholder="Search conversations..."
+            placeholder={t('admin.searchConversations')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1 px-3 py-2 rounded-md text-sm"
@@ -328,7 +328,7 @@ export default function RecentConversations() {
               <div className="space-y-2">
                 <div>
                   <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-primary)' }}>
-                    User Message:
+                    {t('admin.userMessage')}:
                   </p>
                   <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
                     {truncateText(conversation.chat_message)}
@@ -337,7 +337,7 @@ export default function RecentConversations() {
                 
                 <div>
                   <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-accent)' }}>
-                    AI Response:
+                    {t('admin.aiResponse')}:
                   </p>
                   <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
                     {truncateText(conversation.response)}
@@ -347,7 +347,7 @@ export default function RecentConversations() {
               
               {/* Admin Feedback Buttons */}
               <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
-                <span className="text-xs mr-2" style={{ color: 'var(--admin-text-muted)' }}>Admin Feedback:</span>
+                <span className="text-xs mr-2" style={{ color: 'var(--admin-text-muted)' }}>{t('usage.feedback.admin')}:</span>
                 <button
                   onClick={() => handleFeedbackClick(conversation, 'good')}
                   className="p-2 rounded transition-colors hover:bg-green-500/20"
@@ -416,7 +416,7 @@ export default function RecentConversations() {
               {/* User Message */}
               <div className="mb-4">
                 <p className="text-xs font-medium mb-2" style={{ color: 'var(--admin-text-muted)' }}>
-                  User Message:
+                  {t('admin.userMessage')}:
                 </p>
                 <div 
                   className="p-3 rounded"
@@ -434,7 +434,7 @@ export default function RecentConversations() {
               {/* AI Response */}
               <div className="mb-4">
                 <p className="text-xs font-medium mb-2" style={{ color: 'var(--admin-text-muted)' }}>
-                  AI Response:
+                  {t('admin.aiResponse')}:
                 </p>
                 <div 
                   className="p-3 rounded"
