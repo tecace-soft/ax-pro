@@ -10,7 +10,7 @@ import {
 } from '../../ui/icons'
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useUICustomization } from '../../services/settings'
+import { useUICustomization } from '../../hooks/useUICustomization'
 
 interface SidebarProps {
   conversations: number
