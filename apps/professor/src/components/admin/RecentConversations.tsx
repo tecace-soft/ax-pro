@@ -29,6 +29,7 @@ export default function RecentConversations() {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('date-desc')
   const [displayLimit, setDisplayLimit] = useState(10)
+  const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON'>('CSV')
 
   useEffect(() => {
     loadConversations()
@@ -198,36 +199,55 @@ export default function RecentConversations() {
     setCorrectedResponse('')
   }
 
-  const handleExportCSV = () => {
-    const headers = [
-      'Chat ID',
-      'User ID', 
-      'Created At',
-      'User Message',
-      'AI Response'
-    ]
-    
-    const csvData = filteredConversations.map(conversation => [
-      conversation.id,
-      conversation.user_id || '',
-      conversation.created_at || '',
-      `"${(conversation.chat_message || '').replace(/"/g, '""')}"`,
-      `"${(conversation.response || '').replace(/"/g, '""')}"`
-    ])
-    
-    const csvContent = [headers, ...csvData]
-      .map(row => row.join(','))
-      .join('\n')
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', `recent-conversations-${new Date().toISOString().split('T')[0]}.csv`)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  const handleExport = () => {
+    if (filteredConversations.length === 0) {
+      alert('No conversations to export')
+      return
+    }
+
+    const data = filteredConversations.map(conversation => ({
+      chatId: conversation.id,
+      userId: conversation.user_id || '',
+      createdAt: conversation.created_at || '',
+      userMessage: conversation.chat_message || '',
+      aiResponse: conversation.response || ''
+    }))
+
+    if (exportFormat === 'CSV') {
+      const headers = ['Chat ID', 'User ID', 'Created At', 'User Message', 'AI Response']
+      const csvData = data.map(item => [
+        item.chatId,
+        item.userId,
+        item.createdAt,
+        `"${item.userMessage.replace(/"/g, '""')}"`,
+        `"${item.aiResponse.replace(/"/g, '""')}"`
+      ])
+      
+      const csvContent = [headers, ...csvData]
+        .map(row => row.join(','))
+        .join('\n')
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `recent-conversations-${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } else {
+      const jsonContent = JSON.stringify(data, null, 2)
+      const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `recent-conversations-${new Date().toISOString().split('T')[0]}.json`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
   }
 
   if (isLoading) {
@@ -332,8 +352,21 @@ export default function RecentConversations() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
+          <select
+            className="px-3 py-2 rounded-md text-sm"
+            style={{
+              backgroundColor: 'rgba(9, 14, 34, 0.6)',
+              color: 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+            value={exportFormat}
+            onChange={(e) => setExportFormat(e.target.value as 'CSV' | 'JSON')}
+          >
+            <option>CSV</option>
+            <option>JSON</option>
+          </select>
           <button
-            onClick={handleExportCSV}
+            onClick={handleExport}
             className="px-4 py-2 rounded-md text-sm font-medium"
             style={{
               backgroundColor: 'rgba(59, 230, 255, 0.1)',
@@ -341,7 +374,7 @@ export default function RecentConversations() {
               border: '1px solid var(--admin-primary)'
             }}
           >
-            Export CSV
+            Export
           </button>
         </div>
       </div>
