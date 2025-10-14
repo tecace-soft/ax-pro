@@ -72,15 +72,6 @@ export default function AdminHeader({ performanceScore, performanceDate, current
             value={language}
             onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
             className="language-select"
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--admin-border)',
-              borderRadius: '8px',
-              padding: '6px 10px',
-              color: 'var(--admin-text)',
-              fontSize: '13px',
-              cursor: 'pointer'
-            }}
           >
             <option value="en">EN</option>
             <option value="ko">KO</option>
