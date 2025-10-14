@@ -5,8 +5,8 @@ import { fetchAllUserFeedback, fetchAllAdminFeedback } from '../../services/feed
 import { ChatData, UserFeedbackData, AdminFeedbackData } from '../../services/supabase'
 
 interface DailyMessageActivityProps {
-  startDate: string
-  endDate: string
+  startDate?: string
+  endDate?: string
 }
 
 interface DayData {
@@ -33,7 +33,18 @@ interface Stats {
   adminApproval: number
 }
 
-export default function DailyMessageActivity({ startDate, endDate }: DailyMessageActivityProps) {
+type DateRange = '7d' | '30d' | '90d' | '6m' | '1y' | 'custom'
+
+const DATE_RANGE_OPTIONS = [
+  { value: '7d' as DateRange, label: 'Last 7 days' },
+  { value: '30d' as DateRange, label: 'Last 30 days' },
+  { value: '90d' as DateRange, label: 'Last 3 months' },
+  { value: '6m' as DateRange, label: 'Last 6 months' },
+  { value: '1y' as DateRange, label: 'Last year' },
+  { value: 'custom' as DateRange, label: 'Custom range' }
+]
+
+export default function DailyMessageActivity({ startDate: propStartDate, endDate: propEndDate }: DailyMessageActivityProps) {
   const { t } = useTranslation()
   const [data, setData] = useState<DayData[]>([])
   const [stats, setStats] = useState<Stats>({
@@ -48,10 +59,56 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
   })
   const [isLoading, setIsLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'messages' | 'feedback' | 'admin'>('messages')
+  const [dateRange, setDateRange] = useState<DateRange>('7d')
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
+  const [showCustomRange, setShowCustomRange] = useState(false)
+
+  // Calculate date range based on selection
+  const getDateRange = () => {
+    if (propStartDate && propEndDate) {
+      return { startDate: propStartDate, endDate: propEndDate }
+    }
+
+    const end = new Date()
+    const start = new Date()
+
+    switch (dateRange) {
+      case '7d':
+        start.setDate(end.getDate() - 7)
+        break
+      case '30d':
+        start.setDate(end.getDate() - 30)
+        break
+      case '90d':
+        start.setDate(end.getDate() - 90)
+        break
+      case '6m':
+        start.setMonth(end.getMonth() - 6)
+        break
+      case '1y':
+        start.setFullYear(end.getFullYear() - 1)
+        break
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return { startDate: customStartDate, endDate: customEndDate }
+        }
+        // Fallback to 7 days if custom dates not set
+        start.setDate(end.getDate() - 7)
+        break
+    }
+
+    return {
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0]
+    }
+  }
+
+  const { startDate, endDate } = getDateRange()
 
   useEffect(() => {
     loadData()
-  }, [startDate, endDate])
+  }, [startDate, endDate, dateRange, customStartDate, customEndDate])
 
   const loadData = async () => {
     setIsLoading(true)
@@ -248,8 +305,68 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
           {t('admin.dailyMessageActivity')}
         </h3>
-        <div className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
-          {startDate} to {endDate}
+        <div className="flex items-center gap-3">
+          {/* Date Range Selector */}
+          <div className="flex items-center gap-2">
+            <select
+              value={dateRange}
+              onChange={(e) => {
+                const newRange = e.target.value as DateRange
+                setDateRange(newRange)
+                setShowCustomRange(newRange === 'custom')
+                if (newRange !== 'custom') {
+                  setCustomStartDate('')
+                  setCustomEndDate('')
+                }
+              }}
+              className="px-3 py-1 text-sm rounded border"
+              style={{
+                backgroundColor: 'var(--admin-bg)',
+                color: 'var(--admin-text)',
+                borderColor: 'var(--admin-border)'
+              }}
+            >
+              {DATE_RANGE_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Custom Date Inputs */}
+          {showCustomRange && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="px-2 py-1 text-xs rounded border"
+                style={{
+                  backgroundColor: 'var(--admin-bg)',
+                  color: 'var(--admin-text)',
+                  borderColor: 'var(--admin-border)'
+                }}
+              />
+              <span style={{ color: 'var(--admin-text-muted)' }}>to</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="px-2 py-1 text-xs rounded border"
+                style={{
+                  backgroundColor: 'var(--admin-bg)',
+                  color: 'var(--admin-text)',
+                  borderColor: 'var(--admin-border)'
+                }}
+              />
+            </div>
+          )}
+          
+          {/* Date Range Display */}
+          <div className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
+            {startDate} to {endDate}
+          </div>
         </div>
       </div>
 

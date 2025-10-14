@@ -213,10 +213,7 @@ export default function AdminDashboard() {
                 <div className="content-module">
                   {/* Daily Message Activity */}
                   <div id="daily-message-activity" className="content-section">
-                    <DailyMessageActivity 
-                      startDate={startDate}
-                      endDate={endDate}
-                    />
+                    <DailyMessageActivity />
                   </div>
 
                   <div id="recent-conversations" className="content-section">
