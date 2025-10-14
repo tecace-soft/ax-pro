@@ -23,6 +23,7 @@ export default function UserFeedbackList() {
   const [sortBy, setSortBy] = useState<SortOption>('date-desc')
   const [filterReaction, setFilterReaction] = useState<'all' | 'good' | 'bad'>('all')
   const [displayLimit, setDisplayLimit] = useState(10)
+  const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON'>('CSV')
 
   useEffect(() => {
     loadFeedback()
@@ -138,6 +139,63 @@ export default function UserFeedbackList() {
     return text.substring(0, maxLength) + '...'
   }
 
+  const handleExport = () => {
+    if (filteredFeedbacks.length === 0) {
+      alert('No feedback to export')
+      return
+    }
+
+    const data = filteredFeedbacks.map(feedback => ({
+      feedbackId: feedback.id,
+      chatId: feedback.chat_id,
+      userId: feedback.user_id || '',
+      reaction: feedback.reaction || '',
+      feedbackText: feedback.feedback_text || '',
+      createdAt: feedback.created_at || '',
+      userMessage: feedback.chatData?.chat_message || '',
+      aiResponse: feedback.chatData?.response || ''
+    }))
+
+    if (exportFormat === 'CSV') {
+      const headers = ['Feedback ID', 'Chat ID', 'User ID', 'Reaction', 'Feedback Text', 'Created At', 'User Message', 'AI Response']
+      const csvData = data.map(item => [
+        item.feedbackId,
+        item.chatId,
+        item.userId,
+        item.reaction,
+        `"${item.feedbackText.replace(/"/g, '""')}"`,
+        item.createdAt,
+        `"${item.userMessage.replace(/"/g, '""')}"`,
+        `"${item.aiResponse.replace(/"/g, '""')}"`
+      ])
+      
+      const csvContent = [headers, ...csvData]
+        .map(row => row.join(','))
+        .join('\n')
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `user-feedback-${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } else {
+      const jsonContent = JSON.stringify(data, null, 2)
+      const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `user-feedback-${new Date().toISOString().split('T')[0]}.json`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="admin-card">
@@ -224,6 +282,34 @@ export default function UserFeedbackList() {
               border: '1px solid var(--admin-border)'
             }}
           />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          <select
+            className="px-3 py-2 rounded-md text-sm"
+            style={{
+              backgroundColor: 'rgba(9, 14, 34, 0.6)',
+              color: 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+            value={exportFormat}
+            onChange={(e) => setExportFormat(e.target.value as 'CSV' | 'JSON')}
+          >
+            <option>CSV</option>
+            <option>JSON</option>
+          </select>
+          <button
+            onClick={handleExport}
+            className="px-4 py-2 rounded-md text-sm font-medium"
+            style={{
+              backgroundColor: 'rgba(59, 230, 255, 0.1)',
+              color: 'var(--admin-primary)',
+              border: '1px solid var(--admin-primary)'
+            }}
+          >
+            Export
+          </button>
         </div>
       </div>
 
