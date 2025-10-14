@@ -77,7 +77,7 @@ export default function PerformanceRadar({
   // Chart dimensions
   const chartSize = 400
   const center = chartSize / 2
-  const centerY = center - 10
+  const centerY = center // 중앙 정렬
   const maxRadius = 130
 
   // Calculate point coordinates
@@ -89,7 +89,7 @@ export default function PerformanceRadar({
     const x = Math.cos(angle * Math.PI / 180) * radius
     const y = Math.sin(angle * Math.PI / 180) * radius
     
-    return { x, y: y + centerY - center, angle }
+    return { x, y, angle }
   }
 
   // Create SVG path
@@ -255,7 +255,7 @@ export default function PerformanceRadar({
                 style={{
                   position: 'absolute',
                   left: `${labelCoords.x + center}px`,
-                  top: `${labelCoords.y + center}px`,
+                  top: `${labelCoords.y + centerY}px`,
                   transform: 'translate(-50%, -50%)',
                   zIndex: 10,
                   borderColor: point.color,
