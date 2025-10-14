@@ -60,12 +60,15 @@ export default function AdminSidebar({
 
   const handleEditClick = () => {
     setEditTitle(customization.title || 'TecAce Ax Pro')
-    setEditDescription('Main AI Assistant for HR Support')
+    setEditDescription(customization.chatSubtitle || 'Main AI Assistant for HR Support')
     setIsEditing(true)
   }
 
   const handleSave = () => {
-    updateCustomization({ title: editTitle })
+    updateCustomization({ 
+      title: editTitle,
+      chatSubtitle: editDescription 
+    })
     setIsEditing(false)
   }
 
@@ -164,7 +167,7 @@ export default function AdminSidebar({
                     fontSize: '12px', 
                     color: 'var(--admin-text-muted)'
                   }}>
-                    Main AI Assistant for HR Support
+                    {customization.chatSubtitle || 'Main AI Assistant for HR Support'}
                   </p>
                 </>
               )}
