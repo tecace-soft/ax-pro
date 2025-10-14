@@ -188,29 +188,29 @@ export default function AdminDashboard() {
           />
           
           <main className="dashboard-main">
-            <div className="dashboard-grid">
-              <div className="grid-left">
-                <div id="performance-radar">
-                  <PerformanceRadar 
-                    {...radarProps}
-                    timelineData={filteredRadarData}
-                    selectedDate={selectedRadarDate}
-                    onDateChange={setSelectedRadarDate}
-                    includeSimulatedData={includeSimulatedData}
-                    onIncludeSimulatedDataChange={setIncludeSimulatedData}
-                    estimationMode={estimationMode}
-                    onEstimationModeChange={setEstimationMode}
-                  />
+            {location.pathname === '/admin/knowledge-management' ? (
+              <KnowledgeManagementPage />
+            ) : (
+              <>
+                <div className="dashboard-grid">
+                  <div className="grid-left">
+                    <div id="performance-radar">
+                      <PerformanceRadar 
+                        {...radarProps}
+                        timelineData={filteredRadarData}
+                        selectedDate={selectedRadarDate}
+                        onDateChange={setSelectedRadarDate}
+                        includeSimulatedData={includeSimulatedData}
+                        onIncludeSimulatedDataChange={setIncludeSimulatedData}
+                        estimationMode={estimationMode}
+                        onEstimationModeChange={setEstimationMode}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Content sections */}
-            <div className="content-module">
-              {location.pathname === '/admin/knowledge-management' ? (
-                <KnowledgeManagementPage />
-              ) : (
-                <>
+                {/* Content sections */}
+                <div className="content-module">
                   {/* Daily Message Activity */}
                   <div id="daily-message-activity" className="content-section">
                     <DailyMessageActivity 
@@ -242,10 +242,9 @@ export default function AdminDashboard() {
                     <h2 className="section-title">{t('admin.promptControl')}</h2>
                     <PromptControl />
                   </div>
-
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </main>
         </div>
       </div>
