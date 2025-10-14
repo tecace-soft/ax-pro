@@ -146,8 +146,8 @@ export const chatService = {
             throw new Error('Invalid response from webhook');
           }
           
-          // Simulate streaming for n8n response
-          const messageId = `n8n_${Date.now()}`;
+          // Use chatId as messageId so feedback can link correctly
+          // chatId was sent to n8n and will be in the database
           if (onStream) {
             const answerText = response.answer;
             console.log('Streaming answer text:', answerText);
@@ -165,10 +165,10 @@ export const chatService = {
             
             onStream({
               type: 'final',
-              messageId: messageId,
+              messageId: chatId,
               citations: response.citationTitle ? [{
                 id: `citation_${Date.now()}`,
-                messageId: messageId,
+                messageId: chatId,
                 sourceType: 'document' as const,
                 title: response.citationTitle,
                 snippet: response.citationContent || '',
@@ -179,10 +179,10 @@ export const chatService = {
           }
 
           return {
-            messageId: messageId,
+            messageId: chatId,  // Return the chatId that was sent to n8n
             citations: response.citationTitle ? [{
               id: `citation_${Date.now()}`,
-              messageId: messageId,
+              messageId: chatId,
               sourceType: 'document' as const,
               title: response.citationTitle,
               snippet: response.citationContent || '',

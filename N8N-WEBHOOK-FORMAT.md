@@ -72,3 +72,7 @@ The n8n webhook integration is **already correctly implemented** with the exact 
 - Current implementation uses object format: `{...}` ✅
 - The `chatId` is generated fresh for each message, not reused
 - This ensures each message can be uniquely identified for feedback tracking
+- **IMPORTANT**: The `chatId` sent to n8n is returned as `messageId` from the chat service
+  - This allows the UI to use `messageId` for feedback submission
+  - The feedback then correctly links to the `chat_id` in Supabase's `chat` table
+  - Format: `chat_${timestamp}_${randomString}`
