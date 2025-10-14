@@ -160,27 +160,55 @@ export async function submitUserFeedback(
 }
 
 /**
+ * Check if admin feedback already exists for a chat
+ */
+export async function getAdminFeedbackByChat(chatId: string): Promise<AdminFeedbackData | null> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    const { data, error } = await supabase
+      .from('admin_feedback')
+      .select('*')
+      .eq('chat_id', chatId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows found
+        return null;
+      }
+      throw error;
+    }
+
+    return data as AdminFeedbackData;
+  } catch (error) {
+    console.error('Error fetching admin feedback by chat:', error);
+    return null;
+  }
+}
+
+/**
  * Submit admin feedback for a chat message
  */
 export async function submitAdminFeedback(
   chatId: string,
-  rating: number,
-  supervisorFeedback: string,
+  verdict: 'good' | 'bad',
+  feedbackText: string,
   correctedResponse: string
 ): Promise<AdminFeedbackData> {
   try {
     const supabase = getSupabaseClient();
     
-    console.log('Submitting admin feedback:', { chatId, rating, supervisorFeedback, correctedResponse });
+    console.log('Submitting admin feedback:', { chatId, verdict, feedbackText, correctedResponse });
     
     const feedbackData = {
       chat_id: chatId,
-      rating,
-      supervisor_feedback: supervisorFeedback || null,
+      feedback_verdict: verdict,
+      feedback_text: feedbackText || null,
       corrected_response: correctedResponse || null
     };
 
-    const { data, error } = await supabase
+    const { data, error} = await supabase
       .from('admin_feedback')
       .insert([feedbackData])
       .select()
@@ -195,6 +223,47 @@ export async function submitAdminFeedback(
     return data as AdminFeedbackData;
   } catch (error) {
     console.error('Failed to submit admin feedback:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update existing admin feedback
+ */
+export async function updateAdminFeedback(
+  id: number,
+  verdict: 'good' | 'bad',
+  feedbackText: string,
+  correctedResponse: string
+): Promise<AdminFeedbackData> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log('Updating admin feedback:', { id, verdict, feedbackText, correctedResponse });
+    
+    const feedbackData = {
+      feedback_verdict: verdict,
+      feedback_text: feedbackText || null,
+      corrected_response: correctedResponse || null,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('admin_feedback')
+      .update(feedbackData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to update admin feedback: ${error.message}`);
+    }
+
+    console.log('✅ Admin feedback updated:', data);
+    return data as AdminFeedbackData;
+  } catch (error) {
+    console.error('Failed to update admin feedback:', error);
     throw error;
   }
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { fetchAllChatData } from '../../services/chatData'
-import { submitAdminFeedback } from '../../services/feedback'
-import { ChatData } from '../../services/supabase'
+import { submitAdminFeedback, updateAdminFeedback, getAdminFeedbackByChat } from '../../services/feedback'
+import { ChatData, AdminFeedbackData } from '../../services/supabase'
 import { useTranslation } from '../../i18n/I18nProvider'
 import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
 
@@ -9,7 +9,8 @@ interface AdminFeedbackModal {
   chatId: string
   userMessage: string
   aiResponse: string
-  rating: 1 | -1
+  verdict: 'good' | 'bad'
+  existingFeedback: AdminFeedbackData | null
 }
 
 export default function RecentConversations() {
@@ -75,28 +76,72 @@ export default function RecentConversations() {
     return text.substring(0, maxLength) + '...'
   }
 
-  const handleFeedbackClick = (conversation: ChatData, rating: 1 | -1) => {
+  const handleFeedbackClick = async (conversation: ChatData, verdict: 'good' | 'bad') => {
+    // Check if feedback already exists
+    const existingFeedback = await getAdminFeedbackByChat(conversation.id)
+    
+    // If feedback exists and verdict is different, show confirmation
+    if (existingFeedback && existingFeedback.feedback_verdict !== verdict) {
+      const verdictText = existingFeedback.feedback_verdict === 'good' ? 'positive' : 'negative'
+      const newVerdictText = verdict === 'good' ? 'positive' : 'negative'
+      const confirmed = window.confirm(
+        `A ${verdictText} feedback was already provided for this chat message/response. ` +
+        `Are you sure you would like to change it to a ${newVerdictText} review? ` +
+        `This will remove the previously saved ${verdictText} feedback.`
+      )
+      
+      if (!confirmed) {
+        return
+      }
+    }
+    
     setFeedbackModal({
       chatId: conversation.id,
       userMessage: conversation.chat_message,
       aiResponse: conversation.response,
-      rating
+      verdict,
+      existingFeedback
     })
-    setSupervisorFeedback('')
-    setCorrectedResponse('')
+    
+    // Pre-fill with existing feedback if available
+    if (existingFeedback) {
+      setSupervisorFeedback(existingFeedback.feedback_text || '')
+      setCorrectedResponse(existingFeedback.corrected_response || '')
+    } else {
+      setSupervisorFeedback('')
+      setCorrectedResponse('')
+    }
   }
 
   const handleSubmitFeedback = async () => {
     if (!feedbackModal) return
     
+    // For thumbs up, text fields are optional
+    // For thumbs down, at least one field should be filled
+    if (feedbackModal.verdict === 'bad' && !supervisorFeedback && !correctedResponse) {
+      alert('For negative feedback, please provide either supervisor feedback or corrected response.')
+      return
+    }
+    
     setIsSubmitting(true)
     try {
-      await submitAdminFeedback(
-        feedbackModal.chatId,
-        feedbackModal.rating,
-        supervisorFeedback,
-        correctedResponse
-      )
+      if (feedbackModal.existingFeedback) {
+        // Update existing feedback
+        await updateAdminFeedback(
+          feedbackModal.existingFeedback.id!,
+          feedbackModal.verdict,
+          supervisorFeedback,
+          correctedResponse
+        )
+      } else {
+        // Create new feedback
+        await submitAdminFeedback(
+          feedbackModal.chatId,
+          feedbackModal.verdict,
+          supervisorFeedback,
+          correctedResponse
+        )
+      }
       
       // Success - close modal
       setFeedbackModal(null)
@@ -105,6 +150,9 @@ export default function RecentConversations() {
       
       // Show success message
       alert('Admin feedback submitted successfully!')
+      
+      // Refresh conversations to show updated feedback
+      handleRefresh()
     } catch (error) {
       console.error('Failed to submit admin feedback:', error)
       alert('Failed to submit feedback. Please try again.')
@@ -228,14 +276,14 @@ export default function RecentConversations() {
               <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
                 <span className="text-xs mr-2" style={{ color: 'var(--admin-text-muted)' }}>Admin Feedback:</span>
                 <button
-                  onClick={() => handleFeedbackClick(conversation, 1)}
+                  onClick={() => handleFeedbackClick(conversation, 'good')}
                   className="p-2 rounded transition-colors hover:bg-green-500/20"
                   title="Thumbs up"
                 >
                   <IconThumbsUp size={16} style={{ color: 'var(--admin-success, #10b981)' }} />
                 </button>
                 <button
-                  onClick={() => handleFeedbackClick(conversation, -1)}
+                  onClick={() => handleFeedbackClick(conversation, 'bad')}
                   className="p-2 rounded transition-colors hover:bg-red-500/20"
                   title="Thumbs down"
                 >
@@ -270,7 +318,7 @@ export default function RecentConversations() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-                  Admin Feedback {feedbackModal.rating === 1 ? '👍' : '👎'}
+                  Admin Feedback {feedbackModal.verdict === 'good' ? '👍' : '👎'}
                 </h3>
                 <button
                   onClick={handleCancelFeedback}
