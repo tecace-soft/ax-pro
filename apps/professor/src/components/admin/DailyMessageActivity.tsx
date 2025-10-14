@@ -66,6 +66,17 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         adminFeedbacks: adminFeedbacks.length
       })
 
+      // Debug: Log sample IDs to see format
+      if (chats.length > 0) {
+        console.log('Sample chat ID:', chats[0].id)
+      }
+      if (userFeedbacks.length > 0) {
+        console.log('Sample user feedback chat_id:', userFeedbacks[0].chat_id)
+      }
+      if (adminFeedbacks.length > 0) {
+        console.log('Sample admin feedback chat_id:', adminFeedbacks[0].chat_id)
+      }
+
       const userFeedbackMap = new Map<string, UserFeedbackData[]>()
       userFeedbacks.forEach(fb => {
         if (!userFeedbackMap.has(fb.chat_id)) {
@@ -77,6 +88,13 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
       const adminFeedbackMap = new Map<string, AdminFeedbackData>()
       adminFeedbacks.forEach(fb => {
         adminFeedbackMap.set(fb.chat_id, fb)
+      })
+
+      console.log('📋 Feedback maps created:', {
+        userFeedbackMapSize: userFeedbackMap.size,
+        adminFeedbackMapSize: adminFeedbackMap.size,
+        sampleUserFeedbackKeys: Array.from(userFeedbackMap.keys()).slice(0, 3),
+        sampleChatIds: chats.slice(0, 3).map(c => c.id)
       })
 
       const dayMap = new Map<string, DayData>()
@@ -100,6 +118,9 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
       }
 
       const allUsers = new Set<string>()
+      let userFeedbackMatches = 0
+      let adminFeedbackMatches = 0
+      
       chats.forEach(chat => {
         if (!chat.created_at) return
         
@@ -112,6 +133,10 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
           allUsers.add(chat.user_id)
           
           const userFbs = userFeedbackMap.get(chat.id) || []
+          if (userFbs.length > 0) {
+            userFeedbackMatches++
+            console.log('✅ User feedback match:', { chatId: chat.id, feedbackCount: userFbs.length })
+          }
           userFbs.forEach(fb => {
             dayData.userFeedbackCount++
             if (fb.reaction === 'good') dayData.userGoodCount++
@@ -120,12 +145,22 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
           
           const adminFb = adminFeedbackMap.get(chat.id)
           if (adminFb) {
+            adminFeedbackMatches++
+            console.log('✅ Admin feedback match:', { chatId: chat.id })
             dayData.adminFeedbackCount++
             if (adminFb.feedback_verdict === 'good') dayData.adminGoodCount++
             if (adminFb.feedback_verdict === 'bad') dayData.adminBadCount++
             if (adminFb.corrected_response) dayData.correctedResponseCount++
           }
         }
+      })
+
+      console.log('🔍 Feedback matching results:', {
+        totalChats: chats.length,
+        userFeedbackMatches,
+        adminFeedbackMatches,
+        totalUserFeedbacks: userFeedbacks.length,
+        totalAdminFeedbacks: adminFeedbacks.length
       })
 
       const dayDataArray = Array.from(dayMap.values())
