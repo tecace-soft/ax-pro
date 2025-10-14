@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from '../../i18n/I18nProvider'
 import { fetchAllChatData } from '../../services/chatData'
 import { fetchAllUserFeedback, fetchAllAdminFeedback } from '../../services/feedback'
 import { ChatData, UserFeedbackData, AdminFeedbackData } from '../../services/supabase'
@@ -33,6 +34,7 @@ interface Stats {
 }
 
 export default function DailyMessageActivity({ startDate, endDate }: DailyMessageActivityProps) {
+  const { t } = useTranslation()
   const [data, setData] = useState<DayData[]>([])
   const [stats, setStats] = useState<Stats>({
     totalMessages: 0,
