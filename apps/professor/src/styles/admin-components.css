@@ -432,10 +432,20 @@
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
 }
 
+/* Light mode hexagon inner */
+[data-theme="light"] .hexagon-inner {
+  background: #f8fafc;
+}
+
 .logo-text {
   font-size: 18px;
   font-weight: 700;
   color: #ffffff;
+}
+
+/* Light mode logo text */
+[data-theme="light"] .logo-text {
+  color: #0f172a;
 }
 
 .header-right {
@@ -462,6 +472,11 @@
   font-size: 12px;
   color: rgba(255,255,255,0.7);
   white-space: nowrap;
+}
+
+/* Light mode current time */
+[data-theme="light"] .current-time {
+  color: #64748b;
 }
 
 .header-actions {
