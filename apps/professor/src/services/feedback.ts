@@ -189,7 +189,7 @@ export async function getAdminFeedbackByChat(chatId: string): Promise<AdminFeedb
 
 /**
  * Submit admin feedback for a chat message
- * Uses upsert to handle both insert and update automatically
+ * Checks if feedback exists and updates it, otherwise inserts new
  */
 export async function submitAdminFeedback(
   chatId: string,
@@ -202,6 +202,9 @@ export async function submitAdminFeedback(
     
     console.log('Submitting admin feedback:', { chatId, verdict, feedbackText, correctedResponse });
     
+    // Check if feedback already exists for this chat
+    const existingFeedback = await getAdminFeedbackByChat(chatId);
+    
     const feedbackData = {
       chat_id: chatId,
       feedback_verdict: verdict,
@@ -210,15 +213,28 @@ export async function submitAdminFeedback(
       updated_at: new Date().toISOString()
     };
 
-    // Use upsert to insert or update if chat_id already exists
-    const { data, error} = await supabase
-      .from('admin_feedback')
-      .upsert([feedbackData], { 
-        onConflict: 'chat_id',
-        ignoreDuplicates: false 
-      })
-      .select()
-      .single();
+    let data, error;
+    
+    if (existingFeedback) {
+      // Update existing feedback
+      const result = await supabase
+        .from('admin_feedback')
+        .update(feedbackData)
+        .eq('chat_id', chatId)
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    } else {
+      // Insert new feedback
+      const result = await supabase
+        .from('admin_feedback')
+        .insert([feedbackData])
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) {
       console.error('Supabase error:', error);
