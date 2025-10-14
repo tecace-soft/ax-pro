@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from '../i18n/I18nProvider';
+import { useTheme } from '../theme/ThemeProvider';
 import FileLibrary from '../components/knowledge/FileLibrary';
 import KnowledgeIndex from '../components/knowledge/KnowledgeIndex';
 import SyncOverview from '../components/knowledge/SyncOverview';
@@ -9,6 +10,7 @@ type TabType = 'file-library' | 'knowledge-index' | 'sync-overview';
 
 const KnowledgeManagement: React.FC = () => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<TabType>('file-library');
 
   const tabs = [
@@ -31,7 +33,7 @@ const KnowledgeManagement: React.FC = () => {
   };
 
   return (
-    <div className="knowledge-management">
+    <div className="knowledge-management" data-theme={theme}>
       {/* Header */}
       <div className="km-header">
         <div className="km-title-section">
