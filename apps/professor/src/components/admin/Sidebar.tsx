@@ -11,6 +11,7 @@ import {
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useUICustomization } from '../../hooks/useUICustomization'
+import { useTranslation } from '../../i18n/I18nProvider'
 
 interface SidebarProps {
   conversations: number
@@ -36,6 +37,7 @@ export default function AdminSidebar({
   const navigate = useNavigate()
   const location = useLocation()
   const { customization, updateCustomization } = useUICustomization()
+  const { t } = useTranslation()
   
   const isDashboardPage = location.pathname === '/admin/dashboard'
   const [searchQuery, setSearchQuery] = useState('')
@@ -349,7 +351,7 @@ export default function AdminSidebar({
 
         {/* Metrics */}
         <div className="sidebar-section">
-          <h3 className="sidebar-section-title">Overview</h3>
+          <h3 className="sidebar-section-title">{t('admin.overview')}</h3>
           <div className="metrics-grid">
             <div className="metric-card">
               <div className="metric-icon">
@@ -357,7 +359,7 @@ export default function AdminSidebar({
               </div>
               <div className="metric-content">
                 <div className="metric-value">{conversations}</div>
-                <div className="metric-label">Conversations</div>
+                <div className="metric-label">{t('admin.conversations')}</div>
               </div>
             </div>
             
@@ -367,7 +369,7 @@ export default function AdminSidebar({
               </div>
               <div className="metric-content">
                 <div className="metric-value">{satisfaction}%</div>
-                <div className="metric-label">Satisfaction</div>
+                <div className="metric-label">{t('admin.satisfaction')}</div>
               </div>
             </div>
             
@@ -377,7 +379,7 @@ export default function AdminSidebar({
               </div>
               <div className="metric-content">
                 <div className="metric-value">{documents}</div>
-                <div className="metric-label">Documents</div>
+                <div className="metric-label">{t('admin.documents')}</div>
               </div>
             </div>
             
@@ -387,7 +389,7 @@ export default function AdminSidebar({
               </div>
               <div className="metric-content">
                 <div className="metric-value">{performanceScore}%</div>
-                <div className="metric-label">Performance</div>
+                <div className="metric-label">{t('admin.performance')}</div>
               </div>
             </div>
           </div>
@@ -402,7 +404,7 @@ export default function AdminSidebar({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search conversations..."
+                placeholder={t('admin.searchConversations')}
                 className="search-input"
               />
             </div>
@@ -411,42 +413,42 @@ export default function AdminSidebar({
 
         {/* Navigation */}
         <div className="sidebar-section">
-          <h3 className="sidebar-section-title">Navigation</h3>
+          <h3 className="sidebar-section-title">{t('admin.navigation')}</h3>
           <nav className="sidebar-nav">
             <button 
               className="nav-item"
               onClick={() => handleNavigation('performance-radar')}
             >
               <IconBarChart size={18} />
-              <span>Performance</span>
+              <span>{t('admin.performance')}</span>
             </button>
             <button 
               className="nav-item"
               onClick={() => handleNavigation('daily-message-activity')}
             >
               <IconActivity size={18} />
-              <span>Activity</span>
+              <span>{t('admin.activity')}</span>
             </button>
             <button 
               className="nav-item"
               onClick={() => handleNavigation('recent-conversations')}
             >
               <IconMessage size={18} />
-              <span>Conversations</span>
+              <span>{t('admin.conversations')}</span>
             </button>
             <button 
               className="nav-item"
               onClick={() => handleNavigation('user-feedback')}
             >
               <IconMegaphone size={18} />
-              <span>Feedback</span>
+              <span>{t('admin.feedback')}</span>
             </button>
             <button 
               className="nav-item"
               onClick={() => navigate('/admin/rag-management')}
             >
               <IconDatabase size={18} />
-              <span>Knowledge Base</span>
+              <span>{t('admin.knowledgeBase')}</span>
             </button>
           </nav>
         </div>
