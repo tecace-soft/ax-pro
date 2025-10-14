@@ -12,6 +12,7 @@ import OverviewDashboard from './features/overview/OverviewDashboard';
 import ChatUsage from './features/usage/ChatUsage';
 import PromptControl from './features/management/PromptControl';
 import KnowledgeManagement from './features/management/KnowledgeManagement';
+import KnowledgeManagementPage from './pages/KnowledgeManagement';
 import RAGManagement from './components/admin/RAGManagement';
 import { isAuthedFor, Role } from './services/auth';
 
@@ -117,6 +118,14 @@ const App: React.FC = () => {
                     <AdminShell>
                       <KnowledgeManagement />
                     </AdminShell>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/knowledge-management" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <KnowledgeManagementPage />
                   </ProtectedRoute>
                 } 
               />

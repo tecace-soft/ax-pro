@@ -445,7 +445,7 @@ export default function AdminSidebar({
             </button>
             <button 
               className="nav-item"
-              onClick={() => navigate('/admin/rag-management')}
+              onClick={() => navigate('/admin/knowledge-management')}
             >
               <IconDatabase size={18} />
               <span>{t('admin.knowledgeBase')}</span>
