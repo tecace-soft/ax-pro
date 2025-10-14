@@ -54,7 +54,6 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
   const loadData = async () => {
     setIsLoading(true)
     try {
-      // Fetch all data in parallel
       const [chats, userFeedbacks, adminFeedbacks] = await Promise.all([
         fetchAllChatData(1000),
         fetchAllUserFeedback(),
@@ -67,7 +66,6 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         adminFeedbacks: adminFeedbacks.length
       })
 
-      // Create maps for quick lookup
       const userFeedbackMap = new Map<string, UserFeedbackData[]>()
       userFeedbacks.forEach(fb => {
         if (!userFeedbackMap.has(fb.chat_id)) {
@@ -81,7 +79,6 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         adminFeedbackMap.set(fb.chat_id, fb)
       })
 
-      // Initialize day map
       const dayMap = new Map<string, DayData>()
       const start = new Date(startDate)
       const end = new Date(endDate)
@@ -102,7 +99,6 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         })
       }
 
-      // Process chats
       const allUsers = new Set<string>()
       chats.forEach(chat => {
         if (!chat.created_at) return
@@ -115,7 +111,6 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
           dayData.uniqueUsers.add(chat.user_id)
           allUsers.add(chat.user_id)
           
-          // User feedback
           const userFbs = userFeedbackMap.get(chat.id) || []
           userFbs.forEach(fb => {
             dayData.userFeedbackCount++
@@ -123,7 +118,6 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
             if (fb.reaction === 'bad') dayData.userBadCount++
           })
           
-          // Admin feedback
           const adminFb = adminFeedbackMap.get(chat.id)
           if (adminFb) {
             dayData.adminFeedbackCount++
@@ -137,7 +131,6 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
       const dayDataArray = Array.from(dayMap.values())
       setData(dayDataArray)
 
-      // Calculate overall stats
       const totalMessages = dayDataArray.reduce((sum, d) => sum + d.messageCount, 0)
       const totalUserFeedback = dayDataArray.reduce((sum, d) => sum + d.userFeedbackCount, 0)
       const totalUserGood = dayDataArray.reduce((sum, d) => sum + d.userGoodCount, 0)
@@ -156,34 +149,16 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         adminApproval: totalAdminFeedback > 0 ? Math.round((totalAdminGood / totalAdminFeedback) * 100) : 0
       })
 
-      console.log('📈 Daily Message Activity - Stats calculated:', {
+      console.log('📈 Stats:', {
         totalMessages,
         totalUserFeedback,
         totalAdminFeedback,
-        totalCorrected,
-        uniqueUsers: allUsers.size,
-        dateRange: `${startDate} to ${endDate}`,
         daysWithData: dayDataArray.filter(d => d.messageCount > 0).length
       })
-      
-      // Log sample day data
-      if (dayDataArray.length > 0) {
-        console.log('📊 Sample day data:', dayDataArray[0])
-      }
     } catch (error) {
       console.error('Failed to load daily message activity:', error)
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const getMaxValue = () => {
-    if (viewMode === 'messages') {
-      return Math.max(...data.map(d => d.messageCount), 1)
-    } else if (viewMode === 'feedback') {
-      return Math.max(...data.map(d => d.userFeedbackCount), 1)
-    } else {
-      return Math.max(...data.map(d => d.adminFeedbackCount), 1)
     }
   }
 
@@ -206,13 +181,13 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    const month = date.toLocaleDateString('en-US', { month: 'numeric' })
-    const day = date.toLocaleDateString('en-US', { day: 'numeric' })
+    const month = date.getMonth() + 1
+    const day = date.getDate()
     const weekday = date.toLocaleDateString('en-US', { weekday: 'short' })
     return `${month}/${day} ${weekday}`
   }
 
-  const maxValue = getMaxValue()
+  const maxValue = Math.max(...data.map(d => getValue(d)), 1)
 
   return (
     <div className="admin-card" style={{ marginBottom: '24px' }}>
@@ -236,7 +211,6 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         }}
       >
         <div 
-          className="stat-card"
           style={{
             padding: '12px 16px',
             borderRadius: '8px',
@@ -256,7 +230,6 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         </div>
 
         <div 
-          className="stat-card"
           style={{
             padding: '12px 16px',
             borderRadius: '8px',
@@ -276,7 +249,6 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         </div>
 
         <div 
-          className="stat-card"
           style={{
             padding: '12px 16px',
             borderRadius: '8px',
@@ -296,7 +268,6 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         </div>
 
         <div 
-          className="stat-card"
           style={{
             padding: '12px 16px',
             borderRadius: '8px',
@@ -369,171 +340,128 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
           <p style={{ color: 'var(--admin-text-muted)' }}>No data available for this period</p>
         </div>
       ) : (
-        <div style={{ 
-          position: 'relative',
-          height: '280px',
-          marginBottom: '20px'
-        }}>
-          {/* Chart Container */}
+        <div>
+          {/* Chart Area */}
           <div style={{ 
-            display: 'flex', 
-            alignItems: 'flex-end', 
-            justifyContent: 'space-around',
             height: '200px',
-            padding: '30px 10px 0',
-            gap: '4px'
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: '8px',
+            padding: '20px 0',
+            borderBottom: '1px solid var(--admin-border)'
           }}>
-            {data.map((item) => {
+            {data.map((item, index) => {
               const value = getValue(item)
-              const heightPercent = maxValue > 0 ? (value / maxValue) * 100 : 0
               const score = getScore(item)
+              const heightPercent = maxValue > 0 ? (value / maxValue) * 100 : 0
               
               return (
                 <div 
-                  key={item.date} 
-                  style={{ 
+                  key={item.date}
+                  style={{
                     flex: 1,
+                    height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
+                    justifyContent: 'flex-end',
                     alignItems: 'center',
-                    gap: '6px',
-                    minWidth: '30px',
-                    maxWidth: '80px'
+                    position: 'relative'
                   }}
                 >
                   {/* Count Badge */}
                   {value > 0 && (
                     <div
                       style={{
+                        position: 'absolute',
+                        top: `calc(${100 - heightPercent}% - 25px)`,
                         backgroundColor: viewMode === 'messages' ? 'var(--admin-primary)' :
                                        viewMode === 'feedback' ? 'var(--admin-success)' :
                                        'var(--admin-accent)',
                         color: viewMode === 'messages' ? '#041220' : '#ffffff',
-                        padding: '3px 6px',
-                        borderRadius: '10px',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        minWidth: '20px',
-                        textAlign: 'center'
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: '600'
                       }}
                     >
                       {value}
                     </div>
                   )}
-
+                  
                   {/* Bar */}
                   <div
                     style={{
                       width: '100%',
-                      maxWidth: '50px',
-                      height: value > 0 ? `${Math.max(heightPercent, 10)}%` : '5px',
+                      maxWidth: '40px',
+                      height: value > 0 ? `${heightPercent}%` : '2px',
                       background: value > 0 ? 
                         (viewMode === 'messages' ? 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))' :
                          viewMode === 'feedback' ? 'linear-gradient(180deg, var(--admin-success), #0d9488)' :
                          'linear-gradient(180deg, var(--admin-accent), #8b5cf6)') :
                         'rgba(100, 116, 139, 0.2)',
-                      borderRadius: '6px 6px 0 0',
-                      position: 'relative',
+                      borderRadius: '4px 4px 0 0',
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease'
+                      transition: 'opacity 0.2s'
                     }}
-                    title={`${formatDate(item.date)}\n${value} ${viewMode}${score !== null ? `\n${score}% positive` : ''}\n${item.uniqueUsers.size} users`}
-                    onMouseEnter={(e) => {
-                      if (value > 0) {
-                        e.currentTarget.style.opacity = '0.8'
-                        e.currentTarget.style.transform = 'translateY(-2px)'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.opacity = '1'
-                      e.currentTarget.style.transform = 'translateY(0)'
-                    }}
-                  >
-                    {/* Score Indicator */}
-                    {score !== null && value > 0 && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: '-18px',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          fontSize: '9px',
-                          fontWeight: '700',
-                          color: score >= 70 ? 'var(--admin-success)' : 
-                                 score >= 50 ? 'var(--admin-warning, #ff9800)' : 
-                                 'var(--admin-danger)',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        {score}%
-                      </div>
-                    )}
-                  </div>
+                    title={`${formatDate(item.date)}\n${value} ${viewMode}${score !== null ? `\n${score}% positive` : ''}`}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                  />
                 </div>
               )
             })}
           </div>
 
-          {/* Date Labels - Separate row below chart */}
+          {/* Date Labels */}
           <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-around',
-            paddingTop: '10px',
-            gap: '4px'
+            display: 'flex',
+            gap: '8px',
+            paddingTop: '12px'
           }}>
             {data.map((item) => (
               <div 
                 key={`label-${item.date}`}
                 style={{
                   flex: 1,
-                  minWidth: '30px',
-                  maxWidth: '80px',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  fontSize: '10px',
+                  color: 'var(--admin-text-muted)'
                 }}
               >
-                <div
-                  style={{
-                    fontSize: '10px',
-                    color: 'var(--admin-text-muted)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}
-                >
-                  {formatDate(item.date)}
-                </div>
+                {formatDate(item.date)}
               </div>
             ))}
           </div>
+
+          {/* Info Banner */}
+          <div 
+            className="mt-4 p-3 rounded text-xs flex items-center gap-2"
+            style={{ 
+              backgroundColor: 'rgba(59, 230, 255, 0.05)',
+              color: 'var(--admin-text-muted)',
+              border: '1px solid rgba(59, 230, 255, 0.1)'
+            }}
+          >
+            <svg 
+              width="14" 
+              height="14" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>
+              {viewMode === 'messages' && 'Total messages sent per day'}
+              {viewMode === 'feedback' && 'User feedback received per day'}
+              {viewMode === 'admin' && 'Admin reviews completed per day'}
+            </span>
+          </div>
         </div>
       )}
-
-      {/* Info Banner */}
-      <div 
-        className="mt-4 p-3 rounded text-xs"
-        style={{ 
-          backgroundColor: 'rgba(59, 230, 255, 0.05)',
-          color: 'var(--admin-text-muted)',
-          border: '1px solid rgba(59, 230, 255, 0.1)'
-        }}
-      >
-        <svg 
-          width="14" 
-          height="14" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2"
-          style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }}
-        >
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-        {viewMode === 'messages' && 'Total messages sent per day'}
-        {viewMode === 'feedback' && 'User feedback received per day (% = positive rate)'}
-        {viewMode === 'admin' && 'Admin reviews completed per day (% = approval rate)'}
-      </div>
     </div>
   )
 }
