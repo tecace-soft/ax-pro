@@ -106,39 +106,20 @@ export async function getChatData(requestId: string): Promise<ChatData | null> {
 
 /**
  * Fetch chat data by ID (for linking with feedback)
- * Handles both string and numeric chat IDs
+ * Matches against the chat_id column, not the id column
  */
 export async function fetchChatById(chatId: string): Promise<ChatData | null> {
   try {
     const supabase = getSupabaseClient();
     
-    // First try to find by exact string match (for string IDs)
-    let { data, error } = await supabase
+    console.log(`Looking for chat with chat_id: ${chatId}`);
+    
+    // Match against the chat_id column (string), not the id column (numeric)
+    const { data, error } = await supabase
       .from('chat')
       .select('*')
-      .eq('id', chatId)
+      .eq('chat_id', chatId)
       .maybeSingle();
-
-    // If that fails and chatId looks like a string ID, try to extract numeric part
-    if (error && chatId.startsWith('chat_')) {
-      console.log(`String ID lookup failed for ${chatId}, trying alternative approach...`);
-      
-      // Try to find by partial match or different field
-      const { data: altData, error: altError } = await supabase
-        .from('chat')
-        .select('*')
-        .ilike('id', `%${chatId}%`)
-        .maybeSingle();
-      
-      if (!altError && altData) {
-        console.log(`✅ Found chat using alternative lookup for ${chatId}`);
-        return altData;
-      }
-      
-      // If still no match, return null with a helpful message
-      console.warn(`No chat found for ID: ${chatId}. This might be due to a chat_id mismatch between feedback and chat tables.`);
-      return null;
-    }
 
     if (error) {
       console.error('Supabase error:', error);
@@ -146,9 +127,9 @@ export async function fetchChatById(chatId: string): Promise<ChatData | null> {
     }
 
     if (data) {
-      console.log(`✅ Found chat for ID: ${chatId}`);
+      console.log(`✅ Found chat for chat_id: ${chatId}`);
     } else {
-      console.warn(`No chat found for ID: ${chatId}`);
+      console.warn(`No chat found for chat_id: ${chatId}`);
     }
 
     return data;
