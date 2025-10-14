@@ -10,7 +10,6 @@ import PromptControl from '../../components/admin/PromptControl'
 import RecentConversations from '../../components/admin/RecentConversations'
 import UserFeedbackList from '../../components/admin/UserFeedbackList'
 import AdminFeedbackList from '../../components/admin/AdminFeedbackList'
-import RAGManagement from '../../components/admin/RAGManagement'
 import KnowledgeManagementPage from '../KnowledgeManagement'
 import { fetchDailyAggregatesWithMode, DailyRow, EstimationMode, filterSimulatedData } from '../../services/dailyAggregates'
 import '../../styles/admin-theme.css'
@@ -244,10 +243,6 @@ export default function AdminDashboard() {
                     <PromptControl />
                   </div>
 
-                  <div id="rag-management" className="content-section">
-                    <h2 className="section-title">{t('admin.ragManagement')}</h2>
-                    <RAGManagement />
-                  </div>
                 </>
               )}
             </div>
