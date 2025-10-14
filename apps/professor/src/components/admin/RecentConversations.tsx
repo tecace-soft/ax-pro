@@ -3,7 +3,7 @@ import { fetchAllChatData } from '../../services/chatData'
 import { submitAdminFeedback, getAdminFeedbackByChat } from '../../services/feedback'
 import { ChatData, AdminFeedbackData } from '../../services/supabase'
 import { useTranslation } from '../../i18n/I18nProvider'
-import { IconRefresh, IconThumbsUp, IconThumbsDown, IconDownload } from '../../ui/icons'
+import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
 
 interface AdminFeedbackModal {
   chatId: string
@@ -282,23 +282,14 @@ export default function RecentConversations() {
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
           {t('admin.recentConversations')} ({filteredConversations.length})
         </h3>
-        <div className="flex items-center gap-2">
-          <button 
-            className="icon-btn"
-            onClick={handleExportCSV}
-            title={t('admin.exportCSV')}
-          >
-            <IconDownload size={18} />
-          </button>
-          <button 
-            className="icon-btn"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            title={t('actions.refresh')}
-          >
-            <IconRefresh size={18} className={isRefreshing ? 'animate-spin' : ''} />
-          </button>
-        </div>
+        <button 
+          className="icon-btn"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          title={t('actions.refresh')}
+        >
+          <IconRefresh size={18} className={isRefreshing ? 'animate-spin' : ''} />
+        </button>
       </div>
 
       {/* Controls Bar */}
@@ -337,6 +328,21 @@ export default function RecentConversations() {
               border: '1px solid var(--admin-border)'
             }}
           />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportCSV}
+            className="px-4 py-2 rounded-md text-sm font-medium"
+            style={{
+              backgroundColor: 'rgba(59, 230, 255, 0.1)',
+              color: 'var(--admin-primary)',
+              border: '1px solid var(--admin-primary)'
+            }}
+          >
+            Export CSV
+          </button>
         </div>
       </div>
 
