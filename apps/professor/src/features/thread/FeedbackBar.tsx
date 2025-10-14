@@ -11,6 +11,7 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [currentRating, setCurrentRating] = useState<1 | -1 | null>(null);
   const [note, setNote] = useState('');
+  const [showToast, setShowToast] = useState<'success' | 'error' | null>(null);
 
   const handleRating = (newRating: 1 | -1) => {
     setCurrentRating(newRating);
@@ -41,9 +42,17 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
       setRating(currentRating);
       setShowNoteModal(false);
       setNote('');
+      
+      // Show success toast
+      setShowToast('success');
+      setTimeout(() => setShowToast(null), 3000);
     } catch (error) {
       console.error('Failed to submit feedback:', error);
-      alert('Failed to submit feedback. Please try again.');
+      setShowNoteModal(false);
+      
+      // Show error toast
+      setShowToast('error');
+      setTimeout(() => setShowToast(null), 3000);
     }
   };
 
@@ -141,6 +150,36 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {showToast && (
+        <div 
+          className="fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2"
+          style={{
+            backgroundColor: showToast === 'success' ? 'var(--success, #10b981)' : 'var(--error, #ef4444)',
+            color: 'white'
+          }}
+        >
+          {showToast === 'success' ? (
+            <>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              <span>Feedback submitted successfully!</span>
+            </>
+          ) : (
+            <>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span>Failed to submit feedback. Please try again.</span>
+            </>
+          )}
         </div>
       )}
     </>

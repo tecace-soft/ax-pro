@@ -15,7 +15,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const { customization } = useUICustomization();
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
-  const isSimulated = message.id.startsWith('sim_') || message.id.startsWith('assistant-') || message.id.startsWith('error-');
+  // Only mark as simulated if it actually starts with 'sim_'
+  // Real n8n messages will have IDs like 'chat_...'
+  const isSimulated = message.id.startsWith('sim_');
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString([], { 
@@ -161,7 +163,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             )}
 
             {/* Feedback Bar - Only show for real messages (not simulated) */}
-            {!message.id.startsWith('sim_') && !message.id.startsWith('user-') && !message.id.startsWith('assistant-') && !message.id.startsWith('error-') && (
+            {!isSimulated && (
               <FeedbackBar messageId={message.id} />
             )}
           </div>
