@@ -206,11 +206,73 @@
   margin-bottom: 32px;
 }
 
-.rag-files h3 {
+.files-header {
+  margin-bottom: 16px;
+}
+
+.files-header h3 {
   font-size: 18px;
   font-weight: 600;
   color: var(--admin-text);
   margin: 0 0 16px 0;
+}
+
+.files-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  background: rgba(9, 14, 34, 0.6);
+  color: var(--admin-text);
+  font-size: 14px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 2px rgba(59, 230, 255, 0.1);
+}
+
+.sort-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sort-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  background: rgba(9, 14, 34, 0.6);
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sort-btn:hover {
+  background: rgba(9, 14, 34, 0.8);
+  color: var(--admin-text);
+}
+
+.sort-btn.active {
+  background: var(--admin-primary);
+  color: var(--admin-bg);
+  border-color: var(--admin-primary);
 }
 
 .files-list {
@@ -299,10 +361,13 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-.remove-file-btn {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: var(--admin-error);
+.file-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.action-btn {
   padding: 8px;
   border-radius: 6px;
   cursor: pointer;
@@ -313,9 +378,32 @@
   justify-content: center;
   width: 32px;
   height: 32px;
+  border: 1px solid transparent;
 }
 
-.remove-file-btn:hover {
+.reindex-btn {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--admin-primary);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.reindex-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.reindex-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delete-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--admin-error);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.delete-btn:hover {
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.5);
 }

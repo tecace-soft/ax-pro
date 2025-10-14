@@ -181,6 +181,13 @@ const translations = {
     'admin.instruction2': 'Supported formats: PDF, Word, Excel, CSV, TXT, Markdown, JSON, HTML',
     'admin.instruction3': 'Files are automatically processed and vectorized for search',
     'admin.instruction4': 'Maximum file size: 10MB per file',
+    'admin.searchFiles': 'Search files...',
+    'admin.name': 'Name',
+    'admin.size': 'Size',
+    'admin.reindexFile': 'Re-index file',
+    'admin.deleteFile': 'Delete file',
+    'admin.confirmDeleteFile': 'Are you sure you want to delete this file?',
+    'admin.deleteError': 'Failed to delete file',
   },
   ko: {
     'app.brand': 'AX PRO 플랫폼',
@@ -350,6 +357,13 @@ const translations = {
     'admin.instruction2': '지원 형식: PDF, Word, Excel, CSV, TXT, Markdown, JSON, HTML',
     'admin.instruction3': '파일은 자동으로 처리되어 검색을 위해 벡터화됩니다',
     'admin.instruction4': '최대 파일 크기: 파일당 10MB',
+    'admin.searchFiles': '파일 검색...',
+    'admin.name': '이름',
+    'admin.size': '크기',
+    'admin.reindexFile': '파일 재인덱싱',
+    'admin.deleteFile': '파일 삭제',
+    'admin.confirmDeleteFile': '이 파일을 삭제하시겠습니까?',
+    'admin.deleteError': '파일 삭제에 실패했습니다',
   },
 };
 

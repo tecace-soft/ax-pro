@@ -141,3 +141,51 @@ export function getFileIcon(fileType: string): string {
   if (fileType.includes('html')) return '🌐';
   return '📁';
 }
+
+/**
+ * Re-index a file (placeholder for future implementation)
+ */
+export async function reindexFile(fileId: string): Promise<{ success: boolean; message: string }> {
+  // This would typically call a backend API to re-index a specific file
+  // For now, we'll simulate the operation
+  try {
+    console.log(`Re-indexing file: ${fileId}`);
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return {
+      success: true,
+      message: 'File re-indexed successfully'
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to re-index file'
+    };
+  }
+}
+
+/**
+ * Delete a file from the RAG system (placeholder for future implementation)
+ */
+export async function deleteFileFromRAG(fileId: string): Promise<{ success: boolean; message: string }> {
+  // This would typically call a backend API to delete a file from the RAG system
+  // For now, we'll simulate the operation
+  try {
+    console.log(`Deleting file from RAG: ${fileId}`);
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return {
+      success: true,
+      message: 'File deleted successfully'
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to delete file'
+    };
+  }
+}

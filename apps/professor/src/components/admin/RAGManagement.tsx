@@ -6,6 +6,8 @@ import {
   validateFile, 
   formatFileSize, 
   getFileIcon,
+  reindexFile,
+  deleteFileFromRAG,
   FileUploadResult,
   RAGFile 
 } from '../../services/ragManagement';
@@ -21,6 +23,9 @@ const RAGManagement: React.FC<RAGManagementProps> = ({ className = '' }) => {
   const [uploadResults, setUploadResults] = useState<FileUploadResult[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<RAGFile[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Handle file selection
   const handleFileSelect = useCallback((files: FileList | null) => {
@@ -116,6 +121,84 @@ const RAGManagement: React.FC<RAGManagementProps> = ({ className = '' }) => {
     setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
   };
 
+  // Re-index file
+  const handleReindexFile = async (fileId: string) => {
+    try {
+      const result = await reindexFile(fileId);
+      if (result.success) {
+        // Update file status to processing
+        setUploadedFiles(prev => prev.map(file => 
+          file.id === fileId 
+            ? { ...file, status: 'processing' as const }
+            : file
+        ));
+        
+        // Simulate processing completion
+        setTimeout(() => {
+          setUploadedFiles(prev => prev.map(file => 
+            file.id === fileId 
+              ? { ...file, status: 'ready' as const }
+              : file
+          ));
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Re-index error:', error);
+    }
+  };
+
+  // Delete file from RAG system
+  const handleDeleteFile = async (fileId: string) => {
+    if (!window.confirm(t('admin.confirmDeleteFile'))) {
+      return;
+    }
+
+    try {
+      const result = await deleteFileFromRAG(fileId);
+      if (result.success) {
+        removeFile(fileId);
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(t('admin.deleteError'));
+    }
+  };
+
+  // Filter and sort files
+  const filteredAndSortedFiles = uploadedFiles
+    .filter(file => 
+      file.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'date':
+          comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+          break;
+        case 'size':
+          comparison = a.size - b.size;
+          break;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+  // Handle sort change
+  const handleSortChange = (newSortBy: 'name' | 'date' | 'size') => {
+    if (sortBy === newSortBy) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder('desc');
+    }
+  };
+
   return (
     <div className={`rag-management ${className}`}>
       <div className="rag-header">
@@ -203,9 +286,42 @@ const RAGManagement: React.FC<RAGManagementProps> = ({ className = '' }) => {
       {/* Uploaded Files List */}
       {uploadedFiles.length > 0 && (
         <div className="rag-files">
-          <h3>{t('admin.uploadedFiles')}</h3>
+          <div className="files-header">
+            <h3>{t('admin.uploadedFiles')} ({filteredAndSortedFiles.length})</h3>
+            <div className="files-controls">
+              <div className="search-box">
+                <input
+                  type="text"
+                  placeholder={t('admin.searchFiles')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+              <div className="sort-controls">
+                <button
+                  className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
+                  onClick={() => handleSortChange('name')}
+                >
+                  {t('admin.name')} {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </button>
+                <button
+                  className={`sort-btn ${sortBy === 'date' ? 'active' : ''}`}
+                  onClick={() => handleSortChange('date')}
+                >
+                  {t('admin.date')} {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </button>
+                <button
+                  className={`sort-btn ${sortBy === 'size' ? 'active' : ''}`}
+                  onClick={() => handleSortChange('size')}
+                >
+                  {t('admin.size')} {sortBy === 'size' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </button>
+              </div>
+            </div>
+          </div>
           <div className="files-list">
-            {uploadedFiles.map(file => (
+            {filteredAndSortedFiles.map(file => (
               <div key={file.id} className="file-item">
                 <div className="file-icon">
                   {getFileIcon(file.type)}
@@ -221,13 +337,23 @@ const RAGManagement: React.FC<RAGManagementProps> = ({ className = '' }) => {
                     {t(`admin.status.${file.status}`)}
                   </span>
                 </div>
-                <button 
-                  className="remove-file-btn"
-                  onClick={() => removeFile(file.id)}
-                  title={t('admin.removeFile')}
-                >
-                  🗑️
-                </button>
+                <div className="file-actions">
+                  <button 
+                    className="action-btn reindex-btn"
+                    onClick={() => handleReindexFile(file.id)}
+                    title={t('admin.reindexFile')}
+                    disabled={file.status === 'processing'}
+                  >
+                    🔄
+                  </button>
+                  <button 
+                    className="action-btn delete-btn"
+                    onClick={() => handleDeleteFile(file.id)}
+                    title={t('admin.deleteFile')}
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
             ))}
           </div>
