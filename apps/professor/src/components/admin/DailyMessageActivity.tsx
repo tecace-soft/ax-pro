@@ -66,9 +66,11 @@ export default function DailyMessageActivity({ startDate, endDate }: DailyMessag
         adminFeedbacks: adminFeedbacks.length
       })
 
-      // Debug: Log sample IDs to see format
+      // Debug: Log sample IDs and full chat object to see all fields
       if (chats.length > 0) {
+        console.log('Sample chat object:', chats[0])
         console.log('Sample chat ID:', chats[0].id)
+        console.log('Sample chat all keys:', Object.keys(chats[0]))
       }
       if (userFeedbacks.length > 0) {
         console.log('Sample user feedback chat_id:', userFeedbacks[0].chat_id)
