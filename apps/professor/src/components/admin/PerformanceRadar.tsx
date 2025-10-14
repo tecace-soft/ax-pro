@@ -159,124 +159,117 @@ export default function PerformanceRadar({
         </p>
       </div>
       
-      {/* Radar chart */}
-      <div className="radar-chart-section">
-        <div className="radar-chart-large">
-          <svg className="radar-svg-large" width={chartSize} height={chartSize}>
-            {/* Background grid */}
-            {createBackgroundGrid()}
+      {/* Two column layout: Radar on left, Module Control on right */}
+      <div className="radar-main-layout">
+        {/* Left side: Radar chart */}
+        <div className="radar-chart-section">
+          <div className="radar-chart-large">
+            <svg className="radar-svg-large" width={chartSize} height={chartSize}>
+              {/* Background grid */}
+              {createBackgroundGrid()}
+              
+              {/* Radar polygon */}
+              <path
+                d={createRadarPath()}
+                fill="rgba(59, 230, 255, 0.1)"
+                stroke="rgba(59, 230, 255, 0.8)"
+                strokeWidth="2"
+              />
+              
+              {/* Data points */}
+              {activeDataPoints.map((point, index) => {
+                const coords = getPointCoordinates(index, activeDataPoints.length, point.value)
+                return (
+                  <g key={index} className="radar-point-large">
+                    <circle
+                      className="point-dot-large"
+                      cx={coords.x + center}
+                      cy={coords.y + center}
+                      r="6"
+                      fill={point.color}
+                      stroke="white"
+                      strokeWidth="2"
+                    />
+                    <text
+                      x={coords.x + center}
+                      y={coords.y + center - 15}
+                      textAnchor="middle"
+                      className="point-score-box"
+                      fill={point.color}
+                      fontSize="12"
+                      fontWeight="bold"
+                    >
+                      {point.value}
+                    </text>
+                  </g>
+                )
+              })}
+            </svg>
             
-            {/* Radar polygon */}
-            <path
-              d={createRadarPath()}
-              fill="rgba(59, 230, 255, 0.1)"
-              stroke="rgba(59, 230, 255, 0.8)"
-              strokeWidth="2"
-            />
-            
-            {/* Data points */}
-            {activeDataPoints.map((point, index) => {
-              const coords = getPointCoordinates(index, activeDataPoints.length, point.value)
-              return (
-                <g key={index} className="radar-point-large">
-                  <circle
-                    className="point-dot-large"
-                    cx={coords.x + center}
-                    cy={coords.y + center}
-                    r="6"
-                    fill={point.color}
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                  <text
-                    x={coords.x + center}
-                    y={coords.y + center - 15}
-                    textAnchor="middle"
-                    className="point-score-box"
-                    fill={point.color}
-                    fontSize="12"
-                    fontWeight="bold"
-                  >
-                    {point.value}
-                  </text>
-                </g>
-              )
-            })}
-          </svg>
-          
-          {/* Center score */}
-          <div 
-            className="radar-center-large"
-            style={{
-              position: 'absolute',
-              top: `${centerY}px`,
-              left: `${center}px`,
-              transform: 'translate(-50%, -50%)'
-            }}
-          >
-            <div className="center-score-large">{averageScore}</div>
-            <div className="center-label-large">OVERALL</div>
-          </div>
-        </div>
-        
-        {/* Labels */}
-        {allDataPoints.map((point, index) => {
-          const labelCoords = getLabelCoordinates(index, allDataPoints.length)
-          const isActive = toggles[point.key as keyof typeof toggles]
-          const isPromptInjection = point.key === 'promptInjection'
-          
-          return (
-            <div
-              key={index}
-              className={`radar-label-clean radar-label-${point.key.toLowerCase()} ${!isActive ? 'label-inactive' : ''}`}
+            {/* Center score */}
+            <div 
+              className="radar-center-large"
               style={{
                 position: 'absolute',
-                left: `${labelCoords.x + center}px`,
-                top: `${labelCoords.y + center}px`,
-                transform: 'translate(-50%, -50%)',
-                zIndex: 10,
-                borderColor: point.color,
-                opacity: isActive ? 1 : 0.5
+                top: `${centerY}px`,
+                left: `${center}px`,
+                transform: 'translate(-50%, -50%)'
               }}
             >
-              <div className="label-content">
-                {isPromptInjection ? (
-                  <span className="label-name label-scrolling">
-                    <span className="scrolling-text">PROMPT INJECTION</span>
-                  </span>
-                ) : (
-                  <span className="label-name" style={{ color: point.color }}>
-                    {point.label.toUpperCase()}
-                  </span>
-                )}
-                <span className="label-score" style={{ color: point.color }}>
-                  {point.value}
-                </span>
-              </div>
+              <div className="center-score-large">{averageScore}</div>
+              <div className="center-label-large">OVERALL</div>
             </div>
-          )
-        })}
-      </div>
-
-      {/* Module Control */}
-      <div className="module-control-integrated">
-        <div 
-          className="module-control-header"
-          onClick={() => setIsModuleControlExpanded(!isModuleControlExpanded)}
-        >
-          <div className="header-content">
-            <span className="control-title">Module Control</span>
-            <span className="control-badge">{activeCount} Active</span>
           </div>
-          <span className={`expand-icon ${isModuleControlExpanded ? 'expanded' : ''}`}>
-            {isModuleControlExpanded ? '▲' : '▼'}
-          </span>
+          
+          {/* Labels */}
+          {allDataPoints.map((point, index) => {
+            const labelCoords = getLabelCoordinates(index, allDataPoints.length)
+            const isActive = toggles[point.key as keyof typeof toggles]
+            const isPromptInjection = point.key === 'promptInjection'
+            
+            return (
+              <div
+                key={index}
+                className={`radar-label-clean radar-label-${point.key.toLowerCase()} ${!isActive ? 'label-inactive' : ''}`}
+                style={{
+                  position: 'absolute',
+                  left: `${labelCoords.x + center}px`,
+                  top: `${labelCoords.y + center}px`,
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 10,
+                  borderColor: point.color,
+                  opacity: isActive ? 1 : 0.5
+                }}
+              >
+                <div className="label-content">
+                  {isPromptInjection ? (
+                    <span className="label-name label-scrolling">
+                      <span className="scrolling-text">PROMPT INJECTION</span>
+                    </span>
+                  ) : (
+                    <span className="label-name" style={{ color: point.color }}>
+                      {point.label.toUpperCase()}
+                    </span>
+                  )}
+                  <span className="label-score" style={{ color: point.color }}>
+                    {point.value}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
         </div>
-
-        <div className={`module-control-content ${isModuleControlExpanded ? 'expanded' : 'collapsed'}`}>
-          <div className="control-list">
+        
+        {/* Right side: Module Control panel (always visible) */}
+        <div className="module-control-panel">
+          <div className="module-control-header-side">
+            <span className="control-title">Module Control</span>
+            <span className="control-badge">{activeCount} / {allDataPoints.length}</span>
+          </div>
+          
+          <div className="control-list-side">
             {allDataPoints.map((point) => (
-              <div key={point.key} className="control-item" data-key={point.key}>
+              <div key={point.key} className="control-item-side" data-key={point.key}>
                 <div className="control-info">
                   <span className="control-icon" style={{ color: point.color }}>{point.icon}</span>
                   <div className="control-text">
