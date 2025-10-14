@@ -136,6 +136,14 @@ export default function AdminDashboard() {
 
             {/* Content sections */}
             <div className="content-module">
+              {/* Daily Message Activity */}
+              <div id="daily-message-activity-section" className="content-section">
+                <DailyMessageActivity 
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+              </div>
+
               <div id="recent-conversations" className="content-section">
                 <h2 className="section-title">{t('admin.recentConversations')}</h2>
                 <RecentConversations />
