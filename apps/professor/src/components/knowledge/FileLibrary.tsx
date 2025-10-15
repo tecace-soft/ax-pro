@@ -5,6 +5,8 @@ import {
   fetchFilesFromSupabase,
   deleteFileFromSupabase,
   indexFileToVector,
+  unindexFileByFilename,
+  reindexFile,
   validateFileExtended, 
   formatFileSize, 
   getFileIcon,
@@ -24,6 +26,7 @@ const FileLibrary: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   // Always use Supabase Storage
   const storageType = 'supabase' as const;
 
@@ -79,6 +82,48 @@ const FileLibrary: React.FC = () => {
     } catch (error) {
       console.error('Error deleting file:', error);
       alert('Failed to delete file');
+    }
+  };
+
+  // Handle file indexing
+  const handleIndexFile = async (fileName: string) => {
+    setActionLoading(fileName);
+    try {
+      const result = await indexFileToVector(fileName);
+      if (result.success) {
+        alert(`✅ ${result.message}`);
+        loadFiles(); // Refresh the list
+      } else {
+        alert(`❌ ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error indexing file:', error);
+      alert(`❌ Error indexing file: ${error}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle file unindexing
+  const handleUnindexFile = async (fileName: string) => {
+    if (!confirm(`⚠️ Are you sure you want to unindex all chunks for "${fileName}"? This will remove ALL chunks for this file.`)) {
+      return;
+    }
+    
+    setActionLoading(fileName);
+    try {
+      const result = await unindexFileByFilename(fileName);
+      if (result.success) {
+        alert(`✅ ${result.message} (${result.deletedCount || 0} chunks removed)`);
+        loadFiles(); // Refresh the list
+      } else {
+        alert(`❌ ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error unindexing file:', error);
+      alert(`❌ Error unindexing file: ${error}`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -368,6 +413,32 @@ const FileLibrary: React.FC = () => {
                     </td>
                     <td>
                       <div className="file-actions">
+                        <button 
+                          className="action-btn" 
+                          title="Index file"
+                          onClick={() => handleIndexFile(file.name)}
+                          disabled={actionLoading === file.name}
+                          style={{ 
+                            backgroundColor: actionLoading === file.name ? '#6b7280' : '#10b981',
+                            color: 'white',
+                            marginRight: '4px'
+                          }}
+                        >
+                          {actionLoading === file.name ? '⏳' : '📤'}
+                        </button>
+                        <button 
+                          className="action-btn" 
+                          title="Unindex file"
+                          onClick={() => handleUnindexFile(file.name)}
+                          disabled={actionLoading === file.name}
+                          style={{ 
+                            backgroundColor: actionLoading === file.name ? '#6b7280' : '#ef4444',
+                            color: 'white',
+                            marginRight: '4px'
+                          }}
+                        >
+                          {actionLoading === file.name ? '⏳' : '🗑️'}
+                        </button>
                         <button 
                           className="action-btn reindex-btn" 
                           title="Re-index file"
