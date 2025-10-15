@@ -18,7 +18,7 @@ import { getSupabaseConfig, saveSupabaseConfig, testSupabaseConnection, Supabase
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { language, setLanguage, t } = useTranslation();
+  const { language, setLanguage } = useTranslation();
   const [configs, setConfigs] = useState<ApiConfig[]>([]);
   const [n8nConfigs, setN8nConfigs] = useState<N8nConfig[]>([]);
   const [activeTab, setActiveTab] = useState<'api' | 'webhook' | 'ui' | 'database'>('api');

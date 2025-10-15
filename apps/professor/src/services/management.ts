@@ -164,6 +164,7 @@ export const listIndex = async (params: ListParams = {}): Promise<{ rows: IndexR
       const aVal = a[params.sortBy as keyof IndexRow];
       const bVal = b[params.sortBy as keyof IndexRow];
       const direction = params.sortDirection === 'desc' ? -1 : 1;
+      if (aVal === undefined || bVal === undefined) return 0;
       return aVal < bVal ? -1 * direction : aVal > bVal ? 1 * direction : 0;
     });
   }

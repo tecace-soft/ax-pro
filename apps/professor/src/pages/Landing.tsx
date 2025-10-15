@@ -63,7 +63,7 @@ const Landing: React.FC = () => {
 
     try {
       // Try backend API first
-      const userData = await authApi.demoLogin(formData.email, formData.password);
+      await authApi.demoLogin(formData.email, formData.password);
       
       // Also store in local session for compatibility
       const session = login(formData.email, formData.password);
