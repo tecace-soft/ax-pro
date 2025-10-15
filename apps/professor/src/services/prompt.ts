@@ -111,6 +111,32 @@ export async function fetchPromptHistory(limit: number = 10): Promise<PromptHist
 }
 
 /**
+ * Delete a specific prompt by ID
+ */
+export async function deletePrompt(promptId: number): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log('🗑️ Deleting prompt with ID:', promptId);
+    
+    const { error } = await supabase
+      .from('prompts')
+      .delete()
+      .eq('id', promptId);
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      throw new Error(`Failed to delete prompt: ${error.message}`);
+    }
+
+    console.log('✅ Prompt deleted successfully:', promptId);
+  } catch (error) {
+    console.error('❌ Failed to delete prompt:', error);
+    throw error;
+  }
+}
+
+/**
  * Force reload chatbot prompt (if applicable)
  */
 export async function forcePromptReload(): Promise<{ status: string; message: string }> {

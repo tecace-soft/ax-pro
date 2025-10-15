@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { fetchSystemPrompt, updateSystemPrompt, forcePromptReload, fetchPromptHistory } from '../../services/prompt'
+import { fetchSystemPrompt, updateSystemPrompt, forcePromptReload, fetchPromptHistory, deletePrompt } from '../../services/prompt'
 import { IconRefresh } from '../../ui/icons'
 import { useTranslation } from '../../i18n/I18nProvider'
 
@@ -22,6 +22,15 @@ export default function PromptControl() {
   const [promptHistory, setPromptHistory] = useState<PromptHistory[]>([])
   const [showHistory, setShowHistory] = useState(false)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean
+    promptId: number | null
+    promptText: string
+  }>({
+    isOpen: false,
+    promptId: null,
+    promptText: ''
+  })
   const [responseModal, setResponseModal] = useState<{
     isOpen: boolean
     message: string
@@ -142,6 +151,53 @@ export default function PromptControl() {
     })
   }
 
+  const handleDeletePrompt = (promptId: number, promptText: string) => {
+    setDeleteConfirm({
+      isOpen: true,
+      promptId,
+      promptText: promptText.substring(0, 100) + (promptText.length > 100 ? '...' : '')
+    })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.promptId) return
+
+    try {
+      console.log('🗑️ Deleting prompt:', deleteConfirm.promptId)
+      await deletePrompt(deleteConfirm.promptId)
+      
+      // Remove from local state
+      setPromptHistory(prev => prev.filter(p => p.id !== deleteConfirm.promptId))
+      
+      setResponseModal({
+        isOpen: true,
+        message: 'Prompt deleted successfully!',
+        isSuccess: true
+      })
+    } catch (error) {
+      console.error('❌ Failed to delete prompt:', error)
+      setResponseModal({
+        isOpen: true,
+        message: `Failed to delete prompt: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        isSuccess: false
+      })
+    } finally {
+      setDeleteConfirm({
+        isOpen: false,
+        promptId: null,
+        promptText: ''
+      })
+    }
+  }
+
+  const handleCancelDelete = () => {
+    setDeleteConfirm({
+      isOpen: false,
+      promptId: null,
+      promptText: ''
+    })
+  }
+
   return (
     <div className="admin-card">
       <div className="flex items-center justify-between mb-4">
@@ -241,21 +297,53 @@ export default function PromptControl() {
                 {promptHistory.map((prompt, index) => (
                   <div
                     key={prompt.id}
-                    className="p-3 rounded border cursor-pointer hover:bg-blue-500/10 transition-colors"
+                    className="p-3 rounded border hover:bg-blue-500/10 transition-colors"
                     style={{ 
                       borderColor: 'var(--admin-border)',
                       backgroundColor: index === 0 ? 'rgba(59, 230, 255, 0.1)' : 'transparent'
                     }}
-                    onClick={() => setPromptText(prompt.prompt_text)}
-                    title="Click to load this prompt"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium" style={{ color: 'var(--admin-text)' }}>
-                        {index === 0 ? '🟢 Current' : `#${index + 1}`}
-                      </span>
-                      <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
-                        {new Date(prompt.created_at).toLocaleString()}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium" style={{ color: 'var(--admin-text)' }}>
+                          {index === 0 ? '🟢 Current' : `#${index + 1}`}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPromptText(prompt.prompt_text)
+                          }}
+                          className="text-xs px-2 py-1 rounded transition-colors hover:bg-blue-500/20"
+                          style={{ 
+                            color: 'var(--admin-primary)',
+                            border: '1px solid rgba(59, 230, 255, 0.3)'
+                          }}
+                          title="Load this prompt"
+                        >
+                          📥 Load
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                          {new Date(prompt.created_at).toLocaleString()}
+                        </span>
+                        {index > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeletePrompt(prompt.id, prompt.prompt_text)
+                            }}
+                            className="text-xs px-2 py-1 rounded transition-colors hover:bg-red-500/20"
+                            style={{ 
+                              color: 'var(--admin-danger)',
+                              border: '1px solid rgba(239, 68, 68, 0.3)'
+                            }}
+                            title="Delete this prompt"
+                          >
+                            🗑️ Delete
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <p 
                       className="text-xs font-mono whitespace-pre-wrap overflow-hidden"
@@ -365,6 +453,54 @@ export default function PromptControl() {
                 onClick={handleCloseResponseModal}
               >
                 {t('admin.close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.isOpen && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{
+            background: 'radial-gradient(600px 400px at 50% 0%, rgba(124,140,255,0.12), transparent 60%), rgba(3,8,28,0.55)',
+            backdropFilter: 'blur(6px)'
+          }}
+        >
+          <div className="admin-card max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--admin-danger)' }}>
+              🗑️ Delete Prompt
+            </h3>
+            <p className="mb-4" style={{ color: 'var(--admin-text)' }}>
+              Are you sure you want to delete this prompt? This action cannot be undone.
+            </p>
+            <div className="mb-4 p-3 rounded" style={{ backgroundColor: 'var(--admin-bg-secondary)' }}>
+              <p className="text-sm font-mono" style={{ color: 'var(--admin-text-muted)' }}>
+                {deleteConfirm.promptText}
+              </p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button 
+                className="px-4 py-2 rounded-md"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(59,230,255,0.16)',
+                  color: 'var(--admin-text)'
+                }}
+                onClick={handleCancelDelete}
+              >
+                Cancel
+              </button>
+              <button 
+                className="px-4 py-2 rounded-md"
+                style={{
+                  background: 'linear-gradient(180deg, var(--admin-danger), #dc2626)',
+                  color: 'white'
+                }}
+                onClick={handleConfirmDelete}
+              >
+                🗑️ Delete
               </button>
             </div>
           </div>
