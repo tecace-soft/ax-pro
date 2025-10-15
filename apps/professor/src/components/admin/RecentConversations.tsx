@@ -882,13 +882,16 @@ export default function RecentConversations({
 
       {/* User Feedback Modal */}
       {userFeedbackModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div 
             className="bg-white rounded-xl shadow-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto border-2"
             style={{ 
               backgroundColor: 'var(--admin-card)',
               borderColor: 'var(--admin-border)',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              backdropFilter: 'blur(10px)',
+              opacity: 1,
+              background: 'var(--admin-card)'
             }}
           >
             <div className="flex items-center justify-between mb-6">
@@ -939,7 +942,7 @@ export default function RecentConversations({
                       <span className="font-semibold text-lg" style={{ 
                         color: userFeedbackModal.feedback.reaction === 'good' ? '#059669' : '#dc2626'
                       }}>
-                        {userFeedbackModal.feedback.reaction === 'good' ? '👍 Positive Feedback' : '👎 Negative Feedback'}
+                        {userFeedbackModal.feedback.reaction === 'good' ? 'Positive Feedback' : 'Negative Feedback'}
                       </span>
                     </div>
                   </div>
