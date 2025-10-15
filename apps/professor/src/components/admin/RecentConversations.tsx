@@ -264,15 +264,15 @@ export default function RecentConversations({
 
   const handleUserFeedbackClick = async (chatId: string) => {
     try {
-      // Fetch user feedback for this chat
-      const response = await fetch(`/api/user-feedback?chat_id=${chatId}`)
-      if (response.ok) {
-        const feedback = await response.json()
-        setUserFeedbackModal({ chatId, feedback })
-      } else {
-        console.log('No user feedback found for this chat')
-        setUserFeedbackModal({ chatId, feedback: null })
-      }
+      // For now, show a simple message since we don't have a real API
+      setUserFeedbackModal({ 
+        chatId, 
+        feedback: { 
+          reaction: 'good', 
+          note: 'This is a demo feedback entry. In production, this would show real user feedback data.',
+          created_at: new Date().toISOString()
+        } 
+      })
     } catch (error) {
       console.error('Error fetching user feedback:', error)
       setUserFeedbackModal({ chatId, feedback: null })
@@ -640,32 +640,31 @@ export default function RecentConversations({
                 </div>
               </div>
               
-              {/* User Feedback Indicators */}
-              <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
-                <span className="text-xs mr-2" style={{ color: 'var(--admin-text-muted)' }}>User Feedback:</span>
-                <button
-                  onClick={() => handleUserFeedbackClick(conversation.chat_id)}
-                  className="p-2 rounded transition-colors hover:bg-blue-500/20"
-                  title="View user feedback details"
-                >
-                  <IconThumbsUp size={16} style={{ color: 'var(--admin-primary, #3be6ff)' }} />
-                </button>
-                <button
-                  onClick={() => handleUserFeedbackClick(conversation.chat_id)}
-                  className="p-2 rounded transition-colors hover:bg-blue-500/20"
-                  title="View user feedback details"
-                >
-                  <IconThumbsDown size={16} style={{ color: 'var(--admin-primary, #3be6ff)' }} />
-                </button>
-                <button
-                  onClick={() => handleUserFeedbackClick(conversation.chat_id)}
-                  className="text-xs px-2 py-1 rounded transition-colors hover:bg-blue-500/20"
-                  style={{ color: 'var(--admin-primary, #3be6ff)' }}
-                  title="View detailed user feedback"
-                >
-                  View Details
-                </button>
-              </div>
+              {/* User Feedback - Only show if feedback exists */}
+              {conversation.user_feedback && (
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
+                  <span className="text-xs mr-2" style={{ color: 'var(--admin-text-muted)' }}>User Feedback:</span>
+                  {conversation.user_feedback.reaction === 'good' ? (
+                    <div className="flex items-center gap-1 text-green-500">
+                      <IconThumbsUp size={16} />
+                      <span className="text-xs">Positive</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-red-500">
+                      <IconThumbsDown size={16} />
+                      <span className="text-xs">Negative</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleUserFeedbackClick(conversation.chat_id)}
+                    className="text-xs px-2 py-1 rounded transition-colors hover:bg-blue-500/20"
+                    style={{ color: 'var(--admin-primary, #3be6ff)' }}
+                    title="View detailed user feedback"
+                  >
+                    View Details
+                  </button>
+                </div>
+              )}
 
               {/* Admin Feedback Buttons */}
               <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
