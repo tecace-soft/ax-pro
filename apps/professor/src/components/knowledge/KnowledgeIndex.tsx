@@ -36,7 +36,12 @@ const KnowledgeIndex: React.FC = () => {
     setError(null);
 
     try {
+      console.log('🔄 Loading documents from Supabase...');
       const response = await fetchVectorDocuments();
+      console.log('📋 Raw response:', response);
+      console.log('📊 Total documents found:', response.total || 0);
+      console.log('📄 Documents array length:', response.documents?.length || 0);
+      
       if (response.success) {
         // Transform VectorDocument to KnowledgeDocument
         const transformedDocs: KnowledgeDocument[] = response.documents.map((doc: VectorDocument) => {
@@ -215,6 +220,22 @@ const KnowledgeIndex: React.FC = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
           />
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="refresh-btn"
+            style={{
+              backgroundColor: isLoading ? '#6b7280' : 'var(--admin-primary)',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              marginLeft: '8px'
+            }}
+          >
+            {isLoading ? '⏳ Loading...' : '🔄 Refresh'}
+          </button>
         </div>
         <div className="ki-pagination-info">
           <span>Total items: {totalItems}</span>

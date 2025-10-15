@@ -89,16 +89,19 @@ const FileLibrary: React.FC = () => {
   const handleIndexFile = async (fileName: string) => {
     setActionLoading(fileName);
     try {
+      console.log('🔄 Starting index process for:', fileName);
       const result = await indexFileToVector(fileName);
+      console.log('📋 Index result:', result);
+      
       if (result.success) {
-        alert(`✅ ${result.message}`);
+        alert(`✅ ${result.message}\n\nCheck the Knowledge Index tab to see the indexed chunks.`);
         loadFiles(); // Refresh the list
       } else {
-        alert(`❌ ${result.message}`);
+        alert(`❌ ${result.message}\n\nCheck the browser console for more details.`);
       }
     } catch (error) {
-      console.error('Error indexing file:', error);
-      alert(`❌ Error indexing file: ${error}`);
+      console.error('❌ Error indexing file:', error);
+      alert(`❌ Error indexing file: ${error}\n\nCheck the browser console for more details.`);
     } finally {
       setActionLoading(null);
     }
