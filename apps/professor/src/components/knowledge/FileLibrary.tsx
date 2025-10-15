@@ -1,10 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from '../../i18n/I18nProvider';
 import { 
-  uploadFilesToRAG, 
-  fetchFilesFromRAG,
-  deleteFileFromRAG,
-  reindexFile,
   uploadFilesToSupabase,
   fetchFilesFromSupabase,
   deleteFileFromSupabase,
@@ -27,48 +23,30 @@ const FileLibrary: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [storageType, setStorageType] = useState<'supabase' | 'local'>('supabase');
+  // Always use Supabase Storage
+  const storageType = 'supabase' as const;
 
   // Fetch files on component mount
   useEffect(() => {
     loadFiles();
   }, [storageType]);
 
-  // Load files from selected storage
+  // Load files from Supabase Storage
   const loadFiles = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      if (storageType === 'supabase') {
-        // Load from Supabase Storage
-        const response = await fetchFilesFromSupabase();
-        if (response.success) {
-          setUploadedFiles(response.files);
-          console.log(`Loaded ${response.files.length} files from Supabase`);
-        } else {
-          setError(response.message || 'Failed to load files from Supabase');
-          console.error('Failed to load files:', response.message);
-        }
+      const response = await fetchFilesFromSupabase();
+      if (response.success) {
+        setUploadedFiles(response.files);
+        console.log(`✅ Loaded ${response.files.length} files from Supabase Storage`);
       } else {
-        // Load from n8n (local server)
-        const response = await fetchFilesFromRAG();
-        if (response.success) {
-          setUploadedFiles(response.files);
-          console.log(`Loaded ${response.files.length} files from n8n`);
-        } else {
-          if (response.message?.includes('404') || response.message?.includes('Not Found')) {
-            setError('n8n file management endpoints not configured yet. Please set up the following webhooks in n8n: list-files, delete-file, reindex-file');
-          } else {
-            setError(response.message || 'Failed to load files');
-          }
-          console.error('Failed to load files:', response.message);
-        }
+        setError(response.message || 'Failed to load files from Supabase');
+        console.error('Failed to load files:', response.message);
       }
     } catch (err) {
-      const errorMessage = storageType === 'supabase' 
-        ? 'Failed to connect to Supabase Storage. Please check your configuration.'
-        : 'Failed to connect to n8n service. Please ensure n8n webhooks are configured.';
+      const errorMessage = 'Failed to connect to Supabase Storage. Please check your configuration.';
       setError(errorMessage);
       console.error('Error loading files:', err);
     } finally {
@@ -88,14 +66,12 @@ const FileLibrary: React.FC = () => {
     }
 
     try {
-      const result = storageType === 'supabase'
-        ? await deleteFileFromSupabase(fileName)
-        : await deleteFileFromRAG(fileId);
+      const result = await deleteFileFromSupabase(fileName);
         
       if (result.success) {
         // Remove file from local state
         setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
-        console.log(`File ${fileName} deleted successfully`);
+        console.log(`✅ File ${fileName} deleted successfully`);
       } else {
         alert(`Failed to delete file: ${result.message}`);
       }
@@ -125,36 +101,26 @@ const FileLibrary: React.FC = () => {
   // Handle file download
   const handleDownloadFile = async (fileName: string) => {
     try {
-      if (storageType === 'supabase') {
-        // Get Supabase signed URL (for private buckets)
-        const supabase = (await import('../../services/supabase')).getSupabaseClient();
-        const filePath = `files/${fileName}`;
-        
-        // Create a signed URL that expires in 1 hour
-        const { data, error } = await supabase.storage
-          .from('knowledge-base')
-          .createSignedUrl(filePath, 3600); // 3600 seconds = 1 hour
-        
-        if (error) {
-          console.error('Error creating signed URL:', error);
-          alert(`Failed to get download URL: ${error.message}`);
-          return;
-        }
-        
-        if (data?.signedUrl) {
-          // Open in new tab or download
-          window.open(data.signedUrl, '_blank');
-        } else {
-          alert('Failed to get download URL');
-        }
+      // Get Supabase signed URL (for private buckets)
+      const supabase = (await import('../../services/supabase')).getSupabaseClient();
+      const filePath = `files/${fileName}`;
+      
+      // Create a signed URL that expires in 1 hour
+      const { data, error } = await supabase.storage
+        .from('knowledge-base')
+        .createSignedUrl(filePath, 3600); // 3600 seconds = 1 hour
+      
+      if (error) {
+        console.error('Error creating signed URL:', error);
+        alert(`Failed to get download URL: ${error.message}`);
+        return;
+      }
+      
+      if (data?.signedUrl) {
+        // Open in new tab or download
+        window.open(data.signedUrl, '_blank');
       } else {
-        // For n8n/local files, use the file URL if available
-        const file = uploadedFiles.find(f => f.name === fileName);
-        if (file?.url) {
-          window.open(file.url, '_blank');
-        } else {
-          alert('Download URL not available for this file');
-        }
+        alert('Failed to get download URL');
       }
     } catch (error) {
       console.error('Error downloading file:', error);
@@ -191,16 +157,13 @@ const FileLibrary: React.FC = () => {
     }
   }, [storageType]);
 
-  // Upload files to selected storage
+  // Upload files to Supabase Storage
   const uploadFiles = async (files: File[]) => {
     setIsUploading(true);
     setUploadResults([]);
 
     try {
-      const results = storageType === 'supabase'
-        ? await uploadFilesToSupabase(files)
-        : await uploadFilesToRAG(files);
-        
+      const results = await uploadFilesToSupabase(files);
       setUploadResults(results);
 
       // Show success/error messages
@@ -278,53 +241,6 @@ const FileLibrary: React.FC = () => {
       <div className="fl-header">
         <h2 className="fl-title">{t('knowledge.fileLibrary')}</h2>
         <p className="fl-description">{t('knowledge.fileLibraryDescription')}</p>
-        
-        {/* Storage Type Selector */}
-        <div className="storage-selector" style={{ marginTop: '16px', marginBottom: '16px' }}>
-          <label style={{ 
-            fontSize: '14px', 
-            fontWeight: '500', 
-            marginRight: '12px',
-            color: 'var(--text)'
-          }}>
-            Storage:
-          </label>
-          <button
-            onClick={() => setStorageType('supabase')}
-            className={`storage-btn ${storageType === 'supabase' ? 'active' : ''}`}
-            style={{
-              padding: '8px 16px',
-              marginRight: '8px',
-              borderRadius: '6px',
-              border: storageType === 'supabase' ? '2px solid var(--primary)' : '1px solid var(--border)',
-              backgroundColor: storageType === 'supabase' ? 'var(--primary)' : 'var(--card)',
-              color: storageType === 'supabase' ? 'white' : 'var(--text)',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              transition: 'all 0.2s'
-            }}
-          >
-            ☁️ Supabase Storage
-          </button>
-          <button
-            onClick={() => setStorageType('local')}
-            className={`storage-btn ${storageType === 'local' ? 'active' : ''}`}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '6px',
-              border: storageType === 'local' ? '2px solid var(--primary)' : '1px solid var(--border)',
-              backgroundColor: storageType === 'local' ? 'var(--primary)' : 'var(--card)',
-              color: storageType === 'local' ? 'white' : 'var(--text)',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              transition: 'all 0.2s'
-            }}
-          >
-            💾 Local Server (n8n)
-          </button>
-        </div>
       </div>
 
       {/* File Upload Area */}
