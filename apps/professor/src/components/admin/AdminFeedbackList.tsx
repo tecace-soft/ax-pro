@@ -411,38 +411,15 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
                 {/* Header Row */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold" style={{ color: 'var(--admin-text)' }}>
-                          Chat ID: {feedback.chat_id}
-                        </span>
-                        {feedback.feedback_verdict === 'good' ? (
-                          <IconThumbsUp size={16} style={{ color: 'var(--admin-success)' }} />
-                        ) : (
-                          <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)' }} />
-                        )}
-                      </div>
-                      {feedback.chatData?.user_id && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
-                            User ID: {feedback.chatData.user_id}
-                          </span>
-                          {onScrollToChat && (
-                            <button
-                              onClick={() => onScrollToChat(feedback.chat_id)}
-                              className="text-xs px-2 py-1 rounded transition-colors hover:bg-blue-500/20"
-                              style={{ 
-                                color: 'var(--admin-primary, #3be6ff)',
-                                backgroundColor: 'rgba(59, 230, 255, 0.1)',
-                                border: '1px solid rgba(59, 230, 255, 0.3)'
-                              }}
-                              title="Go to conversation"
-                            >
-                              📍 Go to Chat
-                            </button>
-                          )}
-                        </div>
+                    <div className="flex items-center gap-2">
+                      {feedback.feedback_verdict === 'good' ? (
+                        <IconThumbsUp size={16} style={{ color: 'var(--admin-success)' }} />
+                      ) : (
+                        <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)' }} />
                       )}
+                      <span className="text-sm font-semibold" style={{ color: 'var(--admin-text)' }}>
+                        User: {feedback.chatData?.user_id || 'Unknown'}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -485,6 +462,18 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
                       </p>
                     </div>
                   )}
+
+                  {/* Chat ID */}
+                  <p className="text-xs mb-2" style={{ color: 'var(--admin-text-muted)' }}>
+                    Chat ID: 
+                    <button
+                      onClick={() => onScrollToChat?.(feedback.chat_id)}
+                      className="ml-1 text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                      title="Click to scroll to this chat in Recent Conversations"
+                    >
+                      {feedback.chat_id}
+                    </button>
+                  </p>
 
                   {/* Original AI Response */}
                   {feedback.chatData?.response && (
