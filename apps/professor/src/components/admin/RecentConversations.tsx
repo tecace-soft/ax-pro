@@ -675,49 +675,56 @@ export default function RecentConversations({
                 </div>
               </div>
               
-              {/* User Feedback - Only show if feedback exists */}
-              {conversation.user_feedback && (
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
-                  <span className="text-xs mr-2" style={{ color: 'var(--admin-text-muted)' }}>User Feedback:</span>
-                  {conversation.user_feedback.reaction === 'good' ? (
-                    <div className="flex items-center gap-1 text-green-500">
-                      <IconThumbsUp size={16} />
-                      <span className="text-xs">Positive</span>
+              {/* Feedback Section - Compact Single Row */}
+              <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
+                {/* User Feedback - Left Side */}
+                <div className="flex items-center gap-2">
+                  {conversation.user_feedback ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>User:</span>
+                      {conversation.user_feedback.reaction === 'good' ? (
+                        <div className="flex items-center gap-1 text-green-500">
+                          <IconThumbsUp size={14} />
+                          <span className="text-xs">+</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-red-500">
+                          <IconThumbsDown size={14} />
+                          <span className="text-xs">-</span>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => handleUserFeedbackClick(conversation.chat_id)}
+                        className="text-xs px-1.5 py-0.5 rounded transition-colors hover:bg-blue-500/20"
+                        style={{ color: 'var(--admin-primary, #3be6ff)' }}
+                        title="View user feedback details"
+                      >
+                        Details
+                      </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1 text-red-500">
-                      <IconThumbsDown size={16} />
-                      <span className="text-xs">Negative</span>
-                    </div>
+                    <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>No user feedback</span>
                   )}
+                </div>
+
+                {/* Admin Feedback - Right Side */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>Admin:</span>
                   <button
-                    onClick={() => handleUserFeedbackClick(conversation.chat_id)}
-                    className="text-xs px-2 py-1 rounded transition-colors hover:bg-blue-500/20"
-                    style={{ color: 'var(--admin-primary, #3be6ff)' }}
-                    title="View detailed user feedback"
+                    onClick={() => handleFeedbackClick(conversation, 'good')}
+                    className="p-1.5 rounded transition-colors hover:bg-green-500/20"
+                    title="Mark as good"
                   >
-                    View Details
+                    <IconThumbsUp size={14} style={{ color: 'var(--admin-success, #10b981)' }} />
+                  </button>
+                  <button
+                    onClick={() => handleFeedbackClick(conversation, 'bad')}
+                    className="p-1.5 rounded transition-colors hover:bg-red-500/20"
+                    title="Mark as bad"
+                  >
+                    <IconThumbsDown size={14} style={{ color: 'var(--admin-danger, #ef4444)' }} />
                   </button>
                 </div>
-              )}
-
-              {/* Admin Feedback Buttons */}
-              <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
-                <span className="text-xs mr-2" style={{ color: 'var(--admin-text-muted)' }}>{t('usage.feedback.admin')}:</span>
-                <button
-                  onClick={() => handleFeedbackClick(conversation, 'good')}
-                  className="p-2 rounded transition-colors hover:bg-green-500/20"
-                  title="Thumbs up"
-                >
-                  <IconThumbsUp size={16} style={{ color: 'var(--admin-success, #10b981)' }} />
-                </button>
-                <button
-                  onClick={() => handleFeedbackClick(conversation, 'bad')}
-                  className="p-2 rounded transition-colors hover:bg-red-500/20"
-                  title="Thumbs down"
-                >
-                  <IconThumbsDown size={16} style={{ color: 'var(--admin-danger, #ef4444)' }} />
-                </button>
               </div>
             </div>
           ))}
@@ -875,98 +882,109 @@ export default function RecentConversations({
 
       {/* User Feedback Modal */}
       {userFeedbackModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div 
-            className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
-            style={{ backgroundColor: 'var(--admin-card)' }}
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto border-2"
+            style={{ 
+              backgroundColor: 'var(--admin-card)',
+              borderColor: 'var(--admin-border)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+            }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-                User Feedback Details
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--admin-text)' }}>
+                📝 User Feedback Details
               </h3>
               <button
                 onClick={() => setUserFeedbackModal(null)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full p-2 transition-colors"
+                style={{ color: 'var(--admin-text-muted)' }}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-medium mb-2" style={{ color: 'var(--admin-text-muted)' }}>
-                  Chat ID: {userFeedbackModal.chatId}
-                </p>
+            <div className="space-y-6">
+              {/* Chat Info */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--admin-bg-secondary)' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-semibold text-sm" style={{ color: 'var(--admin-text)' }}>Chat ID:</span>
+                  <span className="text-xs font-mono px-2 py-1 rounded" style={{ 
+                    backgroundColor: 'var(--admin-primary)', 
+                    color: 'white' 
+                  }}>
+                    {userFeedbackModal.chatId}
+                  </span>
+                </div>
+                <div className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                  {new Date().toLocaleString()}
+                </div>
               </div>
               
               {userFeedbackModal.feedback ? (
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium mb-1" style={{ color: 'var(--admin-text)' }}>
-                      User Rating:
-                    </p>
+                <div className="space-y-4">
+                  {/* User Rating */}
+                  <div className="flex items-center gap-4 p-4 rounded-lg border-2" style={{ 
+                    borderColor: userFeedbackModal.feedback.reaction === 'good' ? '#10b981' : '#ef4444',
+                    backgroundColor: userFeedbackModal.feedback.reaction === 'good' ? '#f0fdf4' : '#fef2f2'
+                  }}>
                     <div className="flex items-center gap-2">
                       {userFeedbackModal.feedback.reaction === 'good' ? (
-                        <div className="flex items-center gap-1 text-green-500">
-                          <IconThumbsUp size={16} />
-                          <span className="text-sm">Positive</span>
-                        </div>
+                        <IconThumbsUp size={24} className="text-green-600" />
                       ) : (
-                        <div className="flex items-center gap-1 text-red-500">
-                          <IconThumbsDown size={16} />
-                          <span className="text-sm">Negative</span>
-                        </div>
+                        <IconThumbsDown size={24} className="text-red-600" />
                       )}
+                      <span className="font-semibold text-lg" style={{ 
+                        color: userFeedbackModal.feedback.reaction === 'good' ? '#059669' : '#dc2626'
+                      }}>
+                        {userFeedbackModal.feedback.reaction === 'good' ? '👍 Positive Feedback' : '👎 Negative Feedback'}
+                      </span>
                     </div>
                   </div>
                   
-                  {userFeedbackModal.feedback.note && (
+                  {/* User Comment */}
+                  {userFeedbackModal.feedback.feedback_text && (
                     <div>
-                      <p className="text-sm font-medium mb-1" style={{ color: 'var(--admin-text)' }}>
-                        User Note:
-                      </p>
-                      <div 
-                        className="p-3 rounded"
-                        style={{ 
-                          backgroundColor: 'rgba(9, 14, 34, 0.4)',
-                          border: '1px solid var(--admin-border)'
-                        }}
-                      >
-                        <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
-                          {userFeedbackModal.feedback.note}
+                      <h4 className="font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--admin-text)' }}>
+                        💬 User's Comment:
+                      </h4>
+                      <div className="p-4 rounded-lg border-2" style={{ 
+                        backgroundColor: 'var(--admin-bg-secondary)',
+                        borderColor: 'var(--admin-border)'
+                      }}>
+                        <p className="text-sm leading-relaxed" style={{ color: 'var(--admin-text)' }}>
+                          "{userFeedbackModal.feedback.feedback_text}"
                         </p>
                       </div>
                     </div>
                   )}
                   
-                  <div>
-                    <p className="text-sm font-medium mb-1" style={{ color: 'var(--admin-text)' }}>
-                      Feedback Date:
-                    </p>
-                    <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
-                      {new Date(userFeedbackModal.feedback.created_at).toLocaleString()}
-                    </p>
+                  {/* Feedback Date */}
+                  <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--admin-text-muted)' }}>
+                    <span>📅</span>
+                    <span>Feedback submitted: {new Date(userFeedbackModal.feedback.created_at).toLocaleString()}</span>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
-                    No user feedback found for this chat
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">😶</div>
+                  <p className="text-lg" style={{ color: 'var(--admin-text-muted)' }}>
+                    No user feedback found for this chat.
                   </p>
                 </div>
               )}
             </div>
             
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-center mt-8">
               <button
                 onClick={() => setUserFeedbackModal(null)}
-                className="px-4 py-2 text-sm font-medium rounded-md"
-                style={{
-                  backgroundColor: 'var(--admin-border)',
-                  color: 'var(--admin-text)'
+                className="px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105"
+                style={{ 
+                  backgroundColor: 'var(--admin-primary)', 
+                  color: 'white',
+                  boxShadow: '0 4px 14px 0 rgba(59, 230, 255, 0.3)'
                 }}
               >
                 Close
