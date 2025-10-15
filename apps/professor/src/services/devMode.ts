@@ -51,3 +51,30 @@ export const isN8nWebhookAvailable = (): boolean => {
 };
 
 export const DEV_MODE = process.env.NODE_ENV === 'development';
+
+/**
+ * Check if simulation mode is enabled
+ */
+export const isSimulationModeEnabled = (): boolean => {
+  // Check environment variable first
+  const envSimulation = import.meta.env.VITE_ENABLE_SIMULATION;
+  if (envSimulation !== undefined) {
+    return envSimulation === 'true' || envSimulation === '1';
+  }
+  
+  // Check localStorage setting
+  const setting = localStorage.getItem('axpro_enable_simulation');
+  if (setting !== null) {
+    return setting === 'true';
+  }
+  
+  // Default: disabled (no simulation mode)
+  return false;
+};
+
+/**
+ * Set simulation mode setting
+ */
+export const setSimulationModeEnabled = (enabled: boolean): void => {
+  localStorage.setItem('axpro_enable_simulation', enabled.toString());
+};

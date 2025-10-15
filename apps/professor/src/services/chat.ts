@@ -1,5 +1,5 @@
 import { messagesApi } from './api';
-import { isBackendAvailable, isN8nWebhookAvailable } from './devMode';
+import { isBackendAvailable, isN8nWebhookAvailable, isSimulationModeEnabled } from './devMode';
 import { getActiveN8nConfig, sendToN8n, N8nRequest, N8nResponse } from './n8n';
 import { getSession } from './auth';
 
@@ -215,15 +215,32 @@ export const chatService = {
           };
         } catch (error) {
           console.error('Failed to send to n8n:', error);
-          console.log('n8n failed, falling back to simulation');
-          // Fall back to simulation instead of throwing error
+          console.log('n8n failed, checking simulation mode setting');
+          
+          // Check if simulation mode is enabled
+          if (isSimulationModeEnabled()) {
+            console.log('Simulation mode enabled, falling back to simulation');
+            // Fall back to simulation
+          } else {
+            console.log('Simulation mode disabled, throwing error');
+            throw new Error(`Chat service unavailable: ${error instanceof Error ? error.message : 'n8n webhook failed'}`);
+          }
         }
       } else {
-        console.log('No n8n config found or webhook URL missing, falling back to simulation');
+        console.log('No n8n config found or webhook URL missing');
         console.log('n8n config was:', n8nConfig);
+        
+        // Check if simulation mode is enabled
+        if (isSimulationModeEnabled()) {
+          console.log('Simulation mode enabled, falling back to simulation');
+          // Fall back to simulation
+        } else {
+          console.log('Simulation mode disabled, throwing error');
+          throw new Error('Chat service unavailable: No n8n webhook configured');
+        }
       }
       
-      // Fall back to simulation (either no n8n config or n8n failed)
+      // Only reach here if simulation mode is enabled
       console.log('Falling back to simulation');
       const simulationModule = await import('./simulation');
       const simulatedResponse = simulationModule.generateSimulatedResponse(content);
