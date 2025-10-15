@@ -43,6 +43,8 @@ export default function RecentConversations({
   const [filterSessionId, setFilterSessionId] = useState<string | null>(null)
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState<string | null>(null)
+  const [expandedChats, setExpandedChats] = useState<Set<string>>(new Set())
+  const [userFeedbackModal, setUserFeedbackModal] = useState<{ chatId: string; feedback: any } | null>(null)
 
   useEffect(() => {
     loadConversations()
@@ -246,6 +248,35 @@ export default function RecentConversations({
     setFeedbackModal(null)
     setSupervisorFeedback('')
     setCorrectedResponse('')
+  }
+
+  const toggleExpanded = (chatId: string) => {
+    setExpandedChats(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(chatId)) {
+        newSet.delete(chatId)
+      } else {
+        newSet.add(chatId)
+      }
+      return newSet
+    })
+  }
+
+  const handleUserFeedbackClick = async (chatId: string) => {
+    try {
+      // Fetch user feedback for this chat
+      const response = await fetch(`/api/user-feedback?chat_id=${chatId}`)
+      if (response.ok) {
+        const feedback = await response.json()
+        setUserFeedbackModal({ chatId, feedback })
+      } else {
+        console.log('No user feedback found for this chat')
+        setUserFeedbackModal({ chatId, feedback: null })
+      }
+    } catch (error) {
+      console.error('Error fetching user feedback:', error)
+      setUserFeedbackModal({ chatId, feedback: null })
+    }
   }
 
   const handleFilterBySession = (sessionId: string) => {
@@ -572,8 +603,19 @@ export default function RecentConversations({
                   <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-primary)' }}>
                     {t('admin.userMessage')}:
                   </p>
-                  <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
-                    {truncateText(conversation.chat_message)}
+                  <p 
+                    className="text-sm cursor-pointer hover:bg-gray-100/10 p-2 rounded transition-colors" 
+                    style={{ color: 'var(--admin-text)' }}
+                    onClick={() => toggleExpanded(conversation.chat_id)}
+                    title="Click to expand/collapse"
+                  >
+                    {expandedChats.has(conversation.chat_id) 
+                      ? conversation.chat_message 
+                      : truncateText(conversation.chat_message)
+                    }
+                    {!expandedChats.has(conversation.chat_id) && conversation.chat_message.length > 100 && (
+                      <span className="text-blue-400 ml-1">... (click to expand)</span>
+                    )}
                   </p>
                 </div>
                 
@@ -581,12 +623,50 @@ export default function RecentConversations({
                   <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-accent)' }}>
                     {t('admin.aiResponse')}:
                   </p>
-                  <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
-                    {truncateText(conversation.response)}
+                  <p 
+                    className="text-sm cursor-pointer hover:bg-gray-100/10 p-2 rounded transition-colors" 
+                    style={{ color: 'var(--admin-text)' }}
+                    onClick={() => toggleExpanded(conversation.chat_id)}
+                    title="Click to expand/collapse"
+                  >
+                    {expandedChats.has(conversation.chat_id) 
+                      ? conversation.response 
+                      : truncateText(conversation.response)
+                    }
+                    {!expandedChats.has(conversation.chat_id) && conversation.response.length > 100 && (
+                      <span className="text-blue-400 ml-1">... (click to expand)</span>
+                    )}
                   </p>
                 </div>
               </div>
               
+              {/* User Feedback Indicators */}
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
+                <span className="text-xs mr-2" style={{ color: 'var(--admin-text-muted)' }}>User Feedback:</span>
+                <button
+                  onClick={() => handleUserFeedbackClick(conversation.chat_id)}
+                  className="p-2 rounded transition-colors hover:bg-blue-500/20"
+                  title="View user feedback details"
+                >
+                  <IconThumbsUp size={16} style={{ color: 'var(--admin-primary, #3be6ff)' }} />
+                </button>
+                <button
+                  onClick={() => handleUserFeedbackClick(conversation.chat_id)}
+                  className="p-2 rounded transition-colors hover:bg-blue-500/20"
+                  title="View user feedback details"
+                >
+                  <IconThumbsDown size={16} style={{ color: 'var(--admin-primary, #3be6ff)' }} />
+                </button>
+                <button
+                  onClick={() => handleUserFeedbackClick(conversation.chat_id)}
+                  className="text-xs px-2 py-1 rounded transition-colors hover:bg-blue-500/20"
+                  style={{ color: 'var(--admin-primary, #3be6ff)' }}
+                  title="View detailed user feedback"
+                >
+                  View Details
+                </button>
+              </div>
+
               {/* Admin Feedback Buttons */}
               <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
                 <span className="text-xs mr-2" style={{ color: 'var(--admin-text-muted)' }}>{t('usage.feedback.admin')}:</span>
@@ -754,6 +834,109 @@ export default function RecentConversations({
                   {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Feedback Modal */}
+      {userFeedbackModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div 
+            className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+            style={{ backgroundColor: 'var(--admin-card)' }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
+                User Feedback Details
+              </h3>
+              <button
+                onClick={() => setUserFeedbackModal(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-2" style={{ color: 'var(--admin-text-muted)' }}>
+                  Chat ID: {userFeedbackModal.chatId}
+                </p>
+              </div>
+              
+              {userFeedbackModal.feedback ? (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium mb-1" style={{ color: 'var(--admin-text)' }}>
+                      User Rating:
+                    </p>
+                    <div className="flex items-center gap-2">
+                      {userFeedbackModal.feedback.reaction === 'good' ? (
+                        <div className="flex items-center gap-1 text-green-500">
+                          <IconThumbsUp size={16} />
+                          <span className="text-sm">Positive</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-red-500">
+                          <IconThumbsDown size={16} />
+                          <span className="text-sm">Negative</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {userFeedbackModal.feedback.note && (
+                    <div>
+                      <p className="text-sm font-medium mb-1" style={{ color: 'var(--admin-text)' }}>
+                        User Note:
+                      </p>
+                      <div 
+                        className="p-3 rounded"
+                        style={{ 
+                          backgroundColor: 'rgba(9, 14, 34, 0.4)',
+                          border: '1px solid var(--admin-border)'
+                        }}
+                      >
+                        <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
+                          {userFeedbackModal.feedback.note}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <p className="text-sm font-medium mb-1" style={{ color: 'var(--admin-text)' }}>
+                      Feedback Date:
+                    </p>
+                    <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
+                      {new Date(userFeedbackModal.feedback.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
+                    No user feedback found for this chat
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setUserFeedbackModal(null)}
+                className="px-4 py-2 text-sm font-medium rounded-md"
+                style={{
+                  backgroundColor: 'var(--admin-border)',
+                  color: 'var(--admin-text)'
+                }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
