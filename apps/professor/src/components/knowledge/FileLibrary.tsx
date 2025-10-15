@@ -122,6 +122,39 @@ const FileLibrary: React.FC = () => {
     }
   };
 
+  // Handle file download
+  const handleDownloadFile = async (fileName: string) => {
+    try {
+      if (storageType === 'supabase') {
+        // Get Supabase public URL
+        const supabase = (await import('../../services/supabase')).getSupabaseClient();
+        const filePath = `files/${fileName}`;
+        
+        const { data } = supabase.storage
+          .from('knowledge-base')
+          .getPublicUrl(filePath);
+        
+        if (data.publicUrl) {
+          // Open in new tab or download
+          window.open(data.publicUrl, '_blank');
+        } else {
+          alert('Failed to get download URL');
+        }
+      } else {
+        // For n8n/local files, use the file URL if available
+        const file = uploadedFiles.find(f => f.name === fileName);
+        if (file?.url) {
+          window.open(file.url, '_blank');
+        } else {
+          alert('Download URL not available for this file');
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file');
+    }
+  };
+
   // Handle file selection
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -163,24 +196,20 @@ const FileLibrary: React.FC = () => {
         
       setUploadResults(results);
 
-      // Add successful uploads to file list
-      const newFiles: RAGFile[] = results
-        .filter(result => result.success)
-        .map((result, index) => ({
-          id: `file-${Date.now()}-${index}`,
-          name: result.fileName || files[index].name,
-          size: files[index].size,
-          type: files[index].type,
-          uploadedAt: new Date().toISOString(),
-          status: 'ready' as const,
-        }));
-
-      setUploadedFiles(prev => [...newFiles, ...prev]);
+      // Show success/error messages
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
       
-      // Refresh the file list to get the actual uploaded files
-      setTimeout(() => {
-        loadFiles();
-      }, 1000);
+      if (successCount > 0) {
+        console.log(`✅ ${successCount} file(s) uploaded successfully`);
+      }
+      if (failCount > 0) {
+        console.error(`❌ ${failCount} file(s) failed to upload`);
+      }
+      
+      // Immediately refresh the file list to show new files
+      await loadFiles();
+      
     } catch (error) {
       console.error('Upload error:', error);
     } finally {
@@ -425,8 +454,7 @@ const FileLibrary: React.FC = () => {
                         <button 
                           className="action-btn download-btn" 
                           title={t('knowledge.download')}
-                          onClick={() => file.url && window.open(file.url, '_blank')}
-                          disabled={!file.url}
+                          onClick={() => handleDownloadFile(file.name)}
                         >
                           ↓
                         </button>
