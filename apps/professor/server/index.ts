@@ -499,3 +499,8 @@ try {
     res.sendFile(path.join(distDir, 'index.html'));
   });
 } catch {}
+
+// healthcheck for Render and frontend detection
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});

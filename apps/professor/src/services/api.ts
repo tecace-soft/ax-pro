@@ -1,5 +1,6 @@
 // API service for chat functionality
-const API_BASE = 'http://localhost:3000/api';
+// Use relative base so it works on Render (same origin)
+const API_BASE = '/api';
 
 interface ApiResponse<T> {
   data?: T;
