@@ -82,6 +82,11 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 
+// Health check (must be before SPA fallback)
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
+
 // Auth middleware
 const requireAuth = (req: any, res: any, next: any) => {
   const sessionId = req.cookies.sid;
