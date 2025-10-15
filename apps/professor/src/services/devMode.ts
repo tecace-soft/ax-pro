@@ -5,9 +5,14 @@
  * This is different from n8n webhook availability
  */
 export const isBackendAvailable = async (): Promise<boolean> => {
-  // For now, always return false since we don't have a backend API server
-  // We only have n8n webhook for chat messages
-  console.log('Backend check: No backend API server, using local storage');
+  // Check if n8n webhook is available first
+  const n8nAvailable = isN8nWebhookAvailable();
+  if (n8nAvailable) {
+    console.log('Backend check: n8n webhook available, using n8n for chat');
+    return true; // Use n8n as our "backend" for chat
+  }
+  
+  console.log('Backend check: No n8n webhook configured, using simulation');
   return false;
 };
 
@@ -15,6 +20,13 @@ export const isBackendAvailable = async (): Promise<boolean> => {
  * Check if n8n webhook is configured for chat messages
  */
 export const isN8nWebhookAvailable = (): boolean => {
+  // Check environment variables first (new secure method)
+  const envWebhookUrl = import.meta.env.VITE_N8N_BASE_URL;
+  if (envWebhookUrl && envWebhookUrl.trim()) {
+    console.log('n8n webhook check: Configured (environment variable)');
+    return true;
+  }
+  
   // Check both old and new storage methods
   const oldWebhook = localStorage.getItem('axpro_n8n_webhook_url');
   const n8nConfigs = localStorage.getItem('axpro_n8n_configs');

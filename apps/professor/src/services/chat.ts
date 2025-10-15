@@ -122,7 +122,8 @@ export const chatService = {
         try {
           const session = getSession();
           // Generate unique chatId for this message (for future feedback API)
-          const chatId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          // Use sessionId + timestamp + random to ensure uniqueness across sessions
+          const chatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const request: N8nRequest = {
             sessionId,
             chatId,
@@ -133,18 +134,40 @@ export const chatService = {
 
           console.log('=== CHAT SERVICE DEBUG ===');
           console.log('Sending request to n8n:', request);
-          const response: N8nResponse = await sendToN8n(request);
-          console.log('n8n response received successfully:', response);
-          console.log('Response type:', typeof response);
-          console.log('Response has answer?', !!response?.answer);
-          console.log('Response answer:', response?.answer);
-          console.log('==========================');
           
-          // Check if response is valid
-          if (!response || !response.answer) {
-            console.error('Invalid webhook response:', response);
-            throw new Error('Invalid response from webhook');
+          // Retry mechanism for n8n requests
+          let response: N8nResponse;
+          let lastError: Error | null = null;
+          
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              console.log(`n8n request attempt ${attempt}/3`);
+              response = await sendToN8n(request);
+              console.log('n8n response received successfully:', response);
+              console.log('Response type:', typeof response);
+              console.log('Response has answer?', !!response?.answer);
+              console.log('Response answer:', response?.answer);
+              break; // Success, exit retry loop
+            } catch (error) {
+              lastError = error as Error;
+              console.warn(`n8n request attempt ${attempt} failed:`, error);
+              
+              if (attempt < 3) {
+                // Wait before retry (exponential backoff)
+                const delay = Math.pow(2, attempt) * 1000; // 2s, 4s
+                console.log(`Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
+            }
           }
+          
+          // Check if all attempts failed
+          if (!response! || !response!.answer) {
+            console.error('All n8n attempts failed, last error:', lastError);
+            throw new Error(`n8n webhook failed after 3 attempts: ${lastError?.message || 'No response'}`);
+          }
+          
+          console.log('==========================');
           
           // Use chatId as messageId so feedback can link correctly
           // chatId was sent to n8n and will be in the database
