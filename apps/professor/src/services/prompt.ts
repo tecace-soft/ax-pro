@@ -80,7 +80,8 @@ export async function fetchPromptHistory(limit: number = 10): Promise<PromptHist
   try {
     const supabase = getSupabaseClient();
     
-    console.log('Fetching prompt history from Supabase...');
+    console.log('🔄 Fetching prompt history from Supabase...');
+    console.log('📊 Query: SELECT id, prompt_text, created_at FROM prompts ORDER BY created_at DESC LIMIT', limit);
     
     const { data, error } = await supabase
       .from('prompts')
@@ -88,20 +89,23 @@ export async function fetchPromptHistory(limit: number = 10): Promise<PromptHist
       .order('created_at', { ascending: false })
       .limit(limit);
 
+    console.log('📋 Raw Supabase response:', { data, error });
+
     if (error) {
-      console.error('Supabase error:', error);
+      console.error('❌ Supabase error:', error);
       throw new Error(`Failed to fetch prompt history: ${error.message}`);
     }
 
     if (!data || data.length === 0) {
-      console.log('No prompt history found in database');
+      console.log('⚠️ No prompt history found in database');
       return [];
     }
 
-    console.log('✅ Prompt history fetched:', data.length, 'entries');
+    console.log('✅ Prompt history fetched successfully:', data.length, 'entries');
+    console.log('📚 First entry:', data[0]);
     return data as PromptHistory[];
   } catch (error) {
-    console.error('Failed to fetch prompt history:', error);
+    console.error('❌ Failed to fetch prompt history:', error);
     throw error;
   }
 }

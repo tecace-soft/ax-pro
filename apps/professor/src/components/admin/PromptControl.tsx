@@ -21,6 +21,7 @@ export default function PromptControl() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [promptHistory, setPromptHistory] = useState<PromptHistory[]>([])
   const [showHistory, setShowHistory] = useState(false)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [responseModal, setResponseModal] = useState<{
     isOpen: boolean
     message: string
@@ -55,13 +56,22 @@ export default function PromptControl() {
   }
 
   const loadPromptHistory = async () => {
+    setIsLoadingHistory(true)
     try {
-      console.log('Loading prompt history...')
+      console.log('🔄 Loading prompt history...')
       const history = await fetchPromptHistory(10)
+      console.log('📚 Raw history data:', history)
       setPromptHistory(history)
-      console.log('Prompt history loaded:', history.length, 'entries')
+      console.log('✅ Prompt history loaded:', history.length, 'entries')
     } catch (error) {
-      console.error('Failed to load prompt history:', error)
+      console.error('❌ Failed to load prompt history:', error)
+      setResponseModal({
+        isOpen: true,
+        message: `Failed to load prompt history: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        isSuccess: false
+      })
+    } finally {
+      setIsLoadingHistory(false)
     }
   }
 
@@ -188,9 +198,9 @@ export default function PromptControl() {
             backgroundColor: 'rgba(9, 14, 34, 0.6)',
             border: '1px solid rgba(59, 230, 255, 0.15)',
             color: 'var(--admin-text)',
-            minHeight: isExpanded ? '600px' : '300px',
-            maxHeight: isExpanded ? '80vh' : '400px',
-            resize: 'vertical'
+            minHeight: isExpanded ? '80vh' : '300px',
+            maxHeight: isExpanded ? 'none' : '400px',
+            resize: isExpanded ? 'none' : 'vertical'
           }}
           placeholder={isLoading ? t('admin.loading') : "Enter your prompt instructions here..."}
           value={promptText}
@@ -207,17 +217,22 @@ export default function PromptControl() {
               </h4>
               <button
                 onClick={loadPromptHistory}
-                className="text-xs px-2 py-1 rounded transition-colors hover:bg-blue-500/20"
+                disabled={isLoadingHistory}
+                className="text-xs px-2 py-1 rounded transition-colors hover:bg-blue-500/20 disabled:opacity-50"
                 style={{ 
                   color: 'var(--admin-primary)',
                   border: '1px solid rgba(59, 230, 255, 0.3)'
                 }}
               >
-                🔄 Refresh
+                {isLoadingHistory ? '⏳ Loading...' : '🔄 Refresh'}
               </button>
             </div>
             
-            {promptHistory.length === 0 ? (
+            {isLoadingHistory ? (
+              <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
+                🔄 Loading history...
+              </p>
+            ) : promptHistory.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
                 No history available. Click "Refresh" to load.
               </p>
