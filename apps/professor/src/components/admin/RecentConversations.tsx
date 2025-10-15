@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fetchAllChatData } from '../../services/chatData'
-import { submitAdminFeedback, getAdminFeedbackByChat } from '../../services/feedback'
+import { submitAdminFeedback, getAdminFeedbackByChat, fetchAllUserFeedback } from '../../services/feedback'
 import { ChatData, AdminFeedbackData } from '../../services/supabase'
 import { useTranslation } from '../../i18n/I18nProvider'
 import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
@@ -73,8 +73,25 @@ export default function RecentConversations({
     setError(null)
     
     try {
-      const data = await fetchAllChatData(50) // Fetch last 50 conversations
-      setConversations(data)
+      // Fetch both chat data and user feedback
+      const [chatData, userFeedbackData] = await Promise.all([
+        fetchAllChatData(50), // Fetch last 50 conversations
+        fetchAllUserFeedback()
+      ])
+      
+      // Create a map of user feedback by chat_id
+      const userFeedbackMap = new Map<string, any>()
+      userFeedbackData.forEach(feedback => {
+        userFeedbackMap.set(feedback.chat_id, feedback)
+      })
+      
+      // Associate user feedback with each chat
+      const conversationsWithFeedback = chatData.map(chat => ({
+        ...chat,
+        user_feedback: userFeedbackMap.get(chat.chat_id) || null
+      }))
+      
+      setConversations(conversationsWithFeedback)
     } catch (error) {
       console.error('Failed to load conversations:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to load conversations'
@@ -92,8 +109,25 @@ export default function RecentConversations({
   const handleRefresh = async () => {
     setIsRefreshing(true)
     try {
-      const data = await fetchAllChatData(50)
-      setConversations(data)
+      // Fetch both chat data and user feedback
+      const [chatData, userFeedbackData] = await Promise.all([
+        fetchAllChatData(50),
+        fetchAllUserFeedback()
+      ])
+      
+      // Create a map of user feedback by chat_id
+      const userFeedbackMap = new Map<string, any>()
+      userFeedbackData.forEach(feedback => {
+        userFeedbackMap.set(feedback.chat_id, feedback)
+      })
+      
+      // Associate user feedback with each chat
+      const conversationsWithFeedback = chatData.map(chat => ({
+        ...chat,
+        user_feedback: userFeedbackMap.get(chat.chat_id) || null
+      }))
+      
+      setConversations(conversationsWithFeedback)
     } catch (error) {
       console.error('Failed to refresh conversations:', error)
       setError(error instanceof Error ? error.message : 'Failed to refresh conversations')
@@ -264,15 +298,16 @@ export default function RecentConversations({
 
   const handleUserFeedbackClick = async (chatId: string) => {
     try {
-      // For now, show a simple message since we don't have a real API
-      setUserFeedbackModal({ 
-        chatId, 
-        feedback: { 
-          reaction: 'good', 
-          note: 'This is a demo feedback entry. In production, this would show real user feedback data.',
-          created_at: new Date().toISOString()
-        } 
-      })
+      // Find the conversation with this chatId
+      const conversation = conversations.find(c => c.chat_id === chatId)
+      if (conversation && conversation.user_feedback) {
+        setUserFeedbackModal({ 
+          chatId, 
+          feedback: conversation.user_feedback
+        })
+      } else {
+        setUserFeedbackModal({ chatId, feedback: null })
+      }
     } catch (error) {
       console.error('Error fetching user feedback:', error)
       setUserFeedbackModal({ chatId, feedback: null })
