@@ -82,85 +82,10 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 
-// Health check (must be before SPA fallback)
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});
-
-// Demo auth endpoint for frontend compatibility
-app.post('/api/auth/demo-login', (req, res) => {
-  const { email, password } = req.body;
-  
-  // Demo credentials
-  const demoUsers = [
-    { email: 'chatbot-user@tecace.com', password: 'user1234', role: 'user' },
-    { email: 'chatbot-admin@tecace.com', password: 'admin1234', role: 'admin' },
-    { email: 'demo@tecace.com', password: 'demo1234', role: 'user' },
-    { email: 'admin@tecace.com', password: 'admin1234', role: 'admin' }
-  ];
-  
-  const user = demoUsers.find(u => u.email === email && u.password === password);
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
-
-  // Create session
-  const sessionId = uuidv4();
-  sessions_store.set(sessionId, user.email);
-
-  res.cookie('sid', sessionId, { httpOnly: true, secure: false, sameSite: 'lax' });
-  res.json({ email: user.email, role: user.role });
-});
-
-app.get('/api/auth/me', (req, res) => {
-  const sessionId = req.cookies.sid;
-  if (!sessionId || !sessions_store.has(sessionId)) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  
-  const email = sessions_store.get(sessionId)!;
-  const role = email.includes('admin') ? 'admin' : 'user';
-  res.json({ email, role });
-});
-
-app.post('/api/auth/logout', (req, res) => {
-  const sessionId = req.cookies.sid;
-  if (sessionId) {
-    sessions_store.delete(sessionId);
-  }
-  res.clearCookie('sid');
-  res.json({ success: true });
-});
-
-// Auth middleware - check both cookies and sessionStorage fallback
+// Auth middleware
 const requireAuth = (req: any, res: any, next: any) => {
   const sessionId = req.cookies.sid;
-  
-  // If no cookie session, allow demo users to proceed
   if (!sessionId || !sessions_store.has(sessionId)) {
-    // For demo purposes, allow requests with demo user emails
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      try {
-        const session = JSON.parse(Buffer.from(token, 'base64').toString());
-        if (session.email && (session.email.includes('tecace.com') || session.email.includes('demo'))) {
-          req.userId = session.email;
-          return next();
-        }
-      } catch (e) {
-        // Invalid token, continue to check other methods
-      }
-    }
-    
-    // Check if it's a demo user from sessionStorage (for development)
-    const userAgent = req.headers['user-agent'] || '';
-    if (userAgent.includes('Mozilla')) {
-      // This is a browser request, allow demo access
-      req.userId = 'demo-user';
-      return next();
-    }
-    
     return res.status(401).json({ error: 'Unauthorized' });
   }
   
@@ -204,7 +129,50 @@ class MockConnector implements ChatConnector {
 
 const connector = new MockConnector();
 
-// Auth routes (moved to top for better organization)
+// Auth routes
+app.post('/api/auth/demo-login', (req, res) => {
+  const { email, password } = req.body;
+  
+  const user = demoUsers.find(u => u.email === email && u.password === password);
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  // Create or get user
+  let userId = user.email; // Using email as ID for demo
+  if (!users.has(userId)) {
+    users.set(userId, {
+      id: userId,
+      email: user.email,
+      role: user.role,
+      createdAt: new Date()
+    });
+  }
+
+  // Create session
+  const sessionId = uuidv4();
+  sessions_store.set(sessionId, userId);
+
+  res.cookie('sid', sessionId, { httpOnly: true, secure: false, sameSite: 'lax' });
+  res.json({ email: user.email, role: user.role });
+});
+
+app.get('/api/auth/me', requireAuth, (req, res) => {
+  const user = users.get(req.userId);
+  if (!user) {
+    return res.status(401).json({ error: 'User not found' });
+  }
+  res.json({ email: user.email, role: user.role });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  const sessionId = req.cookies.sid;
+  if (sessionId) {
+    sessions_store.delete(sessionId);
+  }
+  res.clearCookie('sid');
+  res.json({ success: true });
+});
 
 // Session routes
 app.get('/api/sessions', requireAuth, (req, res) => {
@@ -400,8 +368,6 @@ app.post('/api/sessions/:id/messages', requireAuth, async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
     
     let assistantContent = '';
     
@@ -533,8 +499,3 @@ try {
     res.sendFile(path.join(distDir, 'index.html'));
   });
 } catch {}
-
-// healthcheck for Render and frontend detection
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});

@@ -5,12 +5,10 @@
  * This is different from n8n webhook availability
  */
 export const isBackendAvailable = async (): Promise<boolean> => {
-  try {
-    const res = await fetch('/api/health', { credentials: 'include' });
-    return res.ok;
-  } catch (e) {
-    return false;
-  }
+  // For now, always return false since we don't have a backend API server
+  // We only have n8n webhook for chat messages
+  console.log('Backend check: No backend API server, using local storage');
+  return false;
 };
 
 /**
