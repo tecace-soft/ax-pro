@@ -270,7 +270,7 @@ export default function AdminDashboard() {
 
                   <div id="admin-feedback" className="content-section">
                     <h2 className="section-title">Admin Feedback</h2>
-                    <AdminFeedbackList />
+                    <AdminFeedbackList onScrollToChat={handleScrollToChat} />
                   </div>
 
                   <div id="user-feedback" className="content-section">
