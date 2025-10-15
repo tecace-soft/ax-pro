@@ -39,13 +39,29 @@ const KnowledgeIndex: React.FC = () => {
         const transformedDocs: KnowledgeDocument[] = response.documents.map((doc: VectorDocument) => {
           const metadata = doc.metadata || {};
           
+          console.log('Document metadata:', metadata); // Debug log
+          
           // Extract file name from various possible metadata fields
           let fileName = 'Unknown';
-          if (metadata.source && metadata.source !== 'blob') {
+          
+          // Priority order for filename extraction:
+          // 1. metadata.fileName (if n8n sets it)
+          // 2. metadata.source (if not 'blob')
+          // 3. metadata.pdf.info.Title or Creator
+          // 4. Extract from content if it mentions a filename
+          
+          if (metadata.fileName) {
+            fileName = metadata.fileName;
+          } else if (metadata.source && metadata.source !== 'blob') {
             fileName = metadata.source;
-          } else if (metadata.pdf?.info) {
-            // Try to get filename from PDF metadata
-            fileName = metadata.blobType || 'document.pdf';
+          } else if (metadata.pdf?.info?.Title) {
+            fileName = metadata.pdf.info.Title;
+          } else if (metadata.pdf?.info?.Creator) {
+            fileName = `Document by ${metadata.pdf.info.Creator}`;
+          } else if (metadata.blobType) {
+            // Use blob type as fallback
+            const ext = metadata.blobType.split('/')[1] || 'pdf';
+            fileName = `document.${ext}`;
           }
           
           // Extract page/line info
