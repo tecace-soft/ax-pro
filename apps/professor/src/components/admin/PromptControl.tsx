@@ -464,43 +464,85 @@ export default function PromptControl() {
         <div 
           className="fixed inset-0 flex items-center justify-center z-50"
           style={{
-            background: 'radial-gradient(600px 400px at 50% 0%, rgba(124,140,255,0.12), transparent 60%), rgba(3,8,28,0.55)',
-            backdropFilter: 'blur(6px)'
+            background: 'radial-gradient(600px 400px at 50% 0%, rgba(239,68,68,0.15), transparent 60%), rgba(3,8,28,0.75)',
+            backdropFilter: 'blur(8px)'
           }}
         >
-          <div className="admin-card max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--admin-danger)' }}>
-              🗑️ Delete Prompt
-            </h3>
-            <p className="mb-4" style={{ color: 'var(--admin-text)' }}>
-              Are you sure you want to delete this prompt? This action cannot be undone.
-            </p>
-            <div className="mb-4 p-3 rounded" style={{ backgroundColor: 'var(--admin-bg-secondary)' }}>
-              <p className="text-sm font-mono" style={{ color: 'var(--admin-text-muted)' }}>
-                {deleteConfirm.promptText}
+          <div className="admin-card max-w-lg w-full mx-4 border-2" style={{ borderColor: 'var(--admin-danger)' }}>
+            {/* Warning Header */}
+            <div className="flex items-center gap-3 mb-4 p-4 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>
+              <div className="text-2xl">⚠️</div>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--admin-danger)' }}>
+                  DANGER: Permanent Deletion
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
+                  This action cannot be undone!
+                </p>
+              </div>
+            </div>
+
+            {/* Strong Warning Message */}
+            <div className="mb-4 p-4 rounded-lg border-2" style={{ 
+              backgroundColor: 'rgba(239, 68, 68, 0.05)',
+              borderColor: 'rgba(239, 68, 68, 0.3)'
+            }}>
+              <p className="text-sm font-semibold mb-2" style={{ color: 'var(--admin-danger)' }}>
+                ⚠️ WARNING: You are about to permanently delete this prompt!
+              </p>
+              <ul className="text-sm space-y-1" style={{ color: 'var(--admin-text)' }}>
+                <li>• This action <strong>CANNOT BE UNDONE</strong></li>
+                <li>• The prompt will be <strong>permanently removed</strong> from the database</li>
+                <li>• You will <strong>lose access</strong> to this prompt forever</li>
+                <li>• This may affect <strong>chatbot behavior</strong> if this was the active prompt</li>
+              </ul>
+            </div>
+
+            {/* Prompt Preview */}
+            <div className="mb-4">
+              <p className="text-sm font-semibold mb-2" style={{ color: 'var(--admin-text)' }}>
+                Prompt to be deleted:
+              </p>
+              <div className="p-3 rounded border-2" style={{ 
+                backgroundColor: 'var(--admin-bg-secondary)',
+                borderColor: 'rgba(239, 68, 68, 0.2)'
+              }}>
+                <p className="text-sm font-mono whitespace-pre-wrap" style={{ color: 'var(--admin-text-muted)' }}>
+                  {deleteConfirm.promptText}
+                </p>
+              </div>
+            </div>
+
+            {/* Final Confirmation */}
+            <div className="mb-6 p-3 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>
+              <p className="text-sm font-bold text-center" style={{ color: 'var(--admin-danger)' }}>
+                Are you absolutely sure you want to proceed?
               </p>
             </div>
+
+            {/* Action Buttons */}
             <div className="flex justify-end gap-3">
               <button 
-                className="px-4 py-2 rounded-md"
+                className="px-6 py-3 rounded-md font-semibold transition-all hover:scale-105"
                 style={{
                   background: 'transparent',
-                  border: '1px solid rgba(59,230,255,0.16)',
-                  color: 'var(--admin-text)'
+                  border: '2px solid rgba(59,230,255,0.3)',
+                  color: 'var(--admin-primary)'
                 }}
                 onClick={handleCancelDelete}
               >
-                Cancel
+                ✅ Cancel (Safe)
               </button>
               <button 
-                className="px-4 py-2 rounded-md"
+                className="px-6 py-3 rounded-md font-bold transition-all hover:scale-105"
                 style={{
-                  background: 'linear-gradient(180deg, var(--admin-danger), #dc2626)',
-                  color: 'white'
+                  background: 'linear-gradient(180deg, #dc2626, #b91c1c)',
+                  color: 'white',
+                  boxShadow: '0 4px 14px 0 rgba(239, 68, 68, 0.4)'
                 }}
                 onClick={handleConfirmDelete}
               >
-                🗑️ Delete
+                🗑️ DELETE FOREVER
               </button>
             </div>
           </div>
