@@ -300,33 +300,55 @@ const SUPABASE_BUCKET = 'knowledge-base';
  * Get unique filename by checking for duplicates (macOS style)
  */
 async function getUniqueFileName(supabase: any, originalName: string): Promise<string> {
-  // Check if file exists
-  const { data: existingFiles } = await supabase.storage
-    .from(SUPABASE_BUCKET)
-    .list('files', {
-      search: originalName
-    });
+  try {
+    // Get all files in the folder
+    const { data: existingFiles, error } = await supabase.storage
+      .from(SUPABASE_BUCKET)
+      .list('files', {
+        limit: 1000,
+        offset: 0,
+      });
 
-  if (!existingFiles || existingFiles.length === 0) {
-    // No duplicate, use original name
+    if (error) {
+      console.error('Error listing files:', error);
+      // If we can't check, just use original name
+      return originalName;
+    }
+
+    if (!existingFiles || existingFiles.length === 0) {
+      // No files yet, use original name
+      return originalName;
+    }
+
+    // Check if original name exists
+    const fileExists = existingFiles.some(f => f.name === originalName);
+    
+    if (!fileExists) {
+      // No duplicate, use original name
+      return originalName;
+    }
+
+    // File exists, add (1), (2), etc.
+    const nameParts = originalName.split('.');
+    const extension = nameParts.length > 1 ? `.${nameParts.pop()}` : '';
+    const baseName = nameParts.join('.');
+
+    let counter = 1;
+    let newName = `${baseName} (${counter})${extension}`;
+
+    // Keep checking until we find a unique name
+    while (existingFiles.some(f => f.name === newName)) {
+      counter++;
+      newName = `${baseName} (${counter})${extension}`;
+    }
+
+    console.log(`📝 Duplicate file detected: ${originalName} → ${newName}`);
+    return newName;
+  } catch (error) {
+    console.error('Error in getUniqueFileName:', error);
+    // Fallback to original name
     return originalName;
   }
-
-  // File exists, add (1), (2), etc.
-  const nameParts = originalName.split('.');
-  const extension = nameParts.length > 1 ? `.${nameParts.pop()}` : '';
-  const baseName = nameParts.join('.');
-
-  let counter = 1;
-  let newName = `${baseName} (${counter})${extension}`;
-
-  // Keep checking until we find a unique name
-  while (existingFiles.some(f => f.name === newName)) {
-    counter++;
-    newName = `${baseName} (${counter})${extension}`;
-  }
-
-  return newName;
 }
 
 /**
