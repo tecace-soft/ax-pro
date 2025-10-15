@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../../i18n/I18nProvider';
-import { fetchVectorDocuments, VectorDocument } from '../../services/ragManagement';
+import { fetchVectorDocuments, VectorDocument, indexFileToVector, unindexFileByFilename } from '../../services/ragManagement';
 
 interface KnowledgeDocument {
   id: string;
@@ -22,6 +22,9 @@ const KnowledgeIndex: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDocument, setSelectedDocument] = useState<KnowledgeDocument | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showMetadataModal, setShowMetadataModal] = useState(false);
+  const [selectedMetadata, setSelectedMetadata] = useState<any>(null);
 
   // Load documents from Supabase on mount
   useEffect(() => {
@@ -109,11 +112,82 @@ const KnowledgeIndex: React.FC = () => {
     setSelectedDocument(doc);
   };
 
+  const handleIndexFile = async (fileName: string) => {
+    setActionLoading(fileName);
+    try {
+      const result = await indexFileToVector(fileName);
+      if (result.success) {
+        alert(`✅ ${result.message}`);
+        loadDocuments(); // Refresh the list
+      } else {
+        alert(`❌ ${result.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Error indexing file: ${error}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUnindexFile = async (fileName: string) => {
+    if (!confirm(`⚠️ Are you sure you want to unindex all chunks for "${fileName}"? This will remove ALL chunks for this file.`)) {
+      return;
+    }
+    
+    setActionLoading(fileName);
+    try {
+      const result = await unindexFileByFilename(fileName);
+      if (result.success) {
+        alert(`✅ ${result.message} (${result.deletedCount || 0} chunks removed)`);
+        loadDocuments(); // Refresh the list
+      } else {
+        alert(`❌ ${result.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Error unindexing file: ${error}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleShowMetadata = (doc: KnowledgeDocument) => {
+    // Get unique filenames and their chunk counts
+    const uniqueFiles = documents.reduce((acc, d) => {
+      if (!acc[d.fileName]) {
+        acc[d.fileName] = {
+          fileName: d.fileName,
+          chunkCount: 0,
+          chunks: []
+        };
+      }
+      acc[d.fileName].chunkCount++;
+      acc[d.fileName].chunks.push(d);
+      return acc;
+    }, {} as Record<string, any>);
+
+    setSelectedMetadata(uniqueFiles);
+    setShowMetadataModal(true);
+  };
+
   // Get original document metadata for display
   const getOriginalMetadata = (doc: KnowledgeDocument) => {
     // Find the original document in the documents array to get full metadata
     const originalDoc = documents.find(d => d.id === doc.id);
     return originalDoc ? originalDoc : doc;
+  };
+
+  // Extract all available metadata fields
+  const getMetadataFields = (doc: KnowledgeDocument) => {
+    // This would need to be passed from the parent component or fetched separately
+    // For now, we'll show what we have available
+    return {
+      fileName: doc.fileName,
+      chunkIndex: doc.chunkIndex,
+      source: doc.source,
+      pageInfo: doc.pageInfo,
+      syncStatus: doc.syncStatus,
+      content: doc.content
+    };
   };
 
   const filteredDocuments = documents.filter(doc =>
@@ -219,16 +293,17 @@ const KnowledgeIndex: React.FC = () => {
               <tr>
                 <th>File Name</th>
                 <th>Chunk #</th>
+                <th>Source</th>
                 <th>Location</th>
                 <th>Content Preview</th>
-                <th>{t('knowledge.sync')}</th>
-                <th>{t('knowledge.actions')}</th>
+                <th>Sync</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredDocuments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
                     {error ? 'Failed to load documents' : 'No documents found. Upload and index files to see them here.'}
                   </td>
                 </tr>
@@ -237,9 +312,10 @@ const KnowledgeIndex: React.FC = () => {
                   <tr key={doc.id}>
                     <td className="doc-title">{doc.fileName}</td>
                     <td className="doc-chunk-index">{doc.chunkIndex}</td>
+                    <td className="doc-source">{doc.source}</td>
                     <td className="doc-page-info">{doc.pageInfo || '-'}</td>
-                    <td className="doc-content" style={{ maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {doc.content.substring(0, 150)}...
+                    <td className="doc-content" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {doc.content.substring(0, 100)}...
                     </td>
                     <td>
                       <span className={`sync-status ${doc.syncStatus}`}>
@@ -247,13 +323,41 @@ const KnowledgeIndex: React.FC = () => {
                       </span>
                     </td>
                     <td>
-                      <button 
-                        className="action-btn view-btn" 
-                        title={t('knowledge.view')}
-                        onClick={() => handleViewDocument(doc)}
-                      >
-                        👁️
-                      </button>
+                      <div className="flex gap-1">
+                        <button 
+                          className="action-btn view-btn" 
+                          title="View content"
+                          onClick={() => handleViewDocument(doc)}
+                        >
+                          👁️
+                        </button>
+                        <button 
+                          className="action-btn" 
+                          title="Show metadata"
+                          onClick={() => handleShowMetadata(doc)}
+                          style={{ backgroundColor: '#3b82f6', color: 'white' }}
+                        >
+                          📊
+                        </button>
+                        <button 
+                          className="action-btn" 
+                          title="Index file"
+                          onClick={() => handleIndexFile(doc.fileName)}
+                          disabled={actionLoading === doc.fileName}
+                          style={{ backgroundColor: '#10b981', color: 'white' }}
+                        >
+                          {actionLoading === doc.fileName ? '⏳' : '📤'}
+                        </button>
+                        <button 
+                          className="action-btn" 
+                          title="Unindex file"
+                          onClick={() => handleUnindexFile(doc.fileName)}
+                          disabled={actionLoading === doc.fileName}
+                          style={{ backgroundColor: '#ef4444', color: 'white' }}
+                        >
+                          {actionLoading === doc.fileName ? '⏳' : '🗑️'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -349,6 +453,138 @@ const KnowledgeIndex: React.FC = () => {
             <div className="flex justify-center mt-6">
               <button
                 onClick={() => setSelectedDocument(null)}
+                className="px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105"
+                style={{ 
+                  backgroundColor: 'var(--admin-primary)', 
+                  color: 'white',
+                  boxShadow: '0 4px 14px 0 rgba(59, 230, 255, 0.3)'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Metadata Modal */}
+      {showMetadataModal && selectedMetadata && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowMetadataModal(false)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto border-2"
+            style={{ 
+              backgroundColor: 'var(--admin-card)',
+              borderColor: 'var(--admin-border)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold" style={{ color: 'var(--admin-text)' }}>
+                📊 File Metadata & Chunk Information
+              </h3>
+              <button
+                onClick={() => setShowMetadataModal(false)}
+                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full p-2 transition-colors"
+                style={{ color: 'var(--admin-text-muted)' }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              {Object.values(selectedMetadata).map((file: any) => (
+                <div key={file.fileName} className="p-4 rounded-lg border-2" style={{ 
+                  backgroundColor: 'var(--admin-bg-secondary)',
+                  borderColor: 'var(--admin-border)'
+                }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
+                      📄 {file.fileName}
+                    </h4>
+                    <div className="flex gap-2">
+                      <span className="px-3 py-1 rounded-full text-sm font-medium" style={{ 
+                        backgroundColor: 'rgba(59, 230, 255, 0.1)',
+                        color: 'var(--admin-primary)'
+                      }}>
+                        {file.chunkCount} chunks
+                      </span>
+                      <button
+                        onClick={() => handleIndexFile(file.fileName)}
+                        disabled={actionLoading === file.fileName}
+                        className="px-3 py-1 rounded text-sm font-medium transition-colors"
+                        style={{ 
+                          backgroundColor: actionLoading === file.fileName ? '#6b7280' : '#10b981',
+                          color: 'white'
+                        }}
+                      >
+                        {actionLoading === file.fileName ? '⏳ Indexing...' : '📤 Index'}
+                      </button>
+                      <button
+                        onClick={() => handleUnindexFile(file.fileName)}
+                        disabled={actionLoading === file.fileName}
+                        className="px-3 py-1 rounded text-sm font-medium transition-colors"
+                        style={{ 
+                          backgroundColor: actionLoading === file.fileName ? '#6b7280' : '#ef4444',
+                          color: 'white'
+                        }}
+                      >
+                        {actionLoading === file.fileName ? '⏳ Unindexing...' : '🗑️ Unindex'}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {file.chunks.map((chunk: KnowledgeDocument, index: number) => (
+                      <div key={chunk.id} className="p-3 rounded border" style={{ 
+                        backgroundColor: 'var(--admin-card)',
+                        borderColor: 'var(--admin-border)'
+                      }}>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium" style={{ color: 'var(--admin-text)' }}>
+                              Chunk #{chunk.chunkIndex}
+                            </span>
+                            <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                              ID: {chunk.id}
+                            </span>
+                          </div>
+                          <div className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                            Source: {chunk.source}
+                          </div>
+                          <div className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                            Location: {chunk.pageInfo || 'N/A'}
+                          </div>
+                          <div className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                            Status: <span className={`sync-status ${chunk.syncStatus}`}>
+                              {chunk.syncStatus === 'synced' ? '✓ Synced' : '⏳ Pending'}
+                            </span>
+                          </div>
+                          <div className="text-xs font-mono" style={{ 
+                            color: 'var(--admin-text-muted)',
+                            maxHeight: '60px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: 'vertical'
+                          }}>
+                            {chunk.content.substring(0, 100)}...
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => setShowMetadataModal(false)}
                 className="px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105"
                 style={{ 
                   backgroundColor: 'var(--admin-primary)', 

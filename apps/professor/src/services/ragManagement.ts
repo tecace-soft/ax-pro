@@ -692,3 +692,40 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     };
   }
 }
+
+/**
+ * Unindex (delete) all chunks for a specific filename
+ */
+export async function unindexFileByFilename(fileName: string): Promise<{ success: boolean; message: string; deletedCount?: number }> {
+  try {
+    const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL || N8N_BASE_URL;
+    const webhookId = import.meta.env.VITE_N8N_UNINDEX_WEBHOOK_ID || 'unindex-file';
+    
+    const webhookUrl = `${n8nBaseUrl}/webhook/${webhookId}`;
+    
+    console.log('🗑️ Sending unindex request for filename:', fileName);
+    
+    const response = await axios.post(webhookUrl, {
+      fileName: fileName
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000 // 30 second timeout
+    });
+    
+    console.log('✅ File unindexed successfully:', response.data);
+    
+    return {
+      success: true,
+      message: `File ${fileName} unindexed successfully`,
+      deletedCount: response.data.deletedCount || 0
+    };
+  } catch (error) {
+    console.error('❌ Failed to unindex file:', error);
+    return {
+      success: false,
+      message: `Failed to unindex file: ${error instanceof Error ? error.message : 'Unknown error'}`
+    };
+  }
+}
