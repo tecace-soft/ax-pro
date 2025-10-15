@@ -297,6 +297,39 @@ export async function deleteFileFromRAG(fileId: string): Promise<{ success: bool
 const SUPABASE_BUCKET = 'knowledge-base';
 
 /**
+ * Get unique filename by checking for duplicates (macOS style)
+ */
+async function getUniqueFileName(supabase: any, originalName: string): Promise<string> {
+  // Check if file exists
+  const { data: existingFiles } = await supabase.storage
+    .from(SUPABASE_BUCKET)
+    .list('files', {
+      search: originalName
+    });
+
+  if (!existingFiles || existingFiles.length === 0) {
+    // No duplicate, use original name
+    return originalName;
+  }
+
+  // File exists, add (1), (2), etc.
+  const nameParts = originalName.split('.');
+  const extension = nameParts.length > 1 ? `.${nameParts.pop()}` : '';
+  const baseName = nameParts.join('.');
+
+  let counter = 1;
+  let newName = `${baseName} (${counter})${extension}`;
+
+  // Keep checking until we find a unique name
+  while (existingFiles.some(f => f.name === newName)) {
+    counter++;
+    newName = `${baseName} (${counter})${extension}`;
+  }
+
+  return newName;
+}
+
+/**
  * Upload files to Supabase Storage
  */
 export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadResult[]> {
@@ -317,10 +350,9 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
         continue;
       }
 
-      // Generate unique file path
-      const timestamp = Date.now();
-      const randomStr = Math.random().toString(36).substring(2, 9);
-      const filePath = `files/${timestamp}_${randomStr}_${file.name}`;
+      // Get unique filename (macOS style - add (1), (2) if duplicate)
+      const uniqueFileName = await getUniqueFileName(supabase, file.name);
+      const filePath = `files/${uniqueFileName}`;
 
       console.log(`Uploading file to Supabase Storage: ${filePath}`);
 
@@ -348,7 +380,7 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
       results.push({
         success: true,
         message: 'File uploaded successfully',
-        fileName: file.name,
+        fileName: uniqueFileName, // Return the unique filename
       });
 
     } catch (error: any) {
