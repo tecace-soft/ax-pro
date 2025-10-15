@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getSupabaseClient } from './supabase';
 
 // RAG Management API configuration
 const N8N_BASE_URL = import.meta.env.VITE_N8N_BASE_URL || 'https://n8n.srv978041.hstgr.cloud';
@@ -287,4 +288,239 @@ export async function deleteFileFromRAG(fileId: string): Promise<{ success: bool
       message: error.response?.data?.message || error.message || 'Failed to delete file'
     };
   }
+}
+
+// ============================================================================
+// SUPABASE STORAGE FUNCTIONS
+// ============================================================================
+
+const SUPABASE_BUCKET = 'knowledge-base';
+
+/**
+ * Upload files to Supabase Storage
+ */
+export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadResult[]> {
+  const results: FileUploadResult[] = [];
+  const supabase = getSupabaseClient();
+  
+  for (const file of files) {
+    try {
+      // Validate file first
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        results.push({
+          success: false,
+          message: 'File validation failed',
+          fileName: file.name,
+          error: validation.error,
+        });
+        continue;
+      }
+
+      // Generate unique file path
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(2, 9);
+      const filePath = `files/${timestamp}_${randomStr}_${file.name}`;
+
+      console.log(`Uploading file to Supabase Storage: ${filePath}`);
+
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from(SUPABASE_BUCKET)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (error) {
+        console.error('Supabase upload error:', error);
+        results.push({
+          success: false,
+          message: 'Failed to upload file',
+          fileName: file.name,
+          error: error.message,
+        });
+        continue;
+      }
+
+      console.log('File uploaded successfully:', data);
+
+      results.push({
+        success: true,
+        message: 'File uploaded successfully',
+        fileName: file.name,
+      });
+
+    } catch (error: any) {
+      console.error('Error uploading file to Supabase:', error);
+      results.push({
+        success: false,
+        message: 'Failed to upload file',
+        fileName: file.name,
+        error: error.message || 'Unknown error',
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Upload a single file to Supabase Storage
+ */
+export async function uploadSingleFileToSupabase(file: File): Promise<FileUploadResult> {
+  const results = await uploadFilesToSupabase([file]);
+  return results[0];
+}
+
+/**
+ * Fetch list of files from Supabase Storage
+ */
+export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
+  try {
+    console.log('Fetching files from Supabase Storage...');
+    const supabase = getSupabaseClient();
+
+    const { data, error } = await supabase.storage
+      .from(SUPABASE_BUCKET)
+      .list('files', {
+        limit: 100,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'desc' },
+      });
+
+    if (error) {
+      console.error('Supabase list error:', error);
+      return {
+        success: false,
+        files: [],
+        total: 0,
+        message: error.message,
+      };
+    }
+
+    console.log('Files fetched from Supabase:', data);
+
+    // Transform Supabase file objects to RAGFile format
+    const files: RAGFile[] = data.map((file: any) => ({
+      id: file.id || file.name,
+      name: file.name,
+      size: file.metadata?.size || 0,
+      type: file.metadata?.mimetype || 'application/octet-stream',
+      uploadedAt: file.created_at || new Date().toISOString(),
+      status: 'ready',
+      lastModified: file.updated_at || file.created_at,
+      syncStatus: 'synced',
+    }));
+
+    return {
+      success: true,
+      files,
+      total: files.length,
+      message: 'Files fetched successfully',
+    };
+
+  } catch (error: any) {
+    console.error('Error fetching files from Supabase:', error);
+    return {
+      success: false,
+      files: [],
+      total: 0,
+      message: error.message || 'Failed to fetch files',
+    };
+  }
+}
+
+/**
+ * Delete a file from Supabase Storage
+ */
+export async function deleteFileFromSupabase(fileName: string): Promise<{ success: boolean; message: string }> {
+  try {
+    console.log(`Deleting file from Supabase Storage: ${fileName}`);
+    const supabase = getSupabaseClient();
+
+    const filePath = `files/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from(SUPABASE_BUCKET)
+      .remove([filePath]);
+
+    if (error) {
+      console.error('Supabase delete error:', error);
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+
+    console.log('File deleted successfully from Supabase');
+
+    return {
+      success: true,
+      message: 'File deleted successfully',
+    };
+
+  } catch (error: any) {
+    console.error('Error deleting file from Supabase:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to delete file',
+    };
+  }
+}
+
+/**
+ * Get public URL for a file in Supabase Storage
+ */
+export async function getSupabaseFileUrl(fileName: string): Promise<string | null> {
+  try {
+    const supabase = getSupabaseClient();
+    const filePath = `files/${fileName}`;
+
+    const { data } = supabase.storage
+      .from(SUPABASE_BUCKET)
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+
+  } catch (error: any) {
+    console.error('Error getting file URL:', error);
+    return null;
+  }
+}
+
+/**
+ * Validate file with extended format support
+ */
+export function validateFileExtended(file: File): { valid: boolean; error?: string } {
+  // Check file size (max 50MB for Supabase)
+  const maxSize = 50 * 1024 * 1024; // 50MB
+  if (file.size > maxSize) {
+    return {
+      valid: false,
+      error: 'File size must be less than 50MB'
+    };
+  }
+
+  // Check file extension
+  const allowedExtensions = [
+    '.pdf', '.docx', '.doc',
+    '.xlsx', '.xls',
+    '.pptx', '.ppt',
+    '.txt', '.md', '.csv',
+    '.json', '.html', '.rtf',
+    '.xml', '.css', '.js', '.ts'
+  ];
+
+  const fileName = file.name.toLowerCase();
+  const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+  if (!hasValidExtension) {
+    return {
+      valid: false,
+      error: `Unsupported file type. Allowed: ${allowedExtensions.join(', ')}`
+    };
+  }
+
+  return { valid: true };
 }

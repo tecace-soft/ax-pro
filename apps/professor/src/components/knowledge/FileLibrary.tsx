@@ -5,7 +5,10 @@ import {
   fetchFilesFromRAG,
   deleteFileFromRAG,
   reindexFile,
-  validateFile, 
+  uploadFilesToSupabase,
+  fetchFilesFromSupabase,
+  deleteFileFromSupabase,
+  validateFileExtended, 
   formatFileSize, 
   getFileIcon,
   FileUploadResult,
@@ -24,33 +27,48 @@ const FileLibrary: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [storageType, setStorageType] = useState<'supabase' | 'local'>('supabase');
 
-  // Fetch files from n8n on component mount
+  // Fetch files on component mount
   useEffect(() => {
     loadFiles();
-  }, []);
+  }, [storageType]);
 
-  // Load files from n8n RAG system
+  // Load files from selected storage
   const loadFiles = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetchFilesFromRAG();
-      if (response.success) {
-        setUploadedFiles(response.files);
-        console.log(`Loaded ${response.files.length} files from n8n`);
-      } else {
-        // If n8n endpoints don't exist yet, show a helpful message
-        if (response.message?.includes('404') || response.message?.includes('Not Found')) {
-          setError('n8n file management endpoints not configured yet. Please set up the following webhooks in n8n: list-files, delete-file, reindex-file');
+      if (storageType === 'supabase') {
+        // Load from Supabase Storage
+        const response = await fetchFilesFromSupabase();
+        if (response.success) {
+          setUploadedFiles(response.files);
+          console.log(`Loaded ${response.files.length} files from Supabase`);
         } else {
-          setError(response.message || 'Failed to load files');
+          setError(response.message || 'Failed to load files from Supabase');
+          console.error('Failed to load files:', response.message);
         }
-        console.error('Failed to load files:', response.message);
+      } else {
+        // Load from n8n (local server)
+        const response = await fetchFilesFromRAG();
+        if (response.success) {
+          setUploadedFiles(response.files);
+          console.log(`Loaded ${response.files.length} files from n8n`);
+        } else {
+          if (response.message?.includes('404') || response.message?.includes('Not Found')) {
+            setError('n8n file management endpoints not configured yet. Please set up the following webhooks in n8n: list-files, delete-file, reindex-file');
+          } else {
+            setError(response.message || 'Failed to load files');
+          }
+          console.error('Failed to load files:', response.message);
+        }
       }
     } catch (err) {
-      const errorMessage = 'Failed to connect to n8n service. Please ensure n8n webhooks are configured.';
+      const errorMessage = storageType === 'supabase' 
+        ? 'Failed to connect to Supabase Storage. Please check your configuration.'
+        : 'Failed to connect to n8n service. Please ensure n8n webhooks are configured.';
       setError(errorMessage);
       console.error('Error loading files:', err);
     } finally {
@@ -70,7 +88,10 @@ const FileLibrary: React.FC = () => {
     }
 
     try {
-      const result = await deleteFileFromRAG(fileId);
+      const result = storageType === 'supabase'
+        ? await deleteFileFromSupabase(fileName)
+        : await deleteFileFromRAG(fileId);
+        
       if (result.success) {
         // Remove file from local state
         setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
@@ -111,7 +132,7 @@ const FileLibrary: React.FC = () => {
 
     // Validate each file
     fileArray.forEach(file => {
-      const validation = validateFile(file);
+      const validation = validateFileExtended(file);
       if (validation.valid) {
         validFiles.push(file);
       } else {
@@ -128,15 +149,18 @@ const FileLibrary: React.FC = () => {
     if (validFiles.length > 0) {
       uploadFiles(validFiles);
     }
-  }, []);
+  }, [storageType]);
 
-  // Upload files to RAG system
+  // Upload files to selected storage
   const uploadFiles = async (files: File[]) => {
     setIsUploading(true);
     setUploadResults([]);
 
     try {
-      const results = await uploadFilesToRAG(files);
+      const results = storageType === 'supabase'
+        ? await uploadFilesToSupabase(files)
+        : await uploadFilesToRAG(files);
+        
       setUploadResults(results);
 
       // Add successful uploads to file list
@@ -153,7 +177,7 @@ const FileLibrary: React.FC = () => {
 
       setUploadedFiles(prev => [...newFiles, ...prev]);
       
-      // Refresh the file list from n8n to get the actual uploaded files
+      // Refresh the file list to get the actual uploaded files
       setTimeout(() => {
         loadFiles();
       }, 1000);
@@ -218,6 +242,53 @@ const FileLibrary: React.FC = () => {
       <div className="fl-header">
         <h2 className="fl-title">{t('knowledge.fileLibrary')}</h2>
         <p className="fl-description">{t('knowledge.fileLibraryDescription')}</p>
+        
+        {/* Storage Type Selector */}
+        <div className="storage-selector" style={{ marginTop: '16px', marginBottom: '16px' }}>
+          <label style={{ 
+            fontSize: '14px', 
+            fontWeight: '500', 
+            marginRight: '12px',
+            color: 'var(--text)'
+          }}>
+            Storage:
+          </label>
+          <button
+            onClick={() => setStorageType('supabase')}
+            className={`storage-btn ${storageType === 'supabase' ? 'active' : ''}`}
+            style={{
+              padding: '8px 16px',
+              marginRight: '8px',
+              borderRadius: '6px',
+              border: storageType === 'supabase' ? '2px solid var(--primary)' : '1px solid var(--border)',
+              backgroundColor: storageType === 'supabase' ? 'var(--primary)' : 'var(--card)',
+              color: storageType === 'supabase' ? 'white' : 'var(--text)',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s'
+            }}
+          >
+            ☁️ Supabase Storage
+          </button>
+          <button
+            onClick={() => setStorageType('local')}
+            className={`storage-btn ${storageType === 'local' ? 'active' : ''}`}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
+              border: storageType === 'local' ? '2px solid var(--primary)' : '1px solid var(--border)',
+              backgroundColor: storageType === 'local' ? 'var(--primary)' : 'var(--card)',
+              color: storageType === 'local' ? 'white' : 'var(--text)',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s'
+            }}
+          >
+            💾 Local Server (n8n)
+          </button>
+        </div>
       </div>
 
       {/* File Upload Area */}
