@@ -578,3 +578,117 @@ export function validateFileExtended(file: File): { valid: boolean; error?: stri
 
   return { valid: true };
 }
+
+// ============================================================================
+// VECTOR INDEXING FUNCTIONS
+// ============================================================================
+
+export interface VectorDocument {
+  id: number;
+  content: string;
+  metadata: {
+    source?: string;
+    fileName?: string;
+    chunkIndex?: number;
+    [key: string]: any;
+  };
+  embedding?: number[];
+}
+
+/**
+ * Fetch all documents from Supabase documents table
+ */
+export async function fetchVectorDocuments(): Promise<{ success: boolean; documents: VectorDocument[]; total: number; message?: string }> {
+  try {
+    console.log('Fetching vector documents from Supabase...');
+    const supabase = getSupabaseClient();
+
+    const { data, error, count } = await supabase
+      .from('documents')
+      .select('*', { count: 'exact' })
+      .order('id', { ascending: false });
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return {
+        success: false,
+        documents: [],
+        total: 0,
+        message: error.message,
+      };
+    }
+
+    console.log(`✅ Fetched ${data?.length || 0} documents from Supabase`);
+
+    return {
+      success: true,
+      documents: data || [],
+      total: count || 0,
+      message: 'Documents fetched successfully',
+    };
+
+  } catch (error: any) {
+    console.error('Error fetching vector documents:', error);
+    return {
+      success: false,
+      documents: [],
+      total: 0,
+      message: error.message || 'Failed to fetch documents',
+    };
+  }
+}
+
+/**
+ * Send file to n8n for indexing
+ */
+export async function indexFileToVector(fileName: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    // Get signed URL for the file
+    const filePath = `files/${fileName}`;
+    const { data: urlData, error: urlError } = await supabase.storage
+      .from(SUPABASE_BUCKET)
+      .createSignedUrl(filePath, 3600); // 1 hour
+
+    if (urlError || !urlData?.signedUrl) {
+      console.error('Error getting file URL:', urlError);
+      return {
+        success: false,
+        message: 'Failed to get file URL',
+      };
+    }
+
+    console.log(`📤 Sending file to n8n for indexing: ${fileName}`);
+
+    // Send to n8n webhook
+    const n8nWebhookUrl = import.meta.env.VITE_N8N_BASE_URL 
+      ? `${import.meta.env.VITE_N8N_BASE_URL}/webhook/${import.meta.env.VITE_N8N_UPLOAD_WEBHOOK_ID}`
+      : `${N8N_BASE_URL}/webhook/${UPLOAD_WEBHOOK_ID}`;
+
+    const response = await axios.post(n8nWebhookUrl, {
+      fileUrl: urlData.signedUrl,
+      fileName: fileName,
+      source: 'supabase-storage',
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      timeout: 30000,
+    });
+
+    console.log('✅ File sent to n8n for indexing:', response.data);
+
+    return {
+      success: true,
+      message: 'File sent for indexing successfully',
+    };
+
+  } catch (error: any) {
+    console.error('Error indexing file:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || 'Failed to index file',
+    };
+  }
+}
