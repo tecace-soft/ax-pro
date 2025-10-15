@@ -173,23 +173,6 @@ const FileLibrary: React.FC = () => {
       
       if (successCount > 0) {
         console.log(`✅ ${successCount} file(s) uploaded successfully`);
-        
-        // Automatically index successful uploads
-        console.log('📤 Starting automatic indexing...');
-        for (const result of results.filter(r => r.success)) {
-          if (result.fileName) {
-            try {
-              const indexResult = await indexFileToVector(result.fileName);
-              if (indexResult.success) {
-                console.log(`✅ File indexed: ${result.fileName}`);
-              } else {
-                console.error(`❌ Failed to index ${result.fileName}: ${indexResult.message}`);
-              }
-            } catch (error) {
-              console.error(`❌ Error indexing ${result.fileName}:`, error);
-            }
-          }
-        }
       }
       if (failCount > 0) {
         console.error(`❌ ${failCount} file(s) failed to upload`);

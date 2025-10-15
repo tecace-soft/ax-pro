@@ -4,10 +4,11 @@ import { fetchVectorDocuments, VectorDocument } from '../../services/ragManageme
 
 interface KnowledgeDocument {
   id: string;
-  title: string;
-  parentId: string;
-  chunkId: string;
+  fileName: string;
+  source: string;
+  chunkIndex: number;
   content: string;
+  pageInfo?: string;
   syncStatus: 'synced' | 'pending' | 'error';
 }
 
@@ -20,6 +21,7 @@ const KnowledgeIndex: React.FC = () => {
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<KnowledgeDocument | null>(null);
 
   // Load documents from Supabase on mount
   useEffect(() => {
@@ -34,14 +36,36 @@ const KnowledgeIndex: React.FC = () => {
       const response = await fetchVectorDocuments();
       if (response.success) {
         // Transform VectorDocument to KnowledgeDocument
-        const transformedDocs: KnowledgeDocument[] = response.documents.map((doc: VectorDocument) => ({
-          id: doc.id.toString(),
-          title: doc.metadata?.fileName || doc.metadata?.source || `Document ${doc.id}`,
-          parentId: doc.metadata?.fileName || doc.metadata?.source || `Document ${doc.id}`,
-          chunkId: `chunk_${doc.id}`,
-          content: doc.content.substring(0, 200), // First 200 chars
-          syncStatus: 'synced' as const,
-        }));
+        const transformedDocs: KnowledgeDocument[] = response.documents.map((doc: VectorDocument) => {
+          const metadata = doc.metadata || {};
+          
+          // Extract file name from various possible metadata fields
+          let fileName = 'Unknown';
+          if (metadata.source && metadata.source !== 'blob') {
+            fileName = metadata.source;
+          } else if (metadata.pdf?.info) {
+            // Try to get filename from PDF metadata
+            fileName = metadata.blobType || 'document.pdf';
+          }
+          
+          // Extract page/line info
+          let pageInfo = '';
+          if (metadata.loc?.lines) {
+            pageInfo = `Lines ${metadata.loc.lines.from}-${metadata.loc.lines.to}`;
+          } else if (metadata.loc?.pageNumber) {
+            pageInfo = `Page ${metadata.loc.pageNumber}`;
+          }
+          
+          return {
+            id: doc.id.toString(),
+            fileName: fileName,
+            source: metadata.source || 'blob',
+            chunkIndex: metadata.chunkIndex || 0,
+            content: doc.content,
+            pageInfo: pageInfo,
+            syncStatus: 'synced' as const,
+          };
+        });
 
         setDocuments(transformedDocs);
         setTotalItems(response.total);
@@ -63,10 +87,13 @@ const KnowledgeIndex: React.FC = () => {
     loadDocuments();
   };
 
+  const handleViewDocument = (doc: KnowledgeDocument) => {
+    setSelectedDocument(doc);
+  };
+
   const filteredDocuments = documents.filter(doc =>
-    doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.parentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.chunkId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    doc.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    doc.source.toLowerCase().includes(searchQuery.toLowerCase()) ||
     doc.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -165,9 +192,9 @@ const KnowledgeIndex: React.FC = () => {
           <table className="ki-table">
             <thead>
               <tr>
-                <th>{t('knowledge.documentTitle')}</th>
-                <th>{t('knowledge.parentId')}</th>
-                <th>{t('knowledge.chunkId')}</th>
+                <th>File Name</th>
+                <th>Chunk #</th>
+                <th>Location</th>
                 <th>Content Preview</th>
                 <th>{t('knowledge.sync')}</th>
                 <th>{t('knowledge.actions')}</th>
@@ -183,11 +210,11 @@ const KnowledgeIndex: React.FC = () => {
               ) : (
                 filteredDocuments.map(doc => (
                   <tr key={doc.id}>
-                    <td className="doc-title">{doc.title}</td>
-                    <td className="doc-parent-id">{doc.parentId}</td>
-                    <td className="doc-chunk-id">{doc.chunkId}</td>
-                    <td className="doc-content" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {doc.content}
+                    <td className="doc-title">{doc.fileName}</td>
+                    <td className="doc-chunk-index">{doc.chunkIndex}</td>
+                    <td className="doc-page-info">{doc.pageInfo || '-'}</td>
+                    <td className="doc-content" style={{ maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {doc.content.substring(0, 150)}...
                     </td>
                     <td>
                       <span className={`sync-status ${doc.syncStatus}`}>
@@ -195,7 +222,11 @@ const KnowledgeIndex: React.FC = () => {
                       </span>
                     </td>
                     <td>
-                      <button className="action-btn view-btn" title={t('knowledge.view')}>
+                      <button 
+                        className="action-btn view-btn" 
+                        title={t('knowledge.view')}
+                        onClick={() => handleViewDocument(doc)}
+                      >
                         👁️
                       </button>
                     </td>
@@ -206,6 +237,94 @@ const KnowledgeIndex: React.FC = () => {
           </table>
         )}
       </div>
+
+      {/* Content Preview Modal */}
+      {selectedDocument && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedDocument(null)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border-2"
+            style={{ 
+              backgroundColor: 'var(--admin-card)',
+              borderColor: 'var(--admin-border)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold" style={{ color: 'var(--admin-text)' }}>
+                Content Preview
+              </h3>
+              <button
+                onClick={() => setSelectedDocument(null)}
+                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full p-2 transition-colors"
+                style={{ color: 'var(--admin-text-muted)' }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Document Info */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--admin-bg-secondary)' }}>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Chunk ID:</span>
+                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.id}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Parent ID:</span>
+                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.fileName}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Title:</span>
+                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.fileName}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>File Path:</span>
+                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.source}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Full Content */}
+              <div>
+                <h4 className="font-semibold mb-2" style={{ color: 'var(--admin-text)' }}>
+                  Full Content
+                </h4>
+                <div 
+                  className="p-4 rounded-lg border-2 font-mono text-sm whitespace-pre-wrap"
+                  style={{ 
+                    backgroundColor: 'var(--admin-bg-secondary)',
+                    borderColor: 'var(--admin-border)',
+                    color: 'var(--admin-text)',
+                    maxHeight: '500px',
+                    overflowY: 'auto'
+                  }}
+                >
+                  {selectedDocument.content}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => setSelectedDocument(null)}
+                className="px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105"
+                style={{ 
+                  backgroundColor: 'var(--admin-primary)', 
+                  color: 'white',
+                  boxShadow: '0 4px 14px 0 rgba(59, 230, 255, 0.3)'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
