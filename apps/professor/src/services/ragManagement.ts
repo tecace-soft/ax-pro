@@ -660,17 +660,24 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     }
 
     console.log(`📤 Sending file to n8n for indexing: ${fileName}`);
+    console.log(`🔗 File URL: ${urlData.signedUrl}`);
 
     // Send to n8n webhook
     const n8nWebhookUrl = import.meta.env.VITE_N8N_BASE_URL 
       ? `${import.meta.env.VITE_N8N_BASE_URL}/webhook/${import.meta.env.VITE_N8N_UPLOAD_WEBHOOK_ID}`
       : `${N8N_BASE_URL}/webhook/${UPLOAD_WEBHOOK_ID}`;
 
-    const response = await axios.post(n8nWebhookUrl, {
+    console.log(`🌐 n8n Webhook URL: ${n8nWebhookUrl}`);
+
+    const payload = {
       fileUrl: urlData.signedUrl,
       fileName: fileName,
       source: 'supabase-storage',
-    }, {
+    };
+
+    console.log(`📦 Payload being sent:`, payload);
+
+    const response = await axios.post(n8nWebhookUrl, payload, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -678,6 +685,8 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     });
 
     console.log('✅ File sent to n8n for indexing:', response.data);
+    console.log('📊 Response status:', response.status);
+    console.log('📋 Response headers:', response.headers);
 
     return {
       success: true,
