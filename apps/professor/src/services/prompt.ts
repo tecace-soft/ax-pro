@@ -6,6 +6,12 @@ interface Prompt {
   created_at?: string;
 }
 
+interface PromptHistory {
+  id: number;
+  prompt_text: string;
+  created_at: string;
+}
+
 /**
  * Fetch the latest system prompt from Supabase
  */
@@ -63,6 +69,39 @@ export async function updateSystemPrompt(promptText: string): Promise<void> {
     console.log('✅ New prompt created:', newPrompt.id);
   } catch (error) {
     console.error('Failed to update system prompt:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch prompt history from Supabase
+ */
+export async function fetchPromptHistory(limit: number = 10): Promise<PromptHistory[]> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log('Fetching prompt history from Supabase...');
+    
+    const { data, error } = await supabase
+      .from('prompts')
+      .select('id, prompt_text, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to fetch prompt history: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      console.log('No prompt history found in database');
+      return [];
+    }
+
+    console.log('✅ Prompt history fetched:', data.length, 'entries');
+    return data as PromptHistory[];
+  } catch (error) {
+    console.error('Failed to fetch prompt history:', error);
     throw error;
   }
 }

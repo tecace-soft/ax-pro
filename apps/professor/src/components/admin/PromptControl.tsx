@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
-import { fetchSystemPrompt, updateSystemPrompt, forcePromptReload } from '../../services/prompt'
+import { fetchSystemPrompt, updateSystemPrompt, forcePromptReload, fetchPromptHistory } from '../../services/prompt'
 import { IconRefresh } from '../../ui/icons'
 import { useTranslation } from '../../i18n/I18nProvider'
+
+interface PromptHistory {
+  id: number;
+  prompt_text: string;
+  created_at: string;
+}
 
 export default function PromptControl() {
   const { t } = useTranslation()
@@ -12,6 +18,9 @@ export default function PromptControl() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [promptHistory, setPromptHistory] = useState<PromptHistory[]>([])
+  const [showHistory, setShowHistory] = useState(false)
   const [responseModal, setResponseModal] = useState<{
     isOpen: boolean
     message: string
@@ -42,6 +51,17 @@ export default function PromptControl() {
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadPromptHistory = async () => {
+    try {
+      console.log('Loading prompt history...')
+      const history = await fetchPromptHistory(10)
+      setPromptHistory(history)
+      console.log('Prompt history loaded:', history.length, 'entries')
+    } catch (error) {
+      console.error('Failed to load prompt history:', error)
     }
   }
 
@@ -119,6 +139,31 @@ export default function PromptControl() {
           {t('admin.systemPrompt')}
         </h3>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setShowHistory(!showHistory)
+              if (!showHistory && promptHistory.length === 0) {
+                loadPromptHistory()
+              }
+            }}
+            className="px-3 py-1 text-xs rounded transition-colors hover:bg-blue-500/20"
+            style={{ 
+              color: 'var(--admin-primary)',
+              border: '1px solid rgba(59, 230, 255, 0.3)'
+            }}
+          >
+            📚 History
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="px-3 py-1 text-xs rounded transition-colors hover:bg-blue-500/20"
+            style={{ 
+              color: 'var(--admin-primary)',
+              border: '1px solid rgba(59, 230, 255, 0.3)'
+            }}
+          >
+            {isExpanded ? '📉 Collapse' : '📈 Expand'}
+          </button>
           {lastRefreshed && (
             <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
               {t('admin.lastRefreshed')}: {lastRefreshed.toLocaleString()}
@@ -143,7 +188,8 @@ export default function PromptControl() {
             backgroundColor: 'rgba(9, 14, 34, 0.6)',
             border: '1px solid rgba(59, 230, 255, 0.15)',
             color: 'var(--admin-text)',
-            minHeight: '300px',
+            minHeight: isExpanded ? '600px' : '300px',
+            maxHeight: isExpanded ? '80vh' : '400px',
             resize: 'vertical'
           }}
           placeholder={isLoading ? t('admin.loading') : "Enter your prompt instructions here..."}
@@ -151,6 +197,69 @@ export default function PromptControl() {
           onChange={(e) => setPromptText(e.target.value)}
           disabled={isLoading}
         />
+
+        {/* History Section */}
+        {showHistory && (
+          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--admin-bg-secondary)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold" style={{ color: 'var(--admin-text)' }}>
+                📚 Prompt History
+              </h4>
+              <button
+                onClick={loadPromptHistory}
+                className="text-xs px-2 py-1 rounded transition-colors hover:bg-blue-500/20"
+                style={{ 
+                  color: 'var(--admin-primary)',
+                  border: '1px solid rgba(59, 230, 255, 0.3)'
+                }}
+              >
+                🔄 Refresh
+              </button>
+            </div>
+            
+            {promptHistory.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
+                No history available. Click "Refresh" to load.
+              </p>
+            ) : (
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {promptHistory.map((prompt, index) => (
+                  <div
+                    key={prompt.id}
+                    className="p-3 rounded border cursor-pointer hover:bg-blue-500/10 transition-colors"
+                    style={{ 
+                      borderColor: 'var(--admin-border)',
+                      backgroundColor: index === 0 ? 'rgba(59, 230, 255, 0.1)' : 'transparent'
+                    }}
+                    onClick={() => setPromptText(prompt.prompt_text)}
+                    title="Click to load this prompt"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium" style={{ color: 'var(--admin-text)' }}>
+                        {index === 0 ? '🟢 Current' : `#${index + 1}`}
+                      </span>
+                      <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                        {new Date(prompt.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                    <p 
+                      className="text-xs font-mono whitespace-pre-wrap overflow-hidden"
+                      style={{ 
+                        color: 'var(--admin-text-muted)',
+                        maxHeight: '60px',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical'
+                      }}
+                    >
+                      {prompt.prompt_text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="flex justify-end">
           <button 
