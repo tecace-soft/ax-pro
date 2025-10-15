@@ -70,6 +70,8 @@ const KnowledgeIndex: React.FC = () => {
             pageInfo = `Lines ${metadata.loc.lines.from}-${metadata.loc.lines.to}`;
           } else if (metadata.loc?.pageNumber) {
             pageInfo = `Page ${metadata.loc.pageNumber}`;
+          } else if (metadata.pdf?.totalPages) {
+            pageInfo = `PDF (${metadata.pdf.totalPages} pages)`;
           }
           
           return {
@@ -105,6 +107,13 @@ const KnowledgeIndex: React.FC = () => {
 
   const handleViewDocument = (doc: KnowledgeDocument) => {
     setSelectedDocument(doc);
+  };
+
+  // Get original document metadata for display
+  const getOriginalMetadata = (doc: KnowledgeDocument) => {
+    // Find the original document in the documents array to get full metadata
+    const originalDoc = documents.find(d => d.id === doc.id);
+    return originalDoc ? originalDoc : doc;
   };
 
   const filteredDocuments = documents.filter(doc =>
@@ -287,20 +296,32 @@ const KnowledgeIndex: React.FC = () => {
               <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--admin-bg-secondary)' }}>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Chunk ID:</span>
-                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.id}</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Parent ID:</span>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>File Name:</span>
                     <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.fileName}</span>
                   </div>
                   <div>
-                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Title:</span>
-                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.fileName}</span>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Chunk Index:</span>
+                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.chunkIndex}</span>
                   </div>
                   <div>
-                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>File Path:</span>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Source:</span>
                     <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.source}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Location:</span>
+                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.pageInfo || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Sync Status:</span>
+                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>
+                      <span className={`sync-status ${selectedDocument.syncStatus}`}>
+                        {selectedDocument.syncStatus === 'synced' ? '✓ Synced' : '⏳ Pending'}
+                      </span>
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Chunk ID:</span>
+                    <span className="ml-2 font-mono text-xs" style={{ color: 'var(--admin-text-muted)' }}>{selectedDocument.id}</span>
                   </div>
                 </div>
               </div>
