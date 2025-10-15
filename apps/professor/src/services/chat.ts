@@ -110,8 +110,8 @@ export const chatService = {
         };
       }
     } else {
-      // Use n8n webhook if available
-      console.log('Backend unavailable, trying n8n...');
+      // Use n8n webhook for chat messages (sessions are handled locally)
+      console.log('Backend unavailable, trying n8n for chat...');
       const n8nAvailable = isN8nWebhookAvailable();
       const n8nConfig = getActiveN8nConfig();
       console.log('n8n webhook available:', n8nAvailable);

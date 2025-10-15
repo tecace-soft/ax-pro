@@ -5,14 +5,10 @@
  * This is different from n8n webhook availability
  */
 export const isBackendAvailable = async (): Promise<boolean> => {
-  // Check if n8n webhook is available first
-  const n8nAvailable = isN8nWebhookAvailable();
-  if (n8nAvailable) {
-    console.log('Backend check: n8n webhook available, using n8n for chat');
-    return true; // Use n8n as our "backend" for chat
-  }
-  
-  console.log('Backend check: No n8n webhook configured, using simulation');
+  // For now, we don't have a backend API server for sessions
+  // We only have n8n webhook for chat messages
+  // Sessions are handled locally in localStorage
+  console.log('Backend check: No backend API server, using local storage for sessions');
   return false;
 };
 

@@ -57,9 +57,9 @@ export const useSessions = () => {
         navigate(`/chat/${id}`);
         return id;
       } else {
-        console.log('Using simulation mode for session creation');
-        // Create local session for simulation mode
-        const id = `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        console.log('Using local storage for session creation');
+        // Create local session
+        const id = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const newSession: Session = {
           id,
           title: title || 'New Chat',
@@ -68,16 +68,18 @@ export const useSessions = () => {
           updatedAt: new Date().toISOString()
         };
         
-        // Store in localStorage for simulation mode
+        // Store in localStorage
         const existingSessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
         existingSessions.push(newSession);
         localStorage.setItem('axpro_sim_sessions', JSON.stringify(existingSessions));
         
+        console.log('Session created successfully:', newSession);
         await fetchSessions(); // Refresh list
         navigate(`/chat/${id}`);
         return id;
       }
     } catch (err) {
+      console.error('Failed to create session:', err);
       setError(err instanceof Error ? err.message : 'Failed to create session');
       throw err;
     }
