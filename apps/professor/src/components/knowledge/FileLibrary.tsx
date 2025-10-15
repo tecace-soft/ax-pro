@@ -126,17 +126,24 @@ const FileLibrary: React.FC = () => {
   const handleDownloadFile = async (fileName: string) => {
     try {
       if (storageType === 'supabase') {
-        // Get Supabase public URL
+        // Get Supabase signed URL (for private buckets)
         const supabase = (await import('../../services/supabase')).getSupabaseClient();
         const filePath = `files/${fileName}`;
         
-        const { data } = supabase.storage
+        // Create a signed URL that expires in 1 hour
+        const { data, error } = await supabase.storage
           .from('knowledge-base')
-          .getPublicUrl(filePath);
+          .createSignedUrl(filePath, 3600); // 3600 seconds = 1 hour
         
-        if (data.publicUrl) {
+        if (error) {
+          console.error('Error creating signed URL:', error);
+          alert(`Failed to get download URL: ${error.message}`);
+          return;
+        }
+        
+        if (data?.signedUrl) {
           // Open in new tab or download
-          window.open(data.publicUrl, '_blank');
+          window.open(data.signedUrl, '_blank');
         } else {
           alert('Failed to get download URL');
         }
