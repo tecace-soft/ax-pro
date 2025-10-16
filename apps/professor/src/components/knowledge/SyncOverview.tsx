@@ -143,7 +143,7 @@ const SyncOverview: React.FC = () => {
         <div className="so-last-updated">
           Last updated: {lastUpdated}
         </div>
-        <button className="refresh-btn">
+        <button className="refresh-btn" onClick={() => window.location.reload()}>
           <span className="refresh-icon">↻</span>
           {t('knowledge.refresh')}
         </button>

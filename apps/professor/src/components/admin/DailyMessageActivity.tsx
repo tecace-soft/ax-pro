@@ -35,14 +35,14 @@ interface Stats {
 
 type DateRange = '3d' | '7d' | '30d' | '90d' | '6m' | '1y' | 'custom'
 
-const DATE_RANGE_OPTIONS = [
-  { value: '3d' as DateRange, label: 'Last 3 days' },
-  { value: '7d' as DateRange, label: 'Last 7 days' },
-  { value: '30d' as DateRange, label: 'Last 30 days' },
-  { value: '90d' as DateRange, label: 'Last 3 months' },
-  { value: '6m' as DateRange, label: 'Last 6 months' },
-  { value: '1y' as DateRange, label: 'Last year' },
-  { value: 'custom' as DateRange, label: 'Custom range' }
+const getDateRangeOptions = (t: (key: string) => string) => [
+  { value: '3d' as DateRange, label: t('admin.last3Days') },
+  { value: '7d' as DateRange, label: t('admin.last7Days') },
+  { value: '30d' as DateRange, label: t('admin.last30Days') },
+  { value: '90d' as DateRange, label: t('admin.last3Months') },
+  { value: '6m' as DateRange, label: t('admin.last6Months') },
+  { value: '1y' as DateRange, label: t('admin.lastYear') },
+  { value: 'custom' as DateRange, label: t('admin.customRange') }
 ]
 
 export default function DailyMessageActivity({ startDate: propStartDate, endDate: propEndDate }: DailyMessageActivityProps) {
@@ -344,7 +344,7 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
                 borderColor: 'var(--admin-border)'
               }}
             >
-              {DATE_RANGE_OPTIONS.map(option => (
+              {getDateRangeOptions(t).map(option => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -421,7 +421,7 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
             {stats.totalMessages}
           </div>
           <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>
-            평균: {stats.avgPerDay}/{t('admin.avgPerDay')}
+            {t('admin.average')}: {stats.avgPerDay} {t('admin.avgPerDay')}
           </div>
         </div>
 

@@ -12,6 +12,10 @@ import UserFeedbackList from '../../components/admin/UserFeedbackList'
 import AdminFeedbackList from '../../components/admin/AdminFeedbackList'
 import KnowledgeManagementPage from '../KnowledgeManagement'
 import { fetchDailyAggregatesWithMode, DailyRow, EstimationMode, filterSimulatedData } from '../../services/dailyAggregates'
+import { fetchAllChatData } from '../../services/chatData'
+import { fetchAllUserFeedback } from '../../services/feedback'
+import { fetchVectorDocuments } from '../../services/ragManagement'
+import { getSupabaseClient } from '../../services/supabase'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 
@@ -43,6 +47,12 @@ export default function AdminDashboard() {
   const [highlightedChatId, setHighlightedChatId] = useState<string | null>(null)
   const [scrollToChatId, setScrollToChatId] = useState<string | null>(null)
 
+  // Real-time metrics state
+  const [totalConversations, setTotalConversations] = useState(0)
+  const [satisfactionRate, setSatisfactionRate] = useState(0)
+  const [totalDocuments, setTotalDocuments] = useState(0)
+
+
 
   const currentTime = new Date().toLocaleString('en-US', {
     weekday: 'short',
@@ -53,7 +63,7 @@ export default function AdminDashboard() {
     hour12: true
   })
 
-  // Initialize dates
+  // Initialize dates and load metrics
   useEffect(() => {
     const today = new Date()
     const start = new Date()
@@ -63,7 +73,42 @@ export default function AdminDashboard() {
 
     // Load Google Sheets data for Performance Timeline
     loadRadarData()
+    
+    // Load real-time metrics
+    loadMetrics()
   }, [])
+
+  const loadMetrics = async () => {
+    try {
+      // Load conversations count
+      const chatData = await fetchAllChatData(1000)
+      setTotalConversations(chatData.length)
+
+      // Load user feedback and calculate satisfaction rate
+      const feedbackData = await fetchAllUserFeedback()
+      if (feedbackData.length > 0) {
+        const positiveCount = feedbackData.filter(f => f.reaction === 'good').length
+        const rate = (positiveCount / feedbackData.length) * 100
+        setSatisfactionRate(Math.round(rate * 10) / 10) // Round to 1 decimal
+      } else {
+        setSatisfactionRate(0)
+      }
+
+      // Load documents count
+      const docsResponse = await fetchVectorDocuments()
+      if (docsResponse.success) {
+        setTotalDocuments(docsResponse.total)
+      }
+
+      console.log('✅ Metrics loaded:', {
+        conversations: chatData.length,
+        satisfaction: satisfactionRate,
+        documents: docsResponse.total
+      })
+    } catch (error) {
+      console.error('❌ Failed to load metrics:', error)
+    }
+  }
 
   // Load radar data when estimation mode changes
   useEffect(() => {
@@ -165,6 +210,7 @@ export default function AdminDashboard() {
     }, 3000)
   }
 
+
   return (
     <div className="admin-layout" data-theme={theme}>
       <div className="dashboard-layout">
@@ -177,9 +223,9 @@ export default function AdminDashboard() {
         
         <div className="dashboard-content">
           <AdminSidebar
-            conversations={156}
-            satisfaction={94.5}
-            documents={156}
+            conversations={totalConversations}
+            satisfaction={satisfactionRate}
+            documents={totalDocuments}
             performanceScore={overallScore}
             performanceDate={formatDate(new Date())}
             isCollapsed={sidebarCollapsed}
@@ -227,7 +273,7 @@ export default function AdminDashboard() {
 
                   <div id="admin-feedback" className="content-section">
                     <h2 className="section-title">Admin Feedback</h2>
-                    <AdminFeedbackList />
+                    <AdminFeedbackList onScrollToChat={handleScrollToChat} />
                   </div>
 
                   <div id="user-feedback" className="content-section">

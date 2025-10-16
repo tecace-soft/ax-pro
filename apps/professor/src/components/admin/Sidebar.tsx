@@ -1,5 +1,4 @@
 import { 
-  IconSearch, 
   IconMessage, 
   IconHistory, 
   IconDatabase, 
@@ -40,17 +39,9 @@ export default function AdminSidebar({
   const { t } = useTranslation()
   
   const isDashboardPage = location.pathname === '/admin/dashboard'
-  const [searchQuery, setSearchQuery] = useState('')
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('Main AI Assistant for HR Support')
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      console.log('Search:', searchQuery)
-    }
-  }
 
   const handleNavigation = (sectionId: string) => {
     if (isDashboardPage) {
@@ -395,21 +386,6 @@ export default function AdminSidebar({
           </div>
         </div>
 
-        {/* Search */}
-        <div className="sidebar-section">
-          <form onSubmit={handleSearch} className="search-form">
-            <div className="search-input-wrapper">
-              <IconSearch size={16} className="search-icon" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('admin.searchConversations')}
-                className="search-input"
-              />
-            </div>
-          </form>
-        </div>
 
         {/* Navigation */}
         <div className="sidebar-section">

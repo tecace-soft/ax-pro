@@ -73,23 +73,29 @@ export default function RecentConversations({
     setError(null)
     
     try {
-      // Fetch both chat data and user feedback
+      // Fetch chat data, user feedback, and admin feedback
       const [chatData, userFeedbackData] = await Promise.all([
         fetchAllChatData(50), // Fetch last 50 conversations
         fetchAllUserFeedback()
       ])
       
-      // Create a map of user feedback by chat_id
+      // Create maps for feedback by chat_id
       const userFeedbackMap = new Map<string, any>()
       userFeedbackData.forEach(feedback => {
         userFeedbackMap.set(feedback.chat_id, feedback)
       })
       
-      // Associate user feedback with each chat
-      const conversationsWithFeedback = chatData.map(chat => ({
-        ...chat,
-        user_feedback: userFeedbackMap.get(chat.chat_id) || null
-      }))
+      // Fetch admin feedback for each chat
+      const conversationsWithFeedback = await Promise.all(
+        chatData.map(async (chat) => {
+          const adminFeedback = await getAdminFeedbackByChat(chat.chat_id)
+          return {
+            ...chat,
+            user_feedback: userFeedbackMap.get(chat.chat_id) || null,
+            admin_feedback: adminFeedback
+          }
+        })
+      )
       
       setConversations(conversationsWithFeedback)
     } catch (error) {
@@ -224,8 +230,8 @@ export default function RecentConversations({
     
     setFeedbackModal({
       chatId: conversation.chat_id,
-      userMessage: conversation.chat_message,
-      aiResponse: conversation.response,
+      userMessage: conversation.chat_message || conversation.user_message || '',
+      aiResponse: conversation.response || conversation.ai_response || '',
       verdict,
       existingFeedback
     })
@@ -311,6 +317,22 @@ export default function RecentConversations({
     } catch (error) {
       console.error('Error fetching user feedback:', error)
       setUserFeedbackModal({ chatId, feedback: null })
+    }
+  }
+
+  const handleAdminFeedbackClick = async (conversation: ChatData) => {
+    const adminFeedback = (conversation as any).admin_feedback
+    if (adminFeedback) {
+      // Open modal in edit mode with existing feedback
+      setSupervisorFeedback(adminFeedback.feedback_text || '')
+      setCorrectedResponse(adminFeedback.corrected_response || '')
+      setFeedbackModal({
+        chatId: conversation.chat_id,
+        userMessage: conversation.chat_message || conversation.user_message || '',
+        aiResponse: conversation.response || conversation.ai_response || '',
+        verdict: adminFeedback.feedback_verdict,
+        existingFeedback: adminFeedback
+      })
     }
   }
 
@@ -710,20 +732,46 @@ export default function RecentConversations({
                 {/* Admin Feedback - Right Side */}
                 <div className="flex items-center gap-2">
                   <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>Admin:</span>
-                  <button
-                    onClick={() => handleFeedbackClick(conversation, 'good')}
-                    className="p-1.5 rounded transition-colors hover:bg-green-500/20"
-                    title="Mark as good"
-                  >
-                    <IconThumbsUp size={14} style={{ color: 'var(--admin-success, #10b981)' }} />
-                  </button>
-                  <button
-                    onClick={() => handleFeedbackClick(conversation, 'bad')}
-                    className="p-1.5 rounded transition-colors hover:bg-red-500/20"
-                    title="Mark as bad"
-                  >
-                    <IconThumbsDown size={14} style={{ color: 'var(--admin-danger, #ef4444)' }} />
-                  </button>
+                  {(conversation as any).admin_feedback ? (
+                    <div className="flex items-center gap-2">
+                      {(conversation as any).admin_feedback.feedback_verdict === 'good' ? (
+                        <div className="flex items-center gap-1 text-green-500">
+                          <IconThumbsUp size={14} />
+                          <span className="text-xs">Good</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-red-500">
+                          <IconThumbsDown size={14} />
+                          <span className="text-xs">Bad</span>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => handleAdminFeedbackClick(conversation)}
+                        className="text-xs px-1.5 py-0.5 rounded transition-colors hover:bg-blue-500/20"
+                        style={{ color: 'var(--admin-primary, #3be6ff)' }}
+                        title="View/Edit admin feedback"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleFeedbackClick(conversation, 'good')}
+                        className="p-1.5 rounded transition-colors hover:bg-green-500/20"
+                        title="Mark as good"
+                      >
+                        <IconThumbsUp size={14} style={{ color: 'var(--admin-success, #10b981)' }} />
+                      </button>
+                      <button
+                        onClick={() => handleFeedbackClick(conversation, 'bad')}
+                        className="p-1.5 rounded transition-colors hover:bg-red-500/20"
+                        title="Mark as bad"
+                      >
+                        <IconThumbsDown size={14} style={{ color: 'var(--admin-danger, #ef4444)' }} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -762,7 +810,7 @@ export default function RecentConversations({
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-                  Admin Feedback {feedbackModal.verdict === 'good' ? '👍' : '👎'}
+                  {feedbackModal.existingFeedback ? '✏️ Edit Admin Feedback' : 'Admin Feedback'} {feedbackModal.verdict === 'good' ? '👍' : '👎'}
                 </h3>
                 <button
                   onClick={handleCancelFeedback}

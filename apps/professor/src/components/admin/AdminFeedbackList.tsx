@@ -7,12 +7,15 @@ import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
 
 interface FeedbackWithChat extends AdminFeedbackData {
   chatData?: ChatData | null
-  isEnabled?: boolean
 }
 
 type SortOption = 'date-desc' | 'date-asc' | 'verdict'
 
-export default function AdminFeedbackList() {
+interface AdminFeedbackListProps {
+  onScrollToChat?: (chatId: string) => void
+}
+
+export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListProps) {
   const { t } = useTranslation()
   const [feedbacks, setFeedbacks] = useState<FeedbackWithChat[]>([])
   const [filteredFeedbacks, setFilteredFeedbacks] = useState<FeedbackWithChat[]>([])
@@ -120,10 +123,26 @@ export default function AdminFeedbackList() {
     setFilteredFeedbacks(filtered)
   }
 
-  const toggleEnabled = (feedbackId: number) => {
+  const toggleApply = async (feedbackId: number) => {
+    const feedback = feedbacks.find(f => f.id === feedbackId)
+    if (!feedback) return
+
+    const newApplyValue = !feedback.apply
     setFeedbacks(prev => prev.map(f => 
-      f.id === feedbackId ? { ...f, isEnabled: !f.isEnabled } : f
+      f.id === feedbackId ? { ...f, apply: newApplyValue } : f
     ))
+
+    // Update in database
+    try {
+      const { updateAdminFeedbackField } = await import('../../services/feedback')
+      await updateAdminFeedbackField(feedbackId, { apply: newApplyValue })
+    } catch (error) {
+      console.error('Failed to update apply status:', error)
+      // Revert on error
+      setFeedbacks(prev => prev.map(f => 
+        f.id === feedbackId ? { ...f, apply: !newApplyValue } : f
+      ))
+    }
   }
 
   const handleFilterByUser = (userId: string) => {
@@ -177,9 +196,10 @@ export default function AdminFeedbackList() {
     }
 
     const csvContent = [
-      ['Request ID', 'Date/Time', 'Verdict', 'User Message', 'AI Response', 'Feedback', 'Corrected Response'],
+      ['Chat ID', 'User ID', 'Date/Time', 'Verdict', 'User Message', 'AI Response', 'Feedback', 'Corrected Response'],
       ...enabledFeedbacks.map(f => [
         f.chat_id,
+        f.chatData?.user_id || '',
         formatDate(f.updated_at || f.created_at),
         f.feedback_verdict,
         f.chatData?.chat_message || '',
@@ -198,25 +218,6 @@ export default function AdminFeedbackList() {
     URL.revokeObjectURL(url)
   }
 
-  const handleUpdatePrompt = () => {
-    const enabledFeedbacks = filteredFeedbacks.filter(f => f.isEnabled && f.corrected_response)
-    
-    if (enabledFeedbacks.length === 0) {
-      alert('No enabled feedback with corrected responses to apply')
-      return
-    }
-
-    // Show confirmation
-    const confirmed = window.confirm(
-      `Apply ${enabledFeedbacks.length} corrected response(s) to the system prompt?\n\n` +
-      'This will update the prompt with examples from the selected feedback.'
-    )
-
-    if (confirmed) {
-      // TODO: Implement prompt update logic
-      alert('Prompt update feature coming soon!')
-    }
-  }
 
   if (isLoading) {
     return (
@@ -329,16 +330,6 @@ export default function AdminFeedbackList() {
           >
             Export
           </button>
-          <button
-            onClick={handleUpdatePrompt}
-            className="px-4 py-2 rounded-md text-sm font-medium"
-            style={{
-              background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
-              color: '#041220'
-            }}
-          >
-            Update Prompt
-          </button>
         </div>
       </div>
 
@@ -406,14 +397,16 @@ export default function AdminFeedbackList() {
                 {/* Header Row */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold" style={{ color: 'var(--admin-text)' }}>
-                      Request ID: {feedback.chat_id}
-                    </span>
-                    {feedback.feedback_verdict === 'good' ? (
-                      <IconThumbsUp size={16} style={{ color: 'var(--admin-success)' }} />
-                    ) : (
-                      <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)' }} />
-                    )}
+                    <div className="flex items-center gap-2">
+                      {feedback.feedback_verdict === 'good' ? (
+                        <IconThumbsUp size={16} style={{ color: 'var(--admin-success)' }} />
+                      ) : (
+                        <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)' }} />
+                      )}
+                      <span className="text-sm font-semibold" style={{ color: 'var(--admin-text)' }}>
+                        User: {feedback.chatData?.user_id || 'Unknown'}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
@@ -425,16 +418,16 @@ export default function AdminFeedbackList() {
                         Apply to Prompt:
                       </span>
                       <button
-                        onClick={() => toggleEnabled(feedback.id!)}
+                        onClick={() => toggleApply(feedback.id!)}
                         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
                         style={{
-                          backgroundColor: feedback.isEnabled ? 'var(--admin-primary)' : 'rgba(100, 116, 139, 0.3)'
+                          backgroundColor: feedback.apply ? 'var(--admin-primary)' : 'rgba(100, 116, 139, 0.3)'
                         }}
                       >
                         <span
                           className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                           style={{
-                            transform: feedback.isEnabled ? 'translateX(1.5rem)' : 'translateX(0.25rem)'
+                            transform: feedback.apply ? 'translateX(1.5rem)' : 'translateX(0.25rem)'
                           }}
                         />
                       </button>
@@ -455,6 +448,18 @@ export default function AdminFeedbackList() {
                       </p>
                     </div>
                   )}
+
+                  {/* Chat ID */}
+                  <p className="text-xs mb-2" style={{ color: 'var(--admin-text-muted)' }}>
+                    Chat ID: 
+                    <button
+                      onClick={() => onScrollToChat?.(feedback.chat_id)}
+                      className="ml-1 text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                      title="Click to scroll to this chat in Recent Conversations"
+                    >
+                      {feedback.chat_id}
+                    </button>
+                  </p>
 
                   {/* Original AI Response */}
                   {feedback.chatData?.response && (

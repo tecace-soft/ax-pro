@@ -6,6 +6,12 @@ interface Prompt {
   created_at?: string;
 }
 
+interface PromptHistory {
+  id: number;
+  prompt_text: string;
+  created_at: string;
+}
+
 /**
  * Fetch the latest system prompt from Supabase
  */
@@ -63,6 +69,69 @@ export async function updateSystemPrompt(promptText: string): Promise<void> {
     console.log('✅ New prompt created:', newPrompt.id);
   } catch (error) {
     console.error('Failed to update system prompt:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch prompt history from Supabase
+ */
+export async function fetchPromptHistory(limit: number = 10): Promise<PromptHistory[]> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log('🔄 Fetching prompt history from Supabase...');
+    console.log('📊 Query: SELECT id, prompt_text, created_at FROM prompts ORDER BY created_at DESC LIMIT', limit);
+    
+    const { data, error } = await supabase
+      .from('prompts')
+      .select('id, prompt_text, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    console.log('📋 Raw Supabase response:', { data, error });
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      throw new Error(`Failed to fetch prompt history: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      console.log('⚠️ No prompt history found in database');
+      return [];
+    }
+
+    console.log('✅ Prompt history fetched successfully:', data.length, 'entries');
+    console.log('📚 First entry:', data[0]);
+    return data as PromptHistory[];
+  } catch (error) {
+    console.error('❌ Failed to fetch prompt history:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a specific prompt by ID
+ */
+export async function deletePrompt(promptId: number): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log('🗑️ Deleting prompt with ID:', promptId);
+    
+    const { error } = await supabase
+      .from('prompts')
+      .delete()
+      .eq('id', promptId);
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      throw new Error(`Failed to delete prompt: ${error.message}`);
+    }
+
+    console.log('✅ Prompt deleted successfully:', promptId);
+  } catch (error) {
+    console.error('❌ Failed to delete prompt:', error);
     throw error;
   }
 }

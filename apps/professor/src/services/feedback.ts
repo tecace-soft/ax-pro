@@ -284,3 +284,32 @@ export async function updateAdminFeedback(
   }
 }
 
+export async function updateAdminFeedbackField(
+  id: number,
+  updates: Partial<AdminFeedbackData>
+): Promise<AdminFeedbackData> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log('Updating admin feedback field:', { id, updates });
+    
+    const { data, error } = await supabase
+      .from('admin_feedback')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to update admin feedback: ${error.message}`);
+    }
+
+    console.log('✅ Admin feedback field updated:', data);
+    return data as AdminFeedbackData;
+  } catch (error) {
+    console.error('Failed to update admin feedback field:', error);
+    throw error;
+  }
+}
+
