@@ -560,18 +560,36 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
       }
 
       const indexedNameSet = new Set<string>();
+      const indexedNameMap = new Map<string, string>(); // normalized -> original
+      
       if (allDocMetas && allDocMetas.length > 0) {
         for (const row of allDocMetas) {
           const metadata = row.metadata || {};
           const metaName: string | undefined = metadata.fileName;
           if (metaName) {
-            indexedNameSet.add(metaName.toLowerCase().trim());
+            const normalized = metaName.toLowerCase().trim();
+            indexedNameSet.add(normalized);
+            indexedNameMap.set(normalized, metaName);
+            
+            // Also add variants for better matching
+            const variants = [
+              normalized.replace(/\s+/g, '_'),
+              normalized.replace(/_+/g, ' '),
+              normalized.replace(/[^\x00-\x7F]/g, ''),
+            ];
+            variants.forEach(v => {
+              if (v !== normalized) {
+                indexedNameSet.add(v);
+                indexedNameMap.set(v, metaName);
+              }
+            });
           }
         }
       }
       console.log(`[SyncCheck] Indexed filenames count: ${indexedNameSet.size}`);
+      console.log(`[SyncCheck] Unique documents: ${indexedNameMap.size}`);
       if (indexedNameSet.size > 0) {
-        console.log(`[SyncCheck] Indexed files:`, Array.from(indexedNameSet));
+        console.log(`[SyncCheck] Sample indexed files:`, Array.from(new Set(indexedNameMap.values())).slice(0, 10));
       }
 
       // Update sync status for each file
@@ -583,25 +601,50 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
         const normalizedVariants = [
           fileName,
           fileName.replace(/\s+/g, ' '), // normalize multiple spaces
+          fileName.replace(/\s+/g, '_'), // spaces to underscores
+          fileName.replace(/_+/g, ' '), // underscores to spaces
           fileName.replace(/[^\x00-\x7F]/g, ''), // remove non-ASCII
-          decodeURIComponent(fileName), // decode URL encoding if any
+          fileName.replace(/\s+/g, '').replace(/_+/g, ''), // remove all whitespace/underscores
         ];
         
+        // Also try URL encoded/decoded versions
+        try {
+          normalizedVariants.push(decodeURIComponent(fileName));
+          normalizedVariants.push(encodeURIComponent(fileName).toLowerCase());
+        } catch (e) {
+          // Ignore encoding errors
+        }
+        
         let isIndexed = false;
+        let matchedVariant = '';
+        
         for (const variant of normalizedVariants) {
           if (indexedNameSet.has(variant)) {
             isIndexed = true;
+            matchedVariant = variant;
             break;
           }
         }
         
         if (isIndexed) {
           file.syncStatus = 'synced';
-          console.log(`✅ File "${file.name}" is synced (indexed)`);
+          console.log(`✅ File "${file.name}" is SYNCED (matched via: "${matchedVariant}")`);
         } else {
           file.syncStatus = 'pending';
-          console.log(`⏳ File "${file.name}" is NOT indexed. Tried: ${normalizedVariants.join(' | ')}`);
-          console.log(`   Available indexed files:`, Array.from(indexedNameSet).slice(0, 5));
+          console.log(`⏳ File "${file.name}" is NOT INDEXED`);
+          console.log(`   Storage filename: "${file.name}"`);
+          console.log(`   Tried variants (${normalizedVariants.length}):`, normalizedVariants.slice(0, 5));
+          console.log(`   Sample indexed files:`, Array.from(new Set(indexedNameMap.values())).slice(0, 5));
+          
+          // Try to find close matches
+          const closeMatches = Array.from(new Set(indexedNameMap.values()))
+            .filter(indexed => 
+              indexed.toLowerCase().includes(fileName.substring(0, 20).toLowerCase()) ||
+              fileName.includes(indexed.substring(0, 20).toLowerCase())
+            );
+          if (closeMatches.length > 0) {
+            console.log(`   🔍 Possible matches:`, closeMatches);
+          }
         }
       }
     } catch (error) {
