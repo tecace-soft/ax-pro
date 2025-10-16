@@ -208,7 +208,29 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
 /**
  * Validate file before upload
  */
-export function validateFile(file: File): { valid: boolean; error?: string } {
+/**
+ * Sanitize filename to avoid unicode/encoding issues
+ */
+export function sanitizeFileName(fileName: string): string {
+  // Replace problematic characters
+  let sanitized = fileName
+    .normalize('NFD') // Normalize unicode
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .replace(/[^\x00-\x7F]/g, '_') // Replace non-ASCII with underscore
+    .replace(/\s+/g, '_') // Replace spaces with underscore
+    .replace(/[<>:"/\\|?*]/g, '_') // Replace invalid file system chars
+    .replace(/_+/g, '_') // Collapse multiple underscores
+    .trim();
+  
+  // Ensure file has extension
+  if (!sanitized.includes('.')) {
+    sanitized += '.txt';
+  }
+  
+  return sanitized;
+}
+
+export function validateFile(file: File): { valid: boolean; error?: string; warning?: string } {
   // Check file size (max 50MB)
   const maxSize = 50 * 1024 * 1024; // 50MB
   if (file.size > maxSize) {
@@ -217,6 +239,12 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
       error: 'File size must be less than 50MB'
     };
   }
+
+  // Check for problematic characters in filename
+  const hasNonASCII = /[^\x00-\x7F]/.test(file.name);
+  const warning = hasNonASCII 
+    ? 'Filename contains special characters that may cause issues. Will be sanitized during upload.'
+    : undefined;
 
   // Check file type
   const allowedTypes = [
@@ -416,8 +444,16 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
         continue;
       }
 
+      // Sanitize filename to avoid unicode issues
+      const sanitizedName = sanitizeFileName(file.name);
+      
+      // Show warning if filename was changed
+      if (sanitizedName !== file.name) {
+        console.warn(`⚠️ Filename sanitized: "${file.name}" → "${sanitizedName}"`);
+      }
+      
       // Get unique filename (macOS style - add (1), (2) if duplicate)
-      const uniqueFileName = await getUniqueFileName(supabase, file.name);
+      const uniqueFileName = await getUniqueFileName(supabase, sanitizedName);
       const filePath = `files/${uniqueFileName}`;
 
       console.log(`Uploading file to Supabase Storage: ${filePath}`);
@@ -542,12 +578,30 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileName = file.name.toLowerCase().trim();
-        if (indexedNameSet.has(fileName)) {
+        
+        // Try multiple normalization strategies
+        const normalizedVariants = [
+          fileName,
+          fileName.replace(/\s+/g, ' '), // normalize multiple spaces
+          fileName.replace(/[^\x00-\x7F]/g, ''), // remove non-ASCII
+          decodeURIComponent(fileName), // decode URL encoding if any
+        ];
+        
+        let isIndexed = false;
+        for (const variant of normalizedVariants) {
+          if (indexedNameSet.has(variant)) {
+            isIndexed = true;
+            break;
+          }
+        }
+        
+        if (isIndexed) {
           file.syncStatus = 'synced';
           console.log(`✅ File "${file.name}" is synced (indexed)`);
         } else {
           file.syncStatus = 'pending';
-          console.log(`⏳ File "${file.name}" is pending (not indexed)`);
+          console.log(`⏳ File "${file.name}" is NOT indexed. Tried: ${normalizedVariants.join(' | ')}`);
+          console.log(`   Available indexed files:`, Array.from(indexedNameSet).slice(0, 5));
         }
       }
     } catch (error) {
