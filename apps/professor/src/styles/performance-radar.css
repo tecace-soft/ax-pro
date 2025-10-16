@@ -87,8 +87,8 @@
 .radar-main-layout {
   display: grid;
   grid-template-columns: 1fr 400px;
-  gap: 32px;
-  margin-top: 32px;
+  gap: 28px;
+  margin-top: 24px;
   align-items: start;
 }
 
@@ -1570,9 +1570,9 @@
 
 /* Timeline Section Wrapper - 맨 끝에 추가 */
 .timeline-section-wrapper {
-  margin-top: 30px;
+  margin-top: 32px;
   margin-bottom: 20px;
-  padding-top: 20px;
+  padding-top: 24px;
   border-top: 1px solid rgba(59, 230, 255, 0.15);
 }
 
