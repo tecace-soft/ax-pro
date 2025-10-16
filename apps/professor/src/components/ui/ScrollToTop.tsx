@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { IconChevronUp } from '../ui/icons'
+import { IconChevronUp } from '../../ui/icons'
 
 export default function ScrollToTop() {
   const [isVisible, setIsVisible] = useState(false)
