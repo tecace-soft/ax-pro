@@ -101,7 +101,7 @@ const Landing: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg)' }}>
       {/* Header with theme and language controls */}
       <div className="flex justify-between items-center p-4">
         <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
@@ -138,8 +138,8 @@ const Landing: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
+      <div className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-6">
           {/* Header */}
           <div className="text-center">
             <h2 className="text-3xl font-light" style={{ color: 'var(--text)' }}>
@@ -151,7 +151,7 @@ const Landing: React.FC = () => {
           </div>
 
           {/* Login Form */}
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="card py-8 px-6 rounded-lg">
               <div className="space-y-4">
                 <div>
@@ -269,9 +269,9 @@ const Landing: React.FC = () => {
       </div>
 
       {/* Footer */}
-      <footer className="py-8 px-4 border-t" style={{ borderColor: 'var(--border)' }}>
+      <footer className="mt-auto py-6 px-4 border-t" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {/* Company Info */}
             <div>
               <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>TecAce</h3>
@@ -319,7 +319,7 @@ const Landing: React.FC = () => {
           </div>
 
           {/* Copyright */}
-          <div className="pt-6 border-t text-center" style={{ borderColor: 'var(--border)' }}>
+          <div className="pt-4 border-t text-center" style={{ borderColor: 'var(--border)' }}>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
               © {new Date().getFullYear()} TecAce Corporation. All rights reserved. |{' '}
               <a 
