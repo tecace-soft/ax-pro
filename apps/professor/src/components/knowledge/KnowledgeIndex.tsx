@@ -17,7 +17,7 @@ const KnowledgeIndex: React.FC = () => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(500);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   const [totalItems, setTotalItems] = useState(0);
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,19 +28,21 @@ const KnowledgeIndex: React.FC = () => {
   const [selectedMetadata, setSelectedMetadata] = useState<any>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState<string>('');
 
-  // Load documents from Supabase on mount
+  // Load documents from Supabase on mount and when pagination changes
   useEffect(() => {
     loadDocuments();
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   const loadDocuments = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      console.log('🔄 Loading documents from Supabase...');
+      const offset = (currentPage - 1) * itemsPerPage;
+      console.log(`🔄 Loading documents from Supabase (Page ${currentPage}, ${itemsPerPage} items, offset: ${offset})...`);
       console.log('⏰ Current time:', new Date().toISOString());
-      const response = await fetchVectorDocuments();
+      
+      const response = await fetchVectorDocuments(itemsPerPage, offset);
       console.log('📋 Raw response:', response);
       console.log('📊 Total documents found:', response.total || 0);
       console.log('📄 Documents array length:', response.documents?.length || 0);
@@ -135,6 +137,7 @@ const KnowledgeIndex: React.FC = () => {
   const handleRefresh = () => {
     console.log('🔄 Manual refresh triggered by user');
     setLastRefreshTime(new Date().toLocaleTimeString());
+    setCurrentPage(1); // Reset to first page
     loadDocuments();
   };
 
@@ -254,16 +257,16 @@ const KnowledgeIndex: React.FC = () => {
           <label>Items per page:</label>
           <select
             value={itemsPerPage}
-            onChange={(e) => setItemsPerPage(Number(e.target.value))}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1); // Reset to first page when changing page size
+            }}
             className="items-select"
           >
+            <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
             <option value={200}>200</option>
-            <option value={500}>500</option>
-            <option value={1000}>1000</option>
-            <option value={2000}>2000</option>
-            <option value={5000}>5000</option>
           </select>
         </div>
         <div className="ki-navigation">

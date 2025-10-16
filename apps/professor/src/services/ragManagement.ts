@@ -831,15 +831,17 @@ export interface VectorDocument {
 /**
  * Fetch all documents from Supabase documents table
  */
-export async function fetchVectorDocuments(): Promise<{ success: boolean; documents: VectorDocument[]; total: number; message?: string }> {
+export async function fetchVectorDocuments(limit: number = 50, offset: number = 0): Promise<{ success: boolean; documents: VectorDocument[]; total: number; message?: string }> {
   try {
-    console.log('Fetching vector documents from Supabase...');
+    console.log(`Fetching vector documents from Supabase (limit: ${limit}, offset: ${offset})...`);
     const supabase = getSupabaseClient();
 
+    // Fetch only specific fields, excluding large embedding data
     const { data, error, count } = await supabase
       .from('documents')
-      .select('*', { count: 'exact' })
-      .order('id', { ascending: false });
+      .select('id, content, metadata, created_at', { count: 'exact' })
+      .order('id', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) {
       console.error('Supabase error:', error);
@@ -851,7 +853,7 @@ export async function fetchVectorDocuments(): Promise<{ success: boolean; docume
       };
     }
 
-    console.log(`✅ Fetched ${data?.length || 0} documents from Supabase`);
+    console.log(`✅ Fetched ${data?.length || 0} documents from Supabase (Total: ${count || 0})`);
 
     return {
       success: true,
