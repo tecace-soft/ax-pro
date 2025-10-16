@@ -358,10 +358,12 @@ const KnowledgeIndex: React.FC = () => {
               ) : (
                 filteredDocuments.map(doc => (
                   <tr key={doc.id}>
-                    <td className="doc-title">{doc.fileName}</td>
+                    <td className="doc-title" title={doc.fileName} style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
+                      {doc.fileName}
+                    </td>
                     <td className="doc-chunk-index">{(doc as any).chunkInfo || '1 of 1'}</td>
                     <td className="doc-page-info">{doc.pageInfo || '-'}</td>
-                    <td className="doc-content" style={{ maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td className="doc-content" title={doc.content} style={{ maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
                       {doc.content.substring(0, 150)}...
                     </td>
                     <td>
