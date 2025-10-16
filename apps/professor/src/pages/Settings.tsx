@@ -61,6 +61,10 @@ const Settings: React.FC = () => {
   const [testingSupabase, setTestingSupabase] = useState(false);
   const [supabaseTestResult, setSupabaseTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [simulationModeEnabled, setSimulationModeEnabledState] = useState(false);
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState('');
+  const [imagePosition, setImagePosition] = useState({ x: 50, y: 50 });
+  const [imageZoom, setImageZoom] = useState(100);
 
   useEffect(() => {
     loadConfigs();
@@ -772,7 +776,7 @@ const Settings: React.FC = () => {
                 {/* Avatar Photo */}
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                    Chatbot Avatar
+                    {language === 'ko' ? '챗봇 아바타' : 'Chatbot Avatar'}
                   </label>
                   <div className="flex items-center gap-4">
                     <div className="flex-shrink-0">
@@ -804,7 +808,7 @@ const Settings: React.FC = () => {
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
                           </svg>
-                          Upload Photo
+                          {language === 'ko' ? '사진 업로드' : 'Upload Photo'}
                           <input 
                             type="file" 
                             accept="image/*"
@@ -814,7 +818,10 @@ const Settings: React.FC = () => {
                               if (file) {
                                 const reader = new FileReader();
                                 reader.onloadend = () => {
-                                  updateCustomization({ avatarUrl: reader.result as string });
+                                  setTempImageUrl(reader.result as string);
+                                  setImagePosition({ x: 50, y: 50 });
+                                  setImageZoom(100);
+                                  setShowImageEditor(true);
                                 };
                                 reader.readAsDataURL(file);
                               }
@@ -830,12 +837,14 @@ const Settings: React.FC = () => {
                               color: 'white'
                             }}
                           >
-                            Remove
+                            {language === 'ko' ? '삭제' : 'Remove'}
                           </button>
                         )}
                       </div>
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        Upload an image (JPG, PNG, GIF). This avatar appears next to assistant messages.
+                        {language === 'ko' 
+                          ? '이미지를 업로드하세요 (JPG, PNG, GIF). 업로드 후 조정 가능합니다.' 
+                          : 'Upload an image (JPG, PNG, GIF). You can adjust and crop after uploading.'}
                       </p>
                     </div>
                   </div>
@@ -1176,6 +1185,176 @@ const Settings: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Image Editor Modal */}
+      {showImageEditor && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999
+          }}
+          onClick={() => setShowImageEditor(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'var(--card, #1e1e1e)',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '600px',
+              width: '90%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              border: '1px solid var(--border)'
+            }}
+          >
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
+              {language === 'ko' ? '이미지 조정' : 'Adjust Image'}
+            </h3>
+
+            {/* Preview */}
+            <div 
+              style={{
+                width: '200px',
+                height: '200px',
+                margin: '0 auto 24px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                position: 'relative',
+                border: '2px solid var(--border)',
+                backgroundColor: 'var(--bg-secondary)'
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  backgroundImage: `url(${tempImageUrl})`,
+                  backgroundSize: `${imageZoom}%`,
+                  backgroundPosition: `${imagePosition.x}% ${imagePosition.y}%`,
+                  backgroundRepeat: 'no-repeat'
+                }}
+              />
+            </div>
+
+            {/* Controls */}
+            <div className="space-y-4">
+              {/* Zoom Control */}
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                  {language === 'ko' ? '확대/축소' : 'Zoom'}: {imageZoom}%
+                </label>
+                <input
+                  type="range"
+                  min="50"
+                  max="200"
+                  value={imageZoom}
+                  onChange={(e) => setImageZoom(Number(e.target.value))}
+                  className="w-full"
+                  style={{
+                    accentColor: 'var(--primary)'
+                  }}
+                />
+              </div>
+
+              {/* Horizontal Position */}
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                  {language === 'ko' ? '가로 위치' : 'Horizontal Position'}
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={imagePosition.x}
+                  onChange={(e) => setImagePosition({ ...imagePosition, x: Number(e.target.value) })}
+                  className="w-full"
+                  style={{
+                    accentColor: 'var(--primary)'
+                  }}
+                />
+              </div>
+
+              {/* Vertical Position */}
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                  {language === 'ko' ? '세로 위치' : 'Vertical Position'}
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={imagePosition.y}
+                  onChange={(e) => setImagePosition({ ...imagePosition, y: Number(e.target.value) })}
+                  className="w-full"
+                  style={{
+                    accentColor: 'var(--primary)'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  // Create canvas to crop the image
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  const img = new Image();
+                  
+                  img.onload = () => {
+                    canvas.width = 200;
+                    canvas.height = 200;
+                    
+                    const scale = imageZoom / 100;
+                    const scaledWidth = img.width * scale;
+                    const scaledHeight = img.height * scale;
+                    
+                    const x = -(imagePosition.x / 100) * (scaledWidth - 200);
+                    const y = -(imagePosition.y / 100) * (scaledHeight - 200);
+                    
+                    if (ctx) {
+                      ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+                      updateCustomization({ avatarUrl: canvas.toDataURL('image/png') });
+                    }
+                    
+                    setShowImageEditor(false);
+                  };
+                  
+                  img.src = tempImageUrl;
+                }}
+                className="flex-1 px-4 py-2 rounded-md transition-colors"
+                style={{ 
+                  backgroundColor: 'var(--primary)',
+                  color: 'white'
+                }}
+              >
+                {language === 'ko' ? '적용' : 'Apply'}
+              </button>
+              <button
+                onClick={() => setShowImageEditor(false)}
+                className="flex-1 px-4 py-2 rounded-md transition-colors"
+                style={{ 
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--border)'
+                }}
+              >
+                {language === 'ko' ? '취소' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
