@@ -6,12 +6,15 @@ export default function ScrollToTop() {
 
   useEffect(() => {
     const toggleVisibility = () => {
-      if (window.pageYOffset > 300) {
+      if (window.scrollY > 200) {
         setIsVisible(true)
       } else {
         setIsVisible(false)
       }
     }
+
+    // Check on mount
+    toggleVisibility()
 
     window.addEventListener('scroll', toggleVisibility)
 
@@ -28,9 +31,7 @@ export default function ScrollToTop() {
   }
 
   return (
-    <>
-      {isVisible && (
-        <button
+    <button
           onClick={scrollToTop}
           style={{
             position: 'fixed',
@@ -48,7 +49,7 @@ export default function ScrollToTop() {
             justifyContent: 'center',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
             transition: 'all 0.3s ease',
-            zIndex: 9999,
+            zIndex: 99999,
             opacity: 0.9
           }}
           onMouseEnter={(e) => {
@@ -66,8 +67,6 @@ export default function ScrollToTop() {
         >
           <IconChevronUp size={24} />
         </button>
-      )}
-    </>
   )
 }
 
