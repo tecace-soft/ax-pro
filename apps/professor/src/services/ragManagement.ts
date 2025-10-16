@@ -208,7 +208,29 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
 /**
  * Validate file before upload
  */
-export function validateFile(file: File): { valid: boolean; error?: string } {
+/**
+ * Sanitize filename to avoid unicode/encoding issues
+ */
+export function sanitizeFileName(fileName: string): string {
+  // Replace problematic characters
+  let sanitized = fileName
+    .normalize('NFD') // Normalize unicode
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .replace(/[^\x00-\x7F]/g, '_') // Replace non-ASCII with underscore
+    .replace(/\s+/g, '_') // Replace spaces with underscore
+    .replace(/[<>:"/\\|?*]/g, '_') // Replace invalid file system chars
+    .replace(/_+/g, '_') // Collapse multiple underscores
+    .trim();
+  
+  // Ensure file has extension
+  if (!sanitized.includes('.')) {
+    sanitized += '.txt';
+  }
+  
+  return sanitized;
+}
+
+export function validateFile(file: File): { valid: boolean; error?: string; warning?: string } {
   // Check file size (max 50MB)
   const maxSize = 50 * 1024 * 1024; // 50MB
   if (file.size > maxSize) {
@@ -217,6 +239,12 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
       error: 'File size must be less than 50MB'
     };
   }
+
+  // Check for problematic characters in filename
+  const hasNonASCII = /[^\x00-\x7F]/.test(file.name);
+  const warning = hasNonASCII 
+    ? 'Filename contains special characters that may cause issues. Will be sanitized during upload.'
+    : undefined;
 
   // Check file type
   const allowedTypes = [
@@ -416,8 +444,16 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
         continue;
       }
 
+      // Sanitize filename to avoid unicode issues
+      const sanitizedName = sanitizeFileName(file.name);
+      
+      // Show warning if filename was changed
+      if (sanitizedName !== file.name) {
+        console.warn(`⚠️ Filename sanitized: "${file.name}" → "${sanitizedName}"`);
+      }
+      
       // Get unique filename (macOS style - add (1), (2) if duplicate)
-      const uniqueFileName = await getUniqueFileName(supabase, file.name);
+      const uniqueFileName = await getUniqueFileName(supabase, sanitizedName);
       const filePath = `files/${uniqueFileName}`;
 
       console.log(`Uploading file to Supabase Storage: ${filePath}`);
@@ -514,40 +550,147 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
     // Check sync status for each file by comparing with indexed documents
     console.log('🔍 Checking sync status for files...');
     try {
-      // Fetch all indexed document filenames from Supabase
-      const { data: allDocMetas, error: metasError } = await supabase
-        .from('documents')
-        .select('metadata');
-
-      if (metasError) {
-        console.warn('⚠️ Failed to fetch document metadata for sync check:', metasError);
+      // Fetch ALL indexed document filenames using pagination
+      let allDocMetas: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const pageSize = 1000;
+      
+      while (hasMore) {
+        const { data: pageData, error: pageError } = await supabase
+          .from('documents')
+          .select('metadata')
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (pageError) {
+          console.warn(`⚠️ Error fetching page ${page}:`, pageError);
+          break;
+        }
+        
+        if (pageData && pageData.length > 0) {
+          allDocMetas = [...allDocMetas, ...pageData];
+          hasMore = pageData.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
+      
+      console.log(`📊 Total documents fetched: ${allDocMetas.length} (${page} pages)`);
 
       const indexedNameSet = new Set<string>();
+      const indexedNameMap = new Map<string, string>(); // normalized -> original
+      
       if (allDocMetas && allDocMetas.length > 0) {
+        console.log(`📋 First document metadata sample:`, allDocMetas[0]?.metadata);
+        
         for (const row of allDocMetas) {
           const metadata = row.metadata || {};
+          
+          // Log raw metadata for Badillo file
+          if (JSON.stringify(metadata).toLowerCase().includes('badillo')) {
+            console.log(`🔍 RAW Badillo metadata found:`, metadata);
+            console.log(`   Type: ${typeof metadata}`);
+            console.log(`   Keys:`, Object.keys(metadata));
+          }
+          
           const metaName: string | undefined = metadata.fileName;
           if (metaName) {
-            indexedNameSet.add(metaName.toLowerCase().trim());
+            const normalized = metaName.toLowerCase().trim();
+            indexedNameSet.add(normalized);
+            indexedNameMap.set(normalized, metaName);
+            
+            // Debug: Log Badillo file if found
+            if (metaName.toLowerCase().includes('badillo')) {
+              console.log(`🔍 Found Badillo file in DB:`, {
+                original: metaName,
+                normalized: normalized,
+                metadata: metadata
+              });
+            }
+            
+            // Also add variants for better matching
+            const variants = [
+              normalized.replace(/\s+/g, '_'),
+              normalized.replace(/_+/g, ' '),
+              normalized.replace(/[^\x00-\x7F]/g, ''),
+            ];
+            variants.forEach(v => {
+              if (v !== normalized) {
+                indexedNameSet.add(v);
+                indexedNameMap.set(v, metaName);
+              }
+            });
           }
         }
       }
       console.log(`[SyncCheck] Indexed filenames count: ${indexedNameSet.size}`);
-      if (indexedNameSet.size > 0) {
-        console.log(`[SyncCheck] Indexed files:`, Array.from(indexedNameSet));
+      console.log(`[SyncCheck] Unique documents: ${indexedNameMap.size}`);
+      const allIndexedFiles = Array.from(new Set(indexedNameMap.values()));
+      console.log(`[SyncCheck] ALL indexed files (${allIndexedFiles.length}):`, allIndexedFiles);
+      
+      // Debug: Show all normalized variants we're checking against
+      const badilloVariants = Array.from(indexedNameSet).filter(name => name.includes('badillo'));
+      if (badilloVariants.length > 0) {
+        console.log(`🔍 All Badillo variants in indexedNameSet:`, badilloVariants);
+      } else {
+        console.warn(`⚠️ No Badillo file found in ${allDocMetas?.length || 0} indexed documents!`);
+        console.log(`📋 Checking first 5 metadata entries:`, allDocMetas?.slice(0, 5).map(r => r.metadata));
       }
 
       // Update sync status for each file
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileName = file.name.toLowerCase().trim();
-        if (indexedNameSet.has(fileName)) {
+        
+        // Try multiple normalization strategies
+        const normalizedVariants = [
+          fileName,
+          fileName.replace(/\s+/g, ' '), // normalize multiple spaces
+          fileName.replace(/\s+/g, '_'), // spaces to underscores
+          fileName.replace(/_+/g, ' '), // underscores to spaces
+          fileName.replace(/[^\x00-\x7F]/g, ''), // remove non-ASCII
+          fileName.replace(/\s+/g, '').replace(/_+/g, ''), // remove all whitespace/underscores
+        ];
+        
+        // Also try URL encoded/decoded versions
+        try {
+          normalizedVariants.push(decodeURIComponent(fileName));
+          normalizedVariants.push(encodeURIComponent(fileName).toLowerCase());
+        } catch (e) {
+          // Ignore encoding errors
+        }
+        
+        let isIndexed = false;
+        let matchedVariant = '';
+        
+        for (const variant of normalizedVariants) {
+          if (indexedNameSet.has(variant)) {
+            isIndexed = true;
+            matchedVariant = variant;
+            break;
+          }
+        }
+        
+        if (isIndexed) {
           file.syncStatus = 'synced';
-          console.log(`✅ File "${file.name}" is synced (indexed)`);
+          console.log(`✅ File "${file.name}" is SYNCED (matched via: "${matchedVariant}")`);
         } else {
           file.syncStatus = 'pending';
-          console.log(`⏳ File "${file.name}" is pending (not indexed)`);
+          console.log(`⏳ File "${file.name}" is NOT INDEXED`);
+          console.log(`   Storage filename: "${file.name}"`);
+          console.log(`   Tried variants (${normalizedVariants.length}):`, normalizedVariants.slice(0, 5));
+          console.log(`   Sample indexed files:`, Array.from(new Set(indexedNameMap.values())).slice(0, 5));
+          
+          // Try to find close matches
+          const closeMatches = Array.from(new Set(indexedNameMap.values()))
+            .filter(indexed => 
+              indexed.toLowerCase().includes(fileName.substring(0, 20).toLowerCase()) ||
+              fileName.includes(indexed.substring(0, 20).toLowerCase())
+            );
+          if (closeMatches.length > 0) {
+            console.log(`   🔍 Possible matches:`, closeMatches);
+          }
         }
       }
     } catch (error) {
@@ -688,15 +831,17 @@ export interface VectorDocument {
 /**
  * Fetch all documents from Supabase documents table
  */
-export async function fetchVectorDocuments(): Promise<{ success: boolean; documents: VectorDocument[]; total: number; message?: string }> {
+export async function fetchVectorDocuments(limit: number = 50, offset: number = 0): Promise<{ success: boolean; documents: VectorDocument[]; total: number; message?: string }> {
   try {
-    console.log('Fetching vector documents from Supabase...');
+    console.log(`Fetching vector documents from Supabase (limit: ${limit}, offset: ${offset})...`);
     const supabase = getSupabaseClient();
 
+    // Fetch only specific fields, excluding large embedding data
     const { data, error, count } = await supabase
       .from('documents')
-      .select('*', { count: 'exact' })
-      .order('id', { ascending: false });
+      .select('id, content, metadata, created_at', { count: 'exact' })
+      .order('id', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) {
       console.error('Supabase error:', error);
@@ -708,7 +853,7 @@ export async function fetchVectorDocuments(): Promise<{ success: boolean; docume
       };
     }
 
-    console.log(`✅ Fetched ${data?.length || 0} documents from Supabase`);
+    console.log(`✅ Fetched ${data?.length || 0} documents from Supabase (Total: ${count || 0})`);
 
     return {
       success: true,
