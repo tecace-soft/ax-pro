@@ -365,7 +365,7 @@ async function getUniqueFileName(supabase: any, originalName: string): Promise<s
     }
 
     // Check if original name exists
-    const fileExists = existingFiles.some(f => f.name === originalName);
+    const fileExists = existingFiles.some((f: RAGFile) => f.name === originalName);
     
     if (!fileExists) {
       // No duplicate, use original name
@@ -381,7 +381,7 @@ async function getUniqueFileName(supabase: any, originalName: string): Promise<s
     let newName = `${baseName} (${counter})${extension}`;
 
     // Keep checking until we find a unique name
-    while (existingFiles.some(f => f.name === newName)) {
+    while (existingFiles.some((f: RAGFile) => f.name === newName)) {
       counter++;
       newName = `${baseName} (${counter})${extension}`;
     }
@@ -685,7 +685,7 @@ export async function fetchVectorDocuments(): Promise<{ success: boolean; docume
 /**
  * Send file to n8n for indexing
  */
-export async function indexFileToVector(fileName: string): Promise<{ success: boolean; message: string }> {
+export async function indexFileToVector(fileName: string): Promise<{ success: boolean; message: string; workflowId?: string; estimatedTime?: string }> {
   try {
     const supabase = getSupabaseClient();
     
@@ -830,11 +830,11 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
             estimatedTime: '30-60 seconds'
           };
         }
-      } catch (fetchError) {
+      } catch (fetchError: any) {
         console.error('❌ Both axios and fetch failed:', fetchError);
         
         // Check if it's a 404 error
-        if (fetchError.message?.includes('404') || fetchError.message?.includes('ERR_ABORTED')) {
+        if (fetchError?.message?.includes('404') || fetchError?.message?.includes('ERR_ABORTED')) {
           return {
             success: false,
             message: `Webhook URL not found (404). Please check if the webhook is active: ${n8nWebhookUrl}`,

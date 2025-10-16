@@ -48,7 +48,7 @@ const KnowledgeIndex: React.FC = () => {
       if (response.documents && response.documents.length > 0) {
         console.log('📅 Document creation times:');
         response.documents.forEach((doc, index) => {
-          console.log(`  ${index + 1}. ID: ${doc.id}, Created: ${doc.created_at}, Metadata:`, doc.metadata);
+          console.log(`  ${index + 1}. ID: ${doc.id}, Metadata:`, doc.metadata);
         });
       }
       
