@@ -779,7 +779,9 @@ const Settings: React.FC = () => {
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
                     {language === 'ko' ? '챗봇 아바타' : 'Chatbot Avatar'}
                   </label>
-                  <div className="flex items-center gap-4">
+                  
+                  {/* Avatar Preview and Selector */}
+                  <div className="flex items-center gap-4 mb-3">
                     <div className="flex-shrink-0" style={{ width: '80px', height: '80px' }}>
                       <img 
                         src={customization.avatarUrl} 
@@ -797,81 +799,107 @@ const Settings: React.FC = () => {
                         }}
                       />
                     </div>
+                    
+                    {/* Default Avatar Selector */}
                     <div className="flex-1">
-                      <div className="flex gap-2 mb-2">
-                        <label 
-                          className="px-4 py-2 rounded-md cursor-pointer transition-colors"
-                          style={{ 
-                            backgroundColor: 'var(--primary)',
-                            color: 'white',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '8px'
-                          }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-                          </svg>
-                          {language === 'ko' ? '사진 업로드' : 'Upload Photo'}
-                          <input 
-                            type="file" 
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  const result = reader.result as string;
-                                  setUploadedAvatarUrl(result);
-                                  setTempImageUrl(result);
-                                  setImagePosition({ x: 50, y: 50 });
-                                  setImageZoom(100);
-                                  setShowImageEditor(true);
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                        </label>
-                        {customization.avatarUrl !== '/default-profile-avatar.png' && (
-                          <>
-                            <button 
-                              onClick={() => {
-                                // Save current avatar as a preset
-                                const link = document.createElement('a');
-                                link.href = customization.avatarUrl;
-                                link.download = 'chatbot-avatar.png';
-                                link.click();
-                              }}
-                              className="px-4 py-2 rounded-md transition-colors"
-                              style={{ 
-                                backgroundColor: 'var(--primary)',
-                                color: 'white'
-                              }}
-                            >
-                              {language === 'ko' ? '다운로드' : 'Download'}
-                            </button>
-                            <button 
-                              onClick={() => updateCustomization({ avatarUrl: '/default-profile-avatar.png' })}
-                              className="px-4 py-2 rounded-md transition-colors"
-                              style={{ 
-                                backgroundColor: 'var(--danger)',
-                                color: 'white'
-                              }}
-                            >
-                              {language === 'ko' ? '삭제' : 'Remove'}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {language === 'ko' 
-                          ? '이미지를 업로드하세요 (JPG, PNG, GIF). 업로드 후 조정 가능합니다. 다운로드한 이미지는 apps/professor/public/ 폴더에 저장하여 기본 이미지로 사용할 수 있습니다.' 
-                          : 'Upload an image (JPG, PNG, GIF). You can adjust and crop after uploading. Download the image and save it to apps/professor/public/ to use as a default avatar.'}
-                      </p>
+                      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text)' }}>
+                        {language === 'ko' ? '기본 아바타 선택' : 'Select Default Avatar'}
+                      </label>
+                      <select
+                        value={customization.avatarUrl.startsWith('/') ? customization.avatarUrl : 'custom'}
+                        onChange={(e) => {
+                          if (e.target.value !== 'custom') {
+                            updateCustomization({ avatarUrl: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-2 rounded-md"
+                        style={{
+                          backgroundColor: 'var(--bg-secondary)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--text)'
+                        }}
+                      >
+                        <option value="custom">{language === 'ko' ? '커스텀 (업로드된 이미지)' : 'Custom (Uploaded)'}</option>
+                        <option value="/default-profile-avatar.png">{language === 'ko' ? '기본 아바타 1' : 'Default Avatar 1'}</option>
+                        <option value="/chatbot-avatar-2.png">{language === 'ko' ? '챗봇 아바타 2' : 'Chatbot Avatar 2'}</option>
+                        <option value="/professor-avatar.png">{language === 'ko' ? '교수 아바타' : 'Professor Avatar'}</option>
+                      </select>
                     </div>
                   </div>
+                  
+                  {/* Upload and Action Buttons */}
+                  <div className="flex gap-2 mb-2">
+                    <label 
+                      className="px-4 py-2 rounded-md cursor-pointer transition-colors"
+                      style={{ 
+                        backgroundColor: 'var(--primary)',
+                        color: 'white',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                      </svg>
+                      {language === 'ko' ? '사진 업로드' : 'Upload Photo'}
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const result = reader.result as string;
+                              setUploadedAvatarUrl(result);
+                              setTempImageUrl(result);
+                              setImagePosition({ x: 50, y: 50 });
+                              setImageZoom(100);
+                              setShowImageEditor(true);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                    {customization.avatarUrl !== '/default-profile-avatar.png' && (
+                      <>
+                        <button 
+                          onClick={() => {
+                            // Save current avatar as a preset
+                            const link = document.createElement('a');
+                            link.href = customization.avatarUrl;
+                            link.download = 'chatbot-avatar.png';
+                            link.click();
+                          }}
+                          className="px-4 py-2 rounded-md transition-colors"
+                          style={{ 
+                            backgroundColor: 'var(--primary)',
+                            color: 'white'
+                          }}
+                        >
+                          {language === 'ko' ? '다운로드' : 'Download'}
+                        </button>
+                        <button 
+                          onClick={() => updateCustomization({ avatarUrl: '/default-profile-avatar.png' })}
+                          className="px-4 py-2 rounded-md transition-colors"
+                          style={{ 
+                            backgroundColor: 'var(--danger)',
+                            color: 'white'
+                          }}
+                        >
+                          {language === 'ko' ? '리셋' : 'Reset'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {language === 'ko' 
+                      ? '기본 아바타를 선택하거나 새 이미지를 업로드하세요. 다운로드한 이미지를 apps/professor/public/ 폴더에 저장하면 드롭다운에 추가할 수 있습니다.' 
+                      : 'Select a default avatar or upload a new image. Save downloaded images to apps/professor/public/ to add them to the dropdown.'}
+                  </p>
                 </div>
 
                 {/* Suggested Questions */}
