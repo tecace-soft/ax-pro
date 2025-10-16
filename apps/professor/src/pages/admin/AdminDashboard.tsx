@@ -15,6 +15,7 @@ import { fetchDailyAggregatesWithMode, DailyRow, EstimationMode, filterSimulated
 import { fetchAllChatData } from '../../services/chatData'
 import { fetchAllUserFeedback } from '../../services/feedback'
 import { fetchVectorDocuments } from '../../services/ragManagement'
+import { getSupabaseClient } from '../../services/supabase'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 
@@ -50,6 +51,7 @@ export default function AdminDashboard() {
   const [totalConversations, setTotalConversations] = useState(0)
   const [satisfactionRate, setSatisfactionRate] = useState(0)
   const [totalDocuments, setTotalDocuments] = useState(0)
+
 
 
   const currentTime = new Date().toLocaleString('en-US', {
@@ -207,6 +209,7 @@ export default function AdminDashboard() {
       setHighlightedChatId(null)
     }, 3000)
   }
+
 
   return (
     <div className="admin-layout" data-theme={theme}>

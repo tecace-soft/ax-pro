@@ -7,6 +7,8 @@ import {
   indexFileToVector,
   unindexFileByFilename,
   reindexFile,
+  checkIndexingStatus,
+  checkFileSyncStatus,
   validateFileExtended, 
   formatFileSize, 
   getFileIcon,
@@ -27,13 +29,115 @@ const FileLibrary: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [indexingStatus, setIndexingStatus] = useState<Record<string, {
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    message: string;
+    chunksCount?: number;
+    lastUpdated?: string;
+  }>>({});
+  const [pollingFiles, setPollingFiles] = useState<Set<string>>(new Set());
+  const [isDevMode, setIsDevMode] = useState(() => {
+    // Default to false (production mode), only true if explicitly set
+    const stored = localStorage.getItem('n8n-dev-mode');
+    // If no value stored, default to production (false)
+    // If 'true' is stored, use dev mode
+    // If 'false' is stored, use production mode
+    return stored === 'true';
+  });
   // Always use Supabase Storage
   const storageType = 'supabase' as const;
+
+  // Toggle dev mode
+  const toggleDevMode = () => {
+    const newDevMode = !isDevMode;
+    setIsDevMode(newDevMode);
+    localStorage.setItem('n8n-dev-mode', newDevMode.toString());
+    console.log(`🔧 Switched to ${newDevMode ? 'DEV' : 'PRODUCTION'} mode`);
+  };
+
+  // Reset to production mode (useful for debugging)
+  const resetToProduction = () => {
+    setIsDevMode(false);
+    localStorage.setItem('n8n-dev-mode', 'false');
+    console.log(`🔧 Reset to PRODUCTION mode`);
+  };
+
+  // Refresh sync status for all files
+  const refreshSyncStatus = async () => {
+    console.log('🔄 Refreshing sync status for all files...');
+    setIsLoading(true);
+    
+    try {
+      // Reload files to get updated sync status
+      await loadFiles();
+      console.log('✅ Sync status refreshed');
+    } catch (error) {
+      console.error('❌ Error refreshing sync status:', error);
+      setError('Failed to refresh sync status');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Fetch files on component mount
   useEffect(() => {
     loadFiles();
   }, [storageType]);
+
+  // Force production mode on mount if no explicit dev mode setting
+  useEffect(() => {
+    const stored = localStorage.getItem('n8n-dev-mode');
+    if (stored === null || stored === 'true') {
+      // No setting stored or was set to dev, default to production
+      setIsDevMode(false);
+      localStorage.setItem('n8n-dev-mode', 'false');
+      console.log('🔧 Defaulted to PRODUCTION mode');
+    }
+  }, []);
+
+  // Add console command for easy debugging
+  useEffect(() => {
+    (window as any).resetToProduction = resetToProduction;
+    (window as any).toggleDevMode = toggleDevMode;
+    console.log('🔧 Debug commands available:');
+    console.log('  - window.resetToProduction() - Reset to production mode');
+    console.log('  - window.toggleDevMode() - Toggle between dev/prod');
+  }, []);
+
+  // Polling for indexing status
+  useEffect(() => {
+    if (pollingFiles.size === 0) return;
+
+    const pollInterval = setInterval(async () => {
+      for (const fileName of pollingFiles) {
+        try {
+          const status = await checkIndexingStatus(fileName);
+          setIndexingStatus(prev => ({
+            ...prev,
+            [fileName]: {
+              status: status.status,
+              message: status.message,
+              chunksCount: status.chunksCount,
+              lastUpdated: status.lastUpdated
+            }
+          }));
+
+          // Stop polling if completed or failed
+          if (status.status === 'completed' || status.status === 'failed') {
+            setPollingFiles(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(fileName);
+              return newSet;
+            });
+          }
+        } catch (error) {
+          console.error(`Error polling status for ${fileName}:`, error);
+        }
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [pollingFiles]);
 
   // Load files from Supabase Storage
   const loadFiles = async () => {
@@ -90,17 +194,53 @@ const FileLibrary: React.FC = () => {
     setActionLoading(fileName);
     try {
       console.log('🔄 Starting index process for:', fileName);
+      
+      // Set initial status
+      setIndexingStatus(prev => ({
+        ...prev,
+        [fileName]: {
+          status: 'processing',
+          message: 'Sending file to n8n for indexing...'
+        }
+      }));
+      
       const result = await indexFileToVector(fileName);
       console.log('📋 Index result:', result);
       
       if (result.success) {
-        alert(`✅ ${result.message}\n\nCheck the Knowledge Index tab to see the indexed chunks.`);
+        // Start polling for status updates
+        setPollingFiles(prev => new Set(prev).add(fileName));
+        
+        setIndexingStatus(prev => ({
+          ...prev,
+          [fileName]: {
+            status: 'processing',
+            message: result.message || 'File sent for indexing, checking status...'
+          }
+        }));
+        
+        // Show initial success message
+        alert(`✅ ${result.message}\n\nStatus will be updated automatically. Check the Knowledge Index tab when complete.`);
         loadFiles(); // Refresh the list
       } else {
+        setIndexingStatus(prev => ({
+          ...prev,
+          [fileName]: {
+            status: 'failed',
+            message: result.message || 'Failed to send file for indexing'
+          }
+        }));
         alert(`❌ ${result.message}\n\nCheck the browser console for more details.`);
       }
     } catch (error) {
       console.error('❌ Error indexing file:', error);
+      setIndexingStatus(prev => ({
+        ...prev,
+        [fileName]: {
+          status: 'failed',
+          message: `Error: ${error}`
+        }
+      }));
       alert(`❌ Error indexing file: ${error}\n\nCheck the browser console for more details.`);
     } finally {
       setActionLoading(null);
@@ -288,8 +428,20 @@ const FileLibrary: React.FC = () => {
   return (
     <div className="file-library">
       <div className="fl-header">
-        <h2 className="fl-title">{t('knowledge.fileLibrary')}</h2>
-        <p className="fl-description">{t('knowledge.fileLibraryDescription')}</p>
+        <div className="fl-header-content">
+          <div>
+            <h2 className="fl-title">{t('knowledge.fileLibrary')}</h2>
+            <p className="fl-description">{t('knowledge.fileLibraryDescription')}</p>
+          </div>
+          <div className="webhook-mode-toggle">
+            <button
+              onClick={toggleDevMode}
+              className={`mode-toggle-btn ${isDevMode ? 'dev-mode' : 'prod-mode'}`}
+            >
+              {isDevMode ? '🔧 DEV Mode' : '🚀 PROD Mode'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* File Upload Area */}
@@ -343,6 +495,10 @@ const FileLibrary: React.FC = () => {
         <button className="refresh-btn" onClick={handleRefresh} disabled={isLoading}>
           <span className="refresh-icon">↻</span>
           {isLoading ? t('knowledge.loading') || 'Loading...' : t('knowledge.refresh')}
+        </button>
+        <button className="sync-status-btn" onClick={refreshSyncStatus} disabled={isLoading}>
+          <span className="sync-icon">🔄</span>
+          {isLoading ? 'Checking...' : 'Sync Status'}
         </button>
       </div>
 
@@ -408,14 +564,44 @@ const FileLibrary: React.FC = () => {
                     <td>{new Date(file.uploadedAt).toLocaleString()}</td>
                     <td>{file.type}</td>
                     <td>
-                      <span className={`sync-status ${file.syncStatus || 'synced'}`}>
-                        {file.syncStatus === 'synced' ? '✓' : 
-                         file.syncStatus === 'pending' ? '⏳' : 
-                         file.syncStatus === 'error' ? '❌' : '✓'}
+                      <span className={`sync-status ${file.syncStatus || 'pending'}`} title={
+                        file.syncStatus === 'synced' ? 'Indexed' :
+                        file.syncStatus === 'pending' ? 'Not indexed' :
+                        file.syncStatus === 'error' ? 'Error' :
+                        'Unknown'
+                      }>
+                        {file.syncStatus === 'synced' ? 'Synced' : 
+                         file.syncStatus === 'pending' ? 'Pending' : 
+                         file.syncStatus === 'error' ? 'Error' : 'Pending'}
                       </span>
                     </td>
                     <td>
-                      <div className="file-actions">
+                      {/* Indexing Status */}
+                    {indexingStatus[file.name] && (
+                      <div className="indexing-status" style={{ 
+                        marginBottom: '8px', 
+                        padding: '4px 8px', 
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        backgroundColor: indexingStatus[file.name].status === 'completed' ? 'rgba(16, 185, 129, 0.1)' :
+                                       indexingStatus[file.name].status === 'processing' ? 'rgba(59, 130, 246, 0.1)' :
+                                       indexingStatus[file.name].status === 'failed' ? 'rgba(239, 68, 68, 0.1)' :
+                                       'rgba(107, 114, 128, 0.1)',
+                        color: indexingStatus[file.name].status === 'completed' ? '#10b981' :
+                               indexingStatus[file.name].status === 'processing' ? '#3b82f6' :
+                               indexingStatus[file.name].status === 'failed' ? '#ef4444' :
+                               '#6b7280'
+                      }}>
+                        {indexingStatus[file.name].status === 'completed' && '✅ '}
+                        {indexingStatus[file.name].status === 'processing' && '⏳ '}
+                        {indexingStatus[file.name].status === 'failed' && '❌ '}
+                        {indexingStatus[file.name].status === 'pending' && '⏸️ '}
+                        {indexingStatus[file.name].message}
+                        {indexingStatus[file.name].chunksCount && ` (${indexingStatus[file.name].chunksCount} chunks)`}
+                      </div>
+                    )}
+                    
+                    <div className="file-actions">
                         <button 
                           className="action-btn" 
                           title="Index file"

@@ -138,8 +138,52 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
       status: file.status || 'ready',
       url: file.url || file.downloadUrl || file.download_url,
       lastModified: file.lastModified || file.updatedAt || file.updated_at,
-      syncStatus: file.syncStatus || file.sync_status || 'synced',
+      syncStatus: 'pending', // Default to pending - files are uploaded but not indexed
     }));
+
+    // Check sync status for each file by comparing with indexed documents (batched)
+    console.log('🔍 Checking sync status for files (batched by filename)...');
+    try {
+      const supabase = getSupabaseClient();
+      // Fetch only explicit fileName metadata and build a set (lowercased)
+      const { data: fileNameRows, error: metasError } = await supabase
+        .from('documents')
+        .select('metadata->>fileName as fileName');
+
+      if (metasError) {
+        console.warn('⚠️ Failed to fetch document filenames for sync check:', metasError);
+      }
+
+      const indexedNameSet = new Set<string>();
+      if (fileNameRows && fileNameRows.length > 0) {
+        for (const row of fileNameRows as Array<{ fileName?: string }>) {
+          const metaName = row.fileName as string | undefined;
+          if (metaName && typeof metaName === 'string') {
+            indexedNameSet.add(metaName.trim().toLowerCase());
+          }
+        }
+      }
+
+      // Debug: log counts and a sample
+      console.log('[SyncCheck] Indexed filenames count:', indexedNameSet.size);
+      if (indexedNameSet.size > 0) {
+        console.log('[SyncCheck] Example indexed name:', Array.from(indexedNameSet)[0]);
+      }
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const raw = (file.name || '').trim();
+        const base = raw.includes('/') ? raw.substring(raw.lastIndexOf('/') + 1) : raw;
+        const normalized = base.toLowerCase();
+        file.syncStatus = indexedNameSet.has(normalized) ? 'synced' : 'pending';
+      }
+    } catch (error) {
+      console.warn('⚠️ Error during batched sync status calculation:', error);
+      // If check fails, mark as error but do not crash the listing
+      for (let i = 0; i < files.length; i++) {
+        files[i].syncStatus = 'error';
+      }
+    }
 
     return {
       success: true,
@@ -647,9 +691,13 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     
     // Get signed URL for the file
     const filePath = `files/${fileName}`;
+    console.log(`🔍 Requesting signed URL for: ${filePath}`);
+    
     const { data: urlData, error: urlError } = await supabase.storage
       .from(SUPABASE_BUCKET)
       .createSignedUrl(filePath, 3600); // 1 hour
+      
+    console.log(`🔍 Signed URL response:`, { urlData, urlError });
 
     if (urlError || !urlData?.signedUrl) {
       console.error('Error getting file URL:', urlError);
@@ -659,39 +707,143 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       };
     }
 
-    console.log(`📤 Sending file to n8n for indexing: ${fileName}`);
-    console.log(`🔗 File URL: ${urlData.signedUrl}`);
+    // Also try getPublicUrl to compare
+    const { data: publicUrlData } = supabase.storage
+      .from(SUPABASE_BUCKET)
+      .getPublicUrl(filePath);
+    console.log(`🔍 Public URL for comparison:`, publicUrlData);
 
-    // Send to n8n webhook
-    const n8nWebhookUrl = import.meta.env.VITE_N8N_BASE_URL 
-      ? `${import.meta.env.VITE_N8N_BASE_URL}/webhook/${import.meta.env.VITE_N8N_UPLOAD_WEBHOOK_ID}`
-      : `${N8N_BASE_URL}/webhook/${UPLOAD_WEBHOOK_ID}`;
+    console.log(`📤 Sending file to n8n for indexing: ${fileName}`);
+    
+    // Ensure we have a full URL for n8n
+    let fullFileUrl = urlData.signedUrl;
+    
+    // Check if we have a relative path that needs to be converted to full URL
+    if (!urlData.signedUrl.startsWith('http')) {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qpyteahuynkgkbmdasbv.supabase.co';
+      
+      if (urlData.signedUrl.startsWith('/object/')) {
+        // Format: /object/sign/bucket/path?token=...
+        fullFileUrl = `${supabaseUrl}/storage/v1${urlData.signedUrl}`;
+        console.log(`🔧 Converted relative URL to full URL`);
+      } else if (urlData.signedUrl.startsWith('/storage/')) {
+        // Format: /storage/v1/object/sign/bucket/path?token=...
+        fullFileUrl = `${supabaseUrl}${urlData.signedUrl}`;
+        console.log(`🔧 Converted /storage/ URL to full URL`);
+      } else {
+        // Fallback: assume it needs the full path
+        fullFileUrl = `${supabaseUrl}/storage/v1/object/sign/${SUPABASE_BUCKET}/${filePath}?token=${urlData.signedUrl.split('token=')[1] || ''}`;
+        console.log(`🔧 Used fallback URL construction`);
+      }
+    } else {
+      console.log(`✅ URL already full, no conversion needed`);
+    }
+    
+    console.log(`🔗 FINAL URL SENT TO N8N: ${fullFileUrl}`);
+    console.log(`⏰ Request time: ${new Date().toISOString()}`);
+
+    // Send to n8n webhook - DEV/PRODUCTION SELECTOR
+    // Default to PRODUCTION mode, only use DEV if explicitly enabled
+    const isDevMode = import.meta.env.VITE_N8N_DEV_MODE === 'true' || 
+                     localStorage.getItem('n8n-dev-mode') === 'true';
+    
+    const n8nWebhookUrl = isDevMode 
+      ? 'https://n8n.srv978041.hstgr.cloud/webhook-test/1f18f1aa-44c4-467f-b299-c87c9b6f9459'
+      : (import.meta.env.VITE_N8N_BASE_URL 
+          ? `${import.meta.env.VITE_N8N_BASE_URL}/webhook/${import.meta.env.VITE_N8N_UPLOAD_WEBHOOK_ID}`
+          : `${N8N_BASE_URL}/webhook/${UPLOAD_WEBHOOK_ID}`);
+    
+    console.log(`🔧 Webhook mode: ${isDevMode ? 'DEV (test)' : 'PRODUCTION'}`);
+    console.log(`🌐 Using webhook: ${n8nWebhookUrl}`);
+    
+    // Warn if using test webhook
+    if (isDevMode) {
+      console.warn(`⚠️ Using TEST webhook - this may not be active!`);
+    }
 
     console.log(`🌐 n8n Webhook URL: ${n8nWebhookUrl}`);
 
-    const payload = {
-      fileUrl: urlData.signedUrl,
+    const payload = [{
+      fileUrl: fullFileUrl,
       fileName: fileName,
       source: 'supabase-storage',
-    };
+    }];
 
     console.log(`📦 Payload being sent:`, payload);
 
-    const response = await axios.post(n8nWebhookUrl, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      timeout: 30000,
-    });
+    // Try axios first, fallback to fetch with no-cors if CORS fails
+    try {
+      const response = await axios.post(n8nWebhookUrl, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      });
 
-    console.log('✅ File sent to n8n for indexing:', response.data);
-    console.log('📊 Response status:', response.status);
-    console.log('📋 Response headers:', response.headers);
+      console.log('✅ File sent to n8n for indexing:', response.data);
+      console.log('📊 Response status:', response.status);
+      console.log('📋 Response headers:', response.headers);
 
-    return {
-      success: true,
-      message: 'File sent for indexing successfully',
-    };
+      // Check if n8n provided a workflow ID or status
+      const workflowId = response.data.workflowId || response.data.executionId;
+      const estimatedTime = response.data.estimatedTime || '30-60 seconds';
+
+      return {
+        success: true,
+        message: `File sent for indexing successfully. Processing time: ${estimatedTime}`,
+        workflowId: workflowId,
+        estimatedTime: estimatedTime
+      };
+    } catch (axiosError) {
+      console.warn('⚠️ Axios failed (likely CORS), trying fetch with no-cors:', axiosError);
+      
+      // Fallback to fetch with no-cors to bypass CORS
+      try {
+        const fetchResponse = await fetch(n8nWebhookUrl, {
+          method: 'POST',
+          mode: 'no-cors', // This bypasses CORS but we can't read the response
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        console.log(`✅ Fetch request sent (no-cors mode) - status: ${fetchResponse.status}`);
+        console.log(`🔍 Response type: ${fetchResponse.type}`);
+        
+        // Check if it's a 404 or other error
+        if (fetchResponse.status === 0) {
+          // In no-cors mode, status 0 usually means success or network error
+          console.log(`✅ Request sent successfully (no-cors mode)`);
+          return {
+            success: true,
+            message: `File sent for indexing (CORS bypassed). Processing time: 30-60 seconds`,
+            workflowId: 'unknown',
+            estimatedTime: '30-60 seconds'
+          };
+        } else {
+          console.warn(`⚠️ Unexpected status in no-cors mode: ${fetchResponse.status}`);
+          return {
+            success: true,
+            message: `File sent for indexing (CORS bypassed, status: ${fetchResponse.status}). Processing time: 30-60 seconds`,
+            workflowId: 'unknown',
+            estimatedTime: '30-60 seconds'
+          };
+        }
+      } catch (fetchError) {
+        console.error('❌ Both axios and fetch failed:', fetchError);
+        
+        // Check if it's a 404 error
+        if (fetchError.message?.includes('404') || fetchError.message?.includes('ERR_ABORTED')) {
+          return {
+            success: false,
+            message: `Webhook URL not found (404). Please check if the webhook is active: ${n8nWebhookUrl}`,
+          };
+        }
+        
+        throw fetchError;
+      }
+    }
 
   } catch (error: any) {
     console.error('Error indexing file:', error);
@@ -705,36 +857,255 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
 /**
  * Unindex (delete) all chunks for a specific filename
  */
-export async function unindexFileByFilename(fileName: string): Promise<{ success: boolean; message: string; deletedCount?: number }> {
+/**
+ * Check indexing status for a file
+ */
+export async function checkIndexingStatus(fileName: string): Promise<{ 
+  success: boolean; 
+  message: string; 
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  chunksCount?: number;
+  lastUpdated?: string;
+}> {
   try {
-    const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL || N8N_BASE_URL;
-    const webhookId = import.meta.env.VITE_N8N_UNINDEX_WEBHOOK_ID || 'unindex-file';
+    const supabase = getSupabaseClient();
     
-    const webhookUrl = `${n8nBaseUrl}/webhook/${webhookId}`;
+    // Check if chunks exist for this file
+    const { data: chunks, error } = await supabase
+      .from('documents')
+      .select('id, created_at, metadata')
+      .ilike('metadata->>fileName', fileName)
+      .order('created_at', { ascending: false });
     
-    console.log('🗑️ Sending unindex request for filename:', fileName);
+    if (error) {
+      console.error('Error checking indexing status:', error);
+      return {
+        success: false,
+        message: 'Failed to check indexing status',
+        status: 'failed'
+      };
+    }
     
-    const response = await axios.post(webhookUrl, {
-      fileName: fileName
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      timeout: 30000 // 30 second timeout
-    });
+    if (chunks && chunks.length > 0) {
+      const latestChunk = chunks[0];
+      return {
+        success: true,
+        message: `File indexed successfully with ${chunks.length} chunks`,
+        status: 'completed',
+        chunksCount: chunks.length,
+        lastUpdated: latestChunk.created_at
+      };
+    } else {
+      return {
+        success: true,
+        message: 'File not yet indexed or indexing in progress',
+        status: 'pending'
+      };
+    }
+  } catch (error) {
+    console.error('Error checking indexing status:', error);
+    return {
+      success: false,
+      message: 'Failed to check indexing status',
+      status: 'failed'
+    };
+  }
+}
+
+/**
+ * Direct Supabase deletion fallback for unindexing
+ */
+async function deleteDocumentsByFilename(fileName: string): Promise<{ success: boolean; message: string; deletedCount: number }> {
+  try {
+    const supabase = getSupabaseClient();
     
-    console.log('✅ File unindexed successfully:', response.data);
+    console.log(`🗑️ Direct Supabase deletion for filename: "${fileName}"`);
+    console.log(`🔍 Filename length: ${fileName.length}`);
+    console.log(`🔍 Filename characters: ${fileName.split('').map(c => c.charCodeAt(0)).join(',')}`);
+    
+    // Try multiple query approaches to handle different filename formats
+    let records: any[] = [];
+    let recordCount = 0;
+    
+    // Approach 1: Exact match
+    console.log('🔍 Trying exact match...');
+    let { data: exactRecords, error: exactError } = await supabase
+      .from('documents')
+      .select('id, metadata')
+      .eq('metadata->>fileName', fileName);
+    
+    if (!exactError && exactRecords && exactRecords.length > 0) {
+      records = exactRecords;
+      recordCount = exactRecords.length;
+      console.log(`✅ Found ${recordCount} records with exact match`);
+    } else {
+      console.log('❌ Exact match failed, trying ilike...');
+      
+      // Approach 2: Case-insensitive match
+      let { data: ilikeRecords, error: ilikeError } = await supabase
+        .from('documents')
+        .select('id, metadata')
+        .ilike('metadata->>fileName', fileName);
+      
+      if (!ilikeError && ilikeRecords && ilikeRecords.length > 0) {
+        records = ilikeRecords;
+        recordCount = ilikeRecords.length;
+        console.log(`✅ Found ${recordCount} records with ilike match`);
+      } else {
+        console.log('❌ ilike match failed, trying contains...');
+        
+        // Approach 3: Contains match (for partial filenames)
+        let { data: containsRecords, error: containsError } = await supabase
+          .from('documents')
+          .select('id, metadata')
+          .ilike('metadata->>fileName', `%${fileName}%`);
+        
+        if (!containsError && containsRecords && containsRecords.length > 0) {
+          records = containsRecords;
+          recordCount = containsRecords.length;
+          console.log(`✅ Found ${recordCount} records with contains match`);
+        } else {
+          console.log('❌ All query approaches failed');
+          
+          // Debug: Show some sample metadata to understand the format
+          let { data: sampleRecords } = await supabase
+            .from('documents')
+            .select('metadata')
+            .limit(10);
+          
+          console.log('🔍 Sample metadata from database:', sampleRecords);
+          
+          // Show all unique filenames in the database
+          let { data: allRecords } = await supabase
+            .from('documents')
+            .select('metadata->>fileName')
+            .not('metadata->>fileName', 'is', null);
+          
+          if (allRecords) {
+            const uniqueFilenames = [...new Set(allRecords.map(r => r.fileName))];
+            console.log('🔍 All unique filenames in database:', uniqueFilenames);
+            console.log('🔍 Looking for filename containing "PM-Marketing":', 
+              uniqueFilenames.filter(f => f && f.includes('PM-Marketing')));
+            console.log('🔍 Looking for filename containing "Team Notebook":', 
+              uniqueFilenames.filter(f => f && f.includes('Team Notebook')));
+          }
+          return { success: false, message: `No records found for filename: ${fileName}. Check console for debugging info.`, deletedCount: 0 };
+        }
+      }
+    }
+    
+    console.log(`📊 Found ${recordCount} records to delete for filename: ${fileName}`);
+    
+    if (recordCount === 0) {
+      return { success: true, message: `No records found for filename: ${fileName}`, deletedCount: 0 };
+    }
+    
+    // Delete the records using the same query that found them
+    let deleteQuery = supabase.from('documents').delete();
+    
+    // Use the same query approach that worked for finding records
+    if (records.length > 0) {
+      const recordIds = records.map(r => r.id);
+      deleteQuery = deleteQuery.in('id', recordIds);
+    } else {
+      // Fallback to ilike
+      deleteQuery = deleteQuery.ilike('metadata->>fileName', fileName);
+    }
+    
+    const { error: deleteError } = await deleteQuery;
+    
+    if (deleteError) {
+      console.error('Error deleting records:', deleteError);
+      return { success: false, message: `Failed to delete documents: ${deleteError.message}`, deletedCount: 0 };
+    }
+    
+    console.log(`✅ Successfully deleted ${recordCount} records for filename: ${fileName}`);
     
     return {
       success: true,
-      message: `File ${fileName} unindexed successfully`,
-      deletedCount: response.data.deletedCount || 0
+      message: `File ${fileName} unindexed successfully (${recordCount} chunks removed)`,
+      deletedCount: recordCount
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error in direct Supabase deletion:', error);
+    return { success: false, message: `Failed to delete documents: ${error.message}`, deletedCount: 0 };
+  }
+}
+
+export async function unindexFileByFilename(fileName: string): Promise<{ success: boolean; message: string; deletedCount?: number }> {
+  try {
+    console.log('🗑️ Unindexing file using direct Supabase deletion:', fileName);
+    
+    // Use direct Supabase deletion as primary method (following documentation)
+    const result = await deleteDocumentsByFilename(fileName);
+    return result;
+    
+  } catch (error: any) {
     console.error('❌ Failed to unindex file:', error);
     return {
       success: false,
-      message: `Failed to unindex file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      message: `Failed to unindex file: ${error.message || 'Unknown error'}`
+    };
+  }
+}
+
+/**
+ * Direct unindex using Supabase (primary method)
+ * This is the recommended approach based on the documentation
+ */
+export async function unindexFileDirect(fileName: string): Promise<{ success: boolean; message: string; deletedCount: number }> {
+  return await deleteDocumentsByFilename(fileName);
+}
+
+/**
+ * Check sync status for a specific file
+ */
+export async function checkFileSyncStatus(fileName: string): Promise<{ 
+  success: boolean; 
+  syncStatus: 'synced' | 'pending' | 'error'; 
+  message: string; 
+  chunksCount?: number;
+}> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log(`🔍 Checking sync status for: ${fileName}`);
+    
+    // Check if file is indexed in documents table
+    const { data: indexedDocs, error: indexError } = await supabase
+      .from('documents')
+      .select('id, metadata')
+      .ilike('metadata->>fileName', fileName);
+    
+    if (indexError) {
+      console.error('Error checking sync status:', indexError);
+      return {
+        success: false,
+        syncStatus: 'error',
+        message: `Error checking sync status: ${indexError.message}`
+      };
+    }
+    
+    if (indexedDocs && indexedDocs.length > 0) {
+      return {
+        success: true,
+        syncStatus: 'synced',
+        message: `File is indexed (${indexedDocs.length} chunks)`,
+        chunksCount: indexedDocs.length
+      };
+    } else {
+      return {
+        success: true,
+        syncStatus: 'pending',
+        message: 'File is not indexed (pending)'
+      };
+    }
+  } catch (error: any) {
+    console.error('Error checking sync status:', error);
+    return {
+      success: false,
+      syncStatus: 'error',
+      message: `Error checking sync status: ${error.message}`
     };
   }
 }

@@ -7,7 +7,6 @@ import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
 
 interface FeedbackWithChat extends AdminFeedbackData {
   chatData?: ChatData | null
-  isEnabled?: boolean
 }
 
 type SortOption = 'date-desc' | 'date-asc' | 'verdict'
@@ -124,10 +123,26 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
     setFilteredFeedbacks(filtered)
   }
 
-  const toggleEnabled = (feedbackId: number) => {
+  const toggleApply = async (feedbackId: number) => {
+    const feedback = feedbacks.find(f => f.id === feedbackId)
+    if (!feedback) return
+
+    const newApplyValue = !feedback.apply
     setFeedbacks(prev => prev.map(f => 
-      f.id === feedbackId ? { ...f, isEnabled: !f.isEnabled } : f
+      f.id === feedbackId ? { ...f, apply: newApplyValue } : f
     ))
+
+    // Update in database
+    try {
+      const { updateAdminFeedbackField } = await import('../../services/feedback')
+      await updateAdminFeedbackField(feedbackId, { apply: newApplyValue })
+    } catch (error) {
+      console.error('Failed to update apply status:', error)
+      // Revert on error
+      setFeedbacks(prev => prev.map(f => 
+        f.id === feedbackId ? { ...f, apply: !newApplyValue } : f
+      ))
+    }
   }
 
   const handleFilterByUser = (userId: string) => {
@@ -203,25 +218,6 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
     URL.revokeObjectURL(url)
   }
 
-  const handleUpdatePrompt = () => {
-    const enabledFeedbacks = filteredFeedbacks.filter(f => f.isEnabled && f.corrected_response)
-    
-    if (enabledFeedbacks.length === 0) {
-      alert('No enabled feedback with corrected responses to apply')
-      return
-    }
-
-    // Show confirmation
-    const confirmed = window.confirm(
-      `Apply ${enabledFeedbacks.length} corrected response(s) to the system prompt?\n\n` +
-      'This will update the prompt with examples from the selected feedback.'
-    )
-
-    if (confirmed) {
-      // TODO: Implement prompt update logic
-      alert('Prompt update feature coming soon!')
-    }
-  }
 
   if (isLoading) {
     return (
@@ -334,16 +330,6 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
           >
             Export
           </button>
-          <button
-            onClick={handleUpdatePrompt}
-            className="px-4 py-2 rounded-md text-sm font-medium"
-            style={{
-              background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
-              color: '#041220'
-            }}
-          >
-            Update Prompt
-          </button>
         </div>
       </div>
 
@@ -432,16 +418,16 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
                         Apply to Prompt:
                       </span>
                       <button
-                        onClick={() => toggleEnabled(feedback.id!)}
+                        onClick={() => toggleApply(feedback.id!)}
                         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
                         style={{
-                          backgroundColor: feedback.isEnabled ? 'var(--admin-primary)' : 'rgba(100, 116, 139, 0.3)'
+                          backgroundColor: feedback.apply ? 'var(--admin-primary)' : 'rgba(100, 116, 139, 0.3)'
                         }}
                       >
                         <span
                           className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                           style={{
-                            transform: feedback.isEnabled ? 'translateX(1.5rem)' : 'translateX(0.25rem)'
+                            transform: feedback.apply ? 'translateX(1.5rem)' : 'translateX(0.25rem)'
                           }}
                         />
                       </button>

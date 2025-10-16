@@ -16,7 +16,7 @@ const KnowledgeIndex: React.FC = () => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(200);
+  const [itemsPerPage, setItemsPerPage] = useState(500);
   const [totalItems, setTotalItems] = useState(0);
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +25,7 @@ const KnowledgeIndex: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showMetadataModal, setShowMetadataModal] = useState(false);
   const [selectedMetadata, setSelectedMetadata] = useState<any>(null);
+  const [lastRefreshTime, setLastRefreshTime] = useState<string>('');
 
   // Load documents from Supabase on mount
   useEffect(() => {
@@ -37,10 +38,19 @@ const KnowledgeIndex: React.FC = () => {
 
     try {
       console.log('🔄 Loading documents from Supabase...');
+      console.log('⏰ Current time:', new Date().toISOString());
       const response = await fetchVectorDocuments();
       console.log('📋 Raw response:', response);
       console.log('📊 Total documents found:', response.total || 0);
       console.log('📄 Documents array length:', response.documents?.length || 0);
+      
+      // Log each document's creation time to see if new ones are there
+      if (response.documents && response.documents.length > 0) {
+        console.log('📅 Document creation times:');
+        response.documents.forEach((doc, index) => {
+          console.log(`  ${index + 1}. ID: ${doc.id}, Created: ${doc.created_at}, Metadata:`, doc.metadata);
+        });
+      }
       
       if (response.success) {
         // Transform VectorDocument to KnowledgeDocument
@@ -110,6 +120,8 @@ const KnowledgeIndex: React.FC = () => {
   };
 
   const handleRefresh = () => {
+    console.log('🔄 Manual refresh triggered by user');
+    setLastRefreshTime(new Date().toLocaleTimeString());
     loadDocuments();
   };
 
@@ -220,22 +232,6 @@ const KnowledgeIndex: React.FC = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
           />
-          <button
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="refresh-btn"
-            style={{
-              backgroundColor: isLoading ? '#6b7280' : 'var(--admin-primary)',
-              color: 'white',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              border: 'none',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              marginLeft: '8px'
-            }}
-          >
-            {isLoading ? '⏳ Loading...' : '🔄 Refresh'}
-          </button>
         </div>
         <div className="ki-pagination-info">
           <span>Total items: {totalItems}</span>
@@ -252,6 +248,9 @@ const KnowledgeIndex: React.FC = () => {
             <option value={100}>100</option>
             <option value={200}>200</option>
             <option value={500}>500</option>
+            <option value={1000}>1000</option>
+            <option value={2000}>2000</option>
+            <option value={5000}>5000</option>
           </select>
         </div>
         <div className="ki-navigation">
@@ -273,6 +272,33 @@ const KnowledgeIndex: React.FC = () => {
         <button className="refresh-btn" onClick={handleRefresh} disabled={isLoading}>
           <span className="refresh-icon">↻</span>
           {isLoading ? 'Loading...' : t('knowledge.refresh')}
+          {lastRefreshTime && (
+            <span style={{ fontSize: '0.8em', opacity: 0.7, marginLeft: '8px' }}>
+              (Last: {lastRefreshTime})
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Debug Info */}
+      <div style={{ 
+        backgroundColor: 'var(--admin-bg-secondary)',
+        border: '1px solid var(--admin-border)',
+        borderRadius: '6px',
+        padding: '12px',
+        marginBottom: '16px',
+        fontSize: '0.9em'
+      }}>
+        <strong>🔍 Debug Info:</strong> Total: {totalItems} | Showing: {filteredDocuments.length} | 
+        Last Refresh: {lastRefreshTime || 'Never'} | 
+        <button 
+          onClick={() => {
+            console.log('📊 Current documents state:', documents);
+            console.log('📊 Filtered documents:', filteredDocuments);
+          }}
+          style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '0.8em' }}
+        >
+          Log State
         </button>
       </div>
 
@@ -397,7 +423,7 @@ const KnowledgeIndex: React.FC = () => {
           <div 
             className="bg-white rounded-xl shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border-2"
             style={{ 
-              backgroundColor: 'var(--admin-card)',
+              backgroundColor: 'var(--card, #2f2f2f)',
               borderColor: 'var(--admin-border)',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             }}
@@ -497,7 +523,7 @@ const KnowledgeIndex: React.FC = () => {
           <div 
             className="bg-white rounded-xl shadow-2xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto border-2"
             style={{ 
-              backgroundColor: 'var(--admin-card)',
+              backgroundColor: 'var(--card, #2f2f2f)',
               borderColor: 'var(--admin-border)',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             }}
