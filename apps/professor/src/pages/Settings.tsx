@@ -22,13 +22,22 @@ const Settings: React.FC = () => {
   const { language, setLanguage } = useTranslation();
   const [configs, setConfigs] = useState<ApiConfig[]>([]);
   const [n8nConfigs, setN8nConfigs] = useState<N8nConfig[]>([]);
-  const [activeTab, setActiveTab] = useState<'api' | 'webhook' | 'ui' | 'database'>('api');
+  const [activeTab, setActiveTab] = useState<'api' | 'webhook' | 'ui' | 'database'>('ui');
   const [databaseType, setDatabaseType] = useState<'supabase' | 'other'>('supabase');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState<ApiConfig | null>(null);
   const [editingN8nConfig, setEditingN8nConfig] = useState<N8nConfig | null>(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const { customization, updateCustomization, updateQuestion, resetCustomization } = useUICustomization();
+
+  // Check URL parameters for tab navigation
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab === 'ui' || tab === 'photo') {
+      setActiveTab('ui');
+    }
+  }, []);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -52,6 +61,11 @@ const Settings: React.FC = () => {
   const [testingSupabase, setTestingSupabase] = useState(false);
   const [supabaseTestResult, setSupabaseTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [simulationModeEnabled, setSimulationModeEnabledState] = useState(false);
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState('');
+  const [imagePosition, setImagePosition] = useState({ x: 50, y: 50 });
+  const [imageZoom, setImageZoom] = useState(100);
+  const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState('');
 
   useEffect(() => {
     loadConfigs();
@@ -248,6 +262,20 @@ const Settings: React.FC = () => {
         <div className="border-b mb-6" style={{ borderColor: 'var(--border)' }}>
           <nav className="-mb-px flex space-x-8">
             <button
+              onClick={() => setActiveTab('ui')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'ui'
+                  ? 'border-gray-800 text-gray-800'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              style={{ 
+                color: activeTab === 'ui' ? 'var(--primary)' : 'var(--text-secondary)',
+                borderBottomColor: activeTab === 'ui' ? 'var(--primary)' : 'transparent'
+              }}
+            >
+              UI Customization
+            </button>
+            <button
               onClick={() => setActiveTab('api')}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'api'
@@ -274,20 +302,6 @@ const Settings: React.FC = () => {
               }}
             >
               Webhooks
-            </button>
-            <button
-              onClick={() => setActiveTab('ui')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'ui'
-                  ? 'border-gray-800 text-gray-800'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              style={{ 
-                color: activeTab === 'ui' ? 'var(--primary)' : 'var(--text-secondary)',
-                borderBottomColor: activeTab === 'ui' ? 'var(--primary)' : 'transparent'
-              }}
-            >
-              UI Customization
             </button>
             <button
               onClick={() => setActiveTab('database')}
@@ -760,39 +774,132 @@ const Settings: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Avatar URL */}
+                {/* Avatar Photo */}
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                    Chatbot Avatar URL
+                    {language === 'ko' ? '챗봇 아바타' : 'Chatbot Avatar'}
                   </label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0">
+                  
+                  {/* Avatar Preview and Selector */}
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="flex-shrink-0" style={{ width: '80px', height: '80px' }}>
                       <img 
                         src={customization.avatarUrl} 
                         alt="Avatar Preview" 
-                        className="w-12 h-12 rounded-full border-2"
                         style={{ 
-                          borderColor: 'var(--border)',
-                          objectFit: 'cover'
+                          width: '80px',
+                          height: '80px',
+                          borderRadius: '50%',
+                          border: '2px solid var(--border)',
+                          objectFit: 'cover',
+                          objectPosition: 'center'
                         }}
                         onError={(e) => {
                           e.currentTarget.src = '/default-profile-avatar.png';
                         }}
                       />
                     </div>
+                    
+                    {/* Default Avatar Selector */}
                     <div className="flex-1">
-                      <input
-                        type="text"
-                        value={customization.avatarUrl}
-                        onChange={(e) => updateCustomization({ avatarUrl: e.target.value })}
-                        className="input w-full px-3 py-2 rounded-md"
-                        placeholder="https://example.com/avatar.png or data:image/svg+xml;base64,..."
-                      />
-                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                        Enter an image URL or data URI. This avatar appears next to assistant messages.
-                      </p>
+                      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text)' }}>
+                        {language === 'ko' ? '기본 아바타 선택' : 'Select Default Avatar'}
+                      </label>
+                      <select
+                        value={customization.avatarUrl.startsWith('/') ? customization.avatarUrl : 'custom'}
+                        onChange={(e) => {
+                          if (e.target.value !== 'custom') {
+                            updateCustomization({ avatarUrl: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-2 rounded-md"
+                        style={{
+                          backgroundColor: 'var(--bg-secondary)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--text)'
+                        }}
+                      >
+                        <option value="custom">{language === 'ko' ? '커스텀 (업로드된 이미지)' : 'Custom (Uploaded)'}</option>
+                        <option value="/default-profile-avatar.png">{language === 'ko' ? '기본 아바타 1' : 'Default Avatar 1'}</option>
+                        <option value="/chatbot-avatar-2.png">{language === 'ko' ? '챗봇 아바타 2' : 'Chatbot Avatar 2'}</option>
+                        <option value="/professor-avatar.png">{language === 'ko' ? '교수 아바타' : 'Professor Avatar'}</option>
+                      </select>
                     </div>
                   </div>
+                  
+                  {/* Upload and Action Buttons */}
+                  <div className="flex gap-2 mb-2">
+                    <label 
+                      className="px-4 py-2 rounded-md cursor-pointer transition-colors"
+                      style={{ 
+                        backgroundColor: 'var(--primary)',
+                        color: 'white',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                      </svg>
+                      {language === 'ko' ? '사진 업로드' : 'Upload Photo'}
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const result = reader.result as string;
+                              setUploadedAvatarUrl(result);
+                              setTempImageUrl(result);
+                              setImagePosition({ x: 50, y: 50 });
+                              setImageZoom(100);
+                              setShowImageEditor(true);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                    {customization.avatarUrl !== '/default-profile-avatar.png' && (
+                      <>
+                        <button 
+                          onClick={() => {
+                            // Save current avatar as a preset
+                            const link = document.createElement('a');
+                            link.href = customization.avatarUrl;
+                            link.download = 'chatbot-avatar.png';
+                            link.click();
+                          }}
+                          className="px-4 py-2 rounded-md transition-colors"
+                          style={{ 
+                            backgroundColor: 'var(--primary)',
+                            color: 'white'
+                          }}
+                        >
+                          {language === 'ko' ? '다운로드' : 'Download'}
+                        </button>
+                        <button 
+                          onClick={() => updateCustomization({ avatarUrl: '/default-profile-avatar.png' })}
+                          className="px-4 py-2 rounded-md transition-colors"
+                          style={{ 
+                            backgroundColor: 'var(--danger)',
+                            color: 'white'
+                          }}
+                        >
+                          {language === 'ko' ? '리셋' : 'Reset'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {language === 'ko' 
+                      ? '기본 아바타를 선택하거나 새 이미지를 업로드하세요. 다운로드한 이미지를 apps/professor/public/ 폴더에 저장하면 드롭다운에 추가할 수 있습니다.' 
+                      : 'Select a default avatar or upload a new image. Save downloaded images to apps/professor/public/ to add them to the dropdown.'}
+                  </p>
                 </div>
 
                 {/* Suggested Questions */}
@@ -1130,6 +1237,206 @@ const Settings: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Image Editor Modal */}
+      {showImageEditor && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999
+          }}
+          onClick={() => setShowImageEditor(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'var(--card, #1e1e1e)',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '600px',
+              width: '90%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              border: '1px solid var(--border)'
+            }}
+          >
+            <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>
+              {language === 'ko' ? '이미지 조정' : 'Adjust Image'}
+            </h3>
+
+            {/* Preview */}
+            <div 
+              style={{
+                width: '200px',
+                height: '200px',
+                margin: '0 auto 24px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                position: 'relative',
+                border: '2px solid var(--border)',
+                backgroundColor: 'var(--bg-secondary)'
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  backgroundImage: `url(${tempImageUrl})`,
+                  backgroundSize: `${imageZoom}%`,
+                  backgroundPosition: `${imagePosition.x}% ${imagePosition.y}%`,
+                  backgroundRepeat: 'no-repeat'
+                }}
+              />
+            </div>
+
+            {/* Controls */}
+            <div className="space-y-4">
+              {/* Zoom Control */}
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: '#e5e5e5' }}>
+                  {language === 'ko' ? '확대/축소' : 'Zoom'}: {imageZoom}%
+                </label>
+                <input
+                  type="range"
+                  min="50"
+                  max="200"
+                  value={imageZoom}
+                  onChange={(e) => setImageZoom(Number(e.target.value))}
+                  className="w-full"
+                  style={{
+                    accentColor: 'var(--primary)'
+                  }}
+                />
+              </div>
+
+              {/* Horizontal Position */}
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: '#e5e5e5' }}>
+                  {language === 'ko' ? '가로 위치' : 'Horizontal Position'}
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={imagePosition.x}
+                  onChange={(e) => setImagePosition({ ...imagePosition, x: Number(e.target.value) })}
+                  className="w-full"
+                  style={{
+                    accentColor: 'var(--primary)'
+                  }}
+                />
+              </div>
+
+              {/* Vertical Position */}
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: '#e5e5e5' }}>
+                  {language === 'ko' ? '세로 위치' : 'Vertical Position'}
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={imagePosition.y}
+                  onChange={(e) => setImagePosition({ ...imagePosition, y: Number(e.target.value) })}
+                  className="w-full"
+                  style={{
+                    accentColor: 'var(--primary)'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3 mt-6">
+              <button
+                onClick={() => {
+                  // Use original uploaded image
+                  updateCustomization({ avatarUrl: uploadedAvatarUrl });
+                  setShowImageEditor(false);
+                }}
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
+                style={{ 
+                  backgroundColor: 'var(--primary)',
+                  color: '#ffffff'
+                }}
+              >
+                {language === 'ko' ? '원본 사용' : 'Use Original'}
+              </button>
+              
+              <button
+                onClick={() => {
+                  // Create cropped version matching preview
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  const img = new Image();
+                  
+                  img.onload = () => {
+                    const size = 300; // Output size
+                    canvas.width = size;
+                    canvas.height = size;
+                    
+                    if (ctx) {
+                      // Calculate the crop area from original image
+                      const scale = imageZoom / 100;
+                      
+                      // Determine which dimension to fit
+                      let sourceSize = Math.min(img.width, img.height);
+                      
+                      // Calculate the actual visible area in the original image
+                      const visibleWidth = sourceSize / scale;
+                      const visibleHeight = sourceSize / scale;
+                      
+                      // Calculate crop position in original image coordinates
+                      const cropX = (imagePosition.x / 100) * (img.width - visibleWidth);
+                      const cropY = (imagePosition.y / 100) * (img.height - visibleHeight);
+                      
+                      // Draw the cropped portion
+                      ctx.drawImage(
+                        img,
+                        cropX, cropY, visibleWidth, visibleHeight, // Source rectangle
+                        0, 0, size, size // Destination rectangle
+                      );
+                      
+                      updateCustomization({ avatarUrl: canvas.toDataURL('image/png', 0.95) });
+                    }
+                    
+                    setShowImageEditor(false);
+                  };
+                  
+                  img.src = uploadedAvatarUrl;
+                }}
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
+                style={{ 
+                  backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                  color: '#ffffff'
+                }}
+              >
+                {language === 'ko' ? '조정된 이미지 사용' : 'Use Adjusted'}
+              </button>
+              
+              <button
+                onClick={() => setShowImageEditor(false)}
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}
+              >
+                {language === 'ko' ? '취소' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

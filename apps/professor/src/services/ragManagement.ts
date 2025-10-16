@@ -365,7 +365,7 @@ async function getUniqueFileName(supabase: any, originalName: string): Promise<s
     }
 
     // Check if original name exists
-    const fileExists = existingFiles.some((f: any) => f.name === originalName);
+    const fileExists = existingFiles.some((f: RAGFile) => f.name === originalName);
     
     if (!fileExists) {
       // No duplicate, use original name
@@ -381,7 +381,7 @@ async function getUniqueFileName(supabase: any, originalName: string): Promise<s
     let newName = `${baseName} (${counter})${extension}`;
 
     // Keep checking until we find a unique name
-    while (existingFiles.some((f: any) => f.name === newName)) {
+    while (existingFiles.some((f: RAGFile) => f.name === newName)) {
       counter++;
       newName = `${baseName} (${counter})${extension}`;
     }
@@ -508,8 +508,54 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
       uploadedAt: file.created_at || new Date().toISOString(),
       status: 'ready',
       lastModified: file.updated_at || file.created_at,
-      syncStatus: 'synced',
+      syncStatus: 'pending', // Default to pending
     }));
+
+    // Check sync status for each file by comparing with indexed documents
+    console.log('🔍 Checking sync status for files...');
+    try {
+      // Fetch all indexed document filenames from Supabase
+      const { data: allDocMetas, error: metasError } = await supabase
+        .from('documents')
+        .select('metadata');
+
+      if (metasError) {
+        console.warn('⚠️ Failed to fetch document metadata for sync check:', metasError);
+      }
+
+      const indexedNameSet = new Set<string>();
+      if (allDocMetas && allDocMetas.length > 0) {
+        for (const row of allDocMetas) {
+          const metadata = row.metadata || {};
+          const metaName: string | undefined = metadata.fileName;
+          if (metaName) {
+            indexedNameSet.add(metaName.toLowerCase().trim());
+          }
+        }
+      }
+      console.log(`[SyncCheck] Indexed filenames count: ${indexedNameSet.size}`);
+      if (indexedNameSet.size > 0) {
+        console.log(`[SyncCheck] Indexed files:`, Array.from(indexedNameSet));
+      }
+
+      // Update sync status for each file
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileName = file.name.toLowerCase().trim();
+        if (indexedNameSet.has(fileName)) {
+          file.syncStatus = 'synced';
+          console.log(`✅ File "${file.name}" is synced (indexed)`);
+        } else {
+          file.syncStatus = 'pending';
+          console.log(`⏳ File "${file.name}" is pending (not indexed)`);
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Error during sync status calculation:', error);
+      for (let i = 0; i < files.length; i++) {
+        files[i].syncStatus = 'error';
+      }
+    }
 
     return {
       success: true,
@@ -685,7 +731,7 @@ export async function fetchVectorDocuments(): Promise<{ success: boolean; docume
 /**
  * Send file to n8n for indexing
  */
-export async function indexFileToVector(fileName: string): Promise<{ success: boolean; message: string }> {
+export async function indexFileToVector(fileName: string): Promise<{ success: boolean; message: string; workflowId?: string; estimatedTime?: string }> {
   try {
     const supabase = getSupabaseClient();
     
@@ -826,12 +872,11 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
             message: `File sent for indexing (CORS bypassed, status: ${fetchResponse.status}). Processing time: 30-60 seconds`
           };
         }
-      } catch (fetchError: unknown) {
+      } catch (fetchError: any) {
         console.error('❌ Both axios and fetch failed:', fetchError);
         
         // Check if it's a 404 error
-        const fetchMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
-        if (fetchMsg?.includes('404') || fetchMsg?.includes('ERR_ABORTED')) {
+        if (fetchError?.message?.includes('404') || fetchError?.message?.includes('ERR_ABORTED')) {
           return {
             success: false,
             message: `Webhook URL not found (404). Please check if the webhook is active: ${n8nWebhookUrl}`,

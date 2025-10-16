@@ -496,10 +496,6 @@ const FileLibrary: React.FC = () => {
           <span className="refresh-icon">↻</span>
           {isLoading ? t('knowledge.loading') || 'Loading...' : t('knowledge.refresh')}
         </button>
-        <button className="sync-status-btn" onClick={refreshSyncStatus} disabled={isLoading}>
-          <span className="sync-icon">🔄</span>
-          {isLoading ? 'Checking...' : 'Sync Status'}
-        </button>
       </div>
 
       {/* Error Message */}
@@ -557,97 +553,39 @@ const FileLibrary: React.FC = () => {
                 filteredAndSortedFiles.map(file => (
                   <tr key={file.id}>
                     <td className="file-name">
-                      <span className="file-icon">{getFileIcon(file.type)}</span>
                       {file.name}
                     </td>
                     <td>{formatFileSize(file.size)}</td>
                     <td>{new Date(file.uploadedAt).toLocaleString()}</td>
                     <td>{file.type}</td>
-                    <td>
-                      <span className={`sync-status ${file.syncStatus || 'pending'}`} title={
-                        file.syncStatus === 'synced' ? 'Indexed' :
-                        file.syncStatus === 'pending' ? 'Not indexed' :
-                        file.syncStatus === 'error' ? 'Error' :
-                        'Unknown'
-                      }>
-                        {file.syncStatus === 'synced' ? 'Synced' : 
-                         file.syncStatus === 'pending' ? 'Pending' : 
-                         file.syncStatus === 'error' ? 'Error' : 'Pending'}
-                      </span>
+                    <td className="sync-status-cell">
+                      <button 
+                        className="sync-status-icon-btn"
+                        title={file.syncStatus === 'synced' ? 'Synced' : 'Pending'}
+                      >
+                        {file.syncStatus === 'synced' ? '✓' : ''}
+                      </button>
                     </td>
                     <td>
-                      {/* Indexing Status */}
-                    {indexingStatus[file.name] && (
-                      <div className="indexing-status" style={{ 
-                        marginBottom: '8px', 
-                        padding: '4px 8px', 
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        backgroundColor: indexingStatus[file.name].status === 'completed' ? 'rgba(16, 185, 129, 0.1)' :
-                                       indexingStatus[file.name].status === 'processing' ? 'rgba(59, 130, 246, 0.1)' :
-                                       indexingStatus[file.name].status === 'failed' ? 'rgba(239, 68, 68, 0.1)' :
-                                       'rgba(107, 114, 128, 0.1)',
-                        color: indexingStatus[file.name].status === 'completed' ? '#10b981' :
-                               indexingStatus[file.name].status === 'processing' ? '#3b82f6' :
-                               indexingStatus[file.name].status === 'failed' ? '#ef4444' :
-                               '#6b7280'
-                      }}>
-                        {indexingStatus[file.name].status === 'completed' && '✅ '}
-                        {indexingStatus[file.name].status === 'processing' && '⏳ '}
-                        {indexingStatus[file.name].status === 'failed' && '❌ '}
-                        {indexingStatus[file.name].status === 'pending' && '⏸️ '}
-                        {indexingStatus[file.name].message}
-                        {indexingStatus[file.name].chunksCount && ` (${indexingStatus[file.name].chunksCount} chunks)`}
-                      </div>
-                    )}
-                    
-                    <div className="file-actions">
+                      <div className="file-actions">
                         <button 
-                          className="action-btn" 
-                          title="Index file"
-                          onClick={() => handleIndexFile(file.name)}
-                          disabled={actionLoading === file.name}
-                          style={{ 
-                            backgroundColor: actionLoading === file.name ? '#6b7280' : '#10b981',
-                            color: 'white',
-                            marginRight: '4px'
-                          }}
-                        >
-                          {actionLoading === file.name ? '⏳' : '📤'}
-                        </button>
-                        <button 
-                          className="action-btn" 
-                          title="Unindex file"
-                          onClick={() => handleUnindexFile(file.name)}
-                          disabled={actionLoading === file.name}
-                          style={{ 
-                            backgroundColor: actionLoading === file.name ? '#6b7280' : '#ef4444',
-                            color: 'white',
-                            marginRight: '4px'
-                          }}
-                        >
-                          {actionLoading === file.name ? '⏳' : '🗑️'}
-                        </button>
-                        <button 
-                          className="action-btn reindex-btn" 
-                          title="Re-index file"
-                          onClick={() => handleReindexFile(file.id, file.name)}
-                        >
-                          🔄
-                        </button>
-                        <button 
-                          className="action-btn download-btn" 
+                          className="icon-action-btn" 
                           title={t('knowledge.download')}
                           onClick={() => handleDownloadFile(file.name)}
                         >
-                          ↓
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                          </svg>
                         </button>
                         <button 
-                          className="action-btn delete-btn" 
+                          className="icon-action-btn delete-icon-btn" 
                           title={t('knowledge.delete')}
                           onClick={() => handleDeleteFile(file.id, file.name)}
                         >
-                          🗑️
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
                         </button>
                       </div>
                     </td>

@@ -309,7 +309,7 @@ export default function AdminSidebar({
                     Edit
                   </button>
                   <button
-                    onClick={() => navigate('/settings')}
+                    onClick={() => navigate('/settings?tab=photo')}
                     style={{
                       display: 'flex',
                       alignItems: 'center',

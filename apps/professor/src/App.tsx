@@ -101,10 +101,10 @@ const App: React.FC = () => {
                 } 
               />
               <Route 
-                path="/admin/knowledge" 
+                path="/admin/knowledge-management" 
                 element={
                   <ProtectedRoute requiredRole="admin">
-                    <AdminShell />
+                    <AdminDashboard />
                   </ProtectedRoute>
                 } 
               />

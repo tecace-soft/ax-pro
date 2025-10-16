@@ -334,40 +334,67 @@
   color: #ffffff;
 }
 
-.file-actions {
-  display: flex;
-  gap: 8px;
+.sync-status-text {
+  color: var(--admin-text);
+  font-size: 14px;
 }
 
-.action-btn {
-  width: 32px;
-  height: 32px;
+.sync-status-cell {
+  text-align: center;
+}
+
+.sync-status-icon-btn {
+  background: none;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
+  cursor: default;
+  color: var(--admin-success, #22c55e);
+  font-size: 18px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  width: 24px;
+  height: 24px;
+}
+
+.file-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.icon-action-btn {
+  padding: 6px;
+  border: 1px solid var(--admin-border);
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  color: var(--admin-text);
   transition: all 0.2s ease;
 }
 
-.download-btn {
+.icon-action-btn:hover {
   background: var(--admin-border);
+  border-color: var(--admin-primary);
+  color: var(--admin-primary);
+}
+
+.icon-action-btn.delete-icon-btn:hover {
+  border-color: var(--admin-danger);
+  color: var(--admin-danger);
+}
+
+.icon-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-action-btn:disabled:hover {
+  background: none;
+  border-color: var(--admin-border);
   color: var(--admin-text);
-}
-
-.download-btn:hover {
-  background: var(--admin-text-muted);
-}
-
-.delete-btn {
-  background: var(--admin-danger);
-  color: var(--admin-text);
-}
-
-.delete-btn:hover {
-  background: var(--admin-danger-hover);
 }
 
 /* Knowledge Index Styles */
