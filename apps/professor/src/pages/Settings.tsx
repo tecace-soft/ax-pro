@@ -30,6 +30,15 @@ const Settings: React.FC = () => {
   const [testingConnection, setTestingConnection] = useState(false);
   const { customization, updateCustomization, updateQuestion, resetCustomization } = useUICustomization();
 
+  // Check URL parameters for tab navigation
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab === 'ui' || tab === 'photo') {
+      setActiveTab('ui');
+    }
+  }, []);
+
   const [formData, setFormData] = useState({
     name: '',
     baseUrl: '',
@@ -760,17 +769,17 @@ const Settings: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Avatar URL */}
+                {/* Avatar Photo */}
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                    Chatbot Avatar URL
+                    Chatbot Avatar
                   </label>
                   <div className="flex items-center gap-4">
                     <div className="flex-shrink-0">
                       <img 
                         src={customization.avatarUrl} 
                         alt="Avatar Preview" 
-                        className="w-12 h-12 rounded-full border-2"
+                        className="w-20 h-20 rounded-full border-2"
                         style={{ 
                           borderColor: 'var(--border)',
                           objectFit: 'cover'
@@ -781,15 +790,52 @@ const Settings: React.FC = () => {
                       />
                     </div>
                     <div className="flex-1">
-                      <input
-                        type="text"
-                        value={customization.avatarUrl}
-                        onChange={(e) => updateCustomization({ avatarUrl: e.target.value })}
-                        className="input w-full px-3 py-2 rounded-md"
-                        placeholder="https://example.com/avatar.png or data:image/svg+xml;base64,..."
-                      />
-                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                        Enter an image URL or data URI. This avatar appears next to assistant messages.
+                      <div className="flex gap-2 mb-2">
+                        <label 
+                          className="px-4 py-2 rounded-md cursor-pointer transition-colors"
+                          style={{ 
+                            backgroundColor: 'var(--primary)',
+                            color: 'white',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                          </svg>
+                          Upload Photo
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  updateCustomization({ avatarUrl: reader.result as string });
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                        {customization.avatarUrl !== '/default-profile-avatar.png' && (
+                          <button 
+                            onClick={() => updateCustomization({ avatarUrl: '/default-profile-avatar.png' })}
+                            className="px-4 py-2 rounded-md transition-colors"
+                            style={{ 
+                              backgroundColor: 'var(--danger)',
+                              color: 'white'
+                            }}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        Upload an image (JPG, PNG, GIF). This avatar appears next to assistant messages.
                       </p>
                     </div>
                   </div>
