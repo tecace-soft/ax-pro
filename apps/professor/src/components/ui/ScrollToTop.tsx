@@ -64,9 +64,10 @@ export default function ScrollToTop() {
     }
   }
 
-  if (!isVisible) {
-    return null
-  }
+  // Temporarily always show for debugging
+  // if (!isVisible) {
+  //   return null
+  // }
 
   return (
     <button
