@@ -341,6 +341,12 @@
 
 .sync-status-cell {
   text-align: center;
+  vertical-align: middle;
+}
+
+.sync-status-cell span {
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .sync-status-icon-btn {

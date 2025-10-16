@@ -552,7 +552,7 @@ const FileLibrary: React.FC = () => {
                 <th>{t('knowledge.size')}</th>
                 <th>{t('knowledge.lastModified')}</th>
                 <th>{t('knowledge.contentType')}</th>
-                <th>{t('knowledge.syncStatus')}</th>
+                <th style={{ textAlign: 'center' }}>{t('knowledge.syncStatus')}</th>
                 <th>{t('knowledge.actions')}</th>
               </tr>
             </thead>
