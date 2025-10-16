@@ -720,7 +720,7 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     
     // Check if we have a relative path that needs to be converted to full URL
     if (!urlData.signedUrl.startsWith('http')) {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qpyteahuynkgkbmdasbv.supabase.co';
+      const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://qpyteahuynkgkbmdasbv.supabase.co';
       
       if (urlData.signedUrl.startsWith('/object/')) {
         // Format: /object/sign/bucket/path?token=...
@@ -744,13 +744,13 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
 
     // Send to n8n webhook - DEV/PRODUCTION SELECTOR
     // Default to PRODUCTION mode, only use DEV if explicitly enabled
-    const isDevMode = import.meta.env.VITE_N8N_DEV_MODE === 'true' || 
+    const isDevMode = ((import.meta as any).env?.VITE_N8N_DEV_MODE === 'true') || 
                      localStorage.getItem('n8n-dev-mode') === 'true';
     
     const n8nWebhookUrl = isDevMode 
       ? 'https://n8n.srv978041.hstgr.cloud/webhook-test/1f18f1aa-44c4-467f-b299-c87c9b6f9459'
-      : (import.meta.env.VITE_N8N_BASE_URL 
-          ? `${import.meta.env.VITE_N8N_BASE_URL}/webhook/${import.meta.env.VITE_N8N_UPLOAD_WEBHOOK_ID}`
+      : ((import.meta as any).env?.VITE_N8N_BASE_URL 
+          ? `${(import.meta as any).env?.VITE_N8N_BASE_URL}/webhook/${(import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID}`
           : `${N8N_BASE_URL}/webhook/${UPLOAD_WEBHOOK_ID}`);
     
     console.log(`🔧 Webhook mode: ${isDevMode ? 'DEV (test)' : 'PRODUCTION'}`);
@@ -830,11 +830,12 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
             estimatedTime: '30-60 seconds'
           };
         }
-      } catch (fetchError) {
+      } catch (fetchError: unknown) {
         console.error('❌ Both axios and fetch failed:', fetchError);
         
         // Check if it's a 404 error
-        if (fetchError.message?.includes('404') || fetchError.message?.includes('ERR_ABORTED')) {
+        const fetchMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+        if (fetchMsg?.includes('404') || fetchMsg?.includes('ERR_ABORTED')) {
           return {
             success: false,
             message: `Webhook URL not found (404). Please check if the webhook is active: ${n8nWebhookUrl}`,
@@ -845,11 +846,12 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       }
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const msg = (error instanceof Error) ? (error.response?.data?.message || error.message) : 'Failed to index file';
     console.error('Error indexing file:', error);
     return {
       success: false,
-      message: error.response?.data?.message || error.message || 'Failed to index file',
+      message: msg,
     };
   }
 }
