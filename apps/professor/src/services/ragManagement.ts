@@ -365,7 +365,7 @@ async function getUniqueFileName(supabase: any, originalName: string): Promise<s
     }
 
     // Check if original name exists
-    const fileExists = existingFiles.some(f => f.name === originalName);
+    const fileExists = existingFiles.some((f: any) => f.name === originalName);
     
     if (!fileExists) {
       // No duplicate, use original name
@@ -381,7 +381,7 @@ async function getUniqueFileName(supabase: any, originalName: string): Promise<s
     let newName = `${baseName} (${counter})${extension}`;
 
     // Keep checking until we find a unique name
-    while (existingFiles.some(f => f.name === newName)) {
+    while (existingFiles.some((f: any) => f.name === newName)) {
       counter++;
       newName = `${baseName} (${counter})${extension}`;
     }
@@ -791,8 +791,8 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       return {
         success: true,
         message: `File sent for indexing successfully. Processing time: ${estimatedTime}`,
-        workflowId: workflowId,
-        estimatedTime: estimatedTime
+        ...(workflowId && { workflowId }),
+        ...(estimatedTime && { estimatedTime })
       };
     } catch (axiosError) {
       console.warn('⚠️ Axios failed (likely CORS), trying fetch with no-cors:', axiosError);
@@ -817,17 +817,13 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
           console.log(`✅ Request sent successfully (no-cors mode)`);
           return {
             success: true,
-            message: `File sent for indexing (CORS bypassed). Processing time: 30-60 seconds`,
-            workflowId: 'unknown',
-            estimatedTime: '30-60 seconds'
+            message: `File sent for indexing (CORS bypassed). Processing time: 30-60 seconds`
           };
         } else {
           console.warn(`⚠️ Unexpected status in no-cors mode: ${fetchResponse.status}`);
           return {
             success: true,
-            message: `File sent for indexing (CORS bypassed, status: ${fetchResponse.status}). Processing time: 30-60 seconds`,
-            workflowId: 'unknown',
-            estimatedTime: '30-60 seconds'
+            message: `File sent for indexing (CORS bypassed, status: ${fetchResponse.status}). Processing time: 30-60 seconds`
           };
         }
       } catch (fetchError: unknown) {
@@ -847,7 +843,7 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     }
 
   } catch (error: unknown) {
-    const msg = (error instanceof Error) ? (error.response?.data?.message || error.message) : 'Failed to index file';
+    const msg = (error instanceof Error) ? error.message : 'Failed to index file';
     console.error('Error indexing file:', error);
     return {
       success: false,

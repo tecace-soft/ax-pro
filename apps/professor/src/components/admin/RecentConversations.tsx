@@ -230,8 +230,8 @@ export default function RecentConversations({
     
     setFeedbackModal({
       chatId: conversation.chat_id,
-      userMessage: conversation.chat_message || conversation.user_message || '',
-      aiResponse: conversation.response || conversation.ai_response || '',
+      userMessage: conversation.chat_message || '',
+      aiResponse: conversation.response || '',
       verdict,
       existingFeedback
     })
@@ -328,8 +328,8 @@ export default function RecentConversations({
       setCorrectedResponse(adminFeedback.corrected_response || '')
       setFeedbackModal({
         chatId: conversation.chat_id,
-        userMessage: conversation.chat_message || conversation.user_message || '',
-        aiResponse: conversation.response || conversation.ai_response || '',
+        userMessage: conversation.chat_message || '',
+        aiResponse: conversation.response || '',
         verdict: adminFeedback.feedback_verdict,
         existingFeedback: adminFeedback
       })
