@@ -57,27 +57,15 @@ const KnowledgeIndex: React.FC = () => {
         const transformedDocs: KnowledgeDocument[] = response.documents.map((doc: VectorDocument) => {
           const metadata = doc.metadata || {};
           
-          console.log('Document metadata:', metadata); // Debug log
-          
-          // Extract file name from various possible metadata fields
+          // Extract file name from metadata
           let fileName = 'Unknown';
-          
-          // Priority order for filename extraction:
-          // 1. metadata.fileName (if n8n sets it)
-          // 2. metadata.source (if not 'blob')
-          // 3. metadata.pdf.info.Title or Creator
-          // 4. Extract from content if it mentions a filename
-          
           if (metadata.fileName) {
             fileName = metadata.fileName;
           } else if (metadata.source && metadata.source !== 'blob') {
             fileName = metadata.source;
           } else if (metadata.pdf?.info?.Title) {
             fileName = metadata.pdf.info.Title;
-          } else if (metadata.pdf?.info?.Creator) {
-            fileName = `Document by ${metadata.pdf.info.Creator}`;
           } else if (metadata.blobType) {
-            // Use blob type as fallback
             const ext = metadata.blobType.split('/')[1] || 'pdf';
             fileName = `document.${ext}`;
           }
@@ -88,8 +76,6 @@ const KnowledgeIndex: React.FC = () => {
             pageInfo = `Lines ${metadata.loc.lines.from}-${metadata.loc.lines.to}`;
           } else if (metadata.loc?.pageNumber) {
             pageInfo = `Page ${metadata.loc.pageNumber}`;
-          } else if (metadata.pdf?.totalPages) {
-            pageInfo = `PDF (${metadata.pdf.totalPages} pages)`;
           }
           
           return {
@@ -100,7 +86,24 @@ const KnowledgeIndex: React.FC = () => {
             content: doc.content,
             pageInfo: pageInfo,
             syncStatus: 'synced' as const,
+            metadata: metadata, // Keep full metadata for detail view
           };
+        });
+
+        // Calculate chunk counts per file
+        const chunkCounts: Record<string, number> = {};
+        transformedDocs.forEach(doc => {
+          chunkCounts[doc.fileName] = (chunkCounts[doc.fileName] || 0) + 1;
+        });
+
+        // Add chunk info to each document
+        const chunkPositions: Record<string, number> = {};
+        transformedDocs.forEach(doc => {
+          if (!chunkPositions[doc.fileName]) {
+            chunkPositions[doc.fileName] = 0;
+          }
+          chunkPositions[doc.fileName]++;
+          (doc as any).chunkInfo = `${chunkPositions[doc.fileName]} of ${chunkCounts[doc.fileName]}`;
         });
 
         setDocuments(transformedDocs);
@@ -339,18 +342,16 @@ const KnowledgeIndex: React.FC = () => {
             <thead>
               <tr>
                 <th>File Name</th>
-                <th>Chunk #</th>
-                <th>Source</th>
+                <th>Chunk</th>
                 <th>Location</th>
                 <th>Content Preview</th>
-                <th>Sync</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredDocuments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
                     {error ? 'Failed to load documents' : 'No documents found. Upload and index files to see them here.'}
                   </td>
                 </tr>
@@ -358,41 +359,21 @@ const KnowledgeIndex: React.FC = () => {
                 filteredDocuments.map(doc => (
                   <tr key={doc.id}>
                     <td className="doc-title">{doc.fileName}</td>
-                    <td className="doc-chunk-index">{doc.chunkIndex}</td>
-                    <td className="doc-source">{doc.source}</td>
+                    <td className="doc-chunk-index">{(doc as any).chunkInfo || '1 of 1'}</td>
                     <td className="doc-page-info">{doc.pageInfo || '-'}</td>
-                    <td className="doc-content" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {doc.content.substring(0, 100)}...
-                    </td>
-                    <td className="sync-status-cell">
-                      <button 
-                        className="sync-status-icon-btn"
-                        title={doc.syncStatus === 'synced' ? 'Synced' : 'Pending'}
-                      >
-                        {doc.syncStatus === 'synced' ? '✓' : ''}
-                      </button>
+                    <td className="doc-content" style={{ maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {doc.content.substring(0, 150)}...
                     </td>
                     <td>
                       <div className="file-actions">
                         <button 
                           className="icon-action-btn" 
-                          title="View content"
+                          title="View details"
                           onClick={() => handleViewDocument(doc)}
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                             <circle cx="12" cy="12" r="3"/>
-                          </svg>
-                        </button>
-                        <button 
-                          className="icon-action-btn" 
-                          title="Show metadata"
-                          onClick={() => handleShowMetadata(doc)}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="20" x2="18" y2="10"/>
-                            <line x1="12" y1="20" x2="12" y2="4"/>
-                            <line x1="6" y1="20" x2="6" y2="14"/>
                           </svg>
                         </button>
                         <button 
@@ -453,8 +434,8 @@ const KnowledgeIndex: React.FC = () => {
                     <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.fileName}</span>
                   </div>
                   <div>
-                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Chunk Index:</span>
-                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.chunkIndex}</span>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Chunk:</span>
+                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{(selectedDocument as any).chunkInfo || '1 of 1'}</span>
                   </div>
                   <div>
                     <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Source:</span>
@@ -465,24 +446,43 @@ const KnowledgeIndex: React.FC = () => {
                     <span className="ml-2" style={{ color: 'var(--admin-text)' }}>{selectedDocument.pageInfo || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Sync Status:</span>
-                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>
-                      <span className="sync-status-text">
-                        {selectedDocument.syncStatus === 'synced' ? 'Synced' : 'Pending'}
-                      </span>
-                    </span>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Document ID:</span>
+                    <span className="ml-2 font-mono text-xs" style={{ color: 'var(--admin-text-muted)' }}>{selectedDocument.id}</span>
                   </div>
                   <div>
-                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Chunk ID:</span>
-                    <span className="ml-2 font-mono text-xs" style={{ color: 'var(--admin-text-muted)' }}>{selectedDocument.id}</span>
+                    <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Sync Status:</span>
+                    <span className="ml-2" style={{ color: 'var(--admin-text)' }}>
+                      {selectedDocument.syncStatus === 'synced' ? 'Synced' : 'Pending'}
+                    </span>
                   </div>
                 </div>
               </div>
+
+              {/* Metadata */}
+              {(selectedDocument as any).metadata && (
+                <div>
+                  <h4 className="font-semibold mb-2" style={{ color: 'var(--admin-text)' }}>
+                    Metadata
+                  </h4>
+                  <div 
+                    className="p-4 rounded-lg border-2 font-mono text-sm"
+                    style={{ 
+                      backgroundColor: 'var(--admin-bg-secondary)',
+                      borderColor: 'var(--admin-border)',
+                      color: 'var(--admin-text)',
+                      maxHeight: '200px',
+                      overflowY: 'auto'
+                    }}
+                  >
+                    <pre>{JSON.stringify((selectedDocument as any).metadata, null, 2)}</pre>
+                  </div>
+                </div>
+              )}
               
               {/* Full Content */}
               <div>
                 <h4 className="font-semibold mb-2" style={{ color: 'var(--admin-text)' }}>
-                  Full Content
+                  Content
                 </h4>
                 <div 
                   className="p-4 rounded-lg border-2 font-mono text-sm whitespace-pre-wrap"
@@ -490,7 +490,7 @@ const KnowledgeIndex: React.FC = () => {
                     backgroundColor: 'var(--admin-bg-secondary)',
                     borderColor: 'var(--admin-border)',
                     color: 'var(--admin-text)',
-                    maxHeight: '500px',
+                    maxHeight: '400px',
                     overflowY: 'auto'
                   }}
                 >
