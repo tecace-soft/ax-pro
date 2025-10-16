@@ -65,6 +65,7 @@ const Settings: React.FC = () => {
   const [tempImageUrl, setTempImageUrl] = useState('');
   const [imagePosition, setImagePosition] = useState({ x: 50, y: 50 });
   const [imageZoom, setImageZoom] = useState(100);
+  const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState('');
 
   useEffect(() => {
     loadConfigs();
@@ -818,7 +819,9 @@ const Settings: React.FC = () => {
                               if (file) {
                                 const reader = new FileReader();
                                 reader.onloadend = () => {
-                                  setTempImageUrl(reader.result as string);
+                                  const result = reader.result as string;
+                                  setUploadedAvatarUrl(result);
+                                  setTempImageUrl(result);
                                   setImagePosition({ x: 50, y: 50 });
                                   setImageZoom(100);
                                   setShowImageEditor(true);
@@ -1303,52 +1306,75 @@ const Settings: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 mt-6">
+            <div className="space-y-3 mt-6">
               <button
                 onClick={() => {
-                  // Create canvas to crop the image
-                  const canvas = document.createElement('canvas');
-                  const ctx = canvas.getContext('2d');
-                  const img = new Image();
-                  
-                  img.onload = () => {
-                    const size = 200;
-                    canvas.width = size;
-                    canvas.height = size;
-                    
-                    if (ctx) {
-                      // Calculate scaled dimensions
-                      const scale = imageZoom / 100;
-                      const scaledWidth = img.width * scale;
-                      const scaledHeight = img.height * scale;
-                      
-                      // Calculate position based on background-position logic
-                      const x = -(imagePosition.x / 100) * (scaledWidth - size);
-                      const y = -(imagePosition.y / 100) * (scaledHeight - size);
-                      
-                      // Clear canvas and draw
-                      ctx.clearRect(0, 0, size, size);
-                      ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
-                      
-                      updateCustomization({ avatarUrl: canvas.toDataURL('image/png', 1.0) });
-                    }
-                    
-                    setShowImageEditor(false);
-                  };
-                  
-                  img.src = tempImageUrl;
+                  // Use original uploaded image
+                  updateCustomization({ avatarUrl: uploadedAvatarUrl });
+                  setShowImageEditor(false);
                 }}
-                className="flex-1 px-4 py-2 rounded-md font-medium transition-colors"
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
                 style={{ 
                   backgroundColor: 'var(--primary)',
                   color: '#ffffff'
                 }}
               >
-                {language === 'ko' ? '적용' : 'Apply'}
+                {language === 'ko' ? '원본 사용' : 'Use Original'}
               </button>
+              
+              <button
+                onClick={() => {
+                  // Create cropped version
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  const img = new Image();
+                  
+                  img.onload = () => {
+                    const size = 400; // Higher resolution
+                    canvas.width = size;
+                    canvas.height = size;
+                    
+                    if (ctx) {
+                      // Fill with white background first
+                      ctx.fillStyle = '#ffffff';
+                      ctx.fillRect(0, 0, size, size);
+                      
+                      // Calculate dimensions
+                      const scale = imageZoom / 100;
+                      let drawWidth = img.width;
+                      let drawHeight = img.height;
+                      
+                      // Scale the image
+                      drawWidth = drawWidth * scale;
+                      drawHeight = drawHeight * scale;
+                      
+                      // Calculate position
+                      const x = (imagePosition.x / 100) * (size - drawWidth);
+                      const y = (imagePosition.y / 100) * (size - drawHeight);
+                      
+                      // Draw image
+                      ctx.drawImage(img, x, y, drawWidth, drawHeight);
+                      
+                      updateCustomization({ avatarUrl: canvas.toDataURL('image/png', 0.95) });
+                    }
+                    
+                    setShowImageEditor(false);
+                  };
+                  
+                  img.src = uploadedAvatarUrl;
+                }}
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
+                style={{ 
+                  backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                  color: '#ffffff'
+                }}
+              >
+                {language === 'ko' ? '조정된 이미지 사용' : 'Use Adjusted'}
+              </button>
+              
               <button
                 onClick={() => setShowImageEditor(false)}
-                className="flex-1 px-4 py-2 rounded-md font-medium transition-colors"
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
                 style={{ 
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
                   color: '#ffffff',
