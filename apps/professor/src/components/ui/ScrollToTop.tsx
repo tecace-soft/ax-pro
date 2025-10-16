@@ -44,24 +44,46 @@ export default function ScrollToTop() {
   }, [])
 
   const scrollToTop = () => {
-    // Find the actual scrollable element
-    const mainContent = document.querySelector('.admin-dashboard-content')
+    console.log('🔵 Scroll button clicked!')
     
-    if (mainContent && mainContent.scrollTop > 0) {
-      // Scroll the main content if it's scrolled
-      mainContent.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      })
-    } else {
-      // Otherwise scroll the window
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      })
+    // Try to find all possible scrollable containers
+    const selectors = [
+      '.admin-dashboard-content',
+      '.dashboard-content',
+      '.knowledge-management-container',
+      'main',
+      '.main-content',
+      '[class*="content"]'
+    ]
+    
+    let scrolled = false
+    
+    for (const selector of selectors) {
+      const element = document.querySelector(selector)
+      if (element && element.scrollTop > 0) {
+        console.log(`✅ Found scrolled element: ${selector}, scrollTop: ${element.scrollTop}`)
+        element.scrollTo({ top: 0, behavior: 'smooth' })
+        scrolled = true
+        break
+      }
+    }
+    
+    if (!scrolled) {
+      console.log('📜 Scrolling window instead')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+    
+    // Force scroll to 0
+    setTimeout(() => {
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
-    }
+      
+      // Try all selectors again
+      selectors.forEach(selector => {
+        const el = document.querySelector(selector)
+        if (el) el.scrollTop = 0
+      })
+    }, 100)
   }
 
   // Temporarily always show for debugging
