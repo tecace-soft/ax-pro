@@ -154,57 +154,53 @@ const ChatShell: React.FC = () => {
                 {user.role === 'admin' ? 'Administrator' : t('ui.user')}
               </p>
             </div>
-            {user.role === 'admin' && (
-              <>
-                <button
-                  onClick={() => navigate('/admin/dashboard')}
-                  className="text-sm link"
-                  title="Go to Admin Dashboard"
-                >
-                  📊 Dashboard
-                </button>
-                <button
-                  onClick={() => navigate('/settings')}
-                  className="text-sm link"
-                >
-                  {t('ui.settings')}
-                </button>
-              </>
-            )}
-            <button
-              onClick={handleLogout}
-              className="text-sm link"
-            >
-              {t('ui.signOut')}
-            </button>
+            <div className="flex items-center gap-2">
+              {user.role === 'admin' && (
+                <>
+                  <button
+                    onClick={() => navigate('/admin/dashboard')}
+                    className="p-2 rounded-md border transition-colors"
+                    style={{
+                      borderColor: 'var(--border)',
+                      color: 'var(--text)'
+                    }}
+                    title={t('ui.dashboard')}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="7" height="7"></rect>
+                      <rect x="14" y="3" width="7" height="7"></rect>
+                      <rect x="14" y="14" width="7" height="7"></rect>
+                      <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => navigate('/settings')}
+                    className="p-2 rounded-md border transition-colors"
+                    style={{
+                      borderColor: 'var(--border)',
+                      color: 'var(--text)'
+                    }}
+                    title={t('ui.settings')}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="3"></circle>
+                      <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"></path>
+                    </svg>
+                  </button>
+                </>
+              )}
+              <button
+                onClick={handleLogout}
+                className="text-sm link"
+              >
+                {t('ui.signOut')}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Session List */}
         <div className="flex-1 overflow-y-auto">
-          {!backendAvailable && (
-            <div className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
-              <div className="card rounded-md p-3" style={{ backgroundColor: 'var(--warning-light)' }}>
-                <div className="flex items-center space-x-3">
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--warning)' }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                      <line x1="12" y1="9" x2="12" y2="13"/>
-                      <line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: 'var(--warning)' }}>
-                      {t('ui.demoMode')}
-                    </p>
-                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      {t('ui.demoModeDescription')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
           <SessionList />
         </div>
       </div>
