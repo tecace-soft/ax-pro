@@ -550,21 +550,38 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
     // Check sync status for each file by comparing with indexed documents
     console.log('🔍 Checking sync status for files...');
     try {
-      // Fetch all indexed document filenames from Supabase
-      const { data: allDocMetas, error: metasError } = await supabase
-        .from('documents')
-        .select('metadata')
-        .limit(2000); // Increase limit to ensure we get all documents
-
-      if (metasError) {
-        console.warn('⚠️ Failed to fetch document metadata for sync check:', metasError);
+      // Fetch ALL indexed document filenames using pagination
+      let allDocMetas: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const pageSize = 1000;
+      
+      while (hasMore) {
+        const { data: pageData, error: pageError } = await supabase
+          .from('documents')
+          .select('metadata')
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (pageError) {
+          console.warn(`⚠️ Error fetching page ${page}:`, pageError);
+          break;
+        }
+        
+        if (pageData && pageData.length > 0) {
+          allDocMetas = [...allDocMetas, ...pageData];
+          hasMore = pageData.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
+      
+      console.log(`📊 Total documents fetched: ${allDocMetas.length} (${page} pages)`);
 
       const indexedNameSet = new Set<string>();
       const indexedNameMap = new Map<string, string>(); // normalized -> original
       
       if (allDocMetas && allDocMetas.length > 0) {
-        console.log(`📊 Total documents in database: ${allDocMetas.length}`);
         console.log(`📋 First document metadata sample:`, allDocMetas[0]?.metadata);
         
         for (const row of allDocMetas) {
