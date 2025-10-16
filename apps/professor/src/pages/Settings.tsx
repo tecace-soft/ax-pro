@@ -835,22 +835,40 @@ const Settings: React.FC = () => {
                           />
                         </label>
                         {customization.avatarUrl !== '/default-profile-avatar.png' && (
-                          <button 
-                            onClick={() => updateCustomization({ avatarUrl: '/default-profile-avatar.png' })}
-                            className="px-4 py-2 rounded-md transition-colors"
-                            style={{ 
-                              backgroundColor: 'var(--danger)',
-                              color: 'white'
-                            }}
-                          >
-                            {language === 'ko' ? '삭제' : 'Remove'}
-                          </button>
+                          <>
+                            <button 
+                              onClick={() => {
+                                // Save current avatar as a preset
+                                const link = document.createElement('a');
+                                link.href = customization.avatarUrl;
+                                link.download = 'chatbot-avatar.png';
+                                link.click();
+                              }}
+                              className="px-4 py-2 rounded-md transition-colors"
+                              style={{ 
+                                backgroundColor: 'var(--primary)',
+                                color: 'white'
+                              }}
+                            >
+                              {language === 'ko' ? '다운로드' : 'Download'}
+                            </button>
+                            <button 
+                              onClick={() => updateCustomization({ avatarUrl: '/default-profile-avatar.png' })}
+                              className="px-4 py-2 rounded-md transition-colors"
+                              style={{ 
+                                backgroundColor: 'var(--danger)',
+                                color: 'white'
+                              }}
+                            >
+                              {language === 'ko' ? '삭제' : 'Remove'}
+                            </button>
+                          </>
                         )}
                       </div>
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                         {language === 'ko' 
-                          ? '이미지를 업로드하세요 (JPG, PNG, GIF). 업로드 후 조정 가능합니다.' 
-                          : 'Upload an image (JPG, PNG, GIF). You can adjust and crop after uploading.'}
+                          ? '이미지를 업로드하세요 (JPG, PNG, GIF). 업로드 후 조정 가능합니다. 다운로드한 이미지는 apps/professor/public/ 폴더에 저장하여 기본 이미지로 사용할 수 있습니다.' 
+                          : 'Upload an image (JPG, PNG, GIF). You can adjust and crop after uploading. Download the image and save it to apps/professor/public/ to use as a default avatar.'}
                       </p>
                     </div>
                   </div>
