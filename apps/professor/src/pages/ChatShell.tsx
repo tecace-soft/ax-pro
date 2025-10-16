@@ -25,7 +25,10 @@ const ChatShell: React.FC = () => {
       try {
         // Try backend API first
         const userData = await authApi.getMe();
-        setUser(userData);
+        setUser({
+          ...userData,
+          userId: (userData as any).email
+        });
         setBackendAvailable(true);
       } catch (error) {
         console.log('Backend auth failed, trying local auth:', error);
@@ -36,6 +39,7 @@ const ChatShell: React.FC = () => {
         if (localSession) {
           setUser({
             email: localSession.email,
+            userId: localSession.email,
             role: localSession.role
           });
         } else {

@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -67,9 +69,14 @@ const sessions_store: Map<string, string> = new Map(); // sessionId -> userId
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Resolve paths for serving the frontend build in production
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distDir = path.resolve(__dirname, '..', 'dist');
+
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: true, // reflect request origin (supports Render preview URL and custom domains)
   credentials: true
 }));
 app.use(cookieParser());
@@ -483,3 +490,12 @@ app.post('/api/messages/:id/feedback', requireAuth, (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Serve static frontend in production
+try {
+  app.use(express.static(distDir));
+  // SPA fallback to index.html
+  app.get('*', (_, res) => {
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
+} catch {}

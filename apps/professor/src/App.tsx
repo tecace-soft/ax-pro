@@ -8,12 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import AdminShell from './pages/AdminShell';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import OverviewDashboard from './features/overview/OverviewDashboard';
-import ChatUsage from './features/usage/ChatUsage';
-import PromptControl from './features/management/PromptControl';
-import KnowledgeManagement from './features/management/KnowledgeManagement';
-import KnowledgeManagementPage from './pages/KnowledgeManagement';
-import RAGManagement from './components/admin/RAGManagement';
+// These are now imported in AdminShell.tsx
 import { isAuthedFor, Role } from './services/auth';
 
 // Protected Route component
@@ -85,9 +80,7 @@ const App: React.FC = () => {
                 path="/admin" 
                 element={
                   <ProtectedRoute requiredRole="admin">
-                    <AdminShell>
-                      <OverviewDashboard />
-                    </AdminShell>
+                    <AdminShell />
                   </ProtectedRoute>
                 } 
               />
@@ -95,9 +88,7 @@ const App: React.FC = () => {
                 path="/admin/usage" 
                 element={
                   <ProtectedRoute requiredRole="admin">
-                    <AdminShell>
-                      <ChatUsage />
-                    </AdminShell>
+                    <AdminShell />
                   </ProtectedRoute>
                 } 
               />
@@ -105,9 +96,7 @@ const App: React.FC = () => {
                 path="/admin/prompt" 
                 element={
                   <ProtectedRoute requiredRole="admin">
-                    <AdminShell>
-                      <PromptControl />
-                    </AdminShell>
+                    <AdminShell />
                   </ProtectedRoute>
                 } 
               />
@@ -115,27 +104,7 @@ const App: React.FC = () => {
                 path="/admin/knowledge" 
                 element={
                   <ProtectedRoute requiredRole="admin">
-                    <AdminShell>
-                      <KnowledgeManagement />
-                    </AdminShell>
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/knowledge-management" 
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/rag-management" 
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AdminShell>
-                      <RAGManagement />
-                    </AdminShell>
+                    <AdminShell />
                   </ProtectedRoute>
                 } 
               />

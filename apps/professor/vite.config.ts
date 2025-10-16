@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
-    open: true
+    open: true,
+    host: '0.0.0.0',
+    allowedHosts: ['professor-ax-pro.onrender.com', 'localhost', '127.0.0.1']
   }
 })

@@ -10,3 +10,8 @@
 
 # Sensitive configuration files
 config/secrets.json
+
+node_modules/
+
+apps/professor/.env.example
+apps/professor/node_modules/

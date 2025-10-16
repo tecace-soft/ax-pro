@@ -85,7 +85,7 @@ export const chatService = {
       // Use backend API
       if (onStream) {
         // Use streaming
-        const response = await messagesApi.send(sessionId, content, true);
+        const response = await messagesApi.send(sessionId, content, true) as Response;
         const streamReader = new ChatStreamReader(response);
         
         let messageId = '';
@@ -103,7 +103,7 @@ export const chatService = {
         return { messageId, citations };
       } else {
         // Use non-streaming
-        const result = await messagesApi.send(sessionId, content, false);
+        const result = await messagesApi.send(sessionId, content, false) as any;
         return {
           messageId: result.messageId || `backend_${Date.now()}`,
           citations: result.citations || []
