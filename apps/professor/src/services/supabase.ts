@@ -114,6 +114,7 @@ export interface AdminFeedbackData {
   feedback_text: string;
   corrected_response?: string | null;
   created_at?: string;
+  apply?: boolean;  // Whether to apply this feedback to prompt
 }
 
 export interface UserFeedbackData {

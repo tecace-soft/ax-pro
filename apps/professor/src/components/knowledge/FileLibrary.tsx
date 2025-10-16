@@ -1,11 +1,15 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from '../../i18n/I18nProvider';
 import { 
-  uploadFilesToRAG, 
-  fetchFilesFromRAG,
-  deleteFileFromRAG,
+  uploadFilesToSupabase,
+  fetchFilesFromSupabase,
+  deleteFileFromSupabase,
+  indexFileToVector,
+  unindexFileByFilename,
   reindexFile,
-  validateFile, 
+  checkIndexingStatus,
+  checkFileSyncStatus,
+  validateFileExtended, 
   formatFileSize, 
   getFileIcon,
   FileUploadResult,
@@ -24,33 +28,133 @@ const FileLibrary: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [indexingStatus, setIndexingStatus] = useState<Record<string, {
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    message: string;
+    chunksCount?: number;
+    lastUpdated?: string;
+  }>>({});
+  const [pollingFiles, setPollingFiles] = useState<Set<string>>(new Set());
+  const [isDevMode, setIsDevMode] = useState(() => {
+    // Default to false (production mode), only true if explicitly set
+    const stored = localStorage.getItem('n8n-dev-mode');
+    // If no value stored, default to production (false)
+    // If 'true' is stored, use dev mode
+    // If 'false' is stored, use production mode
+    return stored === 'true';
+  });
+  // Always use Supabase Storage
+  const storageType = 'supabase' as const;
 
-  // Fetch files from n8n on component mount
+  // Toggle dev mode
+  const toggleDevMode = () => {
+    const newDevMode = !isDevMode;
+    setIsDevMode(newDevMode);
+    localStorage.setItem('n8n-dev-mode', newDevMode.toString());
+    console.log(`🔧 Switched to ${newDevMode ? 'DEV' : 'PRODUCTION'} mode`);
+  };
+
+  // Reset to production mode (useful for debugging)
+  const resetToProduction = () => {
+    setIsDevMode(false);
+    localStorage.setItem('n8n-dev-mode', 'false');
+    console.log(`🔧 Reset to PRODUCTION mode`);
+  };
+
+  // Refresh sync status for all files
+  const refreshSyncStatus = async () => {
+    console.log('🔄 Refreshing sync status for all files...');
+    setIsLoading(true);
+    
+    try {
+      // Reload files to get updated sync status
+      await loadFiles();
+      console.log('✅ Sync status refreshed');
+    } catch (error) {
+      console.error('❌ Error refreshing sync status:', error);
+      setError('Failed to refresh sync status');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch files on component mount
   useEffect(() => {
     loadFiles();
+  }, [storageType]);
+
+  // Force production mode on mount if no explicit dev mode setting
+  useEffect(() => {
+    const stored = localStorage.getItem('n8n-dev-mode');
+    if (stored === null || stored === 'true') {
+      // No setting stored or was set to dev, default to production
+      setIsDevMode(false);
+      localStorage.setItem('n8n-dev-mode', 'false');
+      console.log('🔧 Defaulted to PRODUCTION mode');
+    }
   }, []);
 
-  // Load files from n8n RAG system
+  // Add console command for easy debugging
+  useEffect(() => {
+    (window as any).resetToProduction = resetToProduction;
+    (window as any).toggleDevMode = toggleDevMode;
+    console.log('🔧 Debug commands available:');
+    console.log('  - window.resetToProduction() - Reset to production mode');
+    console.log('  - window.toggleDevMode() - Toggle between dev/prod');
+  }, []);
+
+  // Polling for indexing status
+  useEffect(() => {
+    if (pollingFiles.size === 0) return;
+
+    const pollInterval = setInterval(async () => {
+      for (const fileName of pollingFiles) {
+        try {
+          const status = await checkIndexingStatus(fileName);
+          setIndexingStatus(prev => ({
+            ...prev,
+            [fileName]: {
+              status: status.status,
+              message: status.message,
+              chunksCount: status.chunksCount,
+              lastUpdated: status.lastUpdated
+            }
+          }));
+
+          // Stop polling if completed or failed
+          if (status.status === 'completed' || status.status === 'failed') {
+            setPollingFiles(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(fileName);
+              return newSet;
+            });
+          }
+        } catch (error) {
+          console.error(`Error polling status for ${fileName}:`, error);
+        }
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [pollingFiles]);
+
+  // Load files from Supabase Storage
   const loadFiles = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetchFilesFromRAG();
+      const response = await fetchFilesFromSupabase();
       if (response.success) {
         setUploadedFiles(response.files);
-        console.log(`Loaded ${response.files.length} files from n8n`);
+        console.log(`✅ Loaded ${response.files.length} files from Supabase Storage`);
       } else {
-        // If n8n endpoints don't exist yet, show a helpful message
-        if (response.message?.includes('404') || response.message?.includes('Not Found')) {
-          setError('n8n file management endpoints not configured yet. Please set up the following webhooks in n8n: list-files, delete-file, reindex-file');
-        } else {
-          setError(response.message || 'Failed to load files');
-        }
+        setError(response.message || 'Failed to load files from Supabase');
         console.error('Failed to load files:', response.message);
       }
     } catch (err) {
-      const errorMessage = 'Failed to connect to n8n service. Please ensure n8n webhooks are configured.';
+      const errorMessage = 'Failed to connect to Supabase Storage. Please check your configuration.';
       setError(errorMessage);
       console.error('Error loading files:', err);
     } finally {
@@ -70,17 +174,99 @@ const FileLibrary: React.FC = () => {
     }
 
     try {
-      const result = await deleteFileFromRAG(fileId);
+      const result = await deleteFileFromSupabase(fileName);
+        
       if (result.success) {
         // Remove file from local state
         setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
-        console.log(`File ${fileName} deleted successfully`);
+        console.log(`✅ File ${fileName} deleted successfully`);
       } else {
         alert(`Failed to delete file: ${result.message}`);
       }
     } catch (error) {
       console.error('Error deleting file:', error);
       alert('Failed to delete file');
+    }
+  };
+
+  // Handle file indexing
+  const handleIndexFile = async (fileName: string) => {
+    setActionLoading(fileName);
+    try {
+      console.log('🔄 Starting index process for:', fileName);
+      
+      // Set initial status
+      setIndexingStatus(prev => ({
+        ...prev,
+        [fileName]: {
+          status: 'processing',
+          message: 'Sending file to n8n for indexing...'
+        }
+      }));
+      
+      const result = await indexFileToVector(fileName);
+      console.log('📋 Index result:', result);
+      
+      if (result.success) {
+        // Start polling for status updates
+        setPollingFiles(prev => new Set(prev).add(fileName));
+        
+        setIndexingStatus(prev => ({
+          ...prev,
+          [fileName]: {
+            status: 'processing',
+            message: result.message || 'File sent for indexing, checking status...'
+          }
+        }));
+        
+        // Show initial success message
+        alert(`✅ ${result.message}\n\nStatus will be updated automatically. Check the Knowledge Index tab when complete.`);
+        loadFiles(); // Refresh the list
+      } else {
+        setIndexingStatus(prev => ({
+          ...prev,
+          [fileName]: {
+            status: 'failed',
+            message: result.message || 'Failed to send file for indexing'
+          }
+        }));
+        alert(`❌ ${result.message}\n\nCheck the browser console for more details.`);
+      }
+    } catch (error) {
+      console.error('❌ Error indexing file:', error);
+      setIndexingStatus(prev => ({
+        ...prev,
+        [fileName]: {
+          status: 'failed',
+          message: `Error: ${error}`
+        }
+      }));
+      alert(`❌ Error indexing file: ${error}\n\nCheck the browser console for more details.`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle file unindexing
+  const handleUnindexFile = async (fileName: string) => {
+    if (!confirm(`⚠️ Are you sure you want to unindex all chunks for "${fileName}"? This will remove ALL chunks for this file.`)) {
+      return;
+    }
+    
+    setActionLoading(fileName);
+    try {
+      const result = await unindexFileByFilename(fileName);
+      if (result.success) {
+        alert(`✅ ${result.message} (${result.deletedCount || 0} chunks removed)`);
+        loadFiles(); // Refresh the list
+      } else {
+        alert(`❌ ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error unindexing file:', error);
+      alert(`❌ Error unindexing file: ${error}`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -101,6 +287,36 @@ const FileLibrary: React.FC = () => {
     }
   };
 
+  // Handle file download
+  const handleDownloadFile = async (fileName: string) => {
+    try {
+      // Get Supabase signed URL (for private buckets)
+      const supabase = (await import('../../services/supabase')).getSupabaseClient();
+      const filePath = `files/${fileName}`;
+      
+      // Create a signed URL that expires in 1 hour
+      const { data, error } = await supabase.storage
+        .from('knowledge-base')
+        .createSignedUrl(filePath, 3600); // 3600 seconds = 1 hour
+      
+      if (error) {
+        console.error('Error creating signed URL:', error);
+        alert(`Failed to get download URL: ${error.message}`);
+        return;
+      }
+      
+      if (data?.signedUrl) {
+        // Open in new tab or download
+        window.open(data.signedUrl, '_blank');
+      } else {
+        alert('Failed to get download URL');
+      }
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file');
+    }
+  };
+
   // Handle file selection
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -111,7 +327,7 @@ const FileLibrary: React.FC = () => {
 
     // Validate each file
     fileArray.forEach(file => {
-      const validation = validateFile(file);
+      const validation = validateFileExtended(file);
       if (validation.valid) {
         validFiles.push(file);
       } else {
@@ -128,35 +344,31 @@ const FileLibrary: React.FC = () => {
     if (validFiles.length > 0) {
       uploadFiles(validFiles);
     }
-  }, []);
+  }, [storageType]);
 
-  // Upload files to RAG system
+  // Upload files to Supabase Storage
   const uploadFiles = async (files: File[]) => {
     setIsUploading(true);
     setUploadResults([]);
 
     try {
-      const results = await uploadFilesToRAG(files);
+      const results = await uploadFilesToSupabase(files);
       setUploadResults(results);
 
-      // Add successful uploads to file list
-      const newFiles: RAGFile[] = results
-        .filter(result => result.success)
-        .map((result, index) => ({
-          id: `file-${Date.now()}-${index}`,
-          name: result.fileName || files[index].name,
-          size: files[index].size,
-          type: files[index].type,
-          uploadedAt: new Date().toISOString(),
-          status: 'ready' as const,
-        }));
-
-      setUploadedFiles(prev => [...newFiles, ...prev]);
+      // Show success/error messages
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
       
-      // Refresh the file list from n8n to get the actual uploaded files
-      setTimeout(() => {
-        loadFiles();
-      }, 1000);
+      if (successCount > 0) {
+        console.log(`✅ ${successCount} file(s) uploaded successfully`);
+      }
+      if (failCount > 0) {
+        console.error(`❌ ${failCount} file(s) failed to upload`);
+      }
+      
+      // Immediately refresh the file list to show new files
+      await loadFiles();
+      
     } catch (error) {
       console.error('Upload error:', error);
     } finally {
@@ -216,8 +428,20 @@ const FileLibrary: React.FC = () => {
   return (
     <div className="file-library">
       <div className="fl-header">
-        <h2 className="fl-title">{t('knowledge.fileLibrary')}</h2>
-        <p className="fl-description">{t('knowledge.fileLibraryDescription')}</p>
+        <div className="fl-header-content">
+          <div>
+            <h2 className="fl-title">{t('knowledge.fileLibrary')}</h2>
+            <p className="fl-description">{t('knowledge.fileLibraryDescription')}</p>
+          </div>
+          <div className="webhook-mode-toggle">
+            <button
+              onClick={toggleDevMode}
+              className={`mode-toggle-btn ${isDevMode ? 'dev-mode' : 'prod-mode'}`}
+            >
+              {isDevMode ? '🔧 DEV Mode' : '🚀 PROD Mode'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* File Upload Area */}
@@ -271,6 +495,10 @@ const FileLibrary: React.FC = () => {
         <button className="refresh-btn" onClick={handleRefresh} disabled={isLoading}>
           <span className="refresh-icon">↻</span>
           {isLoading ? t('knowledge.loading') || 'Loading...' : t('knowledge.refresh')}
+        </button>
+        <button className="sync-status-btn" onClick={refreshSyncStatus} disabled={isLoading}>
+          <span className="sync-icon">🔄</span>
+          {isLoading ? 'Checking...' : 'Sync Status'}
         </button>
       </div>
 
@@ -336,14 +564,70 @@ const FileLibrary: React.FC = () => {
                     <td>{new Date(file.uploadedAt).toLocaleString()}</td>
                     <td>{file.type}</td>
                     <td>
-                      <span className={`sync-status ${file.syncStatus || 'synced'}`}>
-                        {file.syncStatus === 'synced' ? '✓' : 
-                         file.syncStatus === 'pending' ? '⏳' : 
-                         file.syncStatus === 'error' ? '❌' : '✓'}
+                      <span className={`sync-status ${file.syncStatus || 'pending'}`} title={
+                        file.syncStatus === 'synced' ? 'Indexed' :
+                        file.syncStatus === 'pending' ? 'Not indexed' :
+                        file.syncStatus === 'error' ? 'Error' :
+                        'Unknown'
+                      }>
+                        {file.syncStatus === 'synced' ? 'Synced' : 
+                         file.syncStatus === 'pending' ? 'Pending' : 
+                         file.syncStatus === 'error' ? 'Error' : 'Pending'}
                       </span>
                     </td>
                     <td>
-                      <div className="file-actions">
+                      {/* Indexing Status */}
+                    {indexingStatus[file.name] && (
+                      <div className="indexing-status" style={{ 
+                        marginBottom: '8px', 
+                        padding: '4px 8px', 
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        backgroundColor: indexingStatus[file.name].status === 'completed' ? 'rgba(16, 185, 129, 0.1)' :
+                                       indexingStatus[file.name].status === 'processing' ? 'rgba(59, 130, 246, 0.1)' :
+                                       indexingStatus[file.name].status === 'failed' ? 'rgba(239, 68, 68, 0.1)' :
+                                       'rgba(107, 114, 128, 0.1)',
+                        color: indexingStatus[file.name].status === 'completed' ? '#10b981' :
+                               indexingStatus[file.name].status === 'processing' ? '#3b82f6' :
+                               indexingStatus[file.name].status === 'failed' ? '#ef4444' :
+                               '#6b7280'
+                      }}>
+                        {indexingStatus[file.name].status === 'completed' && '✅ '}
+                        {indexingStatus[file.name].status === 'processing' && '⏳ '}
+                        {indexingStatus[file.name].status === 'failed' && '❌ '}
+                        {indexingStatus[file.name].status === 'pending' && '⏸️ '}
+                        {indexingStatus[file.name].message}
+                        {indexingStatus[file.name].chunksCount && ` (${indexingStatus[file.name].chunksCount} chunks)`}
+                      </div>
+                    )}
+                    
+                    <div className="file-actions">
+                        <button 
+                          className="action-btn" 
+                          title="Index file"
+                          onClick={() => handleIndexFile(file.name)}
+                          disabled={actionLoading === file.name}
+                          style={{ 
+                            backgroundColor: actionLoading === file.name ? '#6b7280' : '#10b981',
+                            color: 'white',
+                            marginRight: '4px'
+                          }}
+                        >
+                          {actionLoading === file.name ? '⏳' : '📤'}
+                        </button>
+                        <button 
+                          className="action-btn" 
+                          title="Unindex file"
+                          onClick={() => handleUnindexFile(file.name)}
+                          disabled={actionLoading === file.name}
+                          style={{ 
+                            backgroundColor: actionLoading === file.name ? '#6b7280' : '#ef4444',
+                            color: 'white',
+                            marginRight: '4px'
+                          }}
+                        >
+                          {actionLoading === file.name ? '⏳' : '🗑️'}
+                        </button>
                         <button 
                           className="action-btn reindex-btn" 
                           title="Re-index file"
@@ -354,8 +638,7 @@ const FileLibrary: React.FC = () => {
                         <button 
                           className="action-btn download-btn" 
                           title={t('knowledge.download')}
-                          onClick={() => file.url && window.open(file.url, '_blank')}
-                          disabled={!file.url}
+                          onClick={() => handleDownloadFile(file.name)}
                         >
                           ↓
                         </button>

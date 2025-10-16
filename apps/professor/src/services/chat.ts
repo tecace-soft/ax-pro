@@ -1,5 +1,5 @@
 import { messagesApi } from './api';
-import { isBackendAvailable, isN8nWebhookAvailable } from './devMode';
+import { isBackendAvailable, isN8nWebhookAvailable, isSimulationModeEnabled } from './devMode';
 import { getActiveN8nConfig, sendToN8n, N8nRequest, N8nResponse } from './n8n';
 import { getSession } from './auth';
 
@@ -110,8 +110,8 @@ export const chatService = {
         };
       }
     } else {
-      // Use n8n webhook if available
-      console.log('Backend unavailable, trying n8n...');
+      // Use n8n webhook for chat messages (sessions are handled locally)
+      console.log('Backend unavailable, trying n8n for chat...');
       const n8nAvailable = isN8nWebhookAvailable();
       const n8nConfig = getActiveN8nConfig();
       console.log('n8n webhook available:', n8nAvailable);
@@ -122,7 +122,8 @@ export const chatService = {
         try {
           const session = getSession();
           // Generate unique chatId for this message (for future feedback API)
-          const chatId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          // Use sessionId + timestamp + random to ensure uniqueness across sessions
+          const chatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const request: N8nRequest = {
             sessionId,
             chatId,
@@ -133,18 +134,40 @@ export const chatService = {
 
           console.log('=== CHAT SERVICE DEBUG ===');
           console.log('Sending request to n8n:', request);
-          const response: N8nResponse = await sendToN8n(request);
-          console.log('n8n response received successfully:', response);
-          console.log('Response type:', typeof response);
-          console.log('Response has answer?', !!response?.answer);
-          console.log('Response answer:', response?.answer);
-          console.log('==========================');
           
-          // Check if response is valid
-          if (!response || !response.answer) {
-            console.error('Invalid webhook response:', response);
-            throw new Error('Invalid response from webhook');
+          // Retry mechanism for n8n requests
+          let response: N8nResponse;
+          let lastError: Error | null = null;
+          
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              console.log(`n8n request attempt ${attempt}/3`);
+              response = await sendToN8n(request);
+              console.log('n8n response received successfully:', response);
+              console.log('Response type:', typeof response);
+              console.log('Response has answer?', !!response?.answer);
+              console.log('Response answer:', response?.answer);
+              break; // Success, exit retry loop
+            } catch (error) {
+              lastError = error as Error;
+              console.warn(`n8n request attempt ${attempt} failed:`, error);
+              
+              if (attempt < 3) {
+                // Wait before retry (exponential backoff)
+                const delay = Math.pow(2, attempt) * 1000; // 2s, 4s
+                console.log(`Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
+            }
           }
+          
+          // Check if all attempts failed
+          if (!response! || !response!.answer) {
+            console.error('All n8n attempts failed, last error:', lastError);
+            throw new Error(`n8n webhook failed after 3 attempts: ${lastError?.message || 'No response'}`);
+          }
+          
+          console.log('==========================');
           
           // Use chatId as messageId so feedback can link correctly
           // chatId was sent to n8n and will be in the database
@@ -192,15 +215,32 @@ export const chatService = {
           };
         } catch (error) {
           console.error('Failed to send to n8n:', error);
-          console.log('n8n failed, falling back to simulation');
-          // Fall back to simulation instead of throwing error
+          console.log('n8n failed, checking simulation mode setting');
+          
+          // Check if simulation mode is enabled
+          if (isSimulationModeEnabled()) {
+            console.log('Simulation mode enabled, falling back to simulation');
+            // Fall back to simulation
+          } else {
+            console.log('Simulation mode disabled, throwing error');
+            throw new Error(`Chat service unavailable: ${error instanceof Error ? error.message : 'n8n webhook failed'}`);
+          }
         }
       } else {
-        console.log('No n8n config found or webhook URL missing, falling back to simulation');
+        console.log('No n8n config found or webhook URL missing');
         console.log('n8n config was:', n8nConfig);
+        
+        // Check if simulation mode is enabled
+        if (isSimulationModeEnabled()) {
+          console.log('Simulation mode enabled, falling back to simulation');
+          // Fall back to simulation
+        } else {
+          console.log('Simulation mode disabled, throwing error');
+          throw new Error('Chat service unavailable: No n8n webhook configured');
+        }
       }
       
-      // Fall back to simulation (either no n8n config or n8n failed)
+      // Only reach here if simulation mode is enabled
       console.log('Falling back to simulation');
       const simulationModule = await import('./simulation');
       const simulatedResponse = simulationModule.generateSimulatedResponse(content);

@@ -14,6 +14,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
 import { useUICustomization } from '../hooks/useUICustomization';
 import { getSupabaseConfig, saveSupabaseConfig, testSupabaseConnection, SupabaseConfig } from '../services/supabase';
+import { isSimulationModeEnabled, setSimulationModeEnabled } from '../services/devMode';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
@@ -50,16 +51,23 @@ const Settings: React.FC = () => {
 
   const [testingSupabase, setTestingSupabase] = useState(false);
   const [supabaseTestResult, setSupabaseTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [simulationModeEnabled, setSimulationModeEnabledState] = useState(false);
 
   useEffect(() => {
     loadConfigs();
     loadN8nConfigs();
     loadSupabaseConfig();
+    loadSimulationMode();
   }, []);
 
   const loadSupabaseConfig = () => {
     const config = getSupabaseConfig();
     setSupabaseConfig(config);
+  };
+
+  const loadSimulationMode = () => {
+    const enabled = isSimulationModeEnabled();
+    setSimulationModeEnabledState(enabled);
   };
 
   const loadConfigs = () => {
@@ -1080,6 +1088,36 @@ const Settings: React.FC = () => {
                   </button>
                 </div>
               )}
+
+              {/* Simulation Mode Setting */}
+              <div className="border-t pt-4 mt-6" style={{ borderColor: 'var(--border)' }}>
+                <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
+                  Chat Behavior
+                </h3>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                      Enable Simulation Mode
+                    </label>
+                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      When enabled, chat will fall back to simulated responses if the chatbot server is unavailable.
+                      When disabled, chat will show an error instead of simulation.
+                    </p>
+                  </div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={simulationModeEnabled}
+                      onChange={(e) => {
+                        setSimulationModeEnabledState(e.target.checked);
+                        setSimulationModeEnabled(e.target.checked);
+                      }}
+                      className="w-4 h-4 rounded"
+                      style={{ accentColor: 'var(--primary)' }}
+                    />
+                  </label>
+                </div>
+              </div>
 
               {databaseType === 'other' && (
                 <div className="p-4 rounded-md" style={{ backgroundColor: 'var(--warning-light)' }}>
