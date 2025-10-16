@@ -766,7 +766,7 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     
     // Check if we have a relative path that needs to be converted to full URL
     if (!urlData.signedUrl.startsWith('http')) {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qpyteahuynkgkbmdasbv.supabase.co';
+      const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://qpyteahuynkgkbmdasbv.supabase.co';
       
       if (urlData.signedUrl.startsWith('/object/')) {
         // Format: /object/sign/bucket/path?token=...
@@ -790,13 +790,13 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
 
     // Send to n8n webhook - DEV/PRODUCTION SELECTOR
     // Default to PRODUCTION mode, only use DEV if explicitly enabled
-    const isDevMode = import.meta.env.VITE_N8N_DEV_MODE === 'true' || 
+    const isDevMode = ((import.meta as any).env?.VITE_N8N_DEV_MODE === 'true') || 
                      localStorage.getItem('n8n-dev-mode') === 'true';
     
     const n8nWebhookUrl = isDevMode 
       ? 'https://n8n.srv978041.hstgr.cloud/webhook-test/1f18f1aa-44c4-467f-b299-c87c9b6f9459'
-      : (import.meta.env.VITE_N8N_BASE_URL 
-          ? `${import.meta.env.VITE_N8N_BASE_URL}/webhook/${import.meta.env.VITE_N8N_UPLOAD_WEBHOOK_ID}`
+      : ((import.meta as any).env?.VITE_N8N_BASE_URL 
+          ? `${(import.meta as any).env?.VITE_N8N_BASE_URL}/webhook/${(import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID}`
           : `${N8N_BASE_URL}/webhook/${UPLOAD_WEBHOOK_ID}`);
     
     console.log(`🔧 Webhook mode: ${isDevMode ? 'DEV (test)' : 'PRODUCTION'}`);
@@ -837,8 +837,8 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       return {
         success: true,
         message: `File sent for indexing successfully. Processing time: ${estimatedTime}`,
-        workflowId: workflowId,
-        estimatedTime: estimatedTime
+        ...(workflowId && { workflowId }),
+        ...(estimatedTime && { estimatedTime })
       };
     } catch (axiosError) {
       console.warn('⚠️ Axios failed (likely CORS), trying fetch with no-cors:', axiosError);
@@ -863,17 +863,13 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
           console.log(`✅ Request sent successfully (no-cors mode)`);
           return {
             success: true,
-            message: `File sent for indexing (CORS bypassed). Processing time: 30-60 seconds`,
-            workflowId: 'unknown',
-            estimatedTime: '30-60 seconds'
+            message: `File sent for indexing (CORS bypassed). Processing time: 30-60 seconds`
           };
         } else {
           console.warn(`⚠️ Unexpected status in no-cors mode: ${fetchResponse.status}`);
           return {
             success: true,
-            message: `File sent for indexing (CORS bypassed, status: ${fetchResponse.status}). Processing time: 30-60 seconds`,
-            workflowId: 'unknown',
-            estimatedTime: '30-60 seconds'
+            message: `File sent for indexing (CORS bypassed, status: ${fetchResponse.status}). Processing time: 30-60 seconds`
           };
         }
       } catch (fetchError: any) {
@@ -891,11 +887,12 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       }
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const msg = (error instanceof Error) ? error.message : 'Failed to index file';
     console.error('Error indexing file:', error);
     return {
       success: false,
-      message: error.response?.data?.message || error.message || 'Failed to index file',
+      message: msg,
     };
   }
 }

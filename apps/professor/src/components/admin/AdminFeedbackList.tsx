@@ -188,7 +188,7 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
 
   const handleExport = () => {
     // Export enabled feedbacks to CSV
-    const enabledFeedbacks = filteredFeedbacks.filter(f => f.apply)
+    const enabledFeedbacks = filteredFeedbacks.filter(f => (f as any)?.isEnabled ?? true)
     
     if (enabledFeedbacks.length === 0) {
       alert('No enabled feedback to export')
@@ -390,7 +390,7 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
               style={{
                 backgroundColor: 'rgba(9, 14, 34, 0.4)',
                 borderColor: 'var(--admin-border)',
-                opacity: feedback.apply ? 1 : 0.5
+                opacity: ((feedback as any)?.isEnabled ?? true) ? 1 : 0.5
               }}
             >
               <div className="p-4">
