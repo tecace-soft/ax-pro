@@ -24,10 +24,28 @@ export default function ScrollToTop() {
   }, [])
 
   const scrollToTop = () => {
+    // Find the main scrollable container
+    const mainContent = document.querySelector('.admin-dashboard-content') || 
+                       document.querySelector('.dashboard-content') ||
+                       document.querySelector('main') ||
+                       document.documentElement
+    
+    if (mainContent) {
+      mainContent.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
+    
+    // Also try window scroll
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
     })
+    
+    // Fallback
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
   }
 
   return (
