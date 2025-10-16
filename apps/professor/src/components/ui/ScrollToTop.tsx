@@ -12,34 +12,38 @@ export default function ScrollToTop() {
                        document.body.scrollTop || 
                        0
       
-      const mainContent = document.querySelector('.admin-dashboard-content')
-      const mainContentScroll = mainContent?.scrollTop || 0
+      // Check all possible scrollable containers
+      const selectors = [
+        '.admin-dashboard-content',
+        '.dashboard-content',
+        '.knowledge-management-container',
+        'main',
+        '.main-content'
+      ]
+      
+      let maxScroll = scrollTop
+      
+      selectors.forEach(selector => {
+        const el = document.querySelector(selector)
+        if (el && el.scrollTop > maxScroll) {
+          maxScroll = el.scrollTop
+        }
+      })
       
       // Show button if any scroll is more than 200px
-      if (scrollTop > 200 || mainContentScroll > 200) {
-        setIsVisible(true)
-      } else {
-        setIsVisible(false)
-      }
+      setIsVisible(maxScroll > 200)
     }
 
-    // Check on mount
+    // Check on mount and periodically
     checkScrollTop()
+    const interval = setInterval(checkScrollTop, 500)
 
     // Listen to window scroll
-    window.addEventListener('scroll', checkScrollTop)
-    
-    // Listen to scroll on main content if it exists
-    const mainContent = document.querySelector('.admin-dashboard-content')
-    if (mainContent) {
-      mainContent.addEventListener('scroll', checkScrollTop)
-    }
+    window.addEventListener('scroll', checkScrollTop, true)
 
     return () => {
-      window.removeEventListener('scroll', checkScrollTop)
-      if (mainContent) {
-        mainContent.removeEventListener('scroll', checkScrollTop)
-      }
+      window.removeEventListener('scroll', checkScrollTop, true)
+      clearInterval(interval)
     }
   }, [])
 
