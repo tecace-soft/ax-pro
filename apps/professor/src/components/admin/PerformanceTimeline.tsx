@@ -1,6 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from '../../i18n/I18nProvider';
 import { DailyRow, EstimationMode } from '../../services/dailyAggregates';
+
+type DateRange = '3d' | '7d' | '14d' | '21d' | '30d' | '90d' | 'custom'
+
+const getDateRangeOptions = (t: (key: string) => string) => [
+  { value: '3d' as DateRange, label: t('admin.last3Days') },
+  { value: '7d' as DateRange, label: t('admin.last7Days') },
+  { value: '14d' as DateRange, label: t('admin.last2Weeks') },
+  { value: '21d' as DateRange, label: t('admin.last3Weeks') },
+  { value: '30d' as DateRange, label: t('admin.last30Days') },
+  { value: '90d' as DateRange, label: t('admin.last3Months') },
+  { value: 'custom' as DateRange, label: t('admin.customRange') }
+]
 
 interface PerformanceTimelineProps {
   data: DailyRow[];
@@ -29,6 +41,10 @@ export default function PerformanceTimeline({
   const [playSpeed, setPlaySpeed] = useState(800);
   const [showDataControls, setShowDataControls] = useState(false);
   const [hoveredBar, setHoveredBar] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange>('21d');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [showCustomRange, setShowCustomRange] = useState(false);
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -69,8 +85,55 @@ export default function PerformanceTimeline({
     return Math.round(metrics.reduce((sum, val) => sum + val, 0) / metrics.length * 100);
   };
 
-  const maxScore = Math.max(...data.map(calculateOverallScore), 100);
-  const selectedRow = data.find(row => row.Date === selectedDate);
+  // Calculate date range
+  const getDateRangeFilter = () => {
+    const end = new Date()
+    const start = new Date()
+
+    switch (dateRange) {
+      case '3d':
+        start.setDate(end.getDate() - 3)
+        break
+      case '7d':
+        start.setDate(end.getDate() - 7)
+        break
+      case '14d':
+        start.setDate(end.getDate() - 14)
+        break
+      case '21d':
+        start.setDate(end.getDate() - 21)
+        break
+      case '30d':
+        start.setDate(end.getDate() - 30)
+        break
+      case '90d':
+        start.setDate(end.getDate() - 90)
+        break
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return {
+            startDate: customStartDate,
+            endDate: customEndDate
+          }
+        }
+        start.setDate(end.getDate() - 21)
+        break
+    }
+
+    return {
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0]
+    }
+  }
+
+  // Filter data based on date range
+  const filteredData = useMemo(() => {
+    const { startDate, endDate } = getDateRangeFilter()
+    return data.filter(row => row.Date >= startDate && row.Date <= endDate)
+  }, [data, dateRange, customStartDate, customEndDate])
+
+  const maxScore = Math.max(...filteredData.map(calculateOverallScore), 100);
+  const selectedRow = filteredData.find(row => row.Date === selectedDate);
   const today = new Date().toISOString().split('T')[0];
 
   if (data.length === 0) {
@@ -90,6 +153,59 @@ export default function PerformanceTimeline({
         </div>
 
         <div className="timeline-controls-compact">
+          {/* Date Range Selector */}
+          <div className="date-range-selector" style={{ marginRight: '12px' }}>
+            <select
+              value={dateRange}
+              onChange={(e) => {
+                const newRange = e.target.value as DateRange
+                setDateRange(newRange)
+                setShowCustomRange(newRange === 'custom')
+                if (newRange !== 'custom') {
+                  setCustomStartDate('')
+                  setCustomEndDate('')
+                }
+              }}
+              className="date-select-compact"
+              style={{ fontSize: '13px' }}
+            >
+              {getDateRangeOptions(t).map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Custom Date Inputs */}
+          {showCustomRange && (
+            <div className="custom-date-inputs" style={{ display: 'flex', gap: '4px', marginRight: '12px' }}>
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => {
+                  setCustomStartDate(e.target.value)
+                  if (!customEndDate) {
+                    setCustomEndDate(new Date().toISOString().split('T')[0])
+                  }
+                }}
+                className="date-select-compact"
+                style={{ fontSize: '11px', padding: '4px 6px' }}
+                max={new Date().toISOString().split('T')[0]}
+              />
+              <span style={{ color: 'var(--admin-text-muted)', fontSize: '11px', alignSelf: 'center' }}>~</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="date-select-compact"
+                style={{ fontSize: '11px', padding: '4px 6px' }}
+                min={customStartDate}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+          )}
+          
           {/* Date Selector */}
           <div className="date-selector-compact">
             <label>{t('admin.date')}:</label>
@@ -98,7 +214,7 @@ export default function PerformanceTimeline({
               value={selectedDate}
               onChange={(e) => onDateChange(e.target.value)}
             >
-              {data.map(row => (
+              {filteredData.map(row => (
                 <option key={row.Date} value={row.Date}>
                   {row.Date}
                 </option>
@@ -179,7 +295,7 @@ export default function PerformanceTimeline({
       {/* Chart */}
       <div className="timeline-chart">
         <div className="chart-container">
-          {data.map((row) => {
+          {filteredData.map((row) => {
             const score = calculateOverallScore(row);
             const height = (score / maxScore) * 100;
             const isSelected = row.Date === selectedDate;
@@ -221,8 +337,8 @@ export default function PerformanceTimeline({
         
         {/* X-axis labels */}
         <div className="date-labels">
-          <span className="date-start">{data[0]?.Date}</span>
-          <span className="date-end">{data[data.length - 1]?.Date}</span>
+          <span className="date-start">{filteredData[0]?.Date}</span>
+          <span className="date-end">{filteredData[filteredData.length - 1]?.Date}</span>
         </div>
       </div>
     </div>
