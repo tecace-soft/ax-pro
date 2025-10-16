@@ -321,7 +321,7 @@ const Landing: React.FC = () => {
           {/* Copyright */}
           <div className="pt-4 border-t text-center" style={{ borderColor: 'var(--border)' }}>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              © {new Date().getFullYear()} TecAce Corporation. All rights reserved. |{' '}
+              © {new Date().getFullYear()} TecAce Software, Ltd. All rights reserved. |{' '}
               <a 
                 href="https://tecace.com" 
                 target="_blank" 
