@@ -44,8 +44,6 @@ export default function ScrollToTop() {
   }, [])
 
   const scrollToTop = () => {
-    console.log('🔵 Scroll button clicked!')
-    
     // Try to find all possible scrollable containers
     const selectors = [
       '.admin-dashboard-content',
@@ -61,7 +59,6 @@ export default function ScrollToTop() {
     for (const selector of selectors) {
       const element = document.querySelector(selector)
       if (element && element.scrollTop > 0) {
-        console.log(`✅ Found scrolled element: ${selector}, scrollTop: ${element.scrollTop}`)
         element.scrollTo({ top: 0, behavior: 'smooth' })
         scrolled = true
         break
@@ -69,7 +66,6 @@ export default function ScrollToTop() {
     }
     
     if (!scrolled) {
-      console.log('📜 Scrolling window instead')
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
     
@@ -78,7 +74,6 @@ export default function ScrollToTop() {
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
       
-      // Try all selectors again
       selectors.forEach(selector => {
         const el = document.querySelector(selector)
         if (el) el.scrollTop = 0
@@ -86,17 +81,16 @@ export default function ScrollToTop() {
     }, 100)
   }
 
-  // Temporarily always show for debugging
-  // if (!isVisible) {
-  //   return null
-  // }
+  if (!isVisible) {
+    return null
+  }
 
   return (
     <button
       onClick={scrollToTop}
       style={{
         position: 'fixed',
-        bottom: '32px',
+        bottom: '100px',
         right: '32px',
         width: '48px',
         height: '48px',
