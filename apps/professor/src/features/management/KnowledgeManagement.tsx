@@ -353,8 +353,8 @@ const KnowledgeManagement: React.FC = () => {
               </div>
             </div>
             <Table
-              columns={getCurrentColumns()}
-              data={getCurrentData()}
+              columns={getCurrentColumns() as any}
+              data={getCurrentData() as any}
               loading={loading}
               pagination={{
                 page: pagination.page,
@@ -369,8 +369,8 @@ const KnowledgeManagement: React.FC = () => {
 
         {activeTab === 'index' && (
           <Table
-            columns={getCurrentColumns()}
-            data={getCurrentData()}
+            columns={getCurrentColumns() as any}
+            data={getCurrentData() as any}
             loading={loading}
             pagination={{
               page: pagination.page,
@@ -384,8 +384,8 @@ const KnowledgeManagement: React.FC = () => {
 
         {activeTab === 'sync' && (
           <Table
-            columns={getCurrentColumns()}
-            data={getCurrentData()}
+            columns={getCurrentColumns() as any}
+            data={getCurrentData() as any}
             loading={loading}
             pagination={{
               page: pagination.page,

@@ -14,6 +14,7 @@ export interface ApiConfig {
 
 // UI customization settings
 export interface UICustomization {
+  title?: string;
   chatTitle: string;
   chatSubtitle: string;
   avatarUrl: string;
@@ -78,7 +79,7 @@ export const settingsService = {
       apiKey: encrypt(newConfig.apiKey)
     };
 
-    const updatedConfigs = [...configs.filter(c => c.id !== config.id), configToStore];
+    const updatedConfigs = [...configs.filter(c => c.id !== (config as any).id), configToStore];
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(updatedConfigs));
     
     return newConfig;

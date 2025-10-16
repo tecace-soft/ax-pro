@@ -35,8 +35,8 @@ export default function AdminDashboard() {
   const { t } = useTranslation()
   
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [startDate, setStartDate] = useState<string>('')
-  const [endDate, setEndDate] = useState<string>('')
+  const [, setStartDate] = useState<string>('')
+  const [, setEndDate] = useState<string>('')
 
   // Performance Timeline state
   const [radarData, setRadarData] = useState<DailyRow[]>([])

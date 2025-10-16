@@ -49,7 +49,7 @@ export default function PerformanceRadar({
     promptInjection: true
   })
 
-  const [isModuleControlExpanded, setIsModuleControlExpanded] = useState(false)
+  const [, setIsModuleControlExpanded] = useState(false)
 
   const allDataPoints = [
     { key: 'relevance', label: t('admin.relevance'), value: relevance, description: t('admin.contentMatching'), icon: '⚡', color: '#ff6b6b' },

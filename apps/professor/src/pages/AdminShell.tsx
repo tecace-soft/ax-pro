@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
 import { useAuth, getSession } from '../services/auth';
+import OverviewDashboard from '../features/overview/OverviewDashboard';
+import ChatUsage from '../features/usage/ChatUsage';
+import PromptControl from '../features/management/PromptControl';
+import KnowledgeManagement from '../features/management/KnowledgeManagement';
 
 const AdminShell: React.FC = () => {
   const navigate = useNavigate();
@@ -152,7 +156,10 @@ const AdminShell: React.FC = () => {
           {/* Content */}
           <main className="flex-1 p-6">
             <div className="max-w-7xl mx-auto">
-              <Outlet />
+              {location.pathname === '/admin' && <OverviewDashboard />}
+              {location.pathname === '/admin/usage' && <ChatUsage />}
+              {location.pathname === '/admin/prompt' && <PromptControl />}
+              {location.pathname === '/admin/knowledge' && <KnowledgeManagement />}
             </div>
           </main>
         </div>

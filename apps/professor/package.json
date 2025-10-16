@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:server": "tsx server/index.ts",
+    "dev": "node node_modules/vite/bin/vite.js --host 0.0.0.0 --port $PORT",
+    "dev:server": "node node_modules/tsx/dist/cli.mjs server/index.ts",
     "dev:full": "concurrently \"npm run dev:server\" \"npm run dev\"",
-    "build": "tsc && vite build",
-    "start": "tsx server/index.ts",
+    "build": "tsc && node node_modules/vite/bin/vite.js build",
+    "start": "node node_modules/tsx/dist/cli.mjs server/index.ts",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },

@@ -285,7 +285,7 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     }
     
     return responseData;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to send to n8n:', error);
     
     if (error.name === 'AbortError') {
