@@ -553,7 +553,7 @@
   width: 40px;
   height: 40px;
   background: var(--admin-primary);
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -564,7 +564,7 @@
   width: 32px;
   height: 32px;
   background: var(--admin-bg);
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
   position: absolute;
   top: 50%;
   left: 50%;
