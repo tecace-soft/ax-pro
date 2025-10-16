@@ -553,7 +553,8 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
       // Fetch all indexed document filenames from Supabase
       const { data: allDocMetas, error: metasError } = await supabase
         .from('documents')
-        .select('metadata');
+        .select('metadata')
+        .limit(2000); // Increase limit to ensure we get all documents
 
       if (metasError) {
         console.warn('⚠️ Failed to fetch document metadata for sync check:', metasError);
@@ -563,8 +564,19 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
       const indexedNameMap = new Map<string, string>(); // normalized -> original
       
       if (allDocMetas && allDocMetas.length > 0) {
+        console.log(`📊 Total documents in database: ${allDocMetas.length}`);
+        console.log(`📋 First document metadata sample:`, allDocMetas[0]?.metadata);
+        
         for (const row of allDocMetas) {
           const metadata = row.metadata || {};
+          
+          // Log raw metadata for Badillo file
+          if (JSON.stringify(metadata).toLowerCase().includes('badillo')) {
+            console.log(`🔍 RAW Badillo metadata found:`, metadata);
+            console.log(`   Type: ${typeof metadata}`);
+            console.log(`   Keys:`, Object.keys(metadata));
+          }
+          
           const metaName: string | undefined = metadata.fileName;
           if (metaName) {
             const normalized = metaName.toLowerCase().trim();
