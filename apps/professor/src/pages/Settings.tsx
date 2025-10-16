@@ -1216,7 +1216,7 @@ const Settings: React.FC = () => {
               border: '1px solid var(--border)'
             }}
           >
-            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
+            <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>
               {language === 'ko' ? '이미지 조정' : 'Adjust Image'}
             </h3>
 
@@ -1249,7 +1249,7 @@ const Settings: React.FC = () => {
             <div className="space-y-4">
               {/* Zoom Control */}
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                <label className="block text-sm font-medium mb-2" style={{ color: '#e5e5e5' }}>
                   {language === 'ko' ? '확대/축소' : 'Zoom'}: {imageZoom}%
                 </label>
                 <input
@@ -1267,7 +1267,7 @@ const Settings: React.FC = () => {
 
               {/* Horizontal Position */}
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                <label className="block text-sm font-medium mb-2" style={{ color: '#e5e5e5' }}>
                   {language === 'ko' ? '가로 위치' : 'Horizontal Position'}
                 </label>
                 <input
@@ -1285,7 +1285,7 @@ const Settings: React.FC = () => {
 
               {/* Vertical Position */}
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                <label className="block text-sm font-medium mb-2" style={{ color: '#e5e5e5' }}>
                   {language === 'ko' ? '세로 위치' : 'Vertical Position'}
                 </label>
                 <input
@@ -1312,19 +1312,25 @@ const Settings: React.FC = () => {
                   const img = new Image();
                   
                   img.onload = () => {
-                    canvas.width = 200;
-                    canvas.height = 200;
-                    
-                    const scale = imageZoom / 100;
-                    const scaledWidth = img.width * scale;
-                    const scaledHeight = img.height * scale;
-                    
-                    const x = -(imagePosition.x / 100) * (scaledWidth - 200);
-                    const y = -(imagePosition.y / 100) * (scaledHeight - 200);
+                    const size = 200;
+                    canvas.width = size;
+                    canvas.height = size;
                     
                     if (ctx) {
+                      // Calculate scaled dimensions
+                      const scale = imageZoom / 100;
+                      const scaledWidth = img.width * scale;
+                      const scaledHeight = img.height * scale;
+                      
+                      // Calculate position based on background-position logic
+                      const x = -(imagePosition.x / 100) * (scaledWidth - size);
+                      const y = -(imagePosition.y / 100) * (scaledHeight - size);
+                      
+                      // Clear canvas and draw
+                      ctx.clearRect(0, 0, size, size);
                       ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
-                      updateCustomization({ avatarUrl: canvas.toDataURL('image/png') });
+                      
+                      updateCustomization({ avatarUrl: canvas.toDataURL('image/png', 1.0) });
                     }
                     
                     setShowImageEditor(false);
@@ -1332,21 +1338,21 @@ const Settings: React.FC = () => {
                   
                   img.src = tempImageUrl;
                 }}
-                className="flex-1 px-4 py-2 rounded-md transition-colors"
+                className="flex-1 px-4 py-2 rounded-md font-medium transition-colors"
                 style={{ 
                   backgroundColor: 'var(--primary)',
-                  color: 'white'
+                  color: '#ffffff'
                 }}
               >
                 {language === 'ko' ? '적용' : 'Apply'}
               </button>
               <button
                 onClick={() => setShowImageEditor(false)}
-                className="flex-1 px-4 py-2 rounded-md transition-colors"
+                className="flex-1 px-4 py-2 rounded-md font-medium transition-colors"
                 style={{ 
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text)',
-                  border: '1px solid var(--border)'
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
                 }}
               >
                 {language === 'ko' ? '취소' : 'Cancel'}
