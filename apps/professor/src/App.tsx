@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import AdminShell from './pages/AdminShell';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import ScrollToTop from './components/ui/ScrollToTop';
 // These are now imported in AdminShell.tsx
 import { isAuthedFor, Role } from './services/auth';
 
@@ -29,6 +30,7 @@ const App: React.FC = () => {
       <I18nProvider>
         <Router>
           <div className="App">
+            <ScrollToTop />
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<Landing />} />

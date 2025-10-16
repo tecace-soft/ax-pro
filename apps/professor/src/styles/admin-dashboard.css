@@ -1755,7 +1755,7 @@ input:checked + .toggle-slider::before {
 .hexagon-inner{ width: 32px;
   height: 32px;
   background: #0a0e1a;
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
   position: absolute;
   top: 50%;
   left: 50%;

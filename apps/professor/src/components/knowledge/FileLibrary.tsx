@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from '../../i18n/I18nProvider';
+import { ToastContainer } from '../ui/Toast';
 import { 
   uploadFilesToSupabase,
   fetchFilesFromSupabase,
@@ -29,6 +30,7 @@ const FileLibrary: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' | 'warning' | 'info' }>>([]);
   const [indexingStatus, setIndexingStatus] = useState<Record<string, {
     status: 'pending' | 'processing' | 'completed' | 'failed';
     message: string;
@@ -46,6 +48,16 @@ const FileLibrary: React.FC = () => {
   });
   // Always use Supabase Storage
   const storageType = 'supabase' as const;
+
+  // Toast helpers
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
 
   // Toggle dev mode
   const toggleDevMode = () => {
@@ -220,7 +232,7 @@ const FileLibrary: React.FC = () => {
         }));
         
         // Show initial success message
-        alert(`✅ ${result.message}\n\nStatus will be updated automatically. Check the Knowledge Index tab when complete.`);
+        showToast(`✅ ${result.message} - Status will update automatically. Check Knowledge Index tab when complete.`, 'success');
         loadFiles(); // Refresh the list
       } else {
         setIndexingStatus(prev => ({
@@ -230,7 +242,7 @@ const FileLibrary: React.FC = () => {
             message: result.message || 'Failed to send file for indexing'
           }
         }));
-        alert(`❌ ${result.message}\n\nCheck the browser console for more details.`);
+        showToast(`❌ Failed to index file: ${result.message}`, 'error');
       }
     } catch (error) {
       console.error('❌ Error indexing file:', error);
@@ -241,7 +253,7 @@ const FileLibrary: React.FC = () => {
           message: `Error: ${error}`
         }
       }));
-      alert(`❌ Error indexing file: ${error}\n\nCheck the browser console for more details.`);
+      showToast(`❌ Error indexing file: ${error}`, 'error');
     } finally {
       setActionLoading(null);
     }
@@ -358,12 +370,14 @@ const FileLibrary: React.FC = () => {
       // Show success/error messages
       const successCount = results.filter(r => r.success).length;
       const failCount = results.filter(r => !r.success).length;
-      
+      const failedResults = results.filter(r => !r.success);
+
       if (successCount > 0) {
-        console.log(`✅ ${successCount} file(s) uploaded successfully`);
+        showToast(`✅ ${successCount} file(s) uploaded successfully`, 'success');
       }
       if (failCount > 0) {
-        console.error(`❌ ${failCount} file(s) failed to upload`);
+        const errorMessages = failedResults.map(r => r.message).join(', ');
+        showToast(`❌ ${failCount} file(s) failed: ${errorMessages}`, 'error');
       }
       
       // Immediately refresh the file list to show new files
@@ -538,7 +552,7 @@ const FileLibrary: React.FC = () => {
                 <th>{t('knowledge.size')}</th>
                 <th>{t('knowledge.lastModified')}</th>
                 <th>{t('knowledge.contentType')}</th>
-                <th>{t('knowledge.syncStatus')}</th>
+                <th style={{ textAlign: 'center' }}>{t('knowledge.syncStatus')}</th>
                 <th>{t('knowledge.actions')}</th>
               </tr>
             </thead>
@@ -559,15 +573,36 @@ const FileLibrary: React.FC = () => {
                     <td>{new Date(file.uploadedAt).toLocaleString()}</td>
                     <td>{file.type}</td>
                     <td className="sync-status-cell">
-                      <button 
-                        className="sync-status-icon-btn"
-                        title={file.syncStatus === 'synced' ? 'Synced' : 'Pending'}
+                      <span 
+                        style={{
+                          color: file.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
+                          fontWeight: file.syncStatus === 'pending' ? 'bold' : 'normal',
+                          fontSize: '14px'
+                        }}
                       >
-                        {file.syncStatus === 'synced' ? '✓' : ''}
-                      </button>
+                        {file.syncStatus === 'synced' ? '✓ Synced' : '⚠ Not Indexed'}
+                      </span>
                     </td>
                     <td>
                       <div className="file-actions">
+                        {file.syncStatus === 'pending' && (
+                          <button 
+                            className="icon-action-btn index-btn" 
+                            title="Index this file"
+                            onClick={() => handleIndexFile(file.name)}
+                            disabled={actionLoading === file.name}
+                            style={{
+                              backgroundColor: 'var(--admin-primary, #3b82f6)',
+                              color: 'white',
+                              borderColor: 'var(--admin-primary, #3b82f6)'
+                            }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="12" r="10"/>
+                              <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                          </button>
+                        )}
                         <button 
                           className="icon-action-btn" 
                           title={t('knowledge.download')}
@@ -596,6 +631,8 @@ const FileLibrary: React.FC = () => {
           </table>
         )}
       </div>
+      
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 };

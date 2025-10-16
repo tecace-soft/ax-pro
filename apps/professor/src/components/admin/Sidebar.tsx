@@ -5,7 +5,8 @@ import {
   IconMegaphone, 
   IconSettings,
   IconBarChart,
-  IconActivity
+  IconActivity,
+  IconFileText
 } from '../../ui/icons'
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -418,6 +419,13 @@ export default function AdminSidebar({
             >
               <IconMegaphone size={18} />
               <span>{t('admin.feedback')}</span>
+            </button>
+            <button 
+              className="nav-item"
+              onClick={() => handleNavigation('prompt-control')}
+            >
+              <IconFileText size={18} />
+              <span>Prompt</span>
             </button>
             <button 
               className="nav-item"

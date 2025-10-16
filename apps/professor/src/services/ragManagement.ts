@@ -209,12 +209,12 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
  * Validate file before upload
  */
 export function validateFile(file: File): { valid: boolean; error?: string } {
-  // Check file size (max 10MB)
-  const maxSize = 10 * 1024 * 1024; // 10MB
+  // Check file size (max 50MB)
+  const maxSize = 50 * 1024 * 1024; // 50MB
   if (file.size > maxSize) {
     return {
       valid: false,
-      error: 'File size must be less than 10MB'
+      error: 'File size must be less than 50MB'
     };
   }
 
