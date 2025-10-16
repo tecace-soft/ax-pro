@@ -76,7 +76,12 @@ export default function AdminHeader({ performanceScore, performanceDate, current
             <option value="en">EN</option>
             <option value="ko">KO</option>
           </select>
-          <button className="icon-btn" aria-label={t('admin.userProfile')}>
+          <button 
+            className="icon-btn" 
+            aria-label={t('admin.userProfile')}
+            onClick={() => navigate('/settings')}
+            title={t('ui.settings')}
+          >
             <IconUser size={18} />
           </button>
           <button 

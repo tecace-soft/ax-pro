@@ -16,6 +16,7 @@ import { fetchAllChatData } from '../../services/chatData'
 import { fetchAllUserFeedback } from '../../services/feedback'
 import { fetchVectorDocuments } from '../../services/ragManagement'
 import { getSupabaseClient } from '../../services/supabase'
+import { logout as clearSession } from '../../services/auth'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 
@@ -172,11 +173,12 @@ export default function AdminDashboard() {
   }, [searchParams])
 
   const signOut = () => {
-    // Clear all auth-related storage
+    // Use central auth service to clear session consistently
+    try { clearSession() } catch {}
+    // Also clear any legacy tokens if present
     localStorage.removeItem('authToken')
-    localStorage.removeItem('axpro_session')
     sessionStorage.removeItem('axAccess')
-    // Navigate to login page
+    // Navigate to landing/login
     navigate('/', { replace: true })
   }
 

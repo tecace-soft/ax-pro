@@ -364,45 +364,47 @@ const KnowledgeIndex: React.FC = () => {
                     <td className="doc-content" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {doc.content.substring(0, 100)}...
                     </td>
-                    <td>
-                      <span className={`sync-status ${doc.syncStatus}`}>
-                        {doc.syncStatus === 'synced' ? '✓' : '⏳'}
-                      </span>
+                    <td className="sync-status-cell">
+                      <button 
+                        className="sync-status-icon-btn"
+                        title={doc.syncStatus === 'synced' ? 'Synced' : 'Pending'}
+                      >
+                        {doc.syncStatus === 'synced' ? '✓' : ''}
+                      </button>
                     </td>
                     <td>
-                      <div className="flex gap-1">
+                      <div className="file-actions">
                         <button 
-                          className="action-btn view-btn" 
+                          className="icon-action-btn" 
                           title="View content"
                           onClick={() => handleViewDocument(doc)}
                         >
-                          👁️
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
                         </button>
                         <button 
-                          className="action-btn" 
+                          className="icon-action-btn" 
                           title="Show metadata"
                           onClick={() => handleShowMetadata(doc)}
-                          style={{ backgroundColor: '#3b82f6', color: 'white' }}
                         >
-                          📊
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="18" y1="20" x2="18" y2="10"/>
+                            <line x1="12" y1="20" x2="12" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="14"/>
+                          </svg>
                         </button>
                         <button 
-                          className="action-btn" 
-                          title="Index file"
-                          onClick={() => handleIndexFile(doc.fileName)}
-                          disabled={actionLoading === doc.fileName}
-                          style={{ backgroundColor: '#10b981', color: 'white' }}
-                        >
-                          {actionLoading === doc.fileName ? '⏳' : '📤'}
-                        </button>
-                        <button 
-                          className="action-btn" 
+                          className="icon-action-btn delete-icon-btn" 
                           title="Unindex file"
                           onClick={() => handleUnindexFile(doc.fileName)}
                           disabled={actionLoading === doc.fileName}
-                          style={{ backgroundColor: '#ef4444', color: 'white' }}
                         >
-                          {actionLoading === doc.fileName ? '⏳' : '🗑️'}
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
                         </button>
                       </div>
                     </td>
@@ -465,8 +467,8 @@ const KnowledgeIndex: React.FC = () => {
                   <div>
                     <span className="font-semibold" style={{ color: 'var(--admin-text-muted)' }}>Sync Status:</span>
                     <span className="ml-2" style={{ color: 'var(--admin-text)' }}>
-                      <span className={`sync-status ${selectedDocument.syncStatus}`}>
-                        {selectedDocument.syncStatus === 'synced' ? '✓ Synced' : '⏳ Pending'}
+                      <span className="sync-status-text">
+                        {selectedDocument.syncStatus === 'synced' ? 'Synced' : 'Pending'}
                       </span>
                     </span>
                   </div>
@@ -606,8 +608,8 @@ const KnowledgeIndex: React.FC = () => {
                             Location: {chunk.pageInfo || 'N/A'}
                           </div>
                           <div className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
-                            Status: <span className={`sync-status ${chunk.syncStatus}`}>
-                              {chunk.syncStatus === 'synced' ? '✓ Synced' : '⏳ Pending'}
+                            Status: <span className="sync-status-text">
+                              {chunk.syncStatus === 'synced' ? 'Synced' : 'Pending'}
                             </span>
                           </div>
                           <div className="text-xs font-mono" style={{ 
