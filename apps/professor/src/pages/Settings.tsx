@@ -780,14 +780,17 @@ const Settings: React.FC = () => {
                     {language === 'ko' ? '챗봇 아바타' : 'Chatbot Avatar'}
                   </label>
                   <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0" style={{ width: '80px', height: '80px' }}>
                       <img 
                         src={customization.avatarUrl} 
                         alt="Avatar Preview" 
-                        className="w-20 h-20 rounded-full border-2"
                         style={{ 
-                          borderColor: 'var(--border)',
-                          objectFit: 'cover'
+                          width: '80px',
+                          height: '80px',
+                          borderRadius: '50%',
+                          border: '2px solid var(--border)',
+                          objectFit: 'cover',
+                          objectPosition: 'center'
                         }}
                         onError={(e) => {
                           e.currentTarget.src = '/default-profile-avatar.png';
@@ -1324,36 +1327,37 @@ const Settings: React.FC = () => {
               
               <button
                 onClick={() => {
-                  // Create cropped version
+                  // Create cropped version matching preview
                   const canvas = document.createElement('canvas');
                   const ctx = canvas.getContext('2d');
                   const img = new Image();
                   
                   img.onload = () => {
-                    const size = 400; // Higher resolution
+                    const size = 300; // Output size
                     canvas.width = size;
                     canvas.height = size;
                     
                     if (ctx) {
-                      // Fill with white background first
-                      ctx.fillStyle = '#ffffff';
-                      ctx.fillRect(0, 0, size, size);
-                      
-                      // Calculate dimensions
+                      // Calculate the crop area from original image
                       const scale = imageZoom / 100;
-                      let drawWidth = img.width;
-                      let drawHeight = img.height;
                       
-                      // Scale the image
-                      drawWidth = drawWidth * scale;
-                      drawHeight = drawHeight * scale;
+                      // Determine which dimension to fit
+                      let sourceSize = Math.min(img.width, img.height);
                       
-                      // Calculate position
-                      const x = (imagePosition.x / 100) * (size - drawWidth);
-                      const y = (imagePosition.y / 100) * (size - drawHeight);
+                      // Calculate the actual visible area in the original image
+                      const visibleWidth = sourceSize / scale;
+                      const visibleHeight = sourceSize / scale;
                       
-                      // Draw image
-                      ctx.drawImage(img, x, y, drawWidth, drawHeight);
+                      // Calculate crop position in original image coordinates
+                      const cropX = (imagePosition.x / 100) * (img.width - visibleWidth);
+                      const cropY = (imagePosition.y / 100) * (img.height - visibleHeight);
+                      
+                      // Draw the cropped portion
+                      ctx.drawImage(
+                        img,
+                        cropX, cropY, visibleWidth, visibleHeight, // Source rectangle
+                        0, 0, size, size // Destination rectangle
+                      );
                       
                       updateCustomization({ avatarUrl: canvas.toDataURL('image/png', 0.95) });
                     }
