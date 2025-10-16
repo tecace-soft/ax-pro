@@ -421,6 +421,13 @@ export default function AdminSidebar({
             </button>
             <button 
               className="nav-item"
+              onClick={() => handleNavigation('prompt-control')}
+            >
+              <IconFileText size={18} />
+              <span>Prompt</span>
+            </button>
+            <button 
+              className="nav-item"
               onClick={() => navigate('/admin/knowledge-management')}
             >
               <IconDatabase size={18} />
