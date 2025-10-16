@@ -9,7 +9,8 @@ interface KnowledgeDocument {
   chunkIndex: number;
   content: string;
   pageInfo?: string;
-  syncStatus: 'synced' | 'pending' | 'error';
+  syncStatus: 'synced' | 'orphaned';
+  createdAt?: string;
 }
 
 const KnowledgeIndex: React.FC = () => {
@@ -53,6 +54,11 @@ const KnowledgeIndex: React.FC = () => {
       }
       
       if (response.success) {
+        // Get list of files from storage to check sync status
+        const { fetchFilesFromSupabase } = await import('../../services/ragManagement');
+        const filesResponse = await fetchFilesFromSupabase();
+        const fileNames = new Set((filesResponse.files || []).map((f: any) => f.name.toLowerCase()));
+        
         // Transform VectorDocument to KnowledgeDocument
         const transformedDocs: KnowledgeDocument[] = response.documents.map((doc: VectorDocument) => {
           const metadata = doc.metadata || {};
@@ -78,6 +84,9 @@ const KnowledgeIndex: React.FC = () => {
             pageInfo = `Page ${metadata.loc.pageNumber}`;
           }
           
+          // Check if file exists in storage
+          const syncStatus: 'synced' | 'orphaned' = fileNames.has(fileName.toLowerCase()) ? 'synced' : 'orphaned';
+          
           return {
             id: doc.id.toString(),
             fileName: fileName,
@@ -85,8 +94,9 @@ const KnowledgeIndex: React.FC = () => {
             chunkIndex: metadata.chunkIndex || 0,
             content: doc.content,
             pageInfo: pageInfo,
-            syncStatus: 'synced' as const,
-            metadata: metadata, // Keep full metadata for detail view
+            syncStatus: syncStatus,
+            createdAt: (doc as any).created_at || new Date().toISOString(),
+            metadata: metadata,
           };
         });
 
@@ -345,26 +355,39 @@ const KnowledgeIndex: React.FC = () => {
                 <th>Chunk</th>
                 <th>Location</th>
                 <th>Content Preview</th>
+                <th>Sync Status</th>
+                <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredDocuments.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
                     {error ? 'Failed to load documents' : 'No documents found. Upload and index files to see them here.'}
                   </td>
                 </tr>
               ) : (
                 filteredDocuments.map(doc => (
                   <tr key={doc.id}>
-                    <td className="doc-title" title={doc.fileName} style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
+                    <td className="doc-title" title={doc.fileName} style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
                       {doc.fileName}
                     </td>
                     <td className="doc-chunk-index">{(doc as any).chunkInfo || '1 of 1'}</td>
                     <td className="doc-page-info">{doc.pageInfo || '-'}</td>
-                    <td className="doc-content" title={doc.content} style={{ maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
-                      {doc.content.substring(0, 150)}...
+                    <td className="doc-content" title={doc.content} style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
+                      {doc.content.substring(0, 100)}...
+                    </td>
+                    <td>
+                      <span style={{ 
+                        color: doc.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
+                        fontSize: '14px'
+                      }}>
+                        {doc.syncStatus === 'synced' ? 'Synced' : 'Orphaned'}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '13px', color: 'var(--admin-text-muted)' }}>
+                      {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : '-'}
                     </td>
                     <td>
                       <div className="file-actions">
