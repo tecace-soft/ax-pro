@@ -22,7 +22,7 @@ const Settings: React.FC = () => {
   const { language, setLanguage } = useTranslation();
   const [configs, setConfigs] = useState<ApiConfig[]>([]);
   const [n8nConfigs, setN8nConfigs] = useState<N8nConfig[]>([]);
-  const [activeTab, setActiveTab] = useState<'api' | 'webhook' | 'ui' | 'database'>('api');
+  const [activeTab, setActiveTab] = useState<'api' | 'webhook' | 'ui' | 'database'>('ui');
   const [databaseType, setDatabaseType] = useState<'supabase' | 'other'>('supabase');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState<ApiConfig | null>(null);
@@ -262,6 +262,20 @@ const Settings: React.FC = () => {
         <div className="border-b mb-6" style={{ borderColor: 'var(--border)' }}>
           <nav className="-mb-px flex space-x-8">
             <button
+              onClick={() => setActiveTab('ui')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'ui'
+                  ? 'border-gray-800 text-gray-800'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              style={{ 
+                color: activeTab === 'ui' ? 'var(--primary)' : 'var(--text-secondary)',
+                borderBottomColor: activeTab === 'ui' ? 'var(--primary)' : 'transparent'
+              }}
+            >
+              UI Customization
+            </button>
+            <button
               onClick={() => setActiveTab('api')}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'api'
@@ -288,20 +302,6 @@ const Settings: React.FC = () => {
               }}
             >
               Webhooks
-            </button>
-            <button
-              onClick={() => setActiveTab('ui')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'ui'
-                  ? 'border-gray-800 text-gray-800'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              style={{ 
-                color: activeTab === 'ui' ? 'var(--primary)' : 'var(--text-secondary)',
-                borderBottomColor: activeTab === 'ui' ? 'var(--primary)' : 'transparent'
-              }}
-            >
-              UI Customization
             </button>
             <button
               onClick={() => setActiveTab('database')}
