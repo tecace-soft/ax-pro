@@ -597,14 +597,16 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
       }
       console.log(`[SyncCheck] Indexed filenames count: ${indexedNameSet.size}`);
       console.log(`[SyncCheck] Unique documents: ${indexedNameMap.size}`);
-      if (indexedNameSet.size > 0) {
-        console.log(`[SyncCheck] Sample indexed files:`, Array.from(new Set(indexedNameMap.values())).slice(0, 10));
-      }
+      const allIndexedFiles = Array.from(new Set(indexedNameMap.values()));
+      console.log(`[SyncCheck] ALL indexed files (${allIndexedFiles.length}):`, allIndexedFiles);
       
       // Debug: Show all normalized variants we're checking against
       const badilloVariants = Array.from(indexedNameSet).filter(name => name.includes('badillo'));
       if (badilloVariants.length > 0) {
         console.log(`🔍 All Badillo variants in indexedNameSet:`, badilloVariants);
+      } else {
+        console.warn(`⚠️ No Badillo file found in ${allDocMetas?.length || 0} indexed documents!`);
+        console.log(`📋 Checking first 5 metadata entries:`, allDocMetas?.slice(0, 5).map(r => r.metadata));
       }
 
       // Update sync status for each file
