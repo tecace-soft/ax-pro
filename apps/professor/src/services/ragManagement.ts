@@ -571,6 +571,15 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
             indexedNameSet.add(normalized);
             indexedNameMap.set(normalized, metaName);
             
+            // Debug: Log Badillo file if found
+            if (metaName.toLowerCase().includes('badillo')) {
+              console.log(`🔍 Found Badillo file in DB:`, {
+                original: metaName,
+                normalized: normalized,
+                metadata: metadata
+              });
+            }
+            
             // Also add variants for better matching
             const variants = [
               normalized.replace(/\s+/g, '_'),
@@ -590,6 +599,12 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
       console.log(`[SyncCheck] Unique documents: ${indexedNameMap.size}`);
       if (indexedNameSet.size > 0) {
         console.log(`[SyncCheck] Sample indexed files:`, Array.from(new Set(indexedNameMap.values())).slice(0, 10));
+      }
+      
+      // Debug: Show all normalized variants we're checking against
+      const badilloVariants = Array.from(indexedNameSet).filter(name => name.includes('badillo'));
+      if (badilloVariants.length > 0) {
+        console.log(`🔍 All Badillo variants in indexedNameSet:`, badilloVariants);
       }
 
       // Update sync status for each file
