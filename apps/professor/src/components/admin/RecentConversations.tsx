@@ -46,7 +46,7 @@ export default function RecentConversations({
   const [filterDate, setFilterDate] = useState<string | null>(null)
   const [expandedChats, setExpandedChats] = useState<Set<string>>(new Set())
   const [userFeedbackModal, setUserFeedbackModal] = useState<{ chatId: string; feedback: any } | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('card')
+  const [viewMode, setViewMode] = useState<ViewMode>('table')
 
   useEffect(() => {
     loadConversations()

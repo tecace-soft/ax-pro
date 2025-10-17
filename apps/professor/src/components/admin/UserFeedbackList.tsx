@@ -31,7 +31,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
   const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON'>('CSV')
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('card')
+  const [viewMode, setViewMode] = useState<ViewMode>('table')
 
   useEffect(() => {
     loadFeedback()

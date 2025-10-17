@@ -28,7 +28,7 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
   const [filterVerdict, setFilterVerdict] = useState<'all' | 'good' | 'bad'>('all')
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('card')
+  const [viewMode, setViewMode] = useState<ViewMode>('table')
 
   useEffect(() => {
     loadFeedback()
