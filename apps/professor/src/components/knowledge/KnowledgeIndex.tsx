@@ -39,11 +39,14 @@ const KnowledgeIndex: React.FC = () => {
     setError(null);
 
     try {
-      const offset = (currentPage - 1) * itemsPerPage;
-      console.log(`🔄 Loading documents from Supabase (Page ${currentPage}, ${itemsPerPage} items, offset: ${offset})...`);
+      // Load more documents to ensure we have enough unique files after grouping
+      // Since we're grouping by filename, 500 chunks might only be 10-20 files
+      const loadSize = 500; // Load 500 chunks to get more unique files
+      const offset = (currentPage - 1) * loadSize;
+      console.log(`🔄 Loading documents from Supabase (Page ${currentPage}, ${loadSize} items, offset: ${offset})...`);
       console.log('⏰ Current time:', new Date().toISOString());
       
-      const response = await fetchVectorDocuments(itemsPerPage, offset);
+      const response = await fetchVectorDocuments(loadSize, offset);
       console.log('📋 Raw response:', response);
       console.log('📊 Total documents found:', response.total || 0);
       console.log('📄 Documents array length:', response.documents?.length || 0);
@@ -251,7 +254,17 @@ const KnowledgeIndex: React.FC = () => {
     return acc;
   }, {} as Record<string, KnowledgeDocument[]>);
 
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  // Calculate pagination based on number of unique files, not chunks
+  const totalUniqueFiles = Object.keys(groupedDocuments).length;
+  const displayItemsPerPage = 20; // Show 20 files per page
+  const totalPages = Math.ceil(totalUniqueFiles / displayItemsPerPage);
+  
+  // Paginate grouped files
+  const groupedFilesArray = Object.entries(groupedDocuments);
+  const startIndex = (currentPage - 1) * displayItemsPerPage;
+  const endIndex = startIndex + displayItemsPerPage;
+  const paginatedGroupedFiles = groupedFilesArray.slice(startIndex, endIndex);
+  const paginatedGroupedDocuments = Object.fromEntries(paginatedGroupedFiles);
 
   return (
     <div className="knowledge-index">
@@ -272,24 +285,8 @@ const KnowledgeIndex: React.FC = () => {
           />
         </div>
         <div className="ki-pagination-info">
-          <span>Total items: {totalItems}</span>
-          <span>Page {currentPage} of {totalPages}</span>
-        </div>
-        <div className="ki-items-per-page">
-          <label>Items per page:</label>
-          <select
-            value={itemsPerPage}
-            onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1); // Reset to first page when changing page size
-            }}
-            className="items-select"
-          >
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-            <option value={200}>200</option>
-          </select>
+          <span>Total files: {totalUniqueFiles}</span>
+          <span>Page {currentPage} of {totalPages || 1}</span>
         </div>
         <div className="ki-navigation">
           <button
@@ -393,7 +390,7 @@ const KnowledgeIndex: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                Object.entries(groupedDocuments).map(([fileName, chunks]) => {
+                Object.entries(paginatedGroupedDocuments).map(([fileName, chunks]) => {
                   const isExpanded = expandedFiles.has(fileName);
                   const firstChunk = chunks[0];
                   const chunkCount = chunks.length;
