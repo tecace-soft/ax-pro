@@ -548,12 +548,12 @@ const FileLibrary: React.FC = () => {
           <table className="fl-table">
             <thead>
               <tr>
-                <th style={{ width: '30%', minWidth: '200px', maxWidth: '300px' }}>{t('knowledge.fileName')}</th>
-                <th style={{ width: '10%', minWidth: '80px', maxWidth: '100px' }}>{t('knowledge.size')}</th>
-                <th style={{ width: '15%', minWidth: '130px', maxWidth: '180px' }}>{t('knowledge.lastModified')}</th>
-                <th style={{ width: '12%', minWidth: '100px', maxWidth: '150px' }}>{t('knowledge.contentType')}</th>
-                <th style={{ width: '13%', minWidth: '110px', maxWidth: '150px', textAlign: 'center' }}>{t('knowledge.syncStatus')}</th>
-                <th style={{ width: '20%', minWidth: '140px', maxWidth: '200px' }}>{t('knowledge.actions')}</th>
+                <th style={{ width: '30%', minWidth: '200px' }}>{t('knowledge.fileName')}</th>
+                <th style={{ width: '10%', minWidth: '80px' }}>{t('knowledge.size')}</th>
+                <th style={{ width: '15%', minWidth: '130px' }}>{t('knowledge.lastModified')}</th>
+                <th style={{ width: '12%', minWidth: '100px' }}>{t('knowledge.contentType')}</th>
+                <th style={{ width: '13%', minWidth: '110px', textAlign: 'center' }}>{t('knowledge.syncStatus')}</th>
+                <th style={{ width: '20%', minWidth: '140px' }}>{t('knowledge.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -566,13 +566,13 @@ const FileLibrary: React.FC = () => {
               ) : (
                 filteredAndSortedFiles.map(file => (
                   <tr key={file.id}>
-                    <td className="file-name" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.name}>
+                    <td className="file-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.name}>
                       {file.name}
                     </td>
-                    <td style={{ maxWidth: '100px' }}>{formatFileSize(file.size)}</td>
-                    <td style={{ maxWidth: '180px' }}>{new Date(file.uploadedAt).toLocaleString()}</td>
-                    <td style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.type}>{file.type}</td>
-                    <td className="sync-status-cell" style={{ maxWidth: '150px' }}>
+                    <td>{formatFileSize(file.size)}</td>
+                    <td>{new Date(file.uploadedAt).toLocaleString()}</td>
+                    <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.type}>{file.type}</td>
+                    <td className="sync-status-cell">
                       <span 
                         style={{
                           color: file.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
