@@ -566,12 +566,12 @@ const FileLibrary: React.FC = () => {
               ) : (
                 filteredAndSortedFiles.map(file => (
                   <tr key={file.id}>
-                    <td className="file-name" style={{ maxWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.name}>
+                    <td className="file-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.name}>
                       {file.name}
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatFileSize(file.size)}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(file.uploadedAt).toLocaleString()}</td>
-                    <td style={{ maxWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.type}>{file.type}</td>
+                    <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.type}>{file.type}</td>
                     <td className="sync-status-cell" style={{ whiteSpace: 'nowrap' }}>
                       <span 
                         style={{
