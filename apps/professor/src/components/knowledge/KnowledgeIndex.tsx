@@ -285,8 +285,8 @@ const KnowledgeIndex: React.FC = () => {
           />
         </div>
         <div className="ki-pagination-info">
-          <span>Total files: {totalUniqueFiles}</span>
-          <span>Page {currentPage} of {totalPages || 1}</span>
+          <span>Total: {totalItems.toLocaleString()} chunks in {totalUniqueFiles} files</span>
+          <span>Showing {Object.keys(paginatedGroupedDocuments).length} files (Page {currentPage} of {totalPages || 1})</span>
         </div>
         <div className="ki-navigation">
           <button
@@ -324,7 +324,8 @@ const KnowledgeIndex: React.FC = () => {
         marginBottom: '16px',
         fontSize: '0.9em'
       }}>
-        <strong>🔍 Debug Info:</strong> Total: {totalItems} | Showing: {filteredDocuments.length} | 
+        <strong>🔍 Debug Info:</strong> Total: {totalItems} chunks ({totalUniqueFiles} unique files) | 
+        Loaded: {documents.length} chunks | Showing: {Object.keys(paginatedGroupedDocuments).length} files on this page | 
         Last Refresh: {lastRefreshTime || 'Never'} | 
         <button 
           onClick={() => {
