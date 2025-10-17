@@ -14,6 +14,7 @@ interface AdminFeedbackModal {
 }
 
 type SortOption = 'date-desc' | 'date-asc' | 'user'
+type ViewMode = 'card' | 'table'
 
 interface RecentConversationsProps {
   scrollToChatId?: string | null
@@ -45,6 +46,7 @@ export default function RecentConversations({
   const [filterDate, setFilterDate] = useState<string | null>(null)
   const [expandedChats, setExpandedChats] = useState<Set<string>>(new Set())
   const [userFeedbackModal, setUserFeedbackModal] = useState<{ chatId: string; feedback: any } | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('table')
 
   useEffect(() => {
     loadConversations()
@@ -486,6 +488,41 @@ export default function RecentConversations({
 
       {/* Controls Bar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
+          <button
+            onClick={() => setViewMode('card')}
+            className="px-3 py-2 text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: viewMode === 'card' ? 'var(--admin-primary)' : 'transparent',
+              color: viewMode === 'card' ? '#041220' : 'var(--admin-text)',
+            }}
+            title="Card View"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className="px-3 py-2 text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: viewMode === 'table' ? 'var(--admin-primary)' : 'transparent',
+              color: viewMode === 'table' ? '#041220' : 'var(--admin-text)',
+            }}
+            title="Table View"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        </div>
+        
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
           <span className="text-sm" style={{ color: 'var(--admin-text)' }}>{t('admin.sortBy')}:</span>
@@ -585,7 +622,136 @@ export default function RecentConversations({
         <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
           <p>{searchTerm ? 'No conversations match your search' : 'No conversations found'}</p>
         </div>
+      ) : viewMode === 'table' ? (
+        /* Table View */
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead>
+              <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Date</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>User ID</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '120px' }}>Session ID</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>User Message</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>AI Response</th>
+                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>User FB</th>
+                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Admin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayedConversations.map((conversation, index) => (
+                <tr 
+                  key={conversation.id}
+                  id={`chat-${conversation.chat_id}`}
+                  className="border-b transition-colors hover:bg-gray-100/5"
+                  style={{
+                    backgroundColor: highlightedChatId === conversation.chat_id 
+                      ? 'rgba(59, 230, 255, 0.1)' 
+                      : index % 2 === 0 ? 'rgba(9, 14, 34, 0.3)' : 'rgba(9, 14, 34, 0.2)',
+                    borderColor: 'var(--admin-border)'
+                  }}
+                >
+                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                    <button
+                      onClick={() => handleFilterByDate(conversation.created_at || '')}
+                      className="hover:underline cursor-pointer"
+                      title="Click to filter by date"
+                    >
+                      {formatDate(conversation.created_at)}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text)' }}>
+                    <button
+                      onClick={() => handleFilterByUser(conversation.user_id)}
+                      className="hover:underline cursor-pointer text-blue-300"
+                      title="Click to filter by user"
+                    >
+                      {conversation.user_id}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                    {conversation.session_id && (
+                      <button
+                        onClick={() => handleFilterBySession(conversation.session_id!)}
+                        className="hover:underline cursor-pointer text-green-300"
+                        title="Click to filter by session"
+                      >
+                        {conversation.session_id.substring(0, 12)}...
+                      </button>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs max-w-[250px]" style={{ color: 'var(--admin-text)' }}>
+                    <div 
+                      className="truncate cursor-pointer hover:text-blue-400"
+                      onClick={() => handleFeedbackClick(conversation, 'good')}
+                      title={conversation.chat_message}
+                    >
+                      {conversation.chat_message}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-xs max-w-[250px]" style={{ color: 'var(--admin-text-muted)' }}>
+                    <div className="truncate" title={conversation.response}>
+                      {conversation.response}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    {conversation.user_feedback ? (
+                      <button
+                        onClick={() => handleUserFeedbackClick(conversation.chat_id)}
+                        className="inline-flex items-center justify-center"
+                        title="View user feedback"
+                      >
+                        {conversation.user_feedback.reaction === 'good' ? (
+                          <IconThumbsUp size={16} style={{ color: 'var(--admin-success)' }} />
+                        ) : (
+                          <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)' }} />
+                        )}
+                      </button>
+                    ) : (
+                      <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>-</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    {(conversation as any).admin_feedback ? (
+                      <div className="inline-flex items-center gap-1">
+                        {(conversation as any).admin_feedback.feedback_verdict === 'good' ? (
+                          <IconThumbsUp size={16} style={{ color: 'var(--admin-success)' }} />
+                        ) : (
+                          <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)' }} />
+                        )}
+                        <button
+                          onClick={() => handleAdminFeedbackClick(conversation)}
+                          className="text-xs px-1 py-0.5 rounded hover:bg-blue-500/20"
+                          style={{ color: 'var(--admin-primary)' }}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="inline-flex gap-1">
+                        <button
+                          onClick={() => handleFeedbackClick(conversation, 'good')}
+                          className="p-1 rounded hover:bg-green-500/20"
+                          title="Good"
+                        >
+                          <IconThumbsUp size={14} style={{ color: 'var(--admin-success)' }} />
+                        </button>
+                        <button
+                          onClick={() => handleFeedbackClick(conversation, 'bad')}
+                          className="p-1 rounded hover:bg-red-500/20"
+                          title="Bad"
+                        >
+                          <IconThumbsDown size={14} style={{ color: 'var(--admin-danger)' }} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
+        /* Card View */
         <div className="space-y-3">
           {displayedConversations.map((conversation) => (
             <div 

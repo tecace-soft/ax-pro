@@ -33,15 +33,15 @@ interface Stats {
   adminApproval: number
 }
 
-type DateRange = '3d' | '7d' | '30d' | '90d' | '6m' | '1y' | 'custom'
+type DateRange = '3d' | '7d' | '14d' | '21d' | '30d' | '90d' | 'custom'
 
 const getDateRangeOptions = (t: (key: string) => string) => [
   { value: '3d' as DateRange, label: t('admin.last3Days') },
   { value: '7d' as DateRange, label: t('admin.last7Days') },
+  { value: '14d' as DateRange, label: t('admin.last2Weeks') },
+  { value: '21d' as DateRange, label: t('admin.last3Weeks') },
   { value: '30d' as DateRange, label: t('admin.last30Days') },
   { value: '90d' as DateRange, label: t('admin.last3Months') },
-  { value: '6m' as DateRange, label: t('admin.last6Months') },
-  { value: '1y' as DateRange, label: t('admin.lastYear') },
   { value: 'custom' as DateRange, label: t('admin.customRange') }
 ]
 
@@ -60,7 +60,7 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
   })
   const [isLoading, setIsLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'messages' | 'feedback' | 'admin'>('messages')
-  const [dateRange, setDateRange] = useState<DateRange>('7d')
+  const [dateRange, setDateRange] = useState<DateRange>('21d')
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
   const [showCustomRange, setShowCustomRange] = useState(false)
@@ -81,24 +81,24 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
       case '7d':
         start.setDate(end.getDate() - 7)
         break
+      case '14d':
+        start.setDate(end.getDate() - 14)
+        break
+      case '21d':
+        start.setDate(end.getDate() - 21)
+        break
       case '30d':
         start.setDate(end.getDate() - 30)
         break
       case '90d':
         start.setDate(end.getDate() - 90)
         break
-      case '6m':
-        start.setMonth(end.getMonth() - 6)
-        break
-      case '1y':
-        start.setFullYear(end.getFullYear() - 1)
-        break
       case 'custom':
         if (customStartDate && customEndDate) {
           return { startDate: customStartDate, endDate: customEndDate }
         }
-        // Fallback to 7 days if custom dates not set
-        start.setDate(end.getDate() - 7)
+        // Fallback to 21 days if custom dates not set
+        start.setDate(end.getDate() - 21)
         break
     }
 

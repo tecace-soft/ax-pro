@@ -17,7 +17,7 @@ export const isBackendAvailable = async (): Promise<boolean> => {
  */
 export const isN8nWebhookAvailable = (): boolean => {
   // Check environment variables first (new secure method)
-  const envWebhookUrl = import.meta.env.VITE_N8N_BASE_URL;
+  const envWebhookUrl = (import.meta as any).env?.VITE_N8N_BASE_URL;
   if (envWebhookUrl && envWebhookUrl.trim()) {
     console.log('n8n webhook check: Configured (environment variable)');
     return true;
@@ -57,7 +57,7 @@ export const DEV_MODE = process.env.NODE_ENV === 'development';
  */
 export const isSimulationModeEnabled = (): boolean => {
   // Check environment variable first
-  const envSimulation = import.meta.env.VITE_ENABLE_SIMULATION;
+  const envSimulation = (import.meta as any).env?.VITE_ENABLE_SIMULATION;
   if (envSimulation !== undefined) {
     return envSimulation === 'true' || envSimulation === '1';
   }

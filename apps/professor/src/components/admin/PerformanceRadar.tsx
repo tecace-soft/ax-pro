@@ -320,7 +320,7 @@ export default function PerformanceRadar({
 
       {/* Performance Timeline */}
       {timelineData && timelineData.length > 0 && (
-        <div className="timeline-section-wrapper" style={{ marginTop: '20px' }}>
+        <div className="timeline-section-wrapper" style={{ marginTop: '32px' }}>
           <PerformanceTimeline
             data={timelineData}
             selectedDate={selectedDate}
