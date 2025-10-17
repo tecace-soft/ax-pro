@@ -545,15 +545,15 @@ const FileLibrary: React.FC = () => {
             Loading files from n8n...
           </div>
         ) : (
-          <table className="fl-table" style={{ tableLayout: 'fixed', width: '100%' }}>
+          <table className="fl-table" style={{ width: '100%', minWidth: '900px' }}>
             <thead>
               <tr>
-                <th style={{ width: '25%' }}>{t('knowledge.fileName')}</th>
-                <th style={{ width: '10%' }}>{t('knowledge.size')}</th>
-                <th style={{ width: '18%' }}>{t('knowledge.lastModified')}</th>
-                <th style={{ width: '15%' }}>{t('knowledge.contentType')}</th>
-                <th style={{ width: '12%', textAlign: 'center' }}>{t('knowledge.syncStatus')}</th>
-                <th style={{ width: '20%' }}>{t('knowledge.actions')}</th>
+                <th style={{ width: '30%', minWidth: '200px' }}>{t('knowledge.fileName')}</th>
+                <th style={{ width: '10%', minWidth: '80px' }}>{t('knowledge.size')}</th>
+                <th style={{ width: '15%', minWidth: '150px' }}>{t('knowledge.lastModified')}</th>
+                <th style={{ width: '15%', minWidth: '120px' }}>{t('knowledge.contentType')}</th>
+                <th style={{ width: '10%', minWidth: '100px', textAlign: 'center' }}>{t('knowledge.syncStatus')}</th>
+                <th style={{ width: '20%', minWidth: '150px', textAlign: 'right', paddingRight: '16px' }}>{t('knowledge.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -566,13 +566,13 @@ const FileLibrary: React.FC = () => {
               ) : (
                 filteredAndSortedFiles.map(file => (
                   <tr key={file.id}>
-                    <td className="file-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.name}>
+                    <td className="file-name" style={{ maxWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.name}>
                       {file.name}
                     </td>
-                    <td>{formatFileSize(file.size)}</td>
-                    <td>{new Date(file.uploadedAt).toLocaleString()}</td>
-                    <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.type}>{file.type}</td>
-                    <td className="sync-status-cell">
+                    <td style={{ whiteSpace: 'nowrap' }}>{formatFileSize(file.size)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{new Date(file.uploadedAt).toLocaleString()}</td>
+                    <td style={{ maxWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.type}>{file.type}</td>
+                    <td className="sync-status-cell" style={{ whiteSpace: 'nowrap' }}>
                       <span 
                         style={{
                           color: file.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
@@ -583,8 +583,8 @@ const FileLibrary: React.FC = () => {
                         {file.syncStatus === 'synced' ? '✓ Synced' : '⚠ Not Indexed'}
                       </span>
                     </td>
-                    <td>
-                      <div className="file-actions">
+                    <td style={{ textAlign: 'right', paddingRight: '16px' }}>
+                      <div className="file-actions" style={{ justifyContent: 'flex-end' }}>
                         {file.syncStatus === 'pending' && (
                           <button 
                             className="icon-action-btn index-btn" 
