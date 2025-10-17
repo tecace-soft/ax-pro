@@ -11,6 +11,7 @@ interface FeedbackWithChat extends UserFeedbackData {
 }
 
 type SortOption = 'date-desc' | 'date-asc' | 'user'
+type ViewMode = 'card' | 'table'
 
 interface UserFeedbackListProps {
   onScrollToChat?: (chatId: string) => void
@@ -30,6 +31,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
   const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON'>('CSV')
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('card')
 
   useEffect(() => {
     loadFeedback()
@@ -305,6 +307,41 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
       {/* Controls Bar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
+          <button
+            onClick={() => setViewMode('card')}
+            className="px-3 py-2 text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: viewMode === 'card' ? 'var(--admin-primary)' : 'transparent',
+              color: viewMode === 'card' ? '#041220' : 'var(--admin-text)',
+            }}
+            title="Card View"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className="px-3 py-2 text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: viewMode === 'table' ? 'var(--admin-primary)' : 'transparent',
+              color: viewMode === 'table' ? '#041220' : 'var(--admin-text)',
+            }}
+            title="Table View"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        </div>
+
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
           <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Sort by:</span>
@@ -443,7 +480,87 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
         <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
           <p>{searchTerm || filterReaction !== 'all' ? 'No feedback matches your filters' : 'No user feedback found'}</p>
         </div>
+      ) : viewMode === 'table' ? (
+        /* Table View */
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead>
+              <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Date</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>User ID</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Chat ID</th>
+                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px' }}>Reaction</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>Comment</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>User Message</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>AI Response</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayedFeedbacks.map((feedback, index) => (
+                <tr 
+                  key={feedback.id}
+                  className="border-b transition-colors hover:bg-gray-100/5"
+                  style={{
+                    backgroundColor: index % 2 === 0 ? 'rgba(9, 14, 34, 0.3)' : 'rgba(9, 14, 34, 0.2)',
+                    borderColor: 'var(--admin-border)'
+                  }}
+                >
+                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                    <button
+                      onClick={() => handleFilterByDate(feedback.created_at || '')}
+                      className="hover:underline cursor-pointer"
+                      title="Click to filter by date"
+                    >
+                      {formatDate(feedback.created_at)}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text)' }}>
+                    <button
+                      onClick={() => handleFilterByUser(feedback.user_id)}
+                      className="hover:underline cursor-pointer text-blue-300"
+                      title="Click to filter by user"
+                    >
+                      {feedback.user_id}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2 text-xs">
+                    <button
+                      onClick={() => onScrollToChat?.(feedback.chat_id)}
+                      className="text-blue-400 hover:text-blue-300 underline cursor-pointer truncate max-w-[120px] block"
+                      title={`Click to scroll to ${feedback.chat_id}`}
+                    >
+                      {feedback.chat_id.length > 15 ? feedback.chat_id.substring(0, 15) + '...' : feedback.chat_id}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    {feedback.reaction === 'good' ? (
+                      <IconThumbsUp size={16} style={{ color: 'var(--admin-success)', display: 'inline' }} />
+                    ) : (
+                      <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)', display: 'inline' }} />
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text)' }}>
+                    <div className="truncate" title={feedback.feedback_text || ''}>
+                      {feedback.feedback_text || '-'}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)' }}>
+                    <div className="truncate" title={feedback.chatData?.chat_message || ''}>
+                      {feedback.chatData?.chat_message || 'N/A'}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)' }}>
+                    <div className="truncate" title={feedback.chatData?.response || ''}>
+                      {feedback.chatData?.response || 'N/A'}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
+        /* Card View */
         <div className="space-y-3">
           {displayedFeedbacks.map((feedback) => (
             <div 
