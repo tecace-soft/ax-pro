@@ -196,15 +196,6 @@ const KnowledgeIndex: React.FC = () => {
     });
   };
 
-  // Group documents by filename
-  const groupedDocuments = filteredDocuments.reduce((acc, doc) => {
-    if (!acc[doc.fileName]) {
-      acc[doc.fileName] = [];
-    }
-    acc[doc.fileName].push(doc);
-    return acc;
-  }, {} as Record<string, KnowledgeDocument[]>);
-
   const handleShowMetadata = (doc: KnowledgeDocument) => {
     // Get unique filenames and their chunk counts
     const uniqueFiles = documents.reduce((acc, d) => {
@@ -250,6 +241,15 @@ const KnowledgeIndex: React.FC = () => {
     doc.source.toLowerCase().includes(searchQuery.toLowerCase()) ||
     doc.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Group documents by filename
+  const groupedDocuments = filteredDocuments.reduce((acc, doc) => {
+    if (!acc[doc.fileName]) {
+      acc[doc.fileName] = [];
+    }
+    acc[doc.fileName].push(doc);
+    return acc;
+  }, {} as Record<string, KnowledgeDocument[]>);
 
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
