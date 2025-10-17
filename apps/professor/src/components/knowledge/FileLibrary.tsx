@@ -545,15 +545,15 @@ const FileLibrary: React.FC = () => {
             Loading files from n8n...
           </div>
         ) : (
-          <table className="fl-table">
+          <table className="fl-table" style={{ tableLayout: 'fixed', width: '100%' }}>
             <thead>
               <tr>
-                <th style={{ width: '30%', minWidth: '200px' }}>{t('knowledge.fileName')}</th>
-                <th style={{ width: '10%', minWidth: '80px' }}>{t('knowledge.size')}</th>
-                <th style={{ width: '15%', minWidth: '130px' }}>{t('knowledge.lastModified')}</th>
-                <th style={{ width: '12%', minWidth: '100px' }}>{t('knowledge.contentType')}</th>
-                <th style={{ width: '13%', minWidth: '110px', textAlign: 'center' }}>{t('knowledge.syncStatus')}</th>
-                <th style={{ width: '20%', minWidth: '140px' }}>{t('knowledge.actions')}</th>
+                <th style={{ width: '25%' }}>{t('knowledge.fileName')}</th>
+                <th style={{ width: '10%' }}>{t('knowledge.size')}</th>
+                <th style={{ width: '18%' }}>{t('knowledge.lastModified')}</th>
+                <th style={{ width: '15%' }}>{t('knowledge.contentType')}</th>
+                <th style={{ width: '12%', textAlign: 'center' }}>{t('knowledge.syncStatus')}</th>
+                <th style={{ width: '20%' }}>{t('knowledge.actions')}</th>
               </tr>
             </thead>
             <tbody>
