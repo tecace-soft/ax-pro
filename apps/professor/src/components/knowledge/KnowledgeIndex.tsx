@@ -27,6 +27,7 @@ const KnowledgeIndex: React.FC = () => {
   const [showMetadataModal, setShowMetadataModal] = useState(false);
   const [selectedMetadata, setSelectedMetadata] = useState<any>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState<string>('');
+  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
 
   // Load documents from Supabase on mount and when pagination changes
   useEffect(() => {
@@ -182,6 +183,27 @@ const KnowledgeIndex: React.FC = () => {
       setActionLoading(null);
     }
   };
+
+  const toggleFileExpansion = (fileName: string) => {
+    setExpandedFiles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(fileName)) {
+        newSet.delete(fileName);
+      } else {
+        newSet.add(fileName);
+      }
+      return newSet;
+    });
+  };
+
+  // Group documents by filename
+  const groupedDocuments = filteredDocuments.reduce((acc, doc) => {
+    if (!acc[doc.fileName]) {
+      acc[doc.fileName] = [];
+    }
+    acc[doc.fileName].push(doc);
+    return acc;
+  }, {} as Record<string, KnowledgeDocument[]>);
 
   const handleShowMetadata = (doc: KnowledgeDocument) => {
     // Get unique filenames and their chunk counts
@@ -371,54 +393,115 @@ const KnowledgeIndex: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredDocuments.map(doc => (
-                  <tr key={doc.id}>
-                    <td className="doc-title" title={doc.fileName} style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
-                      {doc.fileName}
-                    </td>
-                    <td className="doc-chunk-index">{(doc as any).chunkInfo || '1 of 1'}</td>
-                    <td className="doc-page-info">{doc.pageInfo || '-'}</td>
-                    <td className="doc-content" title={doc.content} style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
-                      {doc.content.substring(0, 100)}...
-                    </td>
-                    <td>
-                      <span style={{ 
-                        color: doc.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
-                        fontSize: '14px'
-                      }}>
-                        {doc.syncStatus === 'synced' ? 'Synced' : 'Orphaned'}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '13px', color: 'var(--admin-text-muted)' }}>
-                      {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : '-'}
-                    </td>
-                    <td>
-                      <div className="file-actions">
-                        <button 
-                          className="icon-action-btn" 
-                          title="View details"
-                          onClick={() => handleViewDocument(doc)}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                          </svg>
-                        </button>
-                        <button 
-                          className="icon-action-btn delete-icon-btn" 
-                          title="Unindex file"
-                          onClick={() => handleUnindexFile(doc.fileName)}
-                          disabled={actionLoading === doc.fileName}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                Object.entries(groupedDocuments).map(([fileName, chunks]) => {
+                  const isExpanded = expandedFiles.has(fileName);
+                  const firstChunk = chunks[0];
+                  const chunkCount = chunks.length;
+                  
+                  return (
+                    <React.Fragment key={fileName}>
+                      {/* Main row - always visible */}
+                      <tr 
+                        onClick={() => toggleFileExpansion(fileName)} 
+                        style={{ 
+                          cursor: 'pointer', 
+                          backgroundColor: isExpanded ? 'rgba(59, 230, 255, 0.1)' : undefined,
+                          fontWeight: isExpanded ? '500' : 'normal'
+                        }}
+                      >
+                        <td className="doc-title" title={fileName} style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-primary)' }}>
+                              {isExpanded ? '▼' : '▶'}
+                            </span>
+                            {fileName}
+                          </div>
+                        </td>
+                        <td className="doc-chunk-index" style={{ color: 'var(--admin-primary)', fontWeight: '600' }}>
+                          {chunkCount} {chunkCount === 1 ? 'chunk' : 'chunks'}
+                        </td>
+                        <td className="doc-page-info">{firstChunk.pageInfo || '-'}</td>
+                        <td className="doc-content" title={firstChunk.content} style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {firstChunk.content.substring(0, 100)}...
+                        </td>
+                        <td>
+                          <span style={{ 
+                            color: firstChunk.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
+                            fontSize: '14px'
+                          }}>
+                            {firstChunk.syncStatus === 'synced' ? 'Synced' : 'Orphaned'}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: '13px', color: 'var(--admin-text-muted)' }}>
+                          {firstChunk.createdAt ? new Date(firstChunk.createdAt).toLocaleDateString() : '-'}
+                        </td>
+                        <td onClick={(e) => e.stopPropagation()}>
+                          <div className="file-actions">
+                            <button 
+                              className="icon-action-btn" 
+                              title="View details"
+                              onClick={() => handleViewDocument(firstChunk)}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                              </svg>
+                            </button>
+                            <button 
+                              className="icon-action-btn delete-icon-btn" 
+                              title="Unindex all chunks"
+                              onClick={() => handleUnindexFile(fileName)}
+                              disabled={actionLoading === fileName}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      
+                      {/* Expanded rows - show individual chunks */}
+                      {isExpanded && chunks.map((doc, idx) => (
+                        <tr key={doc.id} style={{ backgroundColor: 'rgba(9, 14, 34, 0.3)' }}>
+                          <td style={{ paddingLeft: '40px', fontSize: '13px', color: 'var(--admin-text-muted)' }}>
+                            └ Chunk {idx + 1}
+                          </td>
+                          <td className="doc-chunk-index">{(doc as any).chunkInfo || `${idx + 1} of ${chunkCount}`}</td>
+                          <td className="doc-page-info">{doc.pageInfo || '-'}</td>
+                          <td className="doc-content" title={doc.content} style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '13px' }}>
+                            {doc.content.substring(0, 100)}...
+                          </td>
+                          <td>
+                            <span style={{ 
+                              color: doc.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
+                              fontSize: '13px'
+                            }}>
+                              {doc.syncStatus === 'synced' ? 'Synced' : 'Orphaned'}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>
+                            {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : '-'}
+                          </td>
+                          <td>
+                            <button 
+                              className="icon-action-btn" 
+                              title="View this chunk"
+                              onClick={() => handleViewDocument(doc)}
+                              style={{ fontSize: '12px' }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>
