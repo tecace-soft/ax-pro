@@ -15,7 +15,7 @@ import { fetchDailyAggregatesWithMode, DailyRow, EstimationMode, filterSimulated
 import { fetchAllChatData } from '../../services/chatData'
 import { fetchAllUserFeedback } from '../../services/feedback'
 import { fetchVectorDocuments } from '../../services/ragManagement'
-import { getSupabaseClient } from '../../services/supabase'
+import { getSupabaseClient } from '../../services/supabaseUserSpecific'
 import { logout as clearSession } from '../../services/auth'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'

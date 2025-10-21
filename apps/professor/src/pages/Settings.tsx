@@ -9,11 +9,11 @@ import {
   setActiveN8nConfig,
   testN8nConnection,
   N8nConfig 
-} from '../services/n8n';
+} from '../services/n8nUserSpecific';
 import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
 import { useUICustomization } from '../hooks/useUICustomization';
-import { getSupabaseConfig, saveSupabaseConfig, testSupabaseConnection, SupabaseConfig } from '../services/supabase';
+import { getSupabaseConfig, saveSupabaseConfig, testSupabaseConnection, SupabaseConfig } from '../services/supabaseUserSpecific';
 import { isSimulationModeEnabled, setSimulationModeEnabled } from '../services/devMode';
 
 const Settings: React.FC = () => {

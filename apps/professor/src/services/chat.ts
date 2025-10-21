@@ -1,6 +1,6 @@
 import { messagesApi } from './api';
 import { isBackendAvailable, isN8nWebhookAvailable, isSimulationModeEnabled } from './devMode';
-import { getActiveN8nConfig, sendToN8n, N8nRequest, N8nResponse } from './n8n';
+import { getActiveN8nConfig, sendToN8n, N8nRequest, N8nResponse } from './n8nUserSpecific';
 import { getSession } from './auth';
 
 export interface ChatMessage {

@@ -1,5 +1,5 @@
-import { getSupabaseClient } from './supabase';
-import type { AdminFeedbackData, UserFeedbackData } from './supabase';
+import { getSupabaseClient } from './supabaseUserSpecific';
+import type { AdminFeedbackData, UserFeedbackData } from './supabaseUserSpecific';
 
 /**
  * Fetch all admin feedback ordered by most recent first

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getSupabaseClient } from './supabase';
+import { getSupabaseClient } from './supabaseUserSpecific';
 
 // RAG Management API configuration
 const N8N_BASE_URL = (import.meta as any).env?.VITE_N8N_BASE_URL || 'https://n8n.srv978041.hstgr.cloud';
@@ -933,19 +933,37 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     console.log(`🔗 FINAL URL SENT TO N8N: ${fullFileUrl}`);
     console.log(`⏰ Request time: ${new Date().toISOString()}`);
 
-    // Send to n8n webhook - DEV/PRODUCTION SELECTOR
+    // Send to n8n webhook - USER-SPECIFIC SELECTOR
+    // Get current user to determine which webhook to use
+    const { getSession } = await import('./auth');
+    const session = getSession();
+    
+    // Determine webhook based on user
+    let userSpecificWebhookId: string;
+    if (session?.userId === 'seokhoon_kang_001' || session?.email === 'hana@tecace.com') {
+      // SeokHoon Kang uses his FILE INDEXING webhook (not chat webhook)
+      userSpecificWebhookId = 'bc7f7d96-1c7f-48c8-8def-6f4a367f7212';
+      console.log(`👤 Using SeokHoon Kang's FILE INDEXING webhook`);
+    } else {
+      // Admin and other users use the default file indexing webhook
+      userSpecificWebhookId = UPLOAD_WEBHOOK_ID;
+      console.log(`👤 Using default FILE INDEXING webhook`);
+    }
+    
+    // DEV/PRODUCTION SELECTOR
     // Default to PRODUCTION mode, only use DEV if explicitly enabled
     const isDevMode = ((import.meta as any).env?.VITE_N8N_DEV_MODE === 'true') || 
                      localStorage.getItem('n8n-dev-mode') === 'true';
     
     const n8nWebhookUrl = isDevMode 
-      ? 'https://n8n.srv978041.hstgr.cloud/webhook-test/1f18f1aa-44c4-467f-b299-c87c9b6f9459'
+      ? `https://n8n.srv978041.hstgr.cloud/webhook-test/${userSpecificWebhookId}`
       : ((import.meta as any).env?.VITE_N8N_BASE_URL 
-          ? `${(import.meta as any).env?.VITE_N8N_BASE_URL}/webhook/${(import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID}`
-          : `${N8N_BASE_URL}/webhook/${UPLOAD_WEBHOOK_ID}`);
+          ? `${(import.meta as any).env?.VITE_N8N_BASE_URL}/webhook/${userSpecificWebhookId}`
+          : `${N8N_BASE_URL}/webhook/${userSpecificWebhookId}`);
     
     console.log(`🔧 Webhook mode: ${isDevMode ? 'DEV (test)' : 'PRODUCTION'}`);
     console.log(`🌐 Using webhook: ${n8nWebhookUrl}`);
+    console.log(`👤 User: ${session?.email || 'Unknown'} (${session?.userId || 'Unknown'})`);
     
     // Warn if using test webhook
     if (isDevMode) {

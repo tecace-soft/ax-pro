@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { fetchAllAdminFeedback } from '../../services/feedback'
 import { fetchChatById } from '../../services/chatData'
-import { AdminFeedbackData, ChatData } from '../../services/supabase'
+import { AdminFeedbackData, ChatData } from '../../services/supabaseUserSpecific'
 import { useTranslation } from '../../i18n/I18nProvider'
 import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
 
