@@ -87,6 +87,29 @@ export const migrateToUserSettings = (): void => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+    } else if (session.userId === 'user123456' || session.email === 'chatbot-user@tecace.com') {
+      // Regular User gets Admin's webhook settings
+      userSettings = {
+        userId: session.userId,
+        email: session.email,
+        n8nConfigs: [{
+          id: 'regular_user_default',
+          name: 'Regular User Webhook (Admin)',
+          webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/328757ba-62e6-465e-be1b-2fff0fd1d353',
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }],
+        activeN8nConfigId: 'regular_user_default',
+        supabaseConfig: {
+          url: 'https://qpyteahuynkgkbmdasbv.supabase.co',
+          anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFweXRlYWh1eW5rZ2tibWRhc2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5NDk2NTcsImV4cCI6MjA3NTUyNTY1N30.qvp5ox6Xm0wYcZK89S2MYVu18fqyfYmT8nercIFMKOY'
+        },
+        apiConfigs: apiConfigs,
+        uiCustomization: uiCustomization,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
     } else {
       // Other users get migrated global settings
       userSettings = {

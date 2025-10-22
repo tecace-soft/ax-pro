@@ -160,6 +160,17 @@ const createDefaultUserSettings = (userId: string, email: string): UserSettings 
     } as UserSettings;
   }
   
+  // Check if this is Regular User's account - use Admin's webhook settings
+  if (userId === 'user123456' || email === 'chatbot-user@tecace.com') {
+    return {
+      userId,
+      email,
+      ...ADMIN_SETTINGS, // Use Admin's webhook settings for Regular User
+      createdAt: now,
+      updatedAt: now
+    } as UserSettings;
+  }
+  
   // Default settings for other users
   return {
     userId,
