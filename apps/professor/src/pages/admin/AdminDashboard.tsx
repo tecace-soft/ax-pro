@@ -16,7 +16,8 @@ import { fetchAllChatData } from '../../services/chatData'
 import { fetchAllUserFeedback } from '../../services/feedback'
 import { fetchVectorDocuments } from '../../services/ragManagement'
 import { getSupabaseClient } from '../../services/supabaseUserSpecific'
-import { logout as clearSession } from '../../services/auth'
+import { logout as clearSession, getSession } from '../../services/auth'
+import { getUserCustomization, applyThemeCustomization, resetThemeCustomization, DashboardCustomization } from '../../services/userCustomization'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 
@@ -37,6 +38,9 @@ export default function AdminDashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [, setStartDate] = useState<string>('')
   const [, setEndDate] = useState<string>('')
+
+  // User customization state
+  const [userCustomization, setUserCustomization] = useState<DashboardCustomization | null>(null)
 
   // Performance Timeline state
   const [radarData, setRadarData] = useState<DailyRow[]>([])
@@ -63,6 +67,26 @@ export default function AdminDashboard() {
     minute: '2-digit',
     hour12: true
   })
+
+  // Load user customization on mount
+  useEffect(() => {
+    const session = getSession()
+    if (session) {
+      const customization = getUserCustomization(session.email)
+      setUserCustomization(customization)
+      
+      // Apply theme customization
+      if (customization) {
+        applyThemeCustomization(customization)
+        console.log('✨ Applied custom theme for:', session.email)
+      }
+    }
+
+    // Cleanup: reset theme on unmount
+    return () => {
+      resetThemeCustomization()
+    }
+  }, [])
 
   // Initialize dates and load metrics
   useEffect(() => {
@@ -220,7 +244,9 @@ export default function AdminDashboard() {
           performanceScore={overallScore} 
           performanceDate={formatDate(new Date())}
           currentTime={currentTime} 
-          onSignOut={signOut} 
+          onSignOut={signOut}
+          customTitle={userCustomization?.branding?.dashboardTitle}
+          customWelcome={userCustomization?.branding?.welcomeMessage}
         />
         
         <div className="dashboard-content">

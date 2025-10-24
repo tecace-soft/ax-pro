@@ -28,6 +28,11 @@ const DEMO_CREDENTIALS = {
     password: 'tsl1234',
     role: 'admin' as const,
     userId: 'seokhoon_kang_001'
+  },
+  'professor@tecace.com': {
+    password: 'admin1234',
+    role: 'admin' as const,
+    userId: 'professor_001'
   }
 };
 
