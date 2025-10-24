@@ -53,6 +53,14 @@
   font-weight: 700;
   color: var(--admin-text);
   line-height: 1;
+  margin-bottom: 4px;
+}
+
+.prof-overview-subtitle {
+  font-size: 11px;
+  color: var(--admin-text-muted);
+  opacity: 0.7;
+  font-weight: 400;
 }
 
 /* Responsive Design */

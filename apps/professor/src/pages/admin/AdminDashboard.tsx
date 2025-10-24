@@ -57,6 +57,11 @@ export default function AdminDashboard() {
   const [totalConversations, setTotalConversations] = useState(0)
   const [satisfactionRate, setSatisfactionRate] = useState(0)
   const [totalDocuments, setTotalDocuments] = useState(0)
+  
+  // Professor-specific metrics
+  const [totalQuestions, setTotalQuestions] = useState(0)
+  const [avgQuestionsPerSession, setAvgQuestionsPerSession] = useState(0)
+  const [activeStudents, setActiveStudents] = useState(0)
 
 
 
@@ -108,7 +113,19 @@ export default function AdminDashboard() {
     try {
       // Load conversations count
       const chatData = await fetchAllChatData(1000)
-      setTotalConversations(chatData.length)
+      const uniqueSessions = new Set(chatData.map(c => c.session_id)).size
+      setTotalConversations(uniqueSessions)
+      
+      // Total questions = total chat messages
+      setTotalQuestions(chatData.length)
+      
+      // Calculate avg questions per session
+      const avgQ = uniqueSessions > 0 ? Math.round((chatData.length / uniqueSessions) * 10) / 10 : 0
+      setAvgQuestionsPerSession(avgQ)
+      
+      // Count unique students (user_ids)
+      const uniqueUsers = new Set(chatData.map(c => c.user_id)).size
+      setActiveStudents(uniqueUsers)
 
       // Load user feedback and calculate satisfaction rate
       const feedbackData = await fetchAllUserFeedback()
@@ -127,7 +144,10 @@ export default function AdminDashboard() {
       }
 
       console.log('✅ Metrics loaded:', {
-        conversations: chatData.length,
+        sessions: uniqueSessions,
+        questions: chatData.length,
+        avgPerSession: avgQ,
+        students: uniqueUsers,
         satisfaction: satisfactionRate,
         documents: docsResponse.total
       })
@@ -246,8 +266,6 @@ export default function AdminDashboard() {
           performanceDate={formatDate(new Date())}
           currentTime={currentTime} 
           onSignOut={signOut}
-          customTitle={userCustomization?.branding?.dashboardTitle}
-          customWelcome={userCustomization?.branding?.welcomeMessage}
         />
         
         <div className="dashboard-content">
@@ -275,6 +293,7 @@ export default function AdminDashboard() {
                       <div className="prof-overview-content">
                         <div className="prof-overview-label">Total Sessions</div>
                         <div className="prof-overview-value">{totalConversations}</div>
+                        <div className="prof-overview-subtitle">Unique conversation sessions</div>
                       </div>
                     </div>
                     
@@ -282,7 +301,8 @@ export default function AdminDashboard() {
                       <div className="prof-overview-icon">💬</div>
                       <div className="prof-overview-content">
                         <div className="prof-overview-label">Total Questions</div>
-                        <div className="prof-overview-value">{totalConversations}</div>
+                        <div className="prof-overview-value">{totalQuestions}</div>
+                        <div className="prof-overview-subtitle">Messages exchanged</div>
                       </div>
                     </div>
                     
@@ -290,7 +310,8 @@ export default function AdminDashboard() {
                       <div className="prof-overview-icon">📊</div>
                       <div className="prof-overview-content">
                         <div className="prof-overview-label">Avg Q/Session</div>
-                        <div className="prof-overview-value">{Math.round((totalConversations / Math.max(totalConversations, 1)) * 10) / 10}</div>
+                        <div className="prof-overview-value">{avgQuestionsPerSession}</div>
+                        <div className="prof-overview-subtitle">Questions per session</div>
                       </div>
                     </div>
                     
@@ -299,6 +320,7 @@ export default function AdminDashboard() {
                       <div className="prof-overview-content">
                         <div className="prof-overview-label">Satisfaction</div>
                         <div className="prof-overview-value">{satisfactionRate}%</div>
+                        <div className="prof-overview-subtitle">Positive feedback rate</div>
                       </div>
                     </div>
                     
@@ -306,7 +328,8 @@ export default function AdminDashboard() {
                       <div className="prof-overview-icon">👥</div>
                       <div className="prof-overview-content">
                         <div className="prof-overview-label">Active Students</div>
-                        <div className="prof-overview-value">{Math.floor(totalConversations * 0.7)}</div>
+                        <div className="prof-overview-value">{activeStudents}</div>
+                        <div className="prof-overview-subtitle">Unique users</div>
                       </div>
                     </div>
                   </div>
