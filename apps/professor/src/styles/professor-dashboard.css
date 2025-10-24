@@ -1,0 +1,360 @@
+/* Professor Dashboard Styles */
+
+.professor-layout {
+  min-height: 100vh;
+  background: var(--admin-bg);
+}
+
+.professor-main {
+  padding: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Overview Bar - Always Visible at Top */
+.overview-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  padding: 20px 24px;
+  background: var(--admin-card-bg);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.overview-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(59, 230, 255, 0.05);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.overview-card:hover {
+  background: rgba(59, 230, 255, 0.1);
+  border-color: var(--admin-primary);
+  transform: translateY(-2px);
+}
+
+.overview-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.overview-content {
+  flex: 1;
+}
+
+.overview-label {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  margin-bottom: 4px;
+}
+
+.overview-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+/* View Tabs */
+.view-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px;
+  background: var(--admin-card-bg);
+  border-bottom: 2px solid var(--admin-border);
+  overflow-x: auto;
+}
+
+.view-tab {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  color: var(--admin-text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.view-tab:hover {
+  background: rgba(59, 230, 255, 0.1);
+  border-color: var(--admin-primary);
+}
+
+.view-tab.active {
+  background: var(--admin-primary);
+  border-color: var(--admin-primary);
+  color: #041220;
+}
+
+/* Course Filter */
+.course-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: var(--admin-card-bg);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.course-filter label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--admin-text);
+}
+
+.course-filter select {
+  padding: 8px 12px;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  color: var(--admin-text);
+  font-size: 14px;
+  min-width: 250px;
+  cursor: pointer;
+}
+
+.course-filter select:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+}
+
+/* View Content - Full Screen */
+.view-content {
+  padding: 24px;
+  min-height: calc(100vh - 400px);
+}
+
+.view-content h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--admin-text);
+  margin-bottom: 24px;
+}
+
+/* Overview View */
+.overview-view {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Gauge Grid */
+.gauge-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.gauge-card {
+  background: var(--admin-card-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.2s;
+}
+
+.gauge-card:hover {
+  border-color: var(--admin-primary);
+  box-shadow: 0 4px 12px rgba(59, 230, 255, 0.1);
+  transform: translateY(-4px);
+}
+
+.gauge-container {
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+.gauge-svg {
+  width: 100%;
+  height: auto;
+}
+
+/* Topics Section */
+.topics-section {
+  background: var(--admin-card-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.topics-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--admin-text);
+  margin-bottom: 16px;
+}
+
+.topics-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.topic-badge {
+  padding: 8px 16px;
+  background: rgba(59, 230, 255, 0.1);
+  border: 1px solid var(--admin-primary);
+  border-radius: 20px;
+  color: var(--admin-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Courses View */
+.courses-view {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
+}
+
+.course-card {
+  background: var(--admin-card-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.2s;
+}
+
+.course-card:hover {
+  border-color: var(--admin-primary);
+  box-shadow: 0 4px 12px rgba(59, 230, 255, 0.1);
+  transform: translateY(-4px);
+}
+
+.course-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--admin-text);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.course-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.stat-row span {
+  color: var(--admin-text-muted);
+}
+
+.stat-row strong {
+  color: var(--admin-text);
+  font-weight: 600;
+}
+
+.course-topics {
+  padding-top: 12px;
+  border-top: 1px solid var(--admin-border);
+}
+
+.course-topics strong {
+  display: block;
+  font-size: 13px;
+  color: var(--admin-text);
+  margin-bottom: 8px;
+}
+
+.topic-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.topic-tag {
+  padding: 4px 10px;
+  background: rgba(59, 230, 255, 0.1);
+  border: 1px solid var(--admin-primary);
+  border-radius: 12px;
+  color: var(--admin-primary);
+  font-size: 12px;
+}
+
+/* Students, Topics, Feedback Views */
+.students-view,
+.topics-view,
+.feedback-view {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .gauge-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .overview-bar {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .gauge-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .courses-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .overview-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .gauge-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .view-tabs {
+    overflow-x: auto;
+  }
+  
+  .courses-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .overview-bar {
+    grid-template-columns: 1fr;
+  }
+  
+  .overview-card {
+    padding: 12px;
+  }
+  
+  .overview-icon {
+    font-size: 24px;
+  }
+  
+  .overview-value {
+    font-size: 20px;
+  }
+}
+

@@ -8,9 +8,10 @@ import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import AdminShell from './pages/AdminShell';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import ProfessorDashboard from './pages/admin/ProfessorDashboard';
 import ScrollToTop from './components/ui/ScrollToTop';
 // These are now imported in AdminShell.tsx
-import { isAuthedFor, Role } from './services/auth';
+import { isAuthedFor, Role, getSession } from './services/auth';
 import { checkAndMigrateSettings } from './services/migrateToUserSettings';
 
 // Protected Route component
@@ -80,7 +81,14 @@ const App: React.FC = () => {
                 path="/admin/dashboard" 
                 element={
                   <ProtectedRoute requiredRole="admin">
-                    <AdminDashboard />
+                    {(() => {
+                      const session = getSession();
+                      // Route professor@tecace.com to new dashboard
+                      if (session?.email === 'professor@tecace.com') {
+                        return <ProfessorDashboard />;
+                      }
+                      return <AdminDashboard />;
+                    })()}
                   </ProtectedRoute>
                 } 
               />
