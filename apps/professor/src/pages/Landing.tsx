@@ -23,6 +23,7 @@ const Landing: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Check if user is already logged in
   React.useEffect(() => {
@@ -175,17 +176,27 @@ const Landing: React.FC = () => {
                   <label htmlFor="password" className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
                     {t('auth.password')}
                   </label>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="input w-full px-3 py-2 rounded-md"
-                    placeholder={t('auth.password')}
-                  />
+                  <div className="relative">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      required
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className="input w-full px-3 py-2 pr-10 rounded-md"
+                      placeholder={t('auth.password')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      {showPassword ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -211,79 +222,69 @@ const Landing: React.FC = () => {
           </form>
 
           {/* Demo Credentials */}
-          <div className="card rounded-md p-4" style={{ backgroundColor: 'var(--primary-light)' }}>
-            <h3 className="text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-              Demo Credentials (Click to auto-fill)
+          <div className="card rounded-md p-4">
+            <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--text)' }}>
+              Quick Login (Click to use)
             </h3>
-            <div className="space-y-2 text-xs">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 onClick={() => {
                   setFormData({ email: 'chatbot-user@tecace.com', password: 'user1234' });
                 }}
-                className="w-full text-left p-3 rounded border hover:bg-gray-50 transition-colors"
+                className="text-left p-2 rounded border hover:border-primary transition-colors"
                 style={{ 
                   borderColor: 'var(--border)',
                   backgroundColor: 'var(--card)',
                   color: 'var(--text)'
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">👤 Regular User</div>
-                    <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                      chatbot-user@tecace.com
-                    </div>
-                  </div>
-                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    → Chat Interface
-                  </div>
-                </div>
+                <div className="font-medium">👤 User</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Chat</div>
               </button>
+              
               <button
                 onClick={() => {
                   setFormData({ email: 'chatbot-admin@tecace.com', password: 'admin1234' });
                 }}
-                className="w-full text-left p-3 rounded border hover:bg-gray-50 transition-colors"
+                className="text-left p-2 rounded border hover:border-primary transition-colors"
                 style={{ 
                   borderColor: 'var(--border)',
                   backgroundColor: 'var(--card)',
                   color: 'var(--text)'
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">👑 Admin User</div>
-                    <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                      chatbot-admin@tecace.com
-                    </div>
-                  </div>
-                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    → Admin Dashboard
-                  </div>
-                </div>
+                <div className="font-medium">👑 Admin</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Dashboard</div>
               </button>
+              
+              <button
+                onClick={() => {
+                  setFormData({ email: 'professor@tecace.com', password: 'admin1234' });
+                }}
+                className="text-left p-2 rounded border hover:border-primary transition-colors"
+                style={{ 
+                  borderColor: 'var(--border)',
+                  backgroundColor: 'var(--card)',
+                  color: 'var(--text)'
+                }}
+              >
+                <div className="font-medium">🎓 Professor</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Education</div>
+              </button>
+              
               <button
                 onClick={() => {
                   setFormData({ email: 'hana@tecace.com', password: 'tsl1234' });
                 }}
-                className="w-full text-left p-3 rounded border hover:bg-gray-50 transition-colors"
+                className="text-left p-2 rounded border hover:border-primary transition-colors"
                 style={{ 
                   borderColor: 'var(--border)',
                   backgroundColor: 'var(--card)',
                   color: 'var(--text)'
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">👨‍💼 SeokHoon Kang</div>
-                    <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                      hana@tecace.com
-                    </div>
-                  </div>
-                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    → Admin Dashboard (Custom Settings)
-                  </div>
-                </div>
+                <div className="font-medium">👨‍💼 Hana</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Custom</div>
               </button>
             </div>
           </div>
