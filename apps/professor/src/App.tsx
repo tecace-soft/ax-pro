@@ -81,14 +81,7 @@ const App: React.FC = () => {
                 path="/admin/dashboard" 
                 element={
                   <ProtectedRoute requiredRole="admin">
-                    {(() => {
-                      const session = getSession();
-                      // Route professor@tecace.com to new dashboard
-                      if (session?.email === 'professor@tecace.com') {
-                        return <ProfessorDashboard />;
-                      }
-                      return <AdminDashboard />;
-                    })()}
+                    <AdminDashboard />
                   </ProtectedRoute>
                 } 
               />

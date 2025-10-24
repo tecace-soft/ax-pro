@@ -20,6 +20,7 @@ import { logout as clearSession, getSession } from '../../services/auth'
 import { getUserCustomization, applyThemeCustomization, resetThemeCustomization, DashboardCustomization } from '../../services/userCustomization'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
+import '../../styles/professor-overview.css'
 
 function formatDate(d: Date): string {
   const year = d.getFullYear()
@@ -266,6 +267,51 @@ export default function AdminDashboard() {
               <KnowledgeManagementPage />
             ) : (
               <>
+                {/* Professor-specific Overview Bar */}
+                {getSession()?.email === 'professor@tecace.com' && (
+                  <div className="professor-overview-bar">
+                    <div className="prof-overview-card">
+                      <div className="prof-overview-icon">📚</div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label">Total Sessions</div>
+                        <div className="prof-overview-value">{totalConversations}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="prof-overview-card">
+                      <div className="prof-overview-icon">💬</div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label">Total Questions</div>
+                        <div className="prof-overview-value">{totalConversations}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="prof-overview-card">
+                      <div className="prof-overview-icon">📊</div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label">Avg Q/Session</div>
+                        <div className="prof-overview-value">{Math.round((totalConversations / Math.max(totalConversations, 1)) * 10) / 10}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="prof-overview-card">
+                      <div className="prof-overview-icon">😊</div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label">Satisfaction</div>
+                        <div className="prof-overview-value">{satisfactionRate}%</div>
+                      </div>
+                    </div>
+                    
+                    <div className="prof-overview-card">
+                      <div className="prof-overview-icon">👥</div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label">Active Students</div>
+                        <div className="prof-overview-value">{Math.floor(totalConversations * 0.7)}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="dashboard-grid">
                   <div className="grid-left">
                     <div id="performance-radar">

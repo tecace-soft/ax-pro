@@ -1,0 +1,99 @@
+/* Professor Overview Bar - Only shown for professor@tecace.com */
+/* Adds statistics bar above existing dashboard content */
+
+.professor-overview-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 0;
+}
+
+.prof-overview-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--admin-card-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.prof-overview-card:hover {
+  background: rgba(59, 230, 255, 0.05);
+  border-color: var(--admin-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 230, 255, 0.1);
+}
+
+.prof-overview-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.prof-overview-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.prof-overview-label {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  margin-bottom: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prof-overview-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--admin-text);
+  line-height: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .professor-overview-bar {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .professor-overview-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .prof-overview-value {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .professor-overview-bar {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .prof-overview-card {
+    padding: 12px 16px;
+  }
+  
+  .prof-overview-icon {
+    font-size: 24px;
+  }
+  
+  .prof-overview-value {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .professor-overview-bar {
+    grid-template-columns: 1fr;
+  }
+}
+
