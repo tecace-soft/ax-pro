@@ -171,6 +171,17 @@ const createDefaultUserSettings = (userId: string, email: string): UserSettings 
     } as UserSettings;
   }
   
+  // Check if this is Professor's account - use Admin's settings
+  if (userId === 'professor_001' || email === 'professor@tecace.com') {
+    return {
+      userId,
+      email,
+      ...ADMIN_SETTINGS, // Use Admin's settings for Professor
+      createdAt: now,
+      updatedAt: now
+    } as UserSettings;
+  }
+  
   // Default settings for other users
   return {
     userId,
