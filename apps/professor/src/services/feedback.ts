@@ -313,3 +313,55 @@ export async function updateAdminFeedbackField(
   }
 }
 
+/**
+ * Delete admin feedback by ID
+ */
+export async function deleteAdminFeedback(id: number): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log('Deleting admin feedback:', { id });
+    
+    const { error } = await supabase
+      .from('admin_feedback')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to delete admin feedback: ${error.message}`);
+    }
+
+    console.log('✅ Admin feedback deleted:', id);
+  } catch (error) {
+    console.error('Failed to delete admin feedback:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete user feedback by ID
+ */
+export async function deleteUserFeedback(id: number): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log('Deleting user feedback:', { id });
+    
+    const { error } = await supabase
+      .from('user_feedback')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to delete user feedback: ${error.message}`);
+    }
+
+    console.log('✅ User feedback deleted:', id);
+  } catch (error) {
+    console.error('Failed to delete user feedback:', error);
+    throw error;
+  }
+}
+

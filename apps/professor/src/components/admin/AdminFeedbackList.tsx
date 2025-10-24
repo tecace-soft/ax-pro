@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { fetchAllAdminFeedback } from '../../services/feedback'
+import { fetchAllAdminFeedback, deleteAdminFeedback } from '../../services/feedback'
 import { fetchChatById } from '../../services/chatData'
 import { AdminFeedbackData, ChatData } from '../../services/supabaseUserSpecific'
 import { useTranslation } from '../../i18n/I18nProvider'
-import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
+import { IconRefresh, IconThumbsUp, IconThumbsDown, IconTrash } from '../../ui/icons'
 
 interface FeedbackWithChat extends AdminFeedbackData {
   chatData?: ChatData | null
@@ -170,6 +170,22 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
     setFilterDate(null)
     setSearchTerm('')
     setFilterVerdict('all')
+  }
+
+  const handleDelete = async (feedbackId: number) => {
+    if (!window.confirm('Are you sure you want to delete this admin feedback? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      await deleteAdminFeedback(feedbackId)
+      // Remove from local state
+      setFeedbacks(prev => prev.filter(f => f.id !== feedbackId))
+      console.log('✅ Admin feedback deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete admin feedback:', error)
+      alert('Failed to delete feedback. Please try again.')
+    }
   }
 
   const formatDate = (dateString?: string) => {
@@ -431,6 +447,7 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
                 <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '180px' }}>Feedback</th>
                 <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '180px' }}>Corrected</th>
                 <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>Apply</th>
+                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px' }}>Delete</th>
               </tr>
             </thead>
             <tbody>
@@ -493,6 +510,15 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
                       />
                     </button>
                   </td>
+                  <td className="px-3 py-2 text-center">
+                    <button
+                      onClick={() => handleDelete(feedback.id!)}
+                      className="icon-btn hover:bg-red-500/20 transition-colors"
+                      title="Delete feedback"
+                    >
+                      <IconTrash size={16} style={{ color: 'var(--admin-danger)' }} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -550,6 +576,14 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
                         />
                       </button>
                     </label>
+                    {/* Delete Button */}
+                    <button
+                      onClick={() => handleDelete(feedback.id!)}
+                      className="icon-btn hover:bg-red-500/20 transition-colors"
+                      title="Delete feedback"
+                    >
+                      <IconTrash size={16} style={{ color: 'var(--admin-danger)' }} />
+                    </button>
                   </div>
                 </div>
 
