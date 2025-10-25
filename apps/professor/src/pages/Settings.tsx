@@ -1226,6 +1226,48 @@ const Settings: React.FC = () => {
                 </div>
               </div>
 
+              {/* Reset All Data Section */}
+              <div className="border-t pt-4 mt-6" style={{ borderColor: 'var(--border)' }}>
+                <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
+                  Advanced
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                      Reset All Data
+                    </label>
+                    <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+                      Clear all stored settings, configurations, and cached data. This will reset the app to its default state.
+                      You will need to log in again after reset.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to reset all data? This action cannot be undone. You will be logged out.')) {
+                          // Clear all storage
+                          localStorage.clear();
+                          sessionStorage.clear();
+                          
+                          // Show confirmation
+                          alert('All data has been cleared. The page will now reload.');
+                          
+                          // Reload to login page
+                          window.location.href = '/';
+                        }
+                      }}
+                      className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        color: '#ef4444',
+                        border: '1px solid rgba(239, 68, 68, 0.3)'
+                      }}
+                    >
+                      Reset All Data
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {databaseType === 'other' && (
                 <div className="p-4 rounded-md" style={{ backgroundColor: 'var(--warning-light)' }}>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
