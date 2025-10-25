@@ -289,7 +289,12 @@ export default function AdminDashboard() {
                 {getSession()?.email === 'professor@tecace.com' && (
                   <div className="professor-overview-bar">
                     <div className="prof-overview-card">
-                      <div className="prof-overview-icon">📚</div>
+                      <div className="prof-overview-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                      </div>
                       <div className="prof-overview-content">
                         <div className="prof-overview-label">Total Sessions</div>
                         <div className="prof-overview-value">{totalConversations}</div>
@@ -298,7 +303,11 @@ export default function AdminDashboard() {
                     </div>
                     
                     <div className="prof-overview-card">
-                      <div className="prof-overview-icon">💬</div>
+                      <div className="prof-overview-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                      </div>
                       <div className="prof-overview-content">
                         <div className="prof-overview-label">Total Questions</div>
                         <div className="prof-overview-value">{totalQuestions}</div>
@@ -307,7 +316,13 @@ export default function AdminDashboard() {
                     </div>
                     
                     <div className="prof-overview-card">
-                      <div className="prof-overview-icon">📊</div>
+                      <div className="prof-overview-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="20" x2="18" y2="10"/>
+                          <line x1="12" y1="20" x2="12" y2="4"/>
+                          <line x1="6" y1="20" x2="6" y2="14"/>
+                        </svg>
+                      </div>
                       <div className="prof-overview-content">
                         <div className="prof-overview-label">Avg Q/Session</div>
                         <div className="prof-overview-value">{avgQuestionsPerSession}</div>
@@ -316,7 +331,12 @@ export default function AdminDashboard() {
                     </div>
                     
                     <div className="prof-overview-card">
-                      <div className="prof-overview-icon">😊</div>
+                      <div className="prof-overview-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                          <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                      </div>
                       <div className="prof-overview-content">
                         <div className="prof-overview-label">Satisfaction</div>
                         <div className="prof-overview-value">{satisfactionRate}%</div>
@@ -325,7 +345,14 @@ export default function AdminDashboard() {
                     </div>
                     
                     <div className="prof-overview-card">
-                      <div className="prof-overview-icon">👥</div>
+                      <div className="prof-overview-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                          <circle cx="9" cy="7" r="4"/>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                      </div>
                       <div className="prof-overview-content">
                         <div className="prof-overview-label">Active Students</div>
                         <div className="prof-overview-value">{activeStudents}</div>
