@@ -98,7 +98,15 @@ export const getUserSettings = (): UserSettings | null => {
     
     if (!userSettings) {
       // Create default settings for new user
-      return createDefaultUserSettings(session.userId, session.email);
+      const newSettings = createDefaultUserSettings(session.userId, session.email);
+      
+      // Save the new settings to localStorage
+      allUserSettings[session.userId] = newSettings;
+      localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(allUserSettings));
+      
+      console.log('✅ Created and saved default settings for:', session.email);
+      
+      return newSettings;
     }
     
     return userSettings;
