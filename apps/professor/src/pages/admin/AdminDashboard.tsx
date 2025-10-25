@@ -21,6 +21,7 @@ import { getUserCustomization, applyThemeCustomization, resetThemeCustomization,
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 import '../../styles/professor-overview.css'
+import '../../styles/performance-metrics-compact.css'
 
 function formatDate(d: Date): string {
   const year = d.getFullYear()
@@ -368,19 +369,86 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                <div className="dashboard-grid">
-                  <div className="grid-left">
-                    <div id="performance-radar">
-                      <PerformanceRadar 
-                        {...radarProps}
-                        timelineData={filteredRadarData}
-                        selectedDate={selectedRadarDate}
-                        onDateChange={setSelectedRadarDate}
-                        includeSimulatedData={includeSimulatedData}
-                        onIncludeSimulatedDataChange={setIncludeSimulatedData}
-                        estimationMode={estimationMode}
-                        onEstimationModeChange={setEstimationMode}
-                      />
+                {/* Compact Performance Metrics Grid */}
+                <div className="performance-metrics-compact">
+                  <div className="metrics-row">
+                    {/* Performance Radar - Smaller */}
+                    <div className="metric-card radar-card">
+                      <h3 className="metric-card-title">{t('Performance Radar')}</h3>
+                      <div id="performance-radar" className="compact-radar-container">
+                        <PerformanceRadar 
+                          {...radarProps}
+                          timelineData={filteredRadarData}
+                          selectedDate={selectedRadarDate}
+                          onDateChange={setSelectedRadarDate}
+                          includeSimulatedData={includeSimulatedData}
+                          onIncludeSimulatedDataChange={setIncludeSimulatedData}
+                          estimationMode={estimationMode}
+                          onEstimationModeChange={setEstimationMode}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Overall Performance Gauge */}
+                    <div className="metric-card gauge-card">
+                      <h3 className="metric-card-title">{t('Overall Performance')}</h3>
+                      <div className="gauge-container">
+                        <svg viewBox="0 0 200 120" className="gauge-svg">
+                          <path
+                            d="M 20 100 A 80 80 0 0 1 180 100"
+                            fill="none"
+                            stroke="var(--admin-border)"
+                            strokeWidth="12"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 20 100 A 80 80 0 0 1 180 100"
+                            fill="none"
+                            stroke="var(--admin-primary)"
+                            strokeWidth="12"
+                            strokeLinecap="round"
+                            strokeDasharray={`${(overallScore / 100) * 251.2} 251.2`}
+                            style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                          />
+                          <text x="100" y="85" textAnchor="middle" className="gauge-value">
+                            {overallScore}%
+                          </text>
+                          <text x="100" y="105" textAnchor="middle" className="gauge-label">
+                            {t('Score')}
+                          </text>
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Satisfaction Gauge */}
+                    <div className="metric-card gauge-card">
+                      <h3 className="metric-card-title">{t('Satisfaction Rate')}</h3>
+                      <div className="gauge-container">
+                        <svg viewBox="0 0 200 120" className="gauge-svg">
+                          <path
+                            d="M 20 100 A 80 80 0 0 1 180 100"
+                            fill="none"
+                            stroke="var(--admin-border)"
+                            strokeWidth="12"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 20 100 A 80 80 0 0 1 180 100"
+                            fill="none"
+                            stroke="#10b981"
+                            strokeWidth="12"
+                            strokeLinecap="round"
+                            strokeDasharray={`${(satisfactionRate / 100) * 251.2} 251.2`}
+                            style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                          />
+                          <text x="100" y="85" textAnchor="middle" className="gauge-value">
+                            {satisfactionRate}%
+                          </text>
+                          <text x="100" y="105" textAnchor="middle" className="gauge-label">
+                            {t('Happy Users')}
+                          </text>
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </div>

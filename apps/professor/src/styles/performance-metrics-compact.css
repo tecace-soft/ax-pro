@@ -1,0 +1,130 @@
+/* Compact Performance Metrics Grid */
+/* Displays radar chart and gauges side-by-side for better space utilization */
+
+.performance-metrics-compact {
+  margin-bottom: 24px;
+}
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.metric-card {
+  background: var(--admin-card-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.metric-card:hover {
+  border-color: var(--admin-primary);
+  box-shadow: 0 4px 12px rgba(59, 230, 255, 0.1);
+}
+
+.metric-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--admin-text);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* Radar Card - Compact */
+.radar-card {
+  /* Radar takes full width of its column */
+}
+
+.compact-radar-container {
+  max-height: 300px;
+  overflow: hidden;
+}
+
+/* Scale down the radar chart */
+.compact-radar-container > div {
+  transform: scale(0.85);
+  transform-origin: top center;
+}
+
+/* Gauge Cards */
+.gauge-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.gauge-container {
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+.gauge-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.gauge-value {
+  font-size: 32px;
+  font-weight: 700;
+  fill: var(--admin-text);
+}
+
+.gauge-label {
+  font-size: 12px;
+  font-weight: 500;
+  fill: var(--admin-text-muted);
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .metrics-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .compact-radar-container {
+    max-height: 400px;
+  }
+  
+  .compact-radar-container > div {
+    transform: scale(1);
+  }
+  
+  .gauge-container {
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .metric-card {
+    padding: 12px;
+  }
+  
+  .gauge-value {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-row {
+    gap: 12px;
+  }
+  
+  .metric-card-title {
+    font-size: 13px;
+  }
+  
+  .gauge-value {
+    font-size: 24px;
+  }
+  
+  .gauge-label {
+    font-size: 11px;
+  }
+}
+
