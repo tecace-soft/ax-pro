@@ -212,9 +212,9 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div className="flex justify-between items-center p-4 border-b" style={{ borderColor: 'var(--border)' }}>
+      <div className="flex justify-between items-center p-4 border-b" style={{ borderColor: 'var(--border)', flexShrink: 0 }}>
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigate('/chat')}
@@ -299,7 +299,7 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-6" style={{ flex: 1, overflowY: 'auto' }}>
         {/* Tab Navigation */}
         <div className="border-b mb-6" style={{ borderColor: 'var(--border)' }}>
           <nav className="-mb-px flex space-x-8">
@@ -315,7 +315,7 @@ const Settings: React.FC = () => {
                 borderBottomColor: activeTab === 'ui' ? 'var(--primary)' : 'transparent'
               }}
             >
-              UI Customization
+              {language === 'ko' ? 'UI 커스터마이징' : 'UI Customization'}
             </button>
             <button
               onClick={() => setActiveTab('api')}
@@ -329,7 +329,7 @@ const Settings: React.FC = () => {
                 borderBottomColor: activeTab === 'api' ? 'var(--primary)' : 'transparent'
               }}
             >
-              API Configurations
+              {language === 'ko' ? 'API 설정' : 'API Configurations'}
             </button>
             <button
               onClick={() => setActiveTab('webhook')}
@@ -343,7 +343,7 @@ const Settings: React.FC = () => {
                 borderBottomColor: activeTab === 'webhook' ? 'var(--primary)' : 'transparent'
               }}
             >
-              Webhooks
+              {language === 'ko' ? '웹훅' : 'Webhooks'}
             </button>
             <button
               onClick={() => setActiveTab('database')}
@@ -357,7 +357,7 @@ const Settings: React.FC = () => {
                 borderBottomColor: activeTab === 'database' ? 'var(--primary)' : 'transparent'
               }}
             >
-              Database
+              {language === 'ko' ? '데이터베이스' : 'Database'}
             </button>
           </nav>
         </div>
@@ -785,41 +785,41 @@ const Settings: React.FC = () => {
           <div className="space-y-6">
             <div className="card p-6 rounded-lg">
               <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
-                Chat Interface Customization
+                {language === 'ko' ? '채팅 인터페이스 커스터마이징' : 'Chat Interface Customization'}
               </h2>
               
               <div className="space-y-6">
                 {/* Chat Title */}
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                    Chat Interface Title
+                    {language === 'ko' ? '채팅 인터페이스 제목' : 'Chat Interface Title'}
                   </label>
                   <input
                     type="text"
                     value={customization.chatTitle}
                     onChange={(e) => updateCustomization({ chatTitle: e.target.value })}
                     className="input w-full px-3 py-2 rounded-md"
-                    placeholder="e.g., Chat Interface, AI Assistant, etc."
+                    placeholder={language === 'ko' ? '예: 채팅 인터페이스, AI 어시스턴트 등' : 'e.g., Chat Interface, AI Assistant, etc.'}
                   />
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                    This title appears at the top of the empty chat screen
+                    {language === 'ko' ? '이 제목은 빈 채팅 화면 상단에 표시됩니다' : 'This title appears at the top of the empty chat screen'}
                   </p>
                 </div>
 
                 {/* Chat Subtitle */}
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                    Chat Interface Subtitle
+                    {language === 'ko' ? '채팅 인터페이스 부제목' : 'Chat Interface Subtitle'}
                   </label>
                   <input
                     type="text"
                     value={customization.chatSubtitle}
                     onChange={(e) => updateCustomization({ chatSubtitle: e.target.value })}
                     className="input w-full px-3 py-2 rounded-md"
-                    placeholder="e.g., Select a conversation from the sidebar or start a new chat"
+                    placeholder={language === 'ko' ? '예: 사이드바에서 대화를 선택하거나 새 채팅을 시작하세요' : 'e.g., Select a conversation from the sidebar or start a new chat'}
                   />
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                    This subtitle appears below the title on the empty chat screen
+                    {language === 'ko' ? '이 부제목은 빈 채팅 화면의 제목 아래에 표시됩니다' : 'This subtitle appears below the title on the empty chat screen'}
                   </p>
                 </div>
 
@@ -957,62 +957,62 @@ const Settings: React.FC = () => {
                 {/* Suggested Questions */}
                 <div>
                   <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
-                    Suggested Questions
+                    {language === 'ko' ? '추천 질문' : 'Suggested Questions'}
                   </h3>
                   <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    Customize the suggested questions that appear on the empty chat screen
+                    {language === 'ko' ? '빈 채팅 화면에 표시될 추천 질문을 커스터마이징하세요' : 'Customize the suggested questions that appear on the empty chat screen'}
                   </p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                        Question 1
+                        {language === 'ko' ? '질문 1' : 'Question 1'}
                       </label>
                       <input
                         type="text"
                         value={customization.suggestedQuestions.question1}
                         onChange={(e) => updateQuestion('question1', e.target.value)}
                         className="input w-full px-3 py-2 rounded-md"
-                        placeholder="What is artificial intelligence?"
+                        placeholder={language === 'ko' ? '인공지능이란 무엇인가요?' : 'What is artificial intelligence?'}
                       />
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                        Question 2
+                        {language === 'ko' ? '질문 2' : 'Question 2'}
                       </label>
                       <input
                         type="text"
                         value={customization.suggestedQuestions.question2}
                         onChange={(e) => updateQuestion('question2', e.target.value)}
                         className="input w-full px-3 py-2 rounded-md"
-                        placeholder="How does machine learning work?"
+                        placeholder={language === 'ko' ? '머신러닝은 어떻게 작동하나요?' : 'How does machine learning work?'}
                       />
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                        Question 3
+                        {language === 'ko' ? '질문 3' : 'Question 3'}
                       </label>
                       <input
                         type="text"
                         value={customization.suggestedQuestions.question3}
                         onChange={(e) => updateQuestion('question3', e.target.value)}
                         className="input w-full px-3 py-2 rounded-md"
-                        placeholder="Explain quantum computing"
+                        placeholder={language === 'ko' ? '양자 컴퓨팅을 설명해주세요' : 'Explain quantum computing'}
                       />
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                        Question 4
+                        {language === 'ko' ? '질문 4' : 'Question 4'}
                       </label>
                       <input
                         type="text"
                         value={customization.suggestedQuestions.question4}
                         onChange={(e) => updateQuestion('question4', e.target.value)}
                         className="input w-full px-3 py-2 rounded-md"
-                        placeholder="What are the benefits of cloud computing?"
+                        placeholder={language === 'ko' ? '클라우드 컴퓨팅의 장점은 무엇인가요?' : 'What are the benefits of cloud computing?'}
                       />
                     </div>
                   </div>
@@ -1022,7 +1022,10 @@ const Settings: React.FC = () => {
                 <div className="flex justify-end">
                   <button
                     onClick={() => {
-                      if (window.confirm('Are you sure you want to reset all UI customizations to default values?')) {
+                      const message = language === 'ko' 
+                        ? '모든 UI 커스터마이징을 기본값으로 초기화하시겠습니까?' 
+                        : 'Are you sure you want to reset all UI customizations to default values?';
+                      if (window.confirm(message)) {
                         resetCustomization();
                       }
                     }}
@@ -1032,7 +1035,7 @@ const Settings: React.FC = () => {
                       color: 'var(--error)'
                     }}
                   >
-                    Reset to Defaults
+                    {language === 'ko' ? '기본값으로 초기화' : 'Reset to Defaults'}
                   </button>
                 </div>
               </div>
@@ -1041,7 +1044,7 @@ const Settings: React.FC = () => {
             {/* Preview */}
             <div className="card p-6 rounded-lg">
               <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
-                Preview
+                {language === 'ko' ? '미리보기' : 'Preview'}
               </h3>
               <div className="border rounded-lg p-6" style={{ 
                 borderColor: 'var(--border)',
