@@ -188,6 +188,9 @@
   min-height: 20px;
   animation: barGrowUp 0.8s ease-out forwards;
   transform-origin: bottom;
+  /* 최대 너비 제한 - 짧은 날짜 범위에서도 얇게 유지 */
+  max-width: 20px;
+  min-width: 8px;
 }
 
 /* 기본 Actual 데이터 - 파란색 */
