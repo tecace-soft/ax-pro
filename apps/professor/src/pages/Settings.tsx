@@ -879,13 +879,14 @@ const Settings: React.FC = () => {
                   {/* Upload and Action Buttons */}
                   <div className="flex gap-2 mb-2">
                     <label 
-                      className="px-4 py-2 rounded-md cursor-pointer transition-colors"
+                      className="px-4 py-2 rounded-md cursor-pointer transition-all hover:opacity-90"
                       style={{ 
-                        backgroundColor: 'var(--primary)',
-                        color: 'white',
+                        backgroundColor: '#3b82f6',
+                        color: '#ffffff',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: '8px',
+                        border: '1px solid rgba(59, 130, 246, 0.5)'
                       }}
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -923,20 +924,22 @@ const Settings: React.FC = () => {
                             link.download = 'chatbot-avatar.png';
                             link.click();
                           }}
-                          className="px-4 py-2 rounded-md transition-colors"
+                          className="px-4 py-2 rounded-md transition-all hover:opacity-90"
                           style={{ 
-                            backgroundColor: 'var(--primary)',
-                            color: 'white'
+                            backgroundColor: '#10b981',
+                            color: '#ffffff',
+                            border: '1px solid rgba(16, 185, 129, 0.5)'
                           }}
                         >
                           {language === 'ko' ? '다운로드' : 'Download'}
                         </button>
                         <button 
                           onClick={() => updateCustomization({ avatarUrl: '/default-profile-avatar.png' })}
-                          className="px-4 py-2 rounded-md transition-colors"
+                          className="px-4 py-2 rounded-md transition-all hover:opacity-90"
                           style={{ 
-                            backgroundColor: 'var(--danger)',
-                            color: 'white'
+                            backgroundColor: '#ef4444',
+                            color: '#ffffff',
+                            border: '1px solid rgba(239, 68, 68, 0.5)'
                           }}
                         >
                           {language === 'ko' ? '리셋' : 'Reset'}
