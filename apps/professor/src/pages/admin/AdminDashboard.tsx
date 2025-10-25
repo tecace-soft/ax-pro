@@ -22,6 +22,7 @@ import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 import '../../styles/professor-overview.css'
 import '../../styles/performance-metrics-compact.css'
+import '../../styles/ai-research-stats.css'
 
 function formatDate(d: Date): string {
   const year = d.getFullYear()
@@ -369,130 +370,175 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                {/* Additional Performance Gauges - Above Radar */}
-                <div className="performance-gauges-section">
-                  <div className="gauges-row">
-                    {/* Overall Performance Gauge */}
-                    <div className="gauge-card">
-                      <h3 className="gauge-title">{t('Overall Performance')}</h3>
-                      <div className="gauge-container">
-                        <svg viewBox="0 0 200 120" className="gauge-svg">
-                          <path
-                            d="M 20 100 A 80 80 0 0 1 180 100"
-                            fill="none"
-                            stroke="var(--admin-border)"
-                            strokeWidth="12"
-                            strokeLinecap="round"
-                          />
-                          <path
-                            d="M 20 100 A 80 80 0 0 1 180 100"
-                            fill="none"
-                            stroke="var(--admin-primary)"
-                            strokeWidth="12"
-                            strokeLinecap="round"
-                            strokeDasharray={`${(overallScore / 100) * 251.2} 251.2`}
-                            style={{ transition: 'stroke-dasharray 0.5s ease' }}
-                          />
-                          <text x="100" y="85" textAnchor="middle" className="gauge-value">
-                            {overallScore}%
-                          </text>
-                          <text x="100" y="105" textAnchor="middle" className="gauge-label">
-                            {t('Score')}
-                          </text>
-                        </svg>
+                {/* AI Research Field Statistics - Above Radar */}
+                <div className="ai-research-stats-section">
+                  <h2 className="section-title">{t('AI Research Field Analysis')}</h2>
+                  <div className="research-stats-grid">
+                    {/* Field Distribution */}
+                    <div className="research-stat-card">
+                      <h3 className="stat-card-title">{t('Research Fields')}</h3>
+                      <div className="field-stats">
+                        <div className="field-item">
+                          <div className="field-name">Machine Learning</div>
+                          <div className="field-bar">
+                            <div className="field-progress" style={{ width: '85%', backgroundColor: '#3b82f6' }}></div>
+                          </div>
+                          <div className="field-count">42 questions</div>
+                        </div>
+                        <div className="field-item">
+                          <div className="field-name">Deep Learning</div>
+                          <div className="field-bar">
+                            <div className="field-progress" style={{ width: '72%', backgroundColor: '#10b981' }}></div>
+                          </div>
+                          <div className="field-count">36 questions</div>
+                        </div>
+                        <div className="field-item">
+                          <div className="field-name">NLP</div>
+                          <div className="field-bar">
+                            <div className="field-progress" style={{ width: '68%', backgroundColor: '#f59e0b' }}></div>
+                          </div>
+                          <div className="field-count">34 questions</div>
+                        </div>
+                        <div className="field-item">
+                          <div className="field-name">Computer Vision</div>
+                          <div className="field-bar">
+                            <div className="field-progress" style={{ width: '55%', backgroundColor: '#8b5cf6' }}></div>
+                          </div>
+                          <div className="field-count">28 questions</div>
+                        </div>
+                        <div className="field-item">
+                          <div className="field-name">Reinforcement Learning</div>
+                          <div className="field-bar">
+                            <div className="field-progress" style={{ width: '45%', backgroundColor: '#ef4444' }}></div>
+                          </div>
+                          <div className="field-count">23 questions</div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Satisfaction Gauge */}
-                    <div className="gauge-card">
-                      <h3 className="gauge-title">{t('Satisfaction Rate')}</h3>
-                      <div className="gauge-container">
-                        <svg viewBox="0 0 200 120" className="gauge-svg">
-                          <path
-                            d="M 20 100 A 80 80 0 0 1 180 100"
-                            fill="none"
-                            stroke="var(--admin-border)"
-                            strokeWidth="12"
-                            strokeLinecap="round"
-                          />
-                          <path
-                            d="M 20 100 A 80 80 0 0 1 180 100"
-                            fill="none"
-                            stroke="#10b981"
-                            strokeWidth="12"
-                            strokeLinecap="round"
-                            strokeDasharray={`${(satisfactionRate / 100) * 251.2} 251.2`}
-                            style={{ transition: 'stroke-dasharray 0.5s ease' }}
-                          />
-                          <text x="100" y="85" textAnchor="middle" className="gauge-value">
-                            {satisfactionRate}%
-                          </text>
-                          <text x="100" y="105" textAnchor="middle" className="gauge-label">
-                            {t('Happy Users')}
-                          </text>
-                        </svg>
+                    {/* Topic Engagement */}
+                    <div className="research-stat-card">
+                      <h3 className="stat-card-title">{t('Topic Engagement')}</h3>
+                      <div className="topic-stats">
+                        <div className="topic-item">
+                          <div className="topic-name">Neural Networks</div>
+                          <div className="topic-metrics">
+                            <span className="topic-sessions">8 sessions</span>
+                            <span className="topic-avg">3.2 Q/session</span>
+                          </div>
+                        </div>
+                        <div className="topic-item">
+                          <div className="topic-name">Transformer Architecture</div>
+                          <div className="topic-metrics">
+                            <span className="topic-sessions">6 sessions</span>
+                            <span className="topic-avg">4.1 Q/session</span>
+                          </div>
+                        </div>
+                        <div className="topic-item">
+                          <div className="topic-name">GANs</div>
+                          <div className="topic-metrics">
+                            <span className="topic-sessions">5 sessions</span>
+                            <span className="topic-avg">2.8 Q/session</span>
+                          </div>
+                        </div>
+                        <div className="topic-item">
+                          <div className="topic-name">CNN Architectures</div>
+                          <div className="topic-metrics">
+                            <span className="topic-sessions">7 sessions</span>
+                            <span className="topic-avg">3.5 Q/session</span>
+                          </div>
+                        </div>
+                        <div className="topic-item">
+                          <div className="topic-name">Optimization</div>
+                          <div className="topic-metrics">
+                            <span className="topic-sessions">4 sessions</span>
+                            <span className="topic-avg">2.2 Q/session</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Active Users Gauge */}
-                    <div className="gauge-card">
-                      <h3 className="gauge-title">{t('Active Users')}</h3>
-                      <div className="gauge-container">
-                        <svg viewBox="0 0 200 120" className="gauge-svg">
-                          <path
-                            d="M 20 100 A 80 80 0 0 1 180 100"
-                            fill="none"
-                            stroke="var(--admin-border)"
-                            strokeWidth="12"
-                            strokeLinecap="round"
-                          />
-                          <path
-                            d="M 20 100 A 80 80 0 0 1 180 100"
-                            fill="none"
-                            stroke="#8b5cf6"
-                            strokeWidth="12"
-                            strokeLinecap="round"
-                            strokeDasharray={`${Math.min((activeStudents / 20) * 251.2, 251.2)} 251.2`}
-                            style={{ transition: 'stroke-dasharray 0.5s ease' }}
-                          />
-                          <text x="100" y="85" textAnchor="middle" className="gauge-value">
-                            {activeStudents}
-                          </text>
-                          <text x="100" y="105" textAnchor="middle" className="gauge-label">
-                            {t('Users')}
-                          </text>
-                        </svg>
+                    {/* Student Participation */}
+                    <div className="research-stat-card">
+                      <h3 className="stat-card-title">{t('Student Participation')}</h3>
+                      <div className="student-stats">
+                        <div className="student-item">
+                          <div className="student-name">김AI (PhD)</div>
+                          <div className="student-activity">
+                            <span className="activity-count">15 questions</span>
+                            <span className="activity-fields">ML, DL, NLP</span>
+                          </div>
+                        </div>
+                        <div className="student-item">
+                          <div className="student-name">박학습 (Master)</div>
+                          <div className="student-activity">
+                            <span className="activity-count">12 questions</span>
+                            <span className="activity-fields">CV, GANs</span>
+                          </div>
+                        </div>
+                        <div className="student-item">
+                          <div className="student-name">이딥러닝 (PhD)</div>
+                          <div className="student-activity">
+                            <span className="activity-count">18 questions</span>
+                            <span className="activity-fields">DL, RL, Optimization</span>
+                          </div>
+                        </div>
+                        <div className="student-item">
+                          <div className="student-name">최비전 (Master)</div>
+                          <div className="student-activity">
+                            <span className="activity-count">9 questions</span>
+                            <span className="activity-fields">CV, CNN</span>
+                          </div>
+                        </div>
+                        <div className="student-item">
+                          <div className="student-name">정자연어 (PhD)</div>
+                          <div className="student-activity">
+                            <span className="activity-count">11 questions</span>
+                            <span className="activity-fields">NLP, Transformer</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Questions per Session Gauge */}
-                    <div className="gauge-card">
-                      <h3 className="gauge-title">{t('Avg Q/Session')}</h3>
-                      <div className="gauge-container">
-                        <svg viewBox="0 0 200 120" className="gauge-svg">
-                          <path
-                            d="M 20 100 A 80 80 0 0 1 180 100"
-                            fill="none"
-                            stroke="var(--admin-border)"
-                            strokeWidth="12"
-                            strokeLinecap="round"
-                          />
-                          <path
-                            d="M 20 100 A 80 80 0 0 1 180 100"
-                            fill="none"
-                            stroke="#f59e0b"
-                            strokeWidth="12"
-                            strokeLinecap="round"
-                            strokeDasharray={`${Math.min((avgQuestionsPerSession / 10) * 251.2, 251.2)} 251.2`}
-                            style={{ transition: 'stroke-dasharray 0.5s ease' }}
-                          />
-                          <text x="100" y="85" textAnchor="middle" className="gauge-value">
-                            {avgQuestionsPerSession}
-                          </text>
-                          <text x="100" y="105" textAnchor="middle" className="gauge-label">
-                            {t('Questions')}
-                          </text>
-                        </svg>
+                    {/* Satisfaction by Field */}
+                    <div className="research-stat-card">
+                      <h3 className="stat-card-title">{t('Satisfaction by Field')}</h3>
+                      <div className="satisfaction-stats">
+                        <div className="satisfaction-item">
+                          <div className="satisfaction-field">Machine Learning</div>
+                          <div className="satisfaction-gauge">
+                            <div className="gauge-fill" style={{ width: '88%', backgroundColor: '#10b981' }}></div>
+                            <span className="gauge-text">88%</span>
+                          </div>
+                        </div>
+                        <div className="satisfaction-item">
+                          <div className="satisfaction-field">Deep Learning</div>
+                          <div className="satisfaction-gauge">
+                            <div className="gauge-fill" style={{ width: '82%', backgroundColor: '#10b981' }}></div>
+                            <span className="gauge-text">82%</span>
+                          </div>
+                        </div>
+                        <div className="satisfaction-item">
+                          <div className="satisfaction-field">NLP</div>
+                          <div className="satisfaction-gauge">
+                            <div className="gauge-fill" style={{ width: '79%', backgroundColor: '#f59e0b' }}></div>
+                            <span className="gauge-text">79%</span>
+                          </div>
+                        </div>
+                        <div className="satisfaction-item">
+                          <div className="satisfaction-field">Computer Vision</div>
+                          <div className="satisfaction-gauge">
+                            <div className="gauge-fill" style={{ width: '75%', backgroundColor: '#f59e0b' }}></div>
+                            <span className="gauge-text">75%</span>
+                          </div>
+                        </div>
+                        <div className="satisfaction-item">
+                          <div className="satisfaction-field">Reinforcement Learning</div>
+                          <div className="satisfaction-gauge">
+                            <div className="gauge-fill" style={{ width: '71%', backgroundColor: '#ef4444' }}></div>
+                            <span className="gauge-text">71%</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
