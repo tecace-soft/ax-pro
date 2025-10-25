@@ -285,9 +285,8 @@ export default function AdminDashboard() {
               <KnowledgeManagementPage />
             ) : (
               <>
-                {/* Professor-specific Overview Bar */}
-                {getSession()?.email === 'professor@tecace.com' && (
-                  <div className="professor-overview-bar">
+                {/* Overview Statistics Bar - Always visible at top */}
+                <div className="overview-stats-bar">
                     <div className="prof-overview-card">
                       <div className="prof-overview-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -296,9 +295,8 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label">Total Sessions</div>
+                        <div className="prof-overview-label">{t('Total Sessions')}</div>
                         <div className="prof-overview-value">{totalConversations}</div>
-                        <div className="prof-overview-subtitle">Unique conversation sessions</div>
                       </div>
                     </div>
                     
@@ -309,9 +307,8 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label">Total Questions</div>
+                        <div className="prof-overview-label">{t('Total Questions')}</div>
                         <div className="prof-overview-value">{totalQuestions}</div>
-                        <div className="prof-overview-subtitle">Messages exchanged</div>
                       </div>
                     </div>
                     
@@ -324,9 +321,8 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label">Avg Q/Session</div>
+                        <div className="prof-overview-label">{t('Avg Q/Session')}</div>
                         <div className="prof-overview-value">{avgQuestionsPerSession}</div>
-                        <div className="prof-overview-subtitle">Questions per session</div>
                       </div>
                     </div>
                     
@@ -338,9 +334,8 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label">Satisfaction</div>
+                        <div className="prof-overview-label">{t('Satisfaction')}</div>
                         <div className="prof-overview-value">{satisfactionRate}%</div>
-                        <div className="prof-overview-subtitle">Positive feedback rate</div>
                       </div>
                     </div>
                     
@@ -354,13 +349,24 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label">Active Students</div>
+                        <div className="prof-overview-label">{t('Active Users')}</div>
                         <div className="prof-overview-value">{activeStudents}</div>
-                        <div className="prof-overview-subtitle">Unique users</div>
+                      </div>
+                    </div>
+                    
+                    <div className="prof-overview-card">
+                      <div className="prof-overview-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                      </div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label">{t('Documents')}</div>
+                        <div className="prof-overview-value">{totalDocuments}</div>
                       </div>
                     </div>
                   </div>
-                )}
 
                 <div className="dashboard-grid">
                   <div className="grid-left">
