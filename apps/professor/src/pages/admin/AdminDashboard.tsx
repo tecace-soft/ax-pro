@@ -381,35 +381,35 @@ export default function AdminDashboard() {
                         <div className="field-item">
                           <div className="field-name">Machine Learning</div>
                           <div className="field-bar">
-                            <div className="field-progress" style={{ width: '85%', backgroundColor: '#3b82f6' }}></div>
+                            <div className="field-progress" style={{ width: '85%', backgroundColor: 'var(--admin-primary)' }}></div>
                           </div>
                           <div className="field-count">42 questions</div>
                         </div>
                         <div className="field-item">
                           <div className="field-name">Deep Learning</div>
                           <div className="field-bar">
-                            <div className="field-progress" style={{ width: '72%', backgroundColor: '#10b981' }}></div>
+                            <div className="field-progress" style={{ width: '72%', backgroundColor: 'var(--admin-primary)' }}></div>
                           </div>
                           <div className="field-count">36 questions</div>
                         </div>
                         <div className="field-item">
                           <div className="field-name">NLP</div>
                           <div className="field-bar">
-                            <div className="field-progress" style={{ width: '68%', backgroundColor: '#f59e0b' }}></div>
+                            <div className="field-progress" style={{ width: '68%', backgroundColor: 'var(--admin-primary)' }}></div>
                           </div>
                           <div className="field-count">34 questions</div>
                         </div>
                         <div className="field-item">
                           <div className="field-name">Computer Vision</div>
                           <div className="field-bar">
-                            <div className="field-progress" style={{ width: '55%', backgroundColor: '#8b5cf6' }}></div>
+                            <div className="field-progress" style={{ width: '55%', backgroundColor: 'var(--admin-primary)' }}></div>
                           </div>
                           <div className="field-count">28 questions</div>
                         </div>
                         <div className="field-item">
                           <div className="field-name">Reinforcement Learning</div>
                           <div className="field-bar">
-                            <div className="field-progress" style={{ width: '45%', backgroundColor: '#ef4444' }}></div>
+                            <div className="field-progress" style={{ width: '45%', backgroundColor: 'var(--admin-primary)' }}></div>
                           </div>
                           <div className="field-count">23 questions</div>
                         </div>
@@ -507,35 +507,35 @@ export default function AdminDashboard() {
                         <div className="satisfaction-item">
                           <div className="satisfaction-field">Machine Learning</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '88%', backgroundColor: '#10b981' }}></div>
+                            <div className="gauge-fill" style={{ width: '88%', backgroundColor: 'var(--admin-primary)' }}></div>
                             <span className="gauge-text">88%</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
                           <div className="satisfaction-field">Deep Learning</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '82%', backgroundColor: '#10b981' }}></div>
+                            <div className="gauge-fill" style={{ width: '82%', backgroundColor: 'var(--admin-primary)' }}></div>
                             <span className="gauge-text">82%</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
                           <div className="satisfaction-field">NLP</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '79%', backgroundColor: '#f59e0b' }}></div>
+                            <div className="gauge-fill" style={{ width: '79%', backgroundColor: 'var(--admin-primary)' }}></div>
                             <span className="gauge-text">79%</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
                           <div className="satisfaction-field">Computer Vision</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '75%', backgroundColor: '#f59e0b' }}></div>
+                            <div className="gauge-fill" style={{ width: '75%', backgroundColor: 'var(--admin-primary)' }}></div>
                             <span className="gauge-text">75%</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
                           <div className="satisfaction-field">Reinforcement Learning</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '71%', backgroundColor: '#ef4444' }}></div>
+                            <div className="gauge-fill" style={{ width: '71%', backgroundColor: 'var(--admin-primary)' }}></div>
                             <span className="gauge-text">71%</span>
                           </div>
                         </div>
