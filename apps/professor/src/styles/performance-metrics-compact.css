@@ -1,30 +1,34 @@
-/* Compact Performance Metrics Grid */
-/* Displays radar chart and gauges side-by-side for better space utilization */
+/* Performance Gauges Section - Above Radar Chart */
+/* Additional gauges displayed above the original radar section */
 
-.performance-metrics-compact {
+.performance-gauges-section {
   margin-bottom: 24px;
 }
 
-.metrics-row {
+.gauges-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
 
-.metric-card {
+.gauge-card {
   background: var(--admin-card-bg);
   border: 1px solid var(--admin-border);
   border-radius: 8px;
   padding: 16px;
   transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.metric-card:hover {
+.gauge-card:hover {
   border-color: var(--admin-primary);
   box-shadow: 0 4px 12px rgba(59, 230, 255, 0.1);
 }
 
-.metric-card-title {
+.gauge-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--admin-text);
@@ -32,33 +36,9 @@
   text-align: center;
 }
 
-/* Radar Card - Compact */
-.radar-card {
-  /* Radar takes full width of its column */
-}
-
-.compact-radar-container {
-  max-height: 300px;
-  overflow: hidden;
-}
-
-/* Scale down the radar chart */
-.compact-radar-container > div {
-  transform: scale(0.85);
-  transform-origin: top center;
-}
-
-/* Gauge Cards */
-.gauge-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
 .gauge-container {
   width: 100%;
-  max-width: 200px;
+  max-width: 180px;
   margin: 0 auto;
 }
 
@@ -69,7 +49,7 @@
 }
 
 .gauge-value {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   fill: var(--admin-text);
 }
@@ -82,49 +62,48 @@
 
 /* Responsive Design */
 @media (max-width: 1400px) {
-  .metrics-row {
-    grid-template-columns: 1fr;
+  .gauges-row {
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
   }
   
-  .compact-radar-container {
-    max-height: 400px;
-  }
-  
-  .compact-radar-container > div {
-    transform: scale(1);
-  }
-  
   .gauge-container {
-    max-width: 250px;
+    max-width: 200px;
   }
 }
 
 @media (max-width: 1024px) {
-  .metric-card {
+  .gauge-card {
     padding: 12px;
-  }
-  
-  .gauge-value {
-    font-size: 28px;
-  }
-}
-
-@media (max-width: 768px) {
-  .metrics-row {
-    gap: 12px;
-  }
-  
-  .metric-card-title {
-    font-size: 13px;
   }
   
   .gauge-value {
     font-size: 24px;
   }
+}
+
+@media (max-width: 768px) {
+  .gauges-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .gauge-title {
+    font-size: 13px;
+  }
+  
+  .gauge-value {
+    font-size: 20px;
+  }
   
   .gauge-label {
     font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .gauges-row {
+    grid-template-columns: 1fr;
   }
 }
 

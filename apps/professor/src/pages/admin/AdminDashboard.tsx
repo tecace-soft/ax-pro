@@ -369,29 +369,12 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                {/* Compact Performance Metrics Grid */}
-                <div className="performance-metrics-compact">
-                  <div className="metrics-row">
-                    {/* Performance Radar - Smaller */}
-                    <div className="metric-card radar-card">
-                      <h3 className="metric-card-title">{t('Performance Radar')}</h3>
-                      <div id="performance-radar" className="compact-radar-container">
-                        <PerformanceRadar 
-                          {...radarProps}
-                          timelineData={filteredRadarData}
-                          selectedDate={selectedRadarDate}
-                          onDateChange={setSelectedRadarDate}
-                          includeSimulatedData={includeSimulatedData}
-                          onIncludeSimulatedDataChange={setIncludeSimulatedData}
-                          estimationMode={estimationMode}
-                          onEstimationModeChange={setEstimationMode}
-                        />
-                      </div>
-                    </div>
-
+                {/* Additional Performance Gauges - Above Radar */}
+                <div className="performance-gauges-section">
+                  <div className="gauges-row">
                     {/* Overall Performance Gauge */}
-                    <div className="metric-card gauge-card">
-                      <h3 className="metric-card-title">{t('Overall Performance')}</h3>
+                    <div className="gauge-card">
+                      <h3 className="gauge-title">{t('Overall Performance')}</h3>
                       <div className="gauge-container">
                         <svg viewBox="0 0 200 120" className="gauge-svg">
                           <path
@@ -421,8 +404,8 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* Satisfaction Gauge */}
-                    <div className="metric-card gauge-card">
-                      <h3 className="metric-card-title">{t('Satisfaction Rate')}</h3>
+                    <div className="gauge-card">
+                      <h3 className="gauge-title">{t('Satisfaction Rate')}</h3>
                       <div className="gauge-container">
                         <svg viewBox="0 0 200 120" className="gauge-svg">
                           <path
@@ -449,6 +432,86 @@ export default function AdminDashboard() {
                           </text>
                         </svg>
                       </div>
+                    </div>
+
+                    {/* Active Users Gauge */}
+                    <div className="gauge-card">
+                      <h3 className="gauge-title">{t('Active Users')}</h3>
+                      <div className="gauge-container">
+                        <svg viewBox="0 0 200 120" className="gauge-svg">
+                          <path
+                            d="M 20 100 A 80 80 0 0 1 180 100"
+                            fill="none"
+                            stroke="var(--admin-border)"
+                            strokeWidth="12"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 20 100 A 80 80 0 0 1 180 100"
+                            fill="none"
+                            stroke="#8b5cf6"
+                            strokeWidth="12"
+                            strokeLinecap="round"
+                            strokeDasharray={`${Math.min((activeStudents / 20) * 251.2, 251.2)} 251.2`}
+                            style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                          />
+                          <text x="100" y="85" textAnchor="middle" className="gauge-value">
+                            {activeStudents}
+                          </text>
+                          <text x="100" y="105" textAnchor="middle" className="gauge-label">
+                            {t('Users')}
+                          </text>
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Questions per Session Gauge */}
+                    <div className="gauge-card">
+                      <h3 className="gauge-title">{t('Avg Q/Session')}</h3>
+                      <div className="gauge-container">
+                        <svg viewBox="0 0 200 120" className="gauge-svg">
+                          <path
+                            d="M 20 100 A 80 80 0 0 1 180 100"
+                            fill="none"
+                            stroke="var(--admin-border)"
+                            strokeWidth="12"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 20 100 A 80 80 0 0 1 180 100"
+                            fill="none"
+                            stroke="#f59e0b"
+                            strokeWidth="12"
+                            strokeLinecap="round"
+                            strokeDasharray={`${Math.min((avgQuestionsPerSession / 10) * 251.2, 251.2)} 251.2`}
+                            style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                          />
+                          <text x="100" y="85" textAnchor="middle" className="gauge-value">
+                            {avgQuestionsPerSession}
+                          </text>
+                          <text x="100" y="105" textAnchor="middle" className="gauge-label">
+                            {t('Questions')}
+                          </text>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Original Performance Radar Section - Keep as is */}
+                <div className="dashboard-grid">
+                  <div className="grid-left">
+                    <div id="performance-radar">
+                      <PerformanceRadar 
+                        {...radarProps}
+                        timelineData={filteredRadarData}
+                        selectedDate={selectedRadarDate}
+                        onDateChange={setSelectedRadarDate}
+                        includeSimulatedData={includeSimulatedData}
+                        onIncludeSimulatedDataChange={setIncludeSimulatedData}
+                        estimationMode={estimationMode}
+                        onEstimationModeChange={setEstimationMode}
+                      />
                     </div>
                   </div>
                 </div>
