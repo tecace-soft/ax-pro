@@ -218,9 +218,34 @@ const Settings: React.FC = () => {
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigate('/chat')}
-            className="text-sm link"
+            className="text-sm px-3 py-1 rounded border transition-colors hover:bg-gray-100"
+            style={{ 
+              backgroundColor: 'var(--card)', 
+              borderColor: 'var(--border)',
+              color: 'var(--text)'
+            }}
           >
-            ← Back to Chat
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline-block', marginRight: '6px', verticalAlign: 'middle' }}>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Chat
+          </button>
+          <button
+            onClick={() => navigate('/admin/dashboard')}
+            className="text-sm px-3 py-1 rounded border transition-colors hover:bg-gray-100"
+            style={{ 
+              backgroundColor: 'var(--card)', 
+              borderColor: 'var(--border)',
+              color: 'var(--text)'
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline-block', marginRight: '6px', verticalAlign: 'middle' }}>
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Dashboard
           </button>
           <h1 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>
             Settings
@@ -231,24 +256,41 @@ const Settings: React.FC = () => {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="text-sm px-3 py-1 rounded border"
+            className="text-sm px-3 py-1 rounded border transition-colors hover:bg-gray-100"
             style={{ 
               backgroundColor: 'var(--card)', 
               borderColor: 'var(--border)',
               color: 'var(--text)'
             }}
           >
-            {theme === 'light' ? '🌙' : '☀️'}
+            {theme === 'light' ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+            )}
           </button>
           
           {/* Language Toggle */}
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
-            className="text-sm px-3 py-1 rounded border bg-transparent"
+            className="text-sm px-3 py-1 rounded border"
             style={{ 
               borderColor: 'var(--border)',
-              color: 'var(--text)'
+              color: 'var(--text)',
+              backgroundColor: 'var(--card)'
             }}
           >
             <option value="en">EN</option>
@@ -527,7 +569,11 @@ const Settings: React.FC = () => {
             {/* Simulation Info */}
             <div className="mt-8 card p-4 rounded-lg" style={{ backgroundColor: 'var(--warning-light)' }}>
               <div className="flex items-start space-x-2">
-                <span>ℹ️</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
                 <div>
                   <h3 className="text-sm font-medium" style={{ color: 'var(--warning)' }}>
                     Development Mode
@@ -716,7 +762,10 @@ const Settings: React.FC = () => {
             {/* Webhook Info */}
             <div className="mt-8 card p-4 rounded-lg" style={{ backgroundColor: 'var(--primary-light)' }}>
               <div className="flex items-start space-x-2">
-                <span>🔗</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
                 <div>
                   <h3 className="text-sm font-medium" style={{ color: 'var(--primary)' }}>
                     Webhook Integration
@@ -1404,9 +1453,9 @@ const Settings: React.FC = () => {
                   updateCustomization({ avatarUrl: uploadedAvatarUrl });
                   setShowImageEditor(false);
                 }}
-                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors hover:opacity-90"
                 style={{ 
-                  backgroundColor: 'var(--primary)',
+                  backgroundColor: '#3b82f6',
                   color: '#ffffff'
                 }}
               >
@@ -1455,9 +1504,9 @@ const Settings: React.FC = () => {
                   
                   img.src = uploadedAvatarUrl;
                 }}
-                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors hover:opacity-90"
                 style={{ 
-                  backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                  backgroundColor: '#10b981',
                   color: '#ffffff'
                 }}
               >
@@ -1466,11 +1515,11 @@ const Settings: React.FC = () => {
               
               <button
                 onClick={() => setShowImageEditor(false)}
-                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors hover:bg-gray-700"
                 style={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                  backgroundColor: 'var(--card)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--border)'
                 }}
               >
                 {language === 'ko' ? '취소' : 'Cancel'}
