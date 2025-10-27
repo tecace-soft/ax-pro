@@ -262,6 +262,29 @@ const Landing: React.FC = () => {
                   </div>
                 </div>
               </button>
+              <button
+                onClick={() => {
+                  setFormData({ email: 'hana@tecace.com', password: 'tsl1234' });
+                }}
+                className="w-full text-left p-3 rounded border hover:bg-gray-50 transition-colors"
+                style={{ 
+                  borderColor: 'var(--border)',
+                  backgroundColor: 'var(--card)',
+                  color: 'var(--text)'
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">👨‍💼 SeokHoon Kang</div>
+                    <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                      hana@tecace.com
+                    </div>
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    → Admin Dashboard (Custom Settings)
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 

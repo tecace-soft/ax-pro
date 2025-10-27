@@ -1,4 +1,4 @@
-import { getSupabaseClient } from './supabase';
+import { getSupabaseClient } from './supabaseUserSpecific';
 
 interface Prompt {
   id?: number;

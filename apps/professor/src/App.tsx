@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { I18nProvider } from './i18n/I18nProvider';
@@ -11,6 +11,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ScrollToTop from './components/ui/ScrollToTop';
 // These are now imported in AdminShell.tsx
 import { isAuthedFor, Role } from './services/auth';
+import { checkAndMigrateSettings } from './services/migrateToUserSettings';
 
 // Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole: Role }> = ({ 
@@ -25,6 +26,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole: Role }
 };
 
 const App: React.FC = () => {
+  // Initialize user settings migration on app start
+  useEffect(() => {
+    checkAndMigrateSettings();
+  }, []);
+
   return (
     <ThemeProvider>
       <I18nProvider>

@@ -1,4 +1,4 @@
-import { getSupabaseClient } from './supabase';
+import { getSupabaseClient } from './supabaseUserSpecific';
 import { UICustomization } from './settings';
 
 const DEFAULT_CUSTOMIZATION: UICustomization = {

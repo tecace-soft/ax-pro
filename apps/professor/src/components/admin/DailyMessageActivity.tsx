@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from '../../i18n/I18nProvider'
 import { fetchAllChatData } from '../../services/chatData'
 import { fetchAllUserFeedback, fetchAllAdminFeedback } from '../../services/feedback'
-import { UserFeedbackData, AdminFeedbackData } from '../../services/supabase'
+import { UserFeedbackData, AdminFeedbackData } from '../../services/supabaseUserSpecific'
 
 interface DailyMessageActivityProps {
   startDate?: string

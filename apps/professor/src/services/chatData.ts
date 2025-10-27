@@ -1,5 +1,5 @@
-import { getSupabaseClient } from './supabase';
-import type { ChatData } from './supabase';
+import { getSupabaseClient } from './supabaseUserSpecific';
+import type { ChatData } from './supabaseUserSpecific';
 
 /**
  * Fetch all chat data ordered by most recent first
