@@ -30,6 +30,7 @@ export default function TranslationHistory() {
   const [displayLimit, setDisplayLimit] = useState(10)
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [isLoading, setIsLoading] = useState(false)
+  const [filterLanguage, setFilterLanguage] = useState<string>('all')
 
   // Mock data
   useEffect(() => {
@@ -115,7 +116,28 @@ export default function TranslationHistory() {
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>번역 기록</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>번역 기록</h2>
+            {/* Translation Language Selector - Next to title */}
+            <select
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value)}
+              style={{
+                padding: '6px 12px',
+                background: 'var(--admin-card-bg)',
+                color: 'var(--admin-text)',
+                border: '1px solid var(--admin-border)',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: 500
+              }}
+            >
+              <option value="ko">🇰🇷 한국어</option>
+              <option value="en">🇺🇸 English</option>
+              <option value="ja">🇯🇵 日本語</option>
+              <option value="zh">🇨🇳 中文</option>
+            </select>
+          </div>
           <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>Recent Translations ({translations.length})</div>
         </div>
         <button
@@ -178,10 +200,10 @@ export default function TranslationHistory() {
           <option value="user">사용자 순</option>
         </select>
 
-        {/* Language Selection */}
+        {/* Filter by Original Language */}
         <select
-          value={selectedLanguage}
-          onChange={(e) => setSelectedLanguage(e.target.value)}
+          value={filterLanguage}
+          onChange={(e) => setFilterLanguage(e.target.value)}
           style={{
             padding: '8px 12px',
             background: 'var(--admin-card-bg)',
@@ -191,10 +213,11 @@ export default function TranslationHistory() {
             fontSize: '14px'
           }}
         >
-          <option value="ko">한국어</option>
-          <option value="en">English</option>
-          <option value="ja">日本語</option>
-          <option value="zh">中文</option>
+          <option value="all">모든 언어</option>
+          <option value="ko">원문: 한국어</option>
+          <option value="en">원문: English</option>
+          <option value="ja">원문: 日本語</option>
+          <option value="zh">원문: 中文</option>
         </select>
 
         {/* Search */}
