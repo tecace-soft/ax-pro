@@ -47,6 +47,13 @@ export default function AdminSidebar({
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('Main AI Assistant for HR Support')
+  
+  // Admin filters
+  const [userType, setUserType] = useState<'professor' | 'assistant'>('professor')
+  const [selectedYear, setSelectedYear] = useState<string>('2025')
+  const [selectedSemester, setSelectedSemester] = useState<string>('fall')
+  const [selectedSubject, setSelectedSubject] = useState<string>('')
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('ko')
 
   const handleNavigation = (sectionId: string) => {
     if (isDashboardPage) {
@@ -433,6 +440,146 @@ export default function AdminSidebar({
           </div>
         </div>
 
+        {/* Admin Filters - Only show in translation mode */}
+        {serviceMode === 'translation' && !isCollapsed && (
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-title">필터</h3>
+            
+            {/* User Type Selection */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '6px' }}>사용자 유형</div>
+              <div style={{ display: 'flex', gap: '4px', background: 'var(--admin-card-bg)', borderRadius: '6px', padding: '4px' }}>
+                <button
+                  onClick={() => setUserType('professor')}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    background: userType === 'professor' ? 'var(--admin-primary)' : 'transparent',
+                    color: userType === 'professor' ? 'white' : 'var(--admin-text-muted)',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  교수
+                </button>
+                <button
+                  onClick={() => setUserType('assistant')}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    background: userType === 'assistant' ? 'var(--admin-primary)' : 'transparent',
+                    color: userType === 'assistant' ? 'white' : 'var(--admin-text-muted)',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  조교
+                </button>
+              </div>
+            </div>
+
+            {/* Subject Selection */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '6px' }}>과목 선택</div>
+              
+              {/* Year and Semester */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    background: 'var(--admin-card-bg)',
+                    color: 'var(--admin-text)',
+                    border: '1px solid var(--admin-border)',
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  }}
+                >
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                  <option value="2023">2023</option>
+                </select>
+                <select
+                  value={selectedSemester}
+                  onChange={(e) => setSelectedSemester(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    background: 'var(--admin-card-bg)',
+                    color: 'var(--admin-text)',
+                    border: '1px solid var(--admin-border)',
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  }}
+                >
+                  <option value="fall">가을</option>
+                  <option value="spring">봄</option>
+                  <option value="summer">여름</option>
+                  <option value="winter">겨울</option>
+                </select>
+              </div>
+
+              {/* Language Selection */}
+              <select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  background: 'var(--admin-card-bg)',
+                  color: 'var(--admin-text)',
+                  border: '1px solid var(--admin-border)',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  marginBottom: '8px'
+                }}
+              >
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="zh">中文</option>
+                <option value="es">Español</option>
+                <option value="hi">हिन्दी</option>
+                <option value="fr">Français</option>
+                <option value="ar">العربية</option>
+                <option value="pt">Português</option>
+                <option value="ru">Русский</option>
+              </select>
+
+              {/* Subject List */}
+              <select
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  background: 'var(--admin-card-bg)',
+                  color: 'var(--admin-text)',
+                  border: '1px solid var(--admin-border)',
+                  borderRadius: '6px',
+                  fontSize: '12px'
+                }}
+              >
+                <option value="">과목 선택...</option>
+                <option value="machine-learning">머신러닝 기초</option>
+                <option value="deep-learning">딥러닝</option>
+                <option value="nlp">자연어 처리</option>
+                <option value="computer-vision">컴퓨터 비전</option>
+                <option value="reinforcement-learning">강화 학습</option>
+              </select>
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
         <div className="sidebar-section">
