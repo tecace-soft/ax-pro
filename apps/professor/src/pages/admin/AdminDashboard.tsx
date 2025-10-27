@@ -384,38 +384,34 @@ export default function AdminDashboard() {
                         Details
                       </button>
                       
-                      {/* Toggle Button (Admin only) */}
-                      {!isProfessor && (
-                        <>
-                          <span style={{ fontSize: '11px', color: 'var(--admin-text-muted)', margin: '0 4px' }}>•</span>
-                          <button
-                            onClick={() => setNewSectionsExpanded(!newSectionsExpanded)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '4px 8px',
-                              background: 'var(--admin-card-bg)',
-                              color: 'var(--admin-text)',
-                              border: '1px solid var(--admin-border)',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                              fontSize: '11px',
-                              fontWeight: 500
-                            }}
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              {newSectionsExpanded ? (
-                                <polyline points="18,15 12,9 6,15"/>
-                              ) : (
-                                <polyline points="6,9 12,15 18,9"/>
-                              )}
-                            </svg>
-                            {newSectionsExpanded ? 'Hide' : 'Show'}
-                          </button>
-                        </>
-                      )}
+                      {/* Toggle Button - All accounts */}
+                      <span style={{ fontSize: '11px', color: 'var(--admin-text-muted)', margin: '0 4px' }}>•</span>
+                      <button
+                        onClick={() => setNewSectionsExpanded(!newSectionsExpanded)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 8px',
+                          background: 'var(--admin-card-bg)',
+                          color: 'var(--admin-text)',
+                          border: '1px solid var(--admin-border)',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontSize: '11px',
+                          fontWeight: 500
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          {newSectionsExpanded ? (
+                            <polyline points="18,15 12,9 6,15"/>
+                          ) : (
+                            <polyline points="6,9 12,15 18,9"/>
+                          )}
+                        </svg>
+                        {newSectionsExpanded ? 'Hide' : 'Show'}
+                      </button>
                     </div>
                   </div>
                   
