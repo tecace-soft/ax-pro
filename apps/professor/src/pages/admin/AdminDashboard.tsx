@@ -375,6 +375,11 @@ export default function AdminDashboard() {
                 <div style={{ marginTop: '32px' }}>
                   <TranslationHistory />
                 </div>
+                
+                <div id="admin-feedback" className="content-section" style={{ marginTop: '32px' }}>
+                  <h2 className="section-title">Admin Feedback</h2>
+                  <AdminFeedbackList onScrollToChat={() => {}} />
+                </div>
               </div>
             ) : (
               <>
