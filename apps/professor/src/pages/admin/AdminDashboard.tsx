@@ -72,6 +72,7 @@ export default function AdminDashboard() {
   })
   const [newSectionsExpanded, setNewSectionsExpanded] = useState(isProfessor)
   const [performanceRadarExpanded, setPerformanceRadarExpanded] = useState(!isProfessor)
+  const [dailyActivityExpanded, setDailyActivityExpanded] = useState(true)
 
   // Service mode (Chatbot vs Translation)
   const [serviceMode, setServiceMode] = useState<'chatbot' | 'translation'>('chatbot')
@@ -1297,10 +1298,65 @@ export default function AdminDashboard() {
 
                 {/* Content sections */}
                 <div className="content-module">
+                  {/* Show Daily Activity Button - Shown when hidden */}
+                  {!dailyActivityExpanded && (
+                    <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        onClick={() => setDailyActivityExpanded(true)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 16px',
+                          background: 'var(--admin-card-bg)',
+                          color: 'var(--admin-text)',
+                          border: '1px solid var(--admin-border)',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontSize: '14px',
+                          fontWeight: 500
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="6,9 12,15 18,9"/>
+                        </svg>
+                        Show Daily Message Activity
+                      </button>
+                    </div>
+                  )}
+                  
                   {/* Daily Message Activity */}
-                  <div id="daily-message-activity" className="content-section">
-                    <DailyMessageActivity />
-                  </div>
+                  {dailyActivityExpanded && (
+                    <div id="daily-message-activity" className="content-section">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h2 className="section-title" style={{ margin: 0 }}>일일 메시지 활동</h2>
+                        <button
+                          onClick={() => setDailyActivityExpanded(false)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 16px',
+                            background: 'var(--admin-card-bg)',
+                            color: 'var(--admin-text)',
+                            border: '1px solid var(--admin-border)',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            fontSize: '14px',
+                            fontWeight: 500
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="18,15 12,9 6,15"/>
+                          </svg>
+                          Hide
+                        </button>
+                      </div>
+                      <DailyMessageActivity />
+                    </div>
+                  )}
 
                   <div id="recent-conversations" className="content-section">
                     <h2 className="section-title">{t('admin.recentConversations')}</h2>
