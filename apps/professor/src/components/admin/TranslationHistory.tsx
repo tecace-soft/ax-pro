@@ -277,7 +277,38 @@ export default function TranslationHistory() {
               <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 600 }}>사용자 ID</th>
               <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 600 }}>세션 ID</th>
               <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 600 }}>원문</th>
-              <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 600 }}>번역</th>
+              <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 600 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
+                  <span>번역</span>
+                  <select
+                    value={selectedLanguage}
+                    onChange={(e) => {
+                      setSelectedLanguage(e.target.value)
+                      // Apply to all rows
+                      const allRows = filteredTranslations.slice(0, displayLimit).reduce((acc, entry) => {
+                        acc[entry.id] = e.target.value
+                        return acc
+                      }, {} as Record<string, string>)
+                      setRowSelectedLanguages(allRows)
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      padding: '4px 8px',
+                      background: 'var(--admin-card-bg)',
+                      color: 'var(--admin-text)',
+                      border: '1px solid var(--admin-border)',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="ko">🇰🇷 한국어</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="ja">🇯🇵 日本語</option>
+                    <option value="zh">🇨🇳 中文</option>
+                  </select>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
