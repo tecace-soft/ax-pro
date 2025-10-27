@@ -2,28 +2,28 @@
 /* Detailed analysis of research fields, topics, and student participation */
 
 .ai-research-stats-section {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .ai-research-stats-section .section-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--admin-text);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   text-align: center;
 }
 
 .research-stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
 }
 
 .research-stat-card {
   background: var(--admin-card-bg);
   border: 1px solid var(--admin-border);
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   transition: all 0.2s;
 }
 
@@ -33,10 +33,10 @@
 }
 
 .stat-card-title {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--admin-text);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   text-align: center;
 }
 
@@ -44,7 +44,7 @@
 .field-stats {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .field-item {
@@ -85,14 +85,14 @@
 .topic-stats {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .topic-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 0;
+  padding: 4px 0;
   border-bottom: 1px solid var(--admin-border);
 }
 

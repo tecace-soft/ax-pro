@@ -503,25 +503,25 @@ export default function AdminDashboard() {
                     {/* Student Engagement - Enhanced with Mixed Visualizations */}
                     <div className="research-stat-card">
                       <h3 className="stat-card-title">{t('Student Engagement')}</h3>
-                      <div className="engagement-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div className="engagement-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                         {/* Large Metric - Active Students with Ring Chart */}
-                        <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                          <div style={{ width: '80px', height: '80px', position: 'relative' }}>
+                        <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                          <div style={{ width: '60px', height: '60px', position: 'relative' }}>
                             <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
                               <circle cx="50" cy="50" r="45" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
                               <circle cx="50" cy="50" r="45" fill="none" stroke="#3b82f6" strokeWidth="8" strokeLinecap="round" 
                                 strokeDasharray={`${280} 282`} strokeDashoffset="70" transform="rotate(-90 50 50)"/>
-                              <text x="50" y="55" textAnchor="middle" fontSize="24" fontWeight="700" fill="var(--admin-text)">32</text>
+                              <text x="50" y="55" textAnchor="middle" fontSize="18" fontWeight="700" fill="var(--admin-text)">32</text>
                             </svg>
                           </div>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>Active Students</div>
-                            <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>85% of enrolled</div>
+                            <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '2px' }}>Active Students</div>
+                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>85% of enrolled</div>
                           </div>
                         </div>
 
                         {/* Questions Bar Chart */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Questions Asked</span>
                             <span style={{ fontSize: '20px', fontWeight: 700, color: '#10b981' }}>247</span>
@@ -532,7 +532,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Topics Donut Chart */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Topics Covered</span>
                             <span style={{ fontSize: '20px', fontWeight: 700, color: '#f59e0b' }}>8</span>
@@ -547,7 +547,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Engagement Rate with Gauge */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Engagement Rate</span>
                             <span style={{ fontSize: '20px', fontWeight: 700, color: '#8b5cf6' }}>68%</span>
@@ -558,7 +558,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Avg per Session Circle */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg/Session</span>
                             <span style={{ fontSize: '20px', fontWeight: 700, color: '#ec4899' }}>3.2</span>
