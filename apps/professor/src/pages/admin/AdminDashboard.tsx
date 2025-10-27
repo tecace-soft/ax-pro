@@ -887,6 +887,201 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   )}
+                  
+                  {/* Subject-Based Statistics - Detailed Mode Only */}
+                  {viewMode === 'detailed' && (
+                    <div className="research-stat-card" style={{ marginTop: '16px' }}>
+                      <h3 className="stat-card-title">Session and Satisfaction by Subject</h3>
+                      <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                        <div style={{ display: 'grid', gap: '8px' }}>
+                          {/* Subject 1 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text)' }}>Anesthesia (Year 4)</div>
+                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>24 sessions • 3.2 avg questions</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981' }}>4.6★</div>
+                              <button style={{ padding: '4px 8px', fontSize: '10px', background: 'var(--admin-primary)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>View</button>
+                            </div>
+                          </div>
+                          
+                          {/* Subject 2 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text)' }}>Small Animal Internal Medicine (Year 3)</div>
+                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>31 sessions • 2.8 avg questions</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981' }}>4.3★</div>
+                              <button style={{ padding: '4px 8px', fontSize: '10px', background: 'var(--admin-primary)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>View</button>
+                            </div>
+                          </div>
+                          
+                          {/* Subject 3 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text)' }}>Pathology (Year 2)</div>
+                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>19 sessions • 3.5 avg questions</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981' }}>4.1★</div>
+                              <button style={{ padding: '4px 8px', fontSize: '10px', background: 'var(--admin-primary)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>View</button>
+                            </div>
+                          </div>
+                          
+                          {/* Subject 4 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text)' }}>Anatomy (Year 1)</div>
+                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>28 sessions • 2.9 avg questions</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981' }}>4.4★</div>
+                              <button style={{ padding: '4px 8px', fontSize: '10px', background: 'var(--admin-primary)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>View</button>
+                            </div>
+                          </div>
+                          
+                          {/* Subject 5 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text)' }}>Physiology (Pre-vet Year 2)</div>
+                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>22 sessions • 3.1 avg questions</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981' }}>4.5★</div>
+                              <button style={{ padding: '4px 8px', fontSize: '10px', background: 'var(--admin-primary)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>View</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Real-time Activity Log - Detailed Mode Only */}
+                  {viewMode === 'detailed' && (
+                    <div className="research-stat-card" style={{ marginTop: '16px' }}>
+                      <h3 className="stat-card-title">Real-time Activity Log</h3>
+                      <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                        <div style={{ display: 'grid', gap: '6px' }}>
+                          {/* Activity 1 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px', fontSize: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ color: 'var(--admin-text-muted)', minWidth: '60px' }}>2 min ago</span>
+                              <span style={{ color: 'var(--admin-text)' }}>Student A</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <span style={{ color: 'var(--admin-text-muted)' }}>Anesthesia (Year 4)</span>
+                              <span style={{ color: '#10b981', fontSize: '9px' }}>Question Completed</span>
+                            </div>
+                          </div>
+                          
+                          {/* Activity 2 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px', fontSize: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ color: 'var(--admin-text-muted)', minWidth: '60px' }}>5 min ago</span>
+                              <span style={{ color: 'var(--admin-text)' }}>Student B</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <span style={{ color: 'var(--admin-text-muted)' }}>Small Animal Internal Medicine</span>
+                              <span style={{ color: '#f59e0b', fontSize: '9px' }}>Answer Feedback</span>
+                            </div>
+                          </div>
+                          
+                          {/* Activity 3 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px', fontSize: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ color: 'var(--admin-text-muted)', minWidth: '60px' }}>8 min ago</span>
+                              <span style={{ color: 'var(--admin-text)' }}>Student C</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <span style={{ color: 'var(--admin-text-muted)' }}>Pathology (Year 2)</span>
+                              <span style={{ color: '#3b82f6', fontSize: '9px' }}>Question Started</span>
+                            </div>
+                          </div>
+                          
+                          {/* Activity 4 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px', fontSize: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ color: 'var(--admin-text-muted)', minWidth: '60px' }}>12 min ago</span>
+                              <span style={{ color: 'var(--admin-text)' }}>Student D</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <span style={{ color: 'var(--admin-text-muted)' }}>Anatomy (Year 1)</span>
+                              <span style={{ color: '#10b981', fontSize: '9px' }}>Answer Completed</span>
+                            </div>
+                          </div>
+                          
+                          {/* Activity 5 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px', fontSize: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ color: 'var(--admin-text-muted)', minWidth: '60px' }}>15 min ago</span>
+                              <span style={{ color: 'var(--admin-text)' }}>Student E</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <span style={{ color: 'var(--admin-text-muted)' }}>Physiology (Pre-vet Year 2)</span>
+                              <span style={{ color: '#10b981', fontSize: '9px' }}>Question Completed</span>
+                            </div>
+                          </div>
+                          
+                          {/* Activity 6 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px', fontSize: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ color: 'var(--admin-text-muted)', minWidth: '60px' }}>18 min ago</span>
+                              <span style={{ color: 'var(--admin-text)' }}>Student F</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <span style={{ color: 'var(--admin-text-muted)' }}>Anesthesia (Year 4)</span>
+                              <span style={{ color: '#ec4899', fontSize: '9px' }}>Re-question</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                          <button style={{ fontSize: '10px', padding: '6px 12px', background: 'var(--admin-card-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)', borderRadius: '6px', cursor: 'pointer' }}>View All Activity</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* System Status - Detailed Mode Only */}
+                  {viewMode === 'detailed' && (
+                    <div className="research-stat-card" style={{ marginTop: '16px' }}>
+                      <h3 className="stat-card-title">System Status</h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                        {/* API Response Time */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>API Response Time</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>245ms</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>Average latency</div>
+                          <div style={{ fontSize: '9px', color: '#10b981' }}>✓ Excellent</div>
+                        </div>
+                        
+                        {/* Model Uptime */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>Model Uptime</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>99.8%</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>24-hour availability</div>
+                          <div style={{ fontSize: '9px', color: '#10b981' }}>✓ Normal</div>
+                        </div>
+                        
+                        {/* Response Success Rate */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>Response Rate (30d)</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>94.2%</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>Answered queries</div>
+                          <div style={{ fontSize: '9px', color: '#10b981' }}>↑ +2.1%</div>
+                        </div>
+                        
+                        {/* Avg Session Length */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>Avg Session Length</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-text)' }}>8.5 min</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>Per student average</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>→ Stable</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Performance Radar Toggle Button (Professor only) */}
