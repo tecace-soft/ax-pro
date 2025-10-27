@@ -669,7 +669,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
-                </div>
 
                 {/* Performance Radar Toggle Button (Professor only) */}
                 {isProfessor && (
