@@ -500,43 +500,51 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    {/* Student Participation */}
+                    {/* Student Participation - Enhanced with Gauges */}
                     <div className="research-stat-card">
-                      <h3 className="stat-card-title">{t('Student Participation')}</h3>
-                      <div className="student-stats">
-                        <div className="student-item">
-                          <div className="student-name">김AI (PhD)</div>
-                          <div className="student-activity">
-                            <span className="activity-count">15 questions</span>
-                            <span className="activity-fields">ML, DL, NLP</span>
+                      <h3 className="stat-card-title">{t('Student Engagement')}</h3>
+                      <div className="engagement-stats" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {/* Active Students Gauge */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>Active Students</span>
+                            <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>32</span>
+                          </div>
+                          <div style={{ width: '100%', height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '75%', height: '100%', background: 'linear-gradient(90deg, var(--admin-primary) 0%, #1d4ed8 100%)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
                           </div>
                         </div>
-                        <div className="student-item">
-                          <div className="student-name">박학습 (Master)</div>
-                          <div className="student-activity">
-                            <span className="activity-count">12 questions</span>
-                            <span className="activity-fields">CV, GANs</span>
+
+                        {/* Questions Asked Gauge */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>Total Questions</span>
+                            <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>247</span>
+                          </div>
+                          <div style={{ width: '100%', height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '85%', height: '100%', background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
                           </div>
                         </div>
-                        <div className="student-item">
-                          <div className="student-name">이딥러닝 (PhD)</div>
-                          <div className="student-activity">
-                            <span className="activity-count">18 questions</span>
-                            <span className="activity-fields">DL, RL, Optimization</span>
+
+                        {/* Topics Covered Gauge */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>Topics Covered</span>
+                            <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>8 fields</span>
+                          </div>
+                          <div style={{ width: '100%', height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '70%', height: '100%', background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
                           </div>
                         </div>
-                        <div className="student-item">
-                          <div className="student-name">최비전 (Master)</div>
-                          <div className="student-activity">
-                            <span className="activity-count">9 questions</span>
-                            <span className="activity-fields">CV, CNN</span>
+
+                        {/* Average Questions per Session */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>Avg Questions/Session</span>
+                            <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>3.2</span>
                           </div>
-                        </div>
-                        <div className="student-item">
-                          <div className="student-name">정자연어 (PhD)</div>
-                          <div className="student-activity">
-                            <span className="activity-count">11 questions</span>
-                            <span className="activity-fields">NLP, Transformer</span>
+                          <div style={{ width: '100%', height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '64%', height: '100%', background: 'linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
                           </div>
                         </div>
                       </div>
