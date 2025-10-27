@@ -351,88 +351,6 @@ export default function AdminDashboard() {
                   </button>
                 </div>
 
-                {/* Overview Statistics Bar - Always visible at top */}
-                <div className="overview-stats-bar">
-                    <div className="prof-overview-card">
-                      <div className="prof-overview-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label">{t('Total Sessions')}</div>
-                        <div className="prof-overview-value">{totalConversations}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="prof-overview-card">
-                      <div className="prof-overview-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label">{t('Total Questions')}</div>
-                        <div className="prof-overview-value">{totalQuestions}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="prof-overview-card">
-                      <div className="prof-overview-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="18" y1="20" x2="18" y2="10"/>
-                          <line x1="12" y1="20" x2="12" y2="4"/>
-                          <line x1="6" y1="20" x2="6" y2="14"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label">{t('Avg Q/Session')}</div>
-                        <div className="prof-overview-value">{avgQuestionsPerSession}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="prof-overview-card">
-                      <div className="prof-overview-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                          <polyline points="22 4 12 14.01 9 11.01"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label">{t('Satisfaction')}</div>
-                        <div className="prof-overview-value">{satisfactionRate}%</div>
-                      </div>
-                    </div>
-                    
-                    <div className="prof-overview-card">
-                      <div className="prof-overview-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                          <circle cx="9" cy="7" r="4"/>
-                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label">{t('Active Users')}</div>
-                        <div className="prof-overview-value">{activeStudents}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="prof-overview-card">
-                      <div className="prof-overview-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                          <polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label">{t('Documents')}</div>
-                        <div className="prof-overview-value">{totalDocuments}</div>
-                      </div>
-                    </div>
-                  </div>
 
                 {/* Toggle Button for New Sections (Admin only) */}
                 {!isProfessor && (
@@ -472,6 +390,96 @@ export default function AdminDashboard() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                     <h2 className="section-title">{t('Research Field Analysis')}</h2>
                   </div>
+                  
+                  {/* Key Metrics - 6 boxes at top */}
+                  <div className="overview-stats-bar" style={{ 
+                    gridTemplateColumns: viewMode === 'compact' ? 'repeat(6, 1fr)' : 
+                                        viewMode === 'detailed' ? 'repeat(6, 1fr)' : 
+                                        'repeat(3, 1fr)',
+                    marginBottom: '16px',
+                    gap: viewMode === 'compact' ? '8px' : '12px'
+                  }}>
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                      </div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Total Sessions')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{totalConversations}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                      </div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Total Questions')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{totalQuestions}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="20" x2="18" y2="10"/>
+                          <line x1="12" y1="20" x2="12" y2="4"/>
+                          <line x1="6" y1="20" x2="6" y2="14"/>
+                        </svg>
+                      </div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Avg Q/Session')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{avgQuestionsPerSession}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                          <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                      </div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Satisfaction')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{satisfactionRate}%</div>
+                      </div>
+                    </div>
+                    
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                          <circle cx="9" cy="7" r="4"/>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                      </div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Active Users')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{activeStudents}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                      </div>
+                      <div className="prof-overview-content">
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Documents')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{totalDocuments}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div className="research-stats-grid" style={{ 
                     gridTemplateColumns: viewMode === 'compact' ? 'repeat(4, 1fr)' :
                                         viewMode === 'detailed' ? 'repeat(4, 1fr)' :
