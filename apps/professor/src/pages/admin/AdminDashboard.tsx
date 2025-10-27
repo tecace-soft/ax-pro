@@ -633,21 +633,46 @@ export default function AdminDashboard() {
                     <div className="research-stat-card">
                       <h3 className="stat-card-title">{t('Student Engagement')}</h3>
                       <div className="engagement-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        {/* Large Metric - Active Students with Ring Chart */}
-                        <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                          <div style={{ width: '60px', height: '60px', position: 'relative' }}>
-                            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
-                              <circle cx="50" cy="50" r="45" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
-                              <circle cx="50" cy="50" r="45" fill="none" stroke="#3b82f6" strokeWidth="8" strokeLinecap="round" 
-                                strokeDasharray={`${280} 282`} strokeDashoffset="70" transform="rotate(-90 50 50)"/>
-                              <text x="50" y="55" textAnchor="middle" fontSize="18" fontWeight="700" fill="var(--admin-text)">32</text>
+{/* Large Metric - Active Students */}
+                        {viewMode === 'overview' ? (
+                          <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                            <div style={{ width: '60px', height: '60px', position: 'relative' }}>
+                              <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="#3b82f6" strokeWidth="8" strokeLinecap="round" 
+                                  strokeDasharray={`${280} 282`} strokeDashoffset="70" transform="rotate(-90 50 50)"/>
+                                <text x="50" y="55" textAnchor="middle" fontSize="18" fontWeight="700" fill="var(--admin-text)">32</text>
+                              </svg>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '2px' }}>Active Students</div>
+                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>85% of enrolled</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ gridColumn: 'span 2', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Active Students Distribution</span>
+                              <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>32 Total</span>
+                            </div>
+                            {/* Pie Chart */}
+                            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '80px' }}>
+                              <circle cx="50" cy="50" r="35" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
+                              <path d="M 50 15 A 35 35 0 0 1 76.8 29.2" fill="#3b82f6" stroke="#3b82f6" strokeWidth="8"/>
+                              <path d="M 76.8 29.2 A 35 35 0 0 1 76.8 70.8" fill="#10b981" stroke="#10b981" strokeWidth="8"/>
+                              <path d="M 76.8 70.8 A 35 35 0 0 1 50 85" fill="#f59e0b" stroke="#f59e0b" strokeWidth="8"/>
+                              <path d="M 50 85 A 35 35 0 0 1 23.2 70.8" fill="#8b5cf6" stroke="#8b5cf6" strokeWidth="8"/>
+                              <text x="50" y="48" textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--admin-text)">32</text>
                             </svg>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', marginTop: '4px', fontSize: '8px' }}>
+                              <div style={{ color: '#3b82f6' }}>ML: 8</div>
+                              <div style={{ color: '#10b981' }}>DL: 7</div>
+                              <div style={{ color: '#f59e0b' }}>CV: 6</div>
+                              <div style={{ color: '#8b5cf6' }}>NLP: 5</div>
+                              <div style={{ color: 'var(--admin-text-muted)' }}>Other: 6</div>
+                            </div>
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '2px' }}>Active Students</div>
-                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>85% of enrolled</div>
-                          </div>
-                        </div>
+                        )}
 
                         {/* Questions Bar Chart */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
@@ -660,20 +685,42 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        {/* Topics Donut Chart */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Topics Covered</span>
-                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#f59e0b' }}>8</span>
+                        {/* Topics Covered */}
+                        {viewMode === 'overview' ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Topics Covered</span>
+                              <span style={{ fontSize: '20px', fontWeight: 700, color: '#f59e0b' }}>8</span>
+                            </div>
+                            <div style={{ position: 'relative', width: '100%', height: '60px' }}>
+                              <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="8" 
+                                  strokeDasharray="200" strokeDashoffset="40" transform="rotate(-90 50 50)" strokeLinecap="round"/>
+                              </svg>
+                            </div>
                           </div>
-                          <div style={{ position: 'relative', width: '100%', height: '60px' }}>
-                            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
-                              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
-                              <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="8" 
-                                strokeDasharray="200" strokeDashoffset="40" transform="rotate(-90 50 50)" strokeLinecap="round"/>
+                        ) : (
+                          <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '6px' }}>Weekly Activity Trend</div>
+                            {/* Mini Line Chart */}
+                            <svg viewBox="0 0 100 60" style={{ width: '100%', height: '50px' }}>
+                              <polyline points="5,40 15,35 25,30 35,38 45,32 55,28 65,25 75,22 85,20 95,18"
+                                fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <circle cx="5" cy="40" r="1.5" fill="#f59e0b"/>
+                              <circle cx="15" cy="35" r="1.5" fill="#f59e0b"/>
+                              <circle cx="25" cy="30" r="1.5" fill="#f59e0b"/>
+                              <circle cx="35" cy="38" r="1.5" fill="#f59e0b"/>
+                              <circle cx="45" cy="32" r="1.5" fill="#f59e0b"/>
+                              <circle cx="55" cy="28" r="1.5" fill="#f59e0b"/>
+                              <circle cx="65" cy="25" r="1.5" fill="#f59e0b"/>
+                              <circle cx="75" cy="22" r="1.5" fill="#f59e0b"/>
+                              <circle cx="85" cy="20" r="1.5" fill="#f59e0b"/>
+                              <circle cx="95" cy="18" r="1.5" fill="#f59e0b"/>
                             </svg>
+                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>↑ 42% this week</div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Engagement Rate with Gauge */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
@@ -686,21 +733,37 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        {/* Avg per Session Circle */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg/Session</span>
-                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#ec4899' }}>3.2</span>
+                        {/* Avg per Session */}
+                        {viewMode === 'overview' ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg/Session</span>
+                              <span style={{ fontSize: '20px', fontWeight: 700, color: '#ec4899' }}>3.2</span>
+                            </div>
+                            <div style={{ width: '60px', height: '60px', position: 'relative', margin: '0 auto' }}>
+                              <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--admin-border)" strokeWidth="10"/>
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="#ec4899" strokeWidth="10" 
+                                  strokeDasharray="240" strokeDashoffset="70" transform="rotate(-90 50 50)" strokeLinecap="round"/>
+                                <text x="50" y="58" textAnchor="middle" fontSize="16" fontWeight="700" fill="#ec4899">Q</text>
+                              </svg>
+                            </div>
                           </div>
-                          <div style={{ width: '60px', height: '60px', position: 'relative', margin: '0 auto' }}>
-                            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
-                              <circle cx="50" cy="50" r="45" fill="none" stroke="var(--admin-border)" strokeWidth="10"/>
-                              <circle cx="50" cy="50" r="45" fill="none" stroke="#ec4899" strokeWidth="10" 
-                                strokeDasharray="240" strokeDashoffset="70" transform="rotate(-90 50 50)" strokeLinecap="round"/>
-                              <text x="50" y="58" textAnchor="middle" fontSize="16" fontWeight="700" fill="#ec4899">Q</text>
+                        ) : (
+                          <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '6px' }}>Engagement Radar</div>
+                            {/* Mini Radar Chart */}
+                            <svg viewBox="0 0 100 60" style={{ width: '100%', height: '50px' }}>
+                              <polygon points="50,5 70,15 75,30 60,40 50,35 40,40 25,30 30,15" 
+                                fill="#ec4899" fillOpacity="0.2" stroke="#ec4899" strokeWidth="1"/>
+                              <line x1="50" y1="5" x2="70" y2="15" stroke="#ec4899" strokeWidth="1"/>
+                              <line x1="50" y1="5" x2="30" y2="15" stroke="#ec4899" strokeWidth="1"/>
+                              <line x1="50" y1="5" x2="50" y2="35" stroke="#ec4899" strokeWidth="1"/>
+                              <circle cx="50" cy="35" r="2" fill="#ec4899"/>
                             </svg>
+                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>High engagement</div>
                           </div>
-                        </div>
+                        )}
                         {viewMode === 'detailed' && (
                           <>
                             {/* Avg Response Time */}
