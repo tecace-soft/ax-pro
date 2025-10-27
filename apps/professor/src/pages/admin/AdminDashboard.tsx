@@ -8,6 +8,7 @@ import PerformanceRadar from '../../components/admin/PerformanceRadar'
 import DailyMessageActivity from '../../components/admin/DailyMessageActivity'
 import PromptControl from '../../components/admin/PromptControl'
 import RecentConversations from '../../components/admin/RecentConversations'
+import TranslationHistory from '../../components/admin/TranslationHistory'
 import UserFeedbackList from '../../components/admin/UserFeedbackList'
 import AdminFeedbackList from '../../components/admin/AdminFeedbackList'
 import KnowledgeManagementPage from '../KnowledgeManagement'
@@ -371,22 +372,8 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 
-                {/* Recent Translations */}
-                <div style={{ background: 'var(--admin-card-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)', padding: '16px' }}>
-                  <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>최근 번역 기록</h2>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {[
-                      { time: '2분 전', original: '오늘은 머신러닝의 기초에 대해 배우겠습니다.', translated: 'Today we will learn about the basics of machine learning.' },
-                      { time: '5분 전', original: '이 알고리즘은 데이터의 패턴을 학습합니다.', translated: 'This algorithm learns patterns from the data.' },
-                      { time: '8분 전', original: '정확도가 높아질수록 모델의 성능이 향상됩니다.', translated: 'As accuracy increases, the model\'s performance improves.' },
-                    ].map((item, idx) => (
-                      <div key={idx} style={{ padding: '12px', background: 'var(--admin-bg)', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>{item.time}</div>
-                        <div style={{ fontSize: '13px', color: 'var(--admin-text)', fontWeight: 500 }}>{item.original}</div>
-                        <div style={{ fontSize: '13px', color: 'var(--admin-primary)' }}>{item.translated}</div>
-                      </div>
-                    ))}
-                  </div>
+                <div style={{ marginTop: '32px' }}>
+                  <TranslationHistory />
                 </div>
               </div>
             ) : (
