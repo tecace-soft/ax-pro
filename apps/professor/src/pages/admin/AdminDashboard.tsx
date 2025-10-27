@@ -390,6 +390,34 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <>
+                {/* Show Research Analysis Button - Shown when hidden */}
+                {!newSectionsExpanded && (
+                  <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => setNewSectionsExpanded(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 16px',
+                        background: 'var(--admin-card-bg)',
+                        color: 'var(--admin-text)',
+                        border: '1px solid var(--admin-border)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontSize: '14px',
+                        fontWeight: 500
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="6,9 12,15 18,9"/>
+                      </svg>
+                      Show Research Analysis
+                    </button>
+                  </div>
+                )}
+                
                 {/* Research Field Statistics - Above Radar (Collapsible) */}
                 <div className="ai-research-stats-section" style={{ display: newSectionsExpanded ? 'block' : 'none' }}>
                   {/* Header Row - Title, View Mode, Toggle Button */}
