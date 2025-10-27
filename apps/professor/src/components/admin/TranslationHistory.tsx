@@ -97,7 +97,13 @@ export default function TranslationHistory() {
     'ko': '한국어',
     'en': 'English',
     'ja': '日本語',
-    'zh': '中文'
+    'zh': '中文 (Mandarin Chinese)',
+    'es': 'Español',
+    'hi': 'हिन्दी',
+    'fr': 'Français',
+    'ar': 'العربية',
+    'pt': 'Português',
+    'ru': 'Русский'
   }
 
   const getTranslationForLanguage = (entry: TranslationEntry, lang: string) => {
@@ -207,10 +213,16 @@ export default function TranslationHistory() {
           }}
         >
           <option value="all">모든 언어</option>
-          <option value="ko">원문: 한국어</option>
           <option value="en">원문: English</option>
-          <option value="ja">원문: 日本語</option>
-          <option value="zh">원문: 中文</option>
+          <option value="zh">원문: Mandarin Chinese</option>
+          <option value="es">원문: Spanish</option>
+          <option value="hi">원문: Hindi</option>
+          <option value="fr">원문: French</option>
+          <option value="ar">원문: Arabic</option>
+          <option value="pt">원문: Portuguese</option>
+          <option value="ru">원문: Russian</option>
+          <option value="ko">원문: Korean</option>
+          <option value="ja">원문: Japanese</option>
         </select>
 
         {/* Search */}
@@ -302,10 +314,16 @@ export default function TranslationHistory() {
                       cursor: 'pointer'
                     }}
                   >
-                    <option value="ko">🇰🇷 한국어</option>
                     <option value="en">🇺🇸 English</option>
-                    <option value="ja">🇯🇵 日本語</option>
-                    <option value="zh">🇨🇳 中文</option>
+                    <option value="zh">🇨🇳 Mandarin Chinese</option>
+                    <option value="es">🇪🇸 Spanish</option>
+                    <option value="hi">🇮🇳 Hindi</option>
+                    <option value="fr">🇫🇷 French</option>
+                    <option value="ar">🇸🇦 Arabic</option>
+                    <option value="pt">🇵🇹 Portuguese</option>
+                    <option value="ru">🇷🇺 Russian</option>
+                    <option value="ko">🇰🇷 Korean</option>
+                    <option value="ja">🇯🇵 Japanese</option>
                   </select>
                 </div>
               </th>
@@ -352,10 +370,16 @@ export default function TranslationHistory() {
                           cursor: 'pointer'
                         }}
                       >
-                        <option value="ko">🇰🇷 한국어</option>
                         <option value="en">🇺🇸 English</option>
-                        <option value="ja">🇯🇵 日本語</option>
-                        <option value="zh">🇨🇳 中文</option>
+                        <option value="zh">🇨🇳 Mandarin Chinese</option>
+                        <option value="es">🇪🇸 Spanish</option>
+                        <option value="hi">🇮🇳 Hindi</option>
+                        <option value="fr">🇫🇷 French</option>
+                        <option value="ar">🇸🇦 Arabic</option>
+                        <option value="pt">🇵🇹 Portuguese</option>
+                        <option value="ru">🇷🇺 Russian</option>
+                        <option value="ko">🇰🇷 Korean</option>
+                        <option value="ja">🇯🇵 Japanese</option>
                       </select>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--admin-primary)', flex: 1 }}>
                         <span style={{ fontSize: '11px', padding: '2px 6px', background: 'var(--admin-primary)', color: 'white', borderRadius: '4px' }}>
