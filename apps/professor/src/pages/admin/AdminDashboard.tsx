@@ -405,15 +405,15 @@ export default function AdminDashboard() {
                           <polyline points="6,9 12,15 18,9"/>
                         )}
                       </svg>
-                      {newSectionsExpanded ? 'Hide' : 'Show'} AI Research Analysis
+                      {newSectionsExpanded ? 'Hide' : 'Show'} Research Analysis
                     </button>
                   </div>
                 )}
 
-                {/* AI Research Field Statistics - Above Radar (Collapsible) */}
+                {/* Research Field Statistics - Above Radar (Collapsible) */}
                 <div className="ai-research-stats-section" style={{ display: newSectionsExpanded ? 'block' : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <h2 className="section-title">{t('AI Research Field Analysis')}</h2>
+                    <h2 className="section-title">{t('Research Field Analysis')}</h2>
                   </div>
                   <div className="research-stats-grid">
                     {/* Field Distribution */}
