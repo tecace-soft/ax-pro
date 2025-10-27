@@ -504,37 +504,37 @@ export default function AdminDashboard() {
                         <div className="field-item">
                           <div className="field-name">Machine Learning</div>
                           <div className="field-bar">
-                            <div className="field-progress" style={{ width: '85%', backgroundColor: 'var(--admin-primary)' }}></div>
+                            <div className="field-progress" style={{ width: '85%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">42 questions</div>
+                          <div className="field-count">42 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 12%</span>}</div>
                         </div>
                         <div className="field-item">
                           <div className="field-name">Deep Learning</div>
                           <div className="field-bar">
-                            <div className="field-progress" style={{ width: '72%', backgroundColor: 'var(--admin-primary)' }}></div>
+                            <div className="field-progress" style={{ width: '72%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">36 questions</div>
+                          <div className="field-count">36 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 8%</span>}</div>
                         </div>
                         <div className="field-item">
                           <div className="field-name">NLP</div>
                           <div className="field-bar">
-                            <div className="field-progress" style={{ width: '68%', backgroundColor: 'var(--admin-primary)' }}></div>
+                            <div className="field-progress" style={{ width: '68%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">34 questions</div>
+                          <div className="field-count">34 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 15%</span>}</div>
                         </div>
                         <div className="field-item">
                           <div className="field-name">Computer Vision</div>
                           <div className="field-bar">
-                            <div className="field-progress" style={{ width: '55%', backgroundColor: 'var(--admin-primary)' }}></div>
+                            <div className="field-progress" style={{ width: '55%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">28 questions</div>
+                          <div className="field-count">28 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 5%</span>}</div>
                         </div>
                         <div className="field-item">
                           <div className="field-name">Reinforcement Learning</div>
                           <div className="field-bar">
-                            <div className="field-progress" style={{ width: '45%', backgroundColor: 'var(--admin-primary)' }}></div>
+                            <div className="field-progress" style={{ width: '45%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">23 questions</div>
+                          <div className="field-count">23 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 3%</span>}</div>
                         </div>
                         {viewMode === 'detailed' && (
                           <>
@@ -566,6 +566,7 @@ export default function AdminDashboard() {
                           <div className="topic-metrics">
                             <span className="topic-sessions">8 sessions</span>
                             <span className="topic-avg">3.2 Q/session</span>
+                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 26 questions</div>}
                           </div>
                         </div>
                         <div className="topic-item">
@@ -573,6 +574,7 @@ export default function AdminDashboard() {
                           <div className="topic-metrics">
                             <span className="topic-sessions">6 sessions</span>
                             <span className="topic-avg">4.1 Q/session</span>
+                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 24 questions</div>}
                           </div>
                         </div>
                         <div className="topic-item">
@@ -580,6 +582,7 @@ export default function AdminDashboard() {
                           <div className="topic-metrics">
                             <span className="topic-sessions">5 sessions</span>
                             <span className="topic-avg">2.8 Q/session</span>
+                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 14 questions</div>}
                           </div>
                         </div>
                         <div className="topic-item">
@@ -587,6 +590,7 @@ export default function AdminDashboard() {
                           <div className="topic-metrics">
                             <span className="topic-sessions">7 sessions</span>
                             <span className="topic-avg">3.5 Q/session</span>
+                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 25 questions</div>}
                           </div>
                         </div>
                         <div className="topic-item">
@@ -594,6 +598,7 @@ export default function AdminDashboard() {
                           <div className="topic-metrics">
                             <span className="topic-sessions">4 sessions</span>
                             <span className="topic-avg">2.2 Q/session</span>
+                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 9 questions</div>}
                           </div>
                         </div>
                         {viewMode === 'detailed' && (
