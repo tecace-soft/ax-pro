@@ -298,8 +298,6 @@ export default function AdminDashboard() {
               <KnowledgeManagementPage />
             ) : (
               <>
-
-
                 {/* Research Field Statistics - Above Radar (Collapsible) */}
                 <div className="ai-research-stats-section" style={{ display: newSectionsExpanded ? 'block' : 'none' }}>
                   {/* Header Row - Title, View Mode, Toggle Button */}
