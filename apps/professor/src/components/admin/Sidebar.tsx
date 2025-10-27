@@ -491,7 +491,7 @@ export default function AdminSidebar({
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '6px' }}>과목 선택</div>
               
               {/* Year and Semester */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
@@ -529,54 +529,89 @@ export default function AdminSidebar({
                 </select>
               </div>
 
-              {/* Language Selection */}
-              <select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  background: 'var(--admin-card-bg)',
-                  color: 'var(--admin-text)',
-                  border: '1px solid var(--admin-border)',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  marginBottom: '8px'
-                }}
-              >
-                <option value="ko">한국어</option>
-                <option value="en">English</option>
-                <option value="ja">日本語</option>
-                <option value="zh">中文</option>
-                <option value="es">Español</option>
-                <option value="hi">हिन्दी</option>
-                <option value="fr">Français</option>
-                <option value="ar">العربية</option>
-                <option value="pt">Português</option>
-                <option value="ru">Русский</option>
-              </select>
+              {/* Subject and Language in 2 columns */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {/* Left: Subject List */}
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>과목</div>
+                  <div style={{ 
+                    background: 'var(--admin-card-bg)', 
+                    border: '1px solid var(--admin-border)',
+                    borderRadius: '6px',
+                    maxHeight: '180px',
+                    overflowY: 'auto'
+                  }}>
+                    {['machine-learning', 'deep-learning', 'nlp', 'computer-vision', 'reinforcement-learning'].map((subj) => (
+                      <button
+                        key={subj}
+                        onClick={() => setSelectedSubject(subj)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          background: selectedSubject === subj ? 'var(--admin-primary)' : 'transparent',
+                          color: selectedSubject === subj ? 'white' : 'var(--admin-text)',
+                          border: 'none',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          borderBottom: '1px solid var(--admin-border)'
+                        }}
+                      >
+                        {subj === 'machine-learning' && '머신러닝 기초'}
+                        {subj === 'deep-learning' && '딥러닝'}
+                        {subj === 'nlp' && '자연어 처리'}
+                        {subj === 'computer-vision' && '컴퓨터 비전'}
+                        {subj === 'reinforcement-learning' && '강화 학습'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-              {/* Subject List */}
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  background: 'var(--admin-card-bg)',
-                  color: 'var(--admin-text)',
-                  border: '1px solid var(--admin-border)',
-                  borderRadius: '6px',
-                  fontSize: '12px'
-                }}
-              >
-                <option value="">과목 선택...</option>
-                <option value="machine-learning">머신러닝 기초</option>
-                <option value="deep-learning">딥러닝</option>
-                <option value="nlp">자연어 처리</option>
-                <option value="computer-vision">컴퓨터 비전</option>
-                <option value="reinforcement-learning">강화 학습</option>
-              </select>
+                {/* Right: Language List */}
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>언어</div>
+                  <div style={{ 
+                    background: 'var(--admin-card-bg)', 
+                    border: '1px solid var(--admin-border)',
+                    borderRadius: '6px',
+                    maxHeight: '180px',
+                    overflowY: 'auto'
+                  }}>
+                    {[
+                      { value: 'ko', label: '🇰🇷 한국어' },
+                      { value: 'en', label: '🇺🇸 English' },
+                      { value: 'ja', label: '🇯🇵 日本語' },
+                      { value: 'zh', label: '🇨🇳 中文' },
+                      { value: 'es', label: '🇪🇸 Español' },
+                      { value: 'hi', label: '🇮🇳 Hindi' },
+                      { value: 'fr', label: '🇫🇷 Français' },
+                      { value: 'ar', label: '🇸🇦 العربية' },
+                      { value: 'pt', label: '🇵🇹 Português' },
+                      { value: 'ru', label: '🇷🇺 Русский' }
+                    ].map((lang) => (
+                      <button
+                        key={lang.value}
+                        onClick={() => setSelectedLanguage(lang.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          background: selectedLanguage === lang.value ? 'var(--admin-primary)' : 'transparent',
+                          color: selectedLanguage === lang.value ? 'white' : 'var(--admin-text)',
+                          border: 'none',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          borderBottom: '1px solid var(--admin-border)'
+                        }}
+                      >
+                        {lang.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
