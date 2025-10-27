@@ -73,6 +73,9 @@ export default function AdminDashboard() {
   const [newSectionsExpanded, setNewSectionsExpanded] = useState(isProfessor)
   const [performanceRadarExpanded, setPerformanceRadarExpanded] = useState(!isProfessor)
 
+  // View mode state
+  const [viewMode, setViewMode] = useState<'compact' | 'detailed' | 'summary'>('compact')
+
 
 
   const currentTime = new Date().toLocaleString('en-US', {
@@ -295,6 +298,59 @@ export default function AdminDashboard() {
               <KnowledgeManagementPage />
             ) : (
               <>
+                {/* View Mode Selector */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '16px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginRight: '8px' }}>View:</span>
+                  <button
+                    onClick={() => setViewMode('compact')}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      background: viewMode === 'compact' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
+                      color: viewMode === 'compact' ? 'white' : 'var(--admin-text)',
+                      border: '1px solid var(--admin-border)',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Compact
+                  </button>
+                  <button
+                    onClick={() => setViewMode('detailed')}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      background: viewMode === 'detailed' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
+                      color: viewMode === 'detailed' ? 'white' : 'var(--admin-text)',
+                      border: '1px solid var(--admin-border)',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Detailed
+                  </button>
+                  <button
+                    onClick={() => setViewMode('summary')}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      background: viewMode === 'summary' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
+                      color: viewMode === 'summary' ? 'white' : 'var(--admin-text)',
+                      border: '1px solid var(--admin-border)',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Summary
+                  </button>
+                </div>
+
                 {/* Overview Statistics Bar - Always visible at top */}
                 <div className="overview-stats-bar">
                     <div className="prof-overview-card">
@@ -411,11 +467,16 @@ export default function AdminDashboard() {
                 )}
 
                 {/* Research Field Statistics - Above Radar (Collapsible) */}
-                <div className="ai-research-stats-section" style={{ display: newSectionsExpanded ? 'block' : 'none' }}>
+                {newSectionsExpanded && (
+                <div className="ai-research-stats-section">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                     <h2 className="section-title">{t('Research Field Analysis')}</h2>
                   </div>
-                  <div className="research-stats-grid">
+                  <div className="research-stats-grid" style={{ 
+                    gridTemplateColumns: viewMode === 'compact' ? 'repeat(4, 1fr)' :
+                                        viewMode === 'detailed' ? 'repeat(4, 1fr)' :
+                                        'repeat(2, 1fr)'
+                  }}>
                     {/* Field Distribution */}
                     <div className="research-stat-card">
                       <h3 className="stat-card-title">{t('Research Fields')}</h3>
@@ -618,6 +679,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* Toggle Button for Performance Radar (Professor only) */}
                 {isProfessor && (
