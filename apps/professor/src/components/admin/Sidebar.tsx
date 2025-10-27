@@ -437,6 +437,59 @@ export default function AdminSidebar({
           </nav>
         </div>
       </div>
+
+      {/* Collapse Toggle Button */}
+      <button
+        onClick={onToggleCollapse}
+        style={{
+          position: 'absolute',
+          top: '50%',
+          right: '-16px',
+          transform: 'translateY(-50%) translateX(0)',
+          width: '32px',
+          height: '32px',
+          background: 'var(--admin-card-bg)',
+          border: '1px solid var(--admin-border)',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          zIndex: 10,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'var(--admin-primary)'
+          e.currentTarget.style.borderColor = 'var(--admin-primary)'
+          e.currentTarget.style.transform = 'translateY(-50%) translateX(-2px)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'var(--admin-card-bg)'
+          e.currentTarget.style.borderColor = 'var(--admin-border)'
+          e.currentTarget.style.transform = 'translateY(-50%) translateX(0)'
+        }}
+        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        <svg 
+          width="16" 
+          height="16" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2"
+          style={{
+            color: isCollapsed ? 'var(--admin-primary)' : 'var(--admin-text)',
+            transition: 'color 0.2s ease'
+          }}
+        >
+          {isCollapsed ? (
+            <polyline points="9,18 15,12 9,6"/>
+          ) : (
+            <polyline points="15,18 9,12 15,6"/>
+          )}
+        </svg>
+      </button>
     </aside>
   )
 }
