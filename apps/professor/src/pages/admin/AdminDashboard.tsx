@@ -500,51 +500,76 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    {/* Student Participation - Enhanced with Gauges */}
+                    {/* Student Engagement - Enhanced with Mixed Visualizations */}
                     <div className="research-stat-card">
                       <h3 className="stat-card-title">{t('Student Engagement')}</h3>
-                      <div className="engagement-stats" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {/* Active Students Gauge */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>Active Students</span>
-                            <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>32</span>
+                      <div className="engagement-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        {/* Large Metric - Active Students with Ring Chart */}
+                        <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                          <div style={{ width: '80px', height: '80px', position: 'relative' }}>
+                            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+                              <circle cx="50" cy="50" r="45" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
+                              <circle cx="50" cy="50" r="45" fill="none" stroke="#3b82f6" strokeWidth="8" strokeLinecap="round" 
+                                strokeDasharray={`${280} 282`} strokeDashoffset="70" transform="rotate(-90 50 50)"/>
+                              <text x="50" y="55" textAnchor="middle" fontSize="24" fontWeight="700" fill="var(--admin-text)">32</text>
+                            </svg>
                           </div>
-                          <div style={{ width: '100%', height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: '75%', height: '100%', background: 'linear-gradient(90deg, var(--admin-primary) 0%, #1d4ed8 100%)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
-                          </div>
-                        </div>
-
-                        {/* Questions Asked Gauge */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>Total Questions</span>
-                            <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>247</span>
-                          </div>
-                          <div style={{ width: '100%', height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: '85%', height: '100%', background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>Active Students</div>
+                            <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>85% of enrolled</div>
                           </div>
                         </div>
 
-                        {/* Topics Covered Gauge */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {/* Questions Bar Chart */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>Topics Covered</span>
-                            <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>8 fields</span>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Questions Asked</span>
+                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#10b981' }}>247</span>
                           </div>
-                          <div style={{ width: '100%', height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: '70%', height: '100%', background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
+                          <div style={{ height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '85%', height: '100%', background: '#10b981', borderRadius: '4px' }}></div>
                           </div>
                         </div>
 
-                        {/* Average Questions per Session */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {/* Topics Donut Chart */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>Avg Questions/Session</span>
-                            <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>3.2</span>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Topics Covered</span>
+                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#f59e0b' }}>8</span>
                           </div>
-                          <div style={{ width: '100%', height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: '64%', height: '100%', background: 'linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
+                          <div style={{ position: 'relative', width: '100%', height: '60px' }}>
+                            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="8" 
+                                strokeDasharray="200" strokeDashoffset="40" transform="rotate(-90 50 50)" strokeLinecap="round"/>
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Engagement Rate with Gauge */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Engagement Rate</span>
+                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#8b5cf6' }}>68%</span>
+                          </div>
+                          <div style={{ height: '6px', background: 'var(--admin-border)', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: '68%', height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #7c3aed)' }}></div>
+                          </div>
+                        </div>
+
+                        {/* Avg per Session Circle */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg/Session</span>
+                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#ec4899' }}>3.2</span>
+                          </div>
+                          <div style={{ width: '60px', height: '60px', position: 'relative', margin: '0 auto' }}>
+                            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+                              <circle cx="50" cy="50" r="45" fill="none" stroke="var(--admin-border)" strokeWidth="10"/>
+                              <circle cx="50" cy="50" r="45" fill="none" stroke="#ec4899" strokeWidth="10" 
+                                strokeDasharray="240" strokeDashoffset="70" transform="rotate(-90 50 50)" strokeLinecap="round"/>
+                              <text x="50" y="58" textAnchor="middle" fontSize="16" fontWeight="700" fill="#ec4899">Q</text>
+                            </svg>
                           </div>
                         </div>
                       </div>
