@@ -536,6 +536,24 @@ export default function AdminDashboard() {
                           </div>
                           <div className="field-count">23 questions</div>
                         </div>
+                        {viewMode === 'detailed' && (
+                          <>
+                            <div className="field-item">
+                              <div className="field-name">Transfer Learning</div>
+                              <div className="field-bar">
+                                <div className="field-progress" style={{ width: '38%', backgroundColor: 'var(--admin-primary)' }}></div>
+                              </div>
+                              <div className="field-count">19 questions</div>
+                            </div>
+                            <div className="field-item">
+                              <div className="field-name">AutoML</div>
+                              <div className="field-bar">
+                                <div className="field-progress" style={{ width: '32%', backgroundColor: 'var(--admin-primary)' }}></div>
+                              </div>
+                              <div className="field-count">16 questions</div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -578,6 +596,31 @@ export default function AdminDashboard() {
                             <span className="topic-avg">2.2 Q/session</span>
                           </div>
                         </div>
+                        {viewMode === 'detailed' && (
+                          <>
+                            <div className="topic-item">
+                              <div className="topic-name">Attention Mechanisms</div>
+                              <div className="topic-metrics">
+                                <span className="topic-sessions">5 sessions</span>
+                                <span className="topic-avg">3.6 Q/session</span>
+                              </div>
+                            </div>
+                            <div className="topic-item">
+                              <div className="topic-name">Object Detection</div>
+                              <div className="topic-metrics">
+                                <span className="topic-sessions">3 sessions</span>
+                                <span className="topic-avg">2.7 Q/session</span>
+                              </div>
+                            </div>
+                            <div className="topic-item">
+                              <div className="topic-name">Model Compression</div>
+                              <div className="topic-metrics">
+                                <span className="topic-sessions">3 sessions</span>
+                                <span className="topic-avg">2.3 Q/session</span>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -653,6 +696,31 @@ export default function AdminDashboard() {
                             </svg>
                           </div>
                         </div>
+                        {viewMode === 'detailed' && (
+                          <>
+                            {/* Avg Response Time */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg Response Time</span>
+                                <span style={{ fontSize: '20px', fontWeight: 700, color: '#06b6d4' }}>1.2s</span>
+                              </div>
+                              <div style={{ height: '6px', background: 'var(--admin-border)', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div style={{ width: '75%', height: '100%', background: 'linear-gradient(90deg, #06b6d4, #0891b2)' }}></div>
+                              </div>
+                            </div>
+
+                            {/* Total Downloads */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Total Downloads</span>
+                                <span style={{ fontSize: '20px', fontWeight: 700, color: '#84cc16' }}>94</span>
+                              </div>
+                              <div style={{ height: '6px', background: 'var(--admin-border)', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div style={{ width: '62%', height: '100%', background: 'linear-gradient(90deg, #84cc16, #65a30d)' }}></div>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -695,6 +763,24 @@ export default function AdminDashboard() {
                             <span className="gauge-text">71%</span>
                           </div>
                         </div>
+                        {viewMode === 'detailed' && (
+                          <>
+                            <div className="satisfaction-item">
+                              <div className="satisfaction-field">Transfer Learning</div>
+                              <div className="satisfaction-gauge">
+                                <div className="gauge-fill" style={{ width: '68%', backgroundColor: 'var(--admin-primary)' }}></div>
+                                <span className="gauge-text">68%</span>
+                              </div>
+                            </div>
+                            <div className="satisfaction-item">
+                              <div className="satisfaction-field">AutoML</div>
+                              <div className="satisfaction-gauge">
+                                <div className="gauge-fill" style={{ width: '65%', backgroundColor: 'var(--admin-primary)' }}></div>
+                                <span className="gauge-text">65%</span>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
