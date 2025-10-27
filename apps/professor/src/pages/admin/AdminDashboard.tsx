@@ -73,6 +73,9 @@ export default function AdminDashboard() {
   const [newSectionsExpanded, setNewSectionsExpanded] = useState(isProfessor)
   const [performanceRadarExpanded, setPerformanceRadarExpanded] = useState(!isProfessor)
 
+  // Service mode (Chatbot vs Translation)
+  const [serviceMode, setServiceMode] = useState<'chatbot' | 'translation'>('chatbot')
+  
   // View mode state
   const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview')
   
@@ -327,6 +330,7 @@ export default function AdminDashboard() {
         
         <div className="dashboard-content">
           <AdminSidebar
+            serviceMode={serviceMode}
             conversations={totalConversations}
             satisfaction={satisfactionRate}
             documents={totalDocuments}
@@ -335,11 +339,55 @@ export default function AdminDashboard() {
             isCollapsed={sidebarCollapsed}
             onToggleCollapse={toggleSidebar}
             onScrollToSection={scrollToSection}
+            onServiceModeChange={setServiceMode}
           />
           
           <main className="dashboard-main">
             {location.pathname === '/admin/knowledge-management' ? (
               <KnowledgeManagementPage />
+            ) : serviceMode === 'translation' ? (
+              // Translation Service Mode
+              <div style={{ padding: '20px' }}>
+                <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '20px' }}>번역 서비스</h1>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+                  {/* Translation Stats */}
+                  <div style={{ padding: '16px', background: 'var(--admin-card-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginBottom: '8px' }}>총 번역 건수</div>
+                    <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--admin-primary)' }}>1,247</div>
+                    <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>+23% 이번 주</div>
+                  </div>
+                  
+                  <div style={{ padding: '16px', background: 'var(--admin-card-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginBottom: '8px' }}>평균 번역 속도</div>
+                    <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--admin-success)' }}>1.2초</div>
+                    <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>실시간 STT</div>
+                  </div>
+                  
+                  <div style={{ padding: '16px', background: 'var(--admin-card-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginBottom: '8px' }}>번역 정확도</div>
+                    <div style={{ fontSize: '32px', fontWeight: 700, color: '#f59e0b' }}>94.2%</div>
+                    <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>본문 인식률</div>
+                  </div>
+                </div>
+                
+                {/* Recent Translations */}
+                <div style={{ background: 'var(--admin-card-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)', padding: '16px' }}>
+                  <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>최근 번역 기록</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {[
+                      { time: '2분 전', original: '오늘은 머신러닝의 기초에 대해 배우겠습니다.', translated: 'Today we will learn about the basics of machine learning.' },
+                      { time: '5분 전', original: '이 알고리즘은 데이터의 패턴을 학습합니다.', translated: 'This algorithm learns patterns from the data.' },
+                      { time: '8분 전', original: '정확도가 높아질수록 모델의 성능이 향상됩니다.', translated: 'As accuracy increases, the model\'s performance improves.' },
+                    ].map((item, idx) => (
+                      <div key={idx} style={{ padding: '12px', background: 'var(--admin-bg)', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>{item.time}</div>
+                        <div style={{ fontSize: '13px', color: 'var(--admin-text)', fontWeight: 500 }}>{item.original}</div>
+                        <div style={{ fontSize: '13px', color: 'var(--admin-primary)' }}>{item.translated}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             ) : (
               <>
                 {/* Research Field Statistics - Above Radar (Collapsible) */}

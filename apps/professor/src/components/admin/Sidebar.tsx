@@ -14,6 +14,7 @@ import { useUICustomization } from '../../hooks/useUICustomization'
 import { useTranslation } from '../../i18n/I18nProvider'
 
 interface SidebarProps {
+  serviceMode?: 'chatbot' | 'translation'
   conversations: number
   satisfaction: number
   documents: number
@@ -22,9 +23,11 @@ interface SidebarProps {
   isCollapsed: boolean
   onToggleCollapse: () => void
   onScrollToSection: (sectionId: string) => void
+  onServiceModeChange?: (mode: 'chatbot' | 'translation') => void
 }
 
 export default function AdminSidebar({ 
+  serviceMode = 'chatbot',
   conversations, 
   satisfaction, 
   documents, 
@@ -32,7 +35,8 @@ export default function AdminSidebar({
   performanceDate,
   isCollapsed,
   onToggleCollapse,
-  onScrollToSection
+  onScrollToSection,
+  onServiceModeChange
 }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -73,6 +77,48 @@ export default function AdminSidebar({
   return (
     <aside className={`dashboard-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-content">
+        {/* Service Mode Toggle */}
+        {!isCollapsed && (
+          <div style={{ padding: '12px', borderBottom: '1px solid var(--admin-border)', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px', background: 'var(--admin-bg)', borderRadius: '8px', padding: '4px' }}>
+              <button
+                onClick={() => onServiceModeChange && onServiceModeChange('chatbot')}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  background: serviceMode === 'chatbot' ? 'var(--admin-primary)' : 'transparent',
+                  color: serviceMode === 'chatbot' ? 'white' : 'var(--admin-text-muted)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                챗봇
+              </button>
+              <button
+                onClick={() => onServiceModeChange && onServiceModeChange('translation')}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  background: serviceMode === 'translation' ? 'var(--admin-primary)' : 'transparent',
+                  color: serviceMode === 'translation' ? 'white' : 'var(--admin-text-muted)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                번역
+              </button>
+            </div>
+          </div>
+        )}
+        
         {/* Avatar Section */}
         <div className="sidebar-section" style={{ paddingBottom: '20px', borderBottom: '1px solid var(--admin-border)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
