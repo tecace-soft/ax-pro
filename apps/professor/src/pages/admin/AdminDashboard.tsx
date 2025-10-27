@@ -852,6 +852,41 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* 24-Hour Activity Pattern - Detailed Mode Only */}
+                  {viewMode === 'detailed' && (
+                    <div className="research-stat-card" style={{ marginTop: '16px' }}>
+                      <h3 className="stat-card-title">24-Hour Activity Pattern</h3>
+                      <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                        <svg viewBox="0 0 100 50" style={{ width: '100%', height: '80px' }}>
+                          {/* Y-axis grid lines */}
+                          <line x1="5" y1="45" x2="95" y2="45" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="2,2"/>
+                          <line x1="5" y1="30" x2="95" y2="30" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="2,2"/>
+                          <line x1="5" y1="15" x2="95" y2="15" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="2,2"/>
+                          
+                          {/* Activity line - peaks at 10am, 2pm, 6pm */}
+                          <polyline points="5,45 10,40 15,38 20,35 25,32 30,28 35,25 40,22 45,28 50,38 55,42 60,48 65,45 70,40 75,35 80,32 85,30 90,28 95,25"
+                            fill="none" stroke="var(--admin-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <circle cx="5" cy="45" r="1.5" fill="var(--admin-primary)"/>
+                          <circle cx="50" cy="38" r="2" fill="var(--admin-primary)"/>
+                          <circle cx="60" cy="48" r="2" fill="var(--admin-primary)"/>
+                          <circle cx="95" cy="25" r="1.5" fill="var(--admin-primary)"/>
+                          
+                          {/* X-axis labels */}
+                          <text x="5" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">0</text>
+                          <text x="25" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">6</text>
+                          <text x="50" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">12</text>
+                          <text x="75" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">18</text>
+                          <text x="95" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">24</text>
+                        </svg>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px', fontSize: '9px', color: 'var(--admin-text-muted)' }}>
+                          <div>Peak: 10AM - 42 sessions</div>
+                          <div>Peak: 2PM - 48 sessions</div>
+                          <div>Peak: 6PM - 45 sessions</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Performance Radar Toggle Button (Professor only) */}
