@@ -703,8 +703,7 @@ export default function AdminDashboard() {
                 )}
 
                 {/* Performance Radar Section */}
-                {isProfessor && (
-                <div className="dashboard-grid" style={{ display: performanceRadarExpanded ? 'block' : 'none' }}>
+                <div className="dashboard-grid" style={{ display: isProfessor && !performanceRadarExpanded ? 'none' : 'block' }}>
                   <div className="grid-left">
                     <div id="performance-radar">
                       <PerformanceRadar 
@@ -720,7 +719,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
-                )}
 
                 {/* Content sections */}
                 <div className="content-module">
