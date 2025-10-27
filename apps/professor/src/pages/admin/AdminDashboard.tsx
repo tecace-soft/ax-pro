@@ -671,7 +671,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
-                {/* Closing ai-research-stats-section div */}
                 </div>
 
                 {/* Performance Radar Toggle Button (Professor only) */}
