@@ -31,6 +31,20 @@ export default function TranslationHistory() {
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [isLoading, setIsLoading] = useState(false)
   const [filterLanguage, setFilterLanguage] = useState<string>('all')
+  const [rowSelectedLanguages, setRowSelectedLanguages] = useState<Record<string, string>>({})
+
+  // Get language for a specific row
+  const getLanguageForRow = (rowId: string) => {
+    return rowSelectedLanguages[rowId] || selectedLanguage
+  }
+
+  // Update language for a specific row
+  const setLanguageForRow = (rowId: string, lang: string) => {
+    setRowSelectedLanguages(prev => ({
+      ...prev,
+      [rowId]: lang
+    }))
+  }
 
   // Mock data
   useEffect(() => {
@@ -116,28 +130,7 @@ export default function TranslationHistory() {
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>번역 기록</h2>
-            {/* Translation Language Selector - Next to title */}
-            <select
-              value={selectedLanguage}
-              onChange={(e) => setSelectedLanguage(e.target.value)}
-              style={{
-                padding: '6px 12px',
-                background: 'var(--admin-card-bg)',
-                color: 'var(--admin-text)',
-                border: '1px solid var(--admin-border)',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: 500
-              }}
-            >
-              <option value="ko">🇰🇷 한국어</option>
-              <option value="en">🇺🇸 English</option>
-              <option value="ja">🇯🇵 日本語</option>
-              <option value="zh">🇨🇳 中文</option>
-            </select>
-          </div>
+          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>번역 기록</h2>
           <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>Recent Translations ({translations.length})</div>
         </div>
         <button
@@ -289,7 +282,8 @@ export default function TranslationHistory() {
           </thead>
           <tbody>
             {filteredTranslations.slice(0, displayLimit).map((entry) => {
-              const translation = getTranslationForLanguage(entry, selectedLanguage)
+              const rowLang = getLanguageForRow(entry.id)
+              const translation = getTranslationForLanguage(entry, rowLang)
               return (
                 <tr 
                   key={entry.id}
@@ -311,12 +305,33 @@ export default function TranslationHistory() {
                       <span>{entry.originalText}</span>
                     </div>
                   </td>
-                  <td style={{ padding: '12px', color: 'var(--admin-primary)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '11px', padding: '2px 6px', background: 'var(--admin-primary)', color: 'white', borderRadius: '4px' }}>
-                        {languageNames[selectedLanguage] || selectedLanguage}
-                      </span>
-                      <span>{translation?.text || '-'}</span>
+                  <td style={{ padding: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <select
+                        value={rowLang}
+                        onChange={(e) => setLanguageForRow(entry.id, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          padding: '4px 8px',
+                          background: 'var(--admin-card-bg)',
+                          color: 'var(--admin-text)',
+                          border: '1px solid var(--admin-border)',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="ko">🇰🇷 한국어</option>
+                        <option value="en">🇺🇸 English</option>
+                        <option value="ja">🇯🇵 日本語</option>
+                        <option value="zh">🇨🇳 中文</option>
+                      </select>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--admin-primary)', flex: 1 }}>
+                        <span style={{ fontSize: '11px', padding: '2px 6px', background: 'var(--admin-primary)', color: 'white', borderRadius: '4px' }}>
+                          {languageNames[rowLang] || rowLang}
+                        </span>
+                        <span>{translation?.text || '-'}</span>
+                      </div>
                     </div>
                   </td>
                 </tr>
