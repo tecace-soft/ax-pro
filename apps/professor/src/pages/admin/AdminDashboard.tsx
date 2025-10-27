@@ -75,6 +75,50 @@ export default function AdminDashboard() {
 
   // View mode state
   const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview')
+  
+  // Hover tooltip state
+  const [hoveredField, setHoveredField] = useState<string | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+  
+  // Sample chatbot history data
+  const fieldHistory: Record<string, { title: string; chats: Array<{ question: string; answer: string }> }> = {
+    'Machine Learning': {
+      title: 'Machine Learning - Field Insights',
+      chats: [
+        { question: "Explain the difference between supervised and unsupervised learning.", answer: "Supervised learning uses labeled data where examples include both inputs and the correct outputs. Unsupervised learning finds patterns in data without labels." },
+        { question: "What is the role of a loss function in ML?", answer: "A loss function quantifies the error between predicted and actual values, guiding the model's learning process." },
+        { question: "How does gradient descent work?", answer: "Gradient descent is an optimization algorithm that minimizes a loss function by iteratively moving in the direction of steepest descent." }
+      ]
+    },
+    'Deep Learning': {
+      title: 'Deep Learning - Field Insights',
+      chats: [
+        { question: "What is the difference between a neural network and a deep neural network?", answer: "A deep neural network has multiple hidden layers, allowing it to learn hierarchical representations of data." },
+        { question: "Explain backpropagation briefly.", answer: "Backpropagation is a method for calculating gradients in neural networks by propagating errors backward from output to input layers." }
+      ]
+    },
+    'NLP': {
+      title: 'NLP - Field Insights',
+      chats: [
+        { question: "What are the main components of an NLP pipeline?", answer: "Tokenization, POS tagging, named entity recognition, parsing, and semantic analysis." },
+        { question: "How do transformers work in NLP?", answer: "Transformers use attention mechanisms to process sequences in parallel, learning relationships between all positions simultaneously." }
+      ]
+    },
+    'Computer Vision': {
+      title: 'Computer Vision - Field Insights',
+      chats: [
+        { question: "What is the role of convolutional layers in CNNs?", answer: "Convolutional layers apply filters across the input to detect features like edges, shapes, and textures." },
+        { question: "How does object detection differ from classification?", answer: "Classification identifies what's in an image, while detection both identifies and locates multiple objects with bounding boxes." }
+      ]
+    },
+    'Reinforcement Learning': {
+      title: 'Reinforcement Learning - Field Insights',
+      chats: [
+        { question: "Explain the difference between Q-learning and policy gradient methods.", answer: "Q-learning learns action-values, while policy gradient methods directly optimize the policy." },
+        { question: "What is exploration vs exploitation?", answer: "Exploration tries new actions to discover better strategies, while exploitation uses known good strategies." }
+      ]
+    }
+  }
 
 
 
@@ -501,35 +545,80 @@ export default function AdminDashboard() {
                     <div className="research-stat-card">
                       <h3 className="stat-card-title">{t('Research Fields')}</h3>
                       <div className="field-stats">
-                        <div className="field-item">
+                        <div 
+                          className="field-item"
+                          onMouseEnter={(e) => {
+                            setHoveredField('Machine Learning')
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            setTooltipPosition({ x: rect.right + 10, y: rect.top })
+                          }}
+                          onMouseLeave={() => setHoveredField(null)}
+                          style={{ cursor: 'pointer', position: 'relative' }}
+                        >
                           <div className="field-name">Machine Learning</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '85%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
                           <div className="field-count">42 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 12%</span>}</div>
                         </div>
-                        <div className="field-item">
+                        <div 
+                          className="field-item"
+                          onMouseEnter={(e) => {
+                            setHoveredField('Deep Learning')
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            setTooltipPosition({ x: rect.right + 10, y: rect.top })
+                          }}
+                          onMouseLeave={() => setHoveredField(null)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="field-name">Deep Learning</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '72%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
                           <div className="field-count">36 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 8%</span>}</div>
                         </div>
-                        <div className="field-item">
+                        <div 
+                          className="field-item"
+                          onMouseEnter={(e) => {
+                            setHoveredField('NLP')
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            setTooltipPosition({ x: rect.right + 10, y: rect.top })
+                          }}
+                          onMouseLeave={() => setHoveredField(null)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="field-name">NLP</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '68%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
                           <div className="field-count">34 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 15%</span>}</div>
                         </div>
-                        <div className="field-item">
+                        <div 
+                          className="field-item"
+                          onMouseEnter={(e) => {
+                            setHoveredField('Computer Vision')
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            setTooltipPosition({ x: rect.right + 10, y: rect.top })
+                          }}
+                          onMouseLeave={() => setHoveredField(null)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="field-name">Computer Vision</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '55%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
                           <div className="field-count">28 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 5%</span>}</div>
                         </div>
-                        <div className="field-item">
+                        <div 
+                          className="field-item"
+                          onMouseEnter={(e) => {
+                            setHoveredField('Reinforcement Learning')
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            setTooltipPosition({ x: rect.right + 10, y: rect.top })
+                          }}
+                          onMouseLeave={() => setHoveredField(null)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="field-name">Reinforcement Learning</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '45%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
@@ -1170,6 +1259,44 @@ export default function AdminDashboard() {
           </main>
         </div>
       </div>
+      
+      {/* Hover Tooltip */}
+      {hoveredField && fieldHistory[hoveredField] && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${tooltipPosition.x}px`,
+            top: `${tooltipPosition.y}px`,
+            background: 'var(--admin-card-bg)',
+            border: '1px solid var(--admin-border)',
+            borderRadius: '8px',
+            padding: '12px',
+            maxWidth: '320px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            zIndex: 1000,
+            pointerEvents: 'none'
+          }}
+        >
+          <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px', color: 'var(--admin-text)' }}>
+            {fieldHistory[hoveredField].title}
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginBottom: '8px' }}>
+            Recent Chat History:
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {fieldHistory[hoveredField].chats.map((chat, idx) => (
+              <div key={idx} style={{ padding: '8px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--admin-text)', fontWeight: 500, marginBottom: '4px' }}>
+                  Q: {chat.question}
+                </div>
+                <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', lineHeight: '1.4' }}>
+                  {chat.answer}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
