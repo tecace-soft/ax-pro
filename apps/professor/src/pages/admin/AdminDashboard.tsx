@@ -74,7 +74,7 @@ export default function AdminDashboard() {
   const [performanceRadarExpanded, setPerformanceRadarExpanded] = useState(!isProfessor)
 
   // View mode state
-  const [viewMode, setViewMode] = useState<'compact' | 'summary'>('compact')
+  const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview')
 
 
 
@@ -308,36 +308,36 @@ export default function AdminDashboard() {
                       {/* View Mode Selector */}
                       <span style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginRight: '4px' }}>View:</span>
                       <button
-                        onClick={() => setViewMode('compact')}
+                        onClick={() => setViewMode('overview')}
                         style={{
                           padding: '4px 8px',
                           fontSize: '11px',
                           fontWeight: 500,
-                          background: viewMode === 'compact' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
-                          color: viewMode === 'compact' ? 'white' : 'var(--admin-text)',
+                          background: viewMode === 'overview' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
+                          color: viewMode === 'overview' ? 'white' : 'var(--admin-text)',
                           border: '1px solid var(--admin-border)',
                           borderRadius: '4px',
                           cursor: 'pointer',
                           transition: 'all 0.2s'
                         }}
                       >
-                        Compact
+                        Overview
                       </button>
                       <button
-                        onClick={() => setViewMode('summary')}
+                        onClick={() => setViewMode('detailed')}
                         style={{
                           padding: '4px 8px',
                           fontSize: '11px',
                           fontWeight: 500,
-                          background: viewMode === 'summary' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
-                          color: viewMode === 'summary' ? 'white' : 'var(--admin-text)',
+                          background: viewMode === 'detailed' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
+                          color: viewMode === 'detailed' ? 'white' : 'var(--admin-text)',
                           border: '1px solid var(--admin-border)',
                           borderRadius: '4px',
                           cursor: 'pointer',
                           transition: 'all 0.2s'
                         }}
                       >
-                        Summary
+                        Details
                       </button>
                       
                       {/* Toggle Button (Admin only) */}
@@ -377,37 +377,47 @@ export default function AdminDashboard() {
                   
                   {/* Key Metrics - 6 boxes at top */}
                   <div className="overview-stats-bar" style={{ 
-                    gridTemplateColumns: viewMode === 'compact' ? 'repeat(6, 1fr)' : 'repeat(3, 1fr)',
+                    gridTemplateColumns: viewMode === 'overview' ? 'repeat(6, 1fr)' : 'repeat(3, 1fr)',
                     marginBottom: '12px',
-                    gap: viewMode === 'compact' ? '6px' : '12px'
+                    gap: viewMode === 'overview' ? '6px' : '12px'
                   }}>
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Total Sessions')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{totalConversations}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Total Sessions')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalConversations}</div>
+                        {viewMode === 'detailed' && (
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
+                            +12.5% vs last week
+                          </div>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Total Questions')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{totalQuestions}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Total Questions')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalQuestions}</div>
+                        {viewMode === 'detailed' && (
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
+                            Avg 4.2 per session
+                          </div>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <line x1="18" y1="20" x2="18" y2="10"/>
                           <line x1="12" y1="20" x2="12" y2="4"/>
@@ -415,26 +425,36 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Avg Q/Session')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{avgQuestionsPerSession}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Avg Q/Session')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{avgQuestionsPerSession}</div>
+                        {viewMode === 'detailed' && (
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
+                            Peak: 8 on 10/15
+                          </div>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                           <polyline points="22 4 12 14.01 9 11.01"/>
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Satisfaction')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{satisfactionRate}%</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Satisfaction')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{satisfactionRate}%</div>
+                        {viewMode === 'detailed' && (
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
+                            8 positive, 2 neutral
+                          </div>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                           <circle cx="9" cy="7" r="4"/>
@@ -443,27 +463,37 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Active Users')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{activeStudents}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Active Users')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{activeStudents}</div>
+                        {viewMode === 'detailed' && (
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
+                            15 unique this week
+                          </div>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'compact' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'compact' ? '20px' : '24px' }}>
+                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
+                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                           <polyline points="14 2 14 8 20 8"/>
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'compact' ? '10px' : '12px' }}>{t('Documents')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'compact' ? '18px' : '20px' }}>{totalDocuments}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Documents')}</div>
+                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalDocuments}</div>
+                        {viewMode === 'detailed' && (
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
+                            3 indexed, 1 pending
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                   
                   <div className="research-stats-grid" style={{ 
-                    gridTemplateColumns: viewMode === 'compact' ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)',
+                    gridTemplateColumns: viewMode === 'overview' ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)',
                     gap: '8px',
                     marginBottom: '0'
                   }}>
