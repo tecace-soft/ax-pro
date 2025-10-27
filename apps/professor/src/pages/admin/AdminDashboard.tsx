@@ -673,7 +673,7 @@ export default function AdminDashboard() {
                 </div>
                 )}
 
-                {/* Performance Radar Section */}
+                {/* Performance Radar Toggle Button (Professor only) */}
                 {isProfessor && (
                   <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
                     <button
@@ -705,58 +705,7 @@ export default function AdminDashboard() {
                   </div>
                 )}
 
-                {/* Original Performance Radar Section (Collapsible) */}
-                <div className="dashboard-grid" style={{ display: performanceRadarExpanded ? 'block' : 'none' }}>
-                  <div className="grid-left">
-                    <div id="performance-radar">
-                      <PerformanceRadar 
-                        {...radarProps}
-                        timelineData={filteredRadarData}
-                        selectedDate={selectedRadarDate}
-                        onDateChange={setSelectedRadarDate}
-                        includeSimulatedData={includeSimulatedData}
-                        onIncludeSimulatedDataChange={setIncludeSimulatedData}
-                        estimationMode={estimationMode}
-                        onEstimationModeChange={setEstimationMode}
-                      />
-                    </div>
-                  </div>
-                </div>
-                )}
-
                 {/* Performance Radar Section */}
-                {isProfessor && (
-                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={() => setPerformanceRadarExpanded(!performanceRadarExpanded)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 16px',
-                      background: performanceRadarExpanded ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
-                      color: performanceRadarExpanded ? 'white' : 'var(--admin-text)',
-                      border: '1px solid var(--admin-border)',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      fontSize: '14px',
-                      fontWeight: 500
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      {performanceRadarExpanded ? (
-                        <polyline points="18,15 12,9 6,15"/>
-                      ) : (
-                        <polyline points="6,9 12,15 18,9"/>
-                      )}
-                    </svg>
-                    {performanceRadarExpanded ? 'Hide' : 'Show'} Performance Radar
-                  </button>
-                </div>
-                )}
-
-                {/* Original Performance Radar Section (Collapsible) */}
                 {isProfessor && (
                 <div className="dashboard-grid" style={{ display: performanceRadarExpanded ? 'block' : 'none' }}>
                   <div className="grid-left">
