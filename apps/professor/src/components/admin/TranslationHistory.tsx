@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from '../../i18n/I18nProvider'
-import { IconRefresh } from '../../ui/icons'
+import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
 
 type ViewMode = 'card' | 'table'
 type SortOption = 'date-desc' | 'date-asc' | 'user'
@@ -17,7 +17,19 @@ interface TranslationEntry {
     text: string
   }[]
   userFeedback?: string
-  adminFeedback?: 'good' | 'bad'
+  adminFeedback?: {
+    verdict: 'good' | 'bad'
+    feedbackText?: string
+    correctedResponse?: string
+  }
+}
+
+interface AdminFeedbackModal {
+  entryId: string
+  originalText: string
+  translatedText: string
+  verdict: 'good' | 'bad'
+  existingFeedback?: TranslationEntry['adminFeedback']
 }
 
 export default function TranslationHistory() {
@@ -32,6 +44,10 @@ export default function TranslationHistory() {
   const [isLoading, setIsLoading] = useState(false)
   const [filterLanguage, setFilterLanguage] = useState<string>('all')
   const [rowSelectedLanguages, setRowSelectedLanguages] = useState<Record<string, string>>({})
+  const [feedbackModal, setFeedbackModal] = useState<AdminFeedbackModal | null>(null)
+  const [supervisorFeedback, setSupervisorFeedback] = useState('')
+  const [correctedResponse, setCorrectedResponse] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Get language for a specific row
   const getLanguageForRow = (rowId: string) => {
@@ -126,6 +142,88 @@ export default function TranslationHistory() {
       a.download = 'translations.csv'
       a.click()
     }
+  }
+
+  const handleFeedbackClick = (entry: TranslationEntry, verdict: 'good' | 'bad') => {
+    const rowLang = getLanguageForRow(entry.id)
+    const translation = getTranslationForLanguage(entry, rowLang)
+    
+    setFeedbackModal({
+      entryId: entry.id,
+      originalText: entry.originalText,
+      translatedText: translation?.text || '',
+      verdict,
+      existingFeedback: entry.adminFeedback
+    })
+    
+    if (entry.adminFeedback) {
+      setSupervisorFeedback(entry.adminFeedback.feedbackText || '')
+      setCorrectedResponse(entry.adminFeedback.correctedResponse || '')
+    } else {
+      setSupervisorFeedback('')
+      setCorrectedResponse('')
+    }
+  }
+
+  const handleAdminFeedbackClick = (entry: TranslationEntry) => {
+    if (entry.adminFeedback) {
+      const rowLang = getLanguageForRow(entry.id)
+      const translation = getTranslationForLanguage(entry, rowLang)
+      
+      setSupervisorFeedback(entry.adminFeedback.feedbackText || '')
+      setCorrectedResponse(entry.adminFeedback.correctedResponse || '')
+      setFeedbackModal({
+        entryId: entry.id,
+        originalText: entry.originalText,
+        translatedText: translation?.text || '',
+        verdict: entry.adminFeedback.verdict,
+        existingFeedback: entry.adminFeedback
+      })
+    }
+  }
+
+  const handleSubmitFeedback = async () => {
+    if (!feedbackModal) return
+    
+    if (feedbackModal.verdict === 'bad' && !supervisorFeedback && !correctedResponse) {
+      alert('For negative feedback, please provide either supervisor feedback or corrected response.')
+      return
+    }
+    
+    setIsSubmitting(true)
+    try {
+      // Update local state
+      setTranslations(prev => prev.map(t => {
+        if (t.id === feedbackModal.entryId) {
+          return {
+            ...t,
+            adminFeedback: {
+              verdict: feedbackModal.verdict,
+              feedbackText: supervisorFeedback || undefined,
+              correctedResponse: correctedResponse || undefined
+            }
+          }
+        }
+        return t
+      }))
+      
+      setFeedbackModal(null)
+      setSupervisorFeedback('')
+      setCorrectedResponse('')
+      
+      alert('Admin feedback submitted successfully!')
+    } catch (error) {
+      console.error('Failed to submit admin feedback:', error)
+      alert('Failed to submit feedback. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleCancelFeedback = () => {
+    setFeedbackModal(null)
+    setSupervisorFeedback('')
+    setCorrectedResponse('')
   }
 
   if (isLoading) {
@@ -289,6 +387,7 @@ export default function TranslationHistory() {
               <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 600 }}>사용자 ID</th>
               <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 600 }}>세션 ID</th>
               <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 600 }}>원문</th>
+              <th style={{ padding: '12px', textAlign: 'center', color: 'var(--admin-text-muted)', fontWeight: 600 }}>Admin</th>
               <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 600 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
                   <span>번역</span>
@@ -354,6 +453,58 @@ export default function TranslationHistory() {
                       <span>{entry.originalText}</span>
                     </div>
                   </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    {entry.adminFeedback ? (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                        {entry.adminFeedback.verdict === 'good' ? (
+                          <IconThumbsUp size={16} style={{ color: 'var(--admin-success)' }} />
+                        ) : (
+                          <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)' }} />
+                        )}
+                        <button
+                          onClick={() => handleAdminFeedbackClick(entry)}
+                          style={{
+                            fontSize: '11px',
+                            padding: '2px 6px',
+                            background: 'var(--admin-primary)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                        <button
+                          onClick={() => handleFeedbackClick(entry, 'good')}
+                          style={{
+                            padding: '4px',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer'
+                          }}
+                          title="Good"
+                        >
+                          <IconThumbsUp size={14} style={{ color: 'var(--admin-success)' }} />
+                        </button>
+                        <button
+                          onClick={() => handleFeedbackClick(entry, 'bad')}
+                          style={{
+                            padding: '4px',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer'
+                          }}
+                          title="Bad"
+                        >
+                          <IconThumbsDown size={14} style={{ color: 'var(--admin-danger)' }} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
                   <td style={{ padding: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <select
@@ -413,6 +564,174 @@ export default function TranslationHistory() {
           >
             Load More ({translations.length - displayLimit} remaining)
           </button>
+        </div>
+      )}
+
+      {/* Admin Feedback Modal */}
+      {feedbackModal && (
+        <div style={{ 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: 'var(--admin-card-bg)',
+            border: '1px solid var(--admin-border)',
+            borderRadius: '8px',
+            maxWidth: '600px',
+            width: '100%',
+            padding: '24px',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--admin-text)' }}>
+                Admin Feedback {feedbackModal.verdict === 'good' ? '👍' : '👎'}
+              </h3>
+              <button
+                onClick={handleCancelFeedback}
+                style={{
+                  padding: '4px',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--admin-text-secondary)'
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Original Text */}
+            <div style={{ marginBottom: '16px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '8px' }}>
+                원문:
+              </p>
+              <div style={{
+                padding: '12px',
+                background: 'rgba(9, 14, 34, 0.4)',
+                border: '1px solid var(--admin-border)',
+                borderRadius: '6px'
+              }}>
+                <p style={{ fontSize: '14px', color: 'var(--admin-text)' }}>
+                  {feedbackModal.originalText}
+                </p>
+              </div>
+            </div>
+            
+            {/* Translated Text */}
+            <div style={{ marginBottom: '16px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '8px' }}>
+                번역:
+              </p>
+              <div style={{
+                padding: '12px',
+                background: 'rgba(9, 14, 34, 0.4)',
+                border: '1px solid var(--admin-border)',
+                borderRadius: '6px'
+              }}>
+                <p style={{ fontSize: '14px', color: 'var(--admin-text)' }}>
+                  {feedbackModal.translatedText}
+                </p>
+              </div>
+            </div>
+            
+            {/* Supervisor Feedback */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: 'var(--admin-text)' }}>
+                Supervisor Feedback:
+              </label>
+              <textarea
+                value={supervisorFeedback}
+                onChange={(e) => setSupervisorFeedback(e.target.value)}
+                placeholder="Explain what was wrong with this translation..."
+                style={{
+                  width: '100%',
+                  height: '80px',
+                  padding: '12px',
+                  background: 'rgba(9, 14, 34, 0.6)',
+                  color: 'var(--admin-text)',
+                  border: '1px solid var(--admin-border)',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  resize: 'none',
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
+            
+            {/* Corrected Response */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: 'var(--admin-text)' }}>
+                Corrected Translation:
+              </label>
+              <textarea
+                value={correctedResponse}
+                onChange={(e) => setCorrectedResponse(e.target.value)}
+                placeholder="Enter the corrected translation..."
+                style={{
+                  width: '100%',
+                  height: '100px',
+                  padding: '12px',
+                  background: 'rgba(9, 14, 34, 0.6)',
+                  color: 'var(--admin-text)',
+                  border: '1px solid var(--admin-border)',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  resize: 'none',
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
+            
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button
+                onClick={handleCancelFeedback}
+                disabled={isSubmitting}
+                style={{
+                  padding: '8px 16px',
+                  background: 'transparent',
+                  border: '1px solid var(--admin-border)',
+                  color: 'var(--admin-text)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitFeedback}
+                disabled={isSubmitting}
+                style={{
+                  padding: '8px 16px',
+                  background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
+                  color: '#041220',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  opacity: isSubmitting ? 0.6 : 1
+                }}
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
