@@ -65,6 +65,14 @@ export default function AdminDashboard() {
   const [avgQuestionsPerSession, setAvgQuestionsPerSession] = useState(0)
   const [activeStudents, setActiveStudents] = useState(0)
 
+  // Collapsible section states - default based on user type
+  const [isProfessor] = useState(() => {
+    const session = getSession()
+    return session?.email === 'professor@tecace.com'
+  })
+  const [newSectionsExpanded, setNewSectionsExpanded] = useState(isProfessor)
+  const [performanceRadarExpanded, setPerformanceRadarExpanded] = useState(!isProfessor)
+
 
 
   const currentTime = new Date().toLocaleString('en-US', {
@@ -370,9 +378,43 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                {/* AI Research Field Statistics - Above Radar */}
-                <div className="ai-research-stats-section">
-                  <h2 className="section-title">{t('AI Research Field Analysis')}</h2>
+                {/* Toggle Button for New Sections (Admin only) */}
+                {!isProfessor && (
+                  <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => setNewSectionsExpanded(!newSectionsExpanded)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 16px',
+                        background: newSectionsExpanded ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
+                        color: newSectionsExpanded ? 'white' : 'var(--admin-text)',
+                        border: '1px solid var(--admin-border)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontSize: '14px',
+                        fontWeight: 500
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        {newSectionsExpanded ? (
+                          <polyline points="18,15 12,9 6,15"/>
+                        ) : (
+                          <polyline points="6,9 12,15 18,9"/>
+                        )}
+                      </svg>
+                      {newSectionsExpanded ? 'Hide' : 'Show'} AI Research Analysis
+                    </button>
+                  </div>
+                )}
+
+                {/* AI Research Field Statistics - Above Radar (Collapsible) */}
+                <div className="ai-research-stats-section" style={{ display: newSectionsExpanded ? 'block' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <h2 className="section-title">{t('AI Research Field Analysis')}</h2>
+                  </div>
                   <div className="research-stats-grid">
                     {/* Field Distribution */}
                     <div className="research-stat-card">
@@ -544,8 +586,40 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Original Performance Radar Section - Keep as is */}
-                <div className="dashboard-grid">
+                {/* Toggle Button for Performance Radar (Professor only) */}
+                {isProfessor && (
+                  <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => setPerformanceRadarExpanded(!performanceRadarExpanded)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 16px',
+                        background: performanceRadarExpanded ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
+                        color: performanceRadarExpanded ? 'white' : 'var(--admin-text)',
+                        border: '1px solid var(--admin-border)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontSize: '14px',
+                        fontWeight: 500
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        {performanceRadarExpanded ? (
+                          <polyline points="18,15 12,9 6,15"/>
+                        ) : (
+                          <polyline points="6,9 12,15 18,9"/>
+                        )}
+                      </svg>
+                      {performanceRadarExpanded ? 'Hide' : 'Show'} Performance Radar
+                    </button>
+                  </div>
+                )}
+
+                {/* Original Performance Radar Section (Collapsible) */}
+                <div className="dashboard-grid" style={{ display: performanceRadarExpanded ? 'block' : 'none' }}>
                   <div className="grid-left">
                     <div id="performance-radar">
                       <PerformanceRadar 
