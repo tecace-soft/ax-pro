@@ -51,12 +51,14 @@ export default function AdminHeader({ performanceScore, performanceDate, current
           <span className="performance-text">
             {displayWelcome}: {performanceScore}% ({getPerformanceLabel(performanceScore)}{performanceDate ? `, ${performanceDate}` : ''})
           </span>
-          {currentUser && (
-            <span className="user-email">
-              {currentUser.email}
-            </span>
-          )}
-          <span className="current-time">{currentTime}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {currentUser && (
+              <span className="user-email">
+                {currentUser.email}
+              </span>
+            )}
+            <span className="current-time">{currentTime}</span>
+          </div>
         </div>
         
         <div className="header-actions">
