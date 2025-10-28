@@ -135,14 +135,16 @@ export const chatService = {
           console.log('=== CHAT SERVICE DEBUG ===');
           console.log('Sending request to n8n:', request);
           
-          // Retry mechanism for n8n requests
+          // Retry mechanism for n8n requests with chat ID regeneration
           let response: N8nResponse;
           let lastError: Error | null = null;
+          let currentRequest = request;
           
           for (let attempt = 1; attempt <= 3; attempt++) {
             try {
               console.log(`n8n request attempt ${attempt}/3`);
-              response = await sendToN8n(request);
+              console.log('Using chatId:', currentRequest.chatId);
+              response = await sendToN8n(currentRequest);
               console.log('n8n response received successfully:', response);
               console.log('Response type:', typeof response);
               console.log('Response has answer?', !!response?.answer);
@@ -151,6 +153,25 @@ export const chatService = {
             } catch (error) {
               lastError = error as Error;
               console.warn(`n8n request attempt ${attempt} failed:`, error);
+              
+              // Check if error is related to chat ID duplication
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              const isChatIdError = errorMessage.includes('chat') && 
+                (errorMessage.includes('duplicate') || 
+                 errorMessage.includes('already exists') || 
+                 errorMessage.includes('not unique') ||
+                 errorMessage.includes('unique constraint'));
+              
+              if (isChatIdError && attempt < 3) {
+                console.log('Chat ID duplication detected, generating new chatId...');
+                // Generate new chatId for retry
+                const newChatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                currentRequest = {
+                  ...currentRequest,
+                  chatId: newChatId
+                };
+                console.log('New chatId generated:', newChatId);
+              }
               
               if (attempt < 3) {
                 // Wait before retry (exponential backoff)
@@ -164,7 +185,22 @@ export const chatService = {
           // Check if all attempts failed
           if (!response! || !response!.answer) {
             console.error('All n8n attempts failed, last error:', lastError);
-            throw new Error(`n8n webhook failed after 3 attempts: ${lastError?.message || 'No response'}`);
+            
+            // Provide more specific error messages based on the type of failure
+            let errorMessage = 'Chat service unavailable';
+            if (lastError?.message.includes('Empty response')) {
+              errorMessage += ': Empty response from webhook. Please check your workflow configuration.';
+            } else if (lastError?.message.includes('timeout')) {
+              errorMessage += ': Request timed out. The service may be overloaded.';
+            } else if (lastError?.message.includes('Network error')) {
+              errorMessage += ': Network connection failed. Please check your internet connection.';
+            } else if (lastError?.message.includes('chat') && lastError?.message.includes('duplicate')) {
+              errorMessage += ': Chat ID conflict detected and resolved, but service still unavailable.';
+            } else {
+              errorMessage += `: ${lastError?.message || 'Unknown error occurred'}`;
+            }
+            
+            throw new Error(`n8n webhook failed after 3 attempts: ${errorMessage}`);
           }
           
           console.log('==========================');

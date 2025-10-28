@@ -9,6 +9,8 @@ export const useThread = (sessionId: string) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastSentMessage, setLastSentMessage] = useState<string | null>(null);
+  const [lastSentTime, setLastSentTime] = useState<number>(0);
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -48,12 +50,21 @@ export const useThread = (sessionId: string) => {
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
 
+    // Prevent duplicate message sending within 5 seconds
+    const now = Date.now();
+    if (lastSentMessage === content && (now - lastSentTime) < 5000) {
+      console.log('Preventing duplicate message send within 5 seconds');
+      return;
+    }
+
     console.log('=== SEND MESSAGE START ===');
     console.log('Session ID:', sessionId);
     console.log('Content:', content);
 
     setSending(true);
     setError(null);
+    setLastSentMessage(content);
+    setLastSentTime(now);
 
     // Add user message immediately
     const userMessage: ChatMessage = {
@@ -167,22 +178,36 @@ export const useThread = (sessionId: string) => {
 
     } catch (err) {
       console.error('Error in sendMessage:', err);
-      setError(err instanceof Error ? err.message : 'Failed to send message');
+      
+      // Clear the last sent message tracking on error to allow retry
+      setLastSentMessage(null);
+      setLastSentTime(0);
+      
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
+      setError(errorMessage);
       
       // Remove the temporary assistant message if an error occurs
       setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
       
-      // Add error message
-      const errorMessage: ChatMessage = {
+      // Add error message with more user-friendly content
+      const userFriendlyError = errorMessage.includes('Empty response') 
+        ? 'Chat service is temporarily unavailable. Please try again in a moment.'
+        : errorMessage.includes('timeout')
+        ? 'Request timed out. The service may be busy. Please try again.'
+        : errorMessage.includes('Network error')
+        ? 'Network connection failed. Please check your internet connection.'
+        : errorMessage;
+      
+      const errorMessageObj: ChatMessage = {
         id: `error-${Date.now()}`,
         sessionId,
         role: 'assistant',
-        content: err instanceof Error ? err.message : 'Failed to send message',
-        meta: {},
+        content: userFriendlyError,
+        meta: { isError: true },
         createdAt: new Date().toISOString()
       };
       
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorMessageObj]);
     } finally {
       setSending(false);
       console.log('=== SEND MESSAGE END ===');
