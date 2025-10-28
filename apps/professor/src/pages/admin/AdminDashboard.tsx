@@ -436,6 +436,10 @@ export default function AdminDashboard() {
             ) : isProfessor ? (
               // Professor Dashboard - New Design
               <div className="professor-dashboard">
+                {/* Debug: Professor Dashboard Active */}
+                <div style={{ background: 'red', color: 'white', padding: '10px', marginBottom: '20px' }}>
+                  PROFESSOR DASHBOARD ACTIVE - isProfessor: {isProfessor.toString()}, User: {currentUser?.email || 'unknown'}
+                </div>
                 {/* Performance Radar Section - Top Priority */}
                 <div className="dashboard-grid" style={{ marginBottom: '24px' }}>
                   <div className="grid-left">
