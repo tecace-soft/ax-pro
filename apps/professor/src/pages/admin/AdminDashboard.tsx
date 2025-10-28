@@ -45,6 +45,9 @@ export default function AdminDashboard() {
 
   // User customization state
   const [userCustomization, setUserCustomization] = useState<DashboardCustomization | null>(null)
+  
+  // Current user info
+  const [currentUser, setCurrentUser] = useState<{ email: string; userId: string } | null>(null)
 
   // Performance Timeline state
   const [radarData, setRadarData] = useState<DailyRow[]>([])
@@ -140,6 +143,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     const session = getSession()
     if (session) {
+      // Set current user info
+      setCurrentUser({
+        email: session.email,
+        userId: session.userId
+      })
+      
       const customization = getUserCustomization(session.email)
       setUserCustomization(customization)
       
@@ -328,6 +337,7 @@ export default function AdminDashboard() {
           performanceDate={formatDate(new Date())}
           currentTime={currentTime} 
           onSignOut={signOut}
+          currentUser={currentUser}
         />
         
         <div className="dashboard-content">

@@ -10,9 +10,10 @@ interface HeaderProps {
   onSignOut: () => void
   customTitle?: string
   customWelcome?: string
+  currentUser?: { email: string; userId: string } | null
 }
 
-export default function AdminHeader({ performanceScore, performanceDate, currentTime, onSignOut, customTitle, customWelcome }: HeaderProps) {
+export default function AdminHeader({ performanceScore, performanceDate, currentTime, onSignOut, customTitle, customWelcome, currentUser }: HeaderProps) {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
   const { language, setLanguage, t } = useTranslation()
@@ -50,6 +51,16 @@ export default function AdminHeader({ performanceScore, performanceDate, current
           <span className="performance-text">
             {displayWelcome}: {performanceScore}% ({getPerformanceLabel(performanceScore)}{performanceDate ? `, ${performanceDate}` : ''})
           </span>
+          {currentUser && (
+            <span className="user-email" style={{ 
+              fontSize: '12px', 
+              color: 'var(--text-muted)', 
+              marginLeft: '8px',
+              fontWeight: '500'
+            }}>
+              {currentUser.email}
+            </span>
+          )}
           <span className="current-time">{currentTime}</span>
         </div>
         
