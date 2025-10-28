@@ -75,7 +75,7 @@ export default function AdminDashboard() {
   const [performanceRadarExpanded, setPerformanceRadarExpanded] = useState(!isProfessor)
   const [dailyActivityExpanded, setDailyActivityExpanded] = useState(true)
 
-  // Service mode (Chatbot vs Translation)
+  // Service mode (Chatbot vs Translation) - Only available for professor
   const [serviceMode, setServiceMode] = useState<'chatbot' | 'translation'>('chatbot')
   
   // View mode state
@@ -347,7 +347,7 @@ export default function AdminDashboard() {
           <main className="dashboard-main">
             {location.pathname === '/admin/knowledge-management' ? (
               <KnowledgeManagementPage />
-            ) : serviceMode === 'translation' ? (
+            ) : serviceMode === 'translation' && isProfessor ? (
               // Translation Service Mode
               <div style={{ padding: '20px' }}>
                 <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '20px' }}>번역 서비스</h1>

@@ -38,6 +38,9 @@ export default function AdminSidebar({
   onScrollToSection,
   onServiceModeChange
 }: SidebarProps) {
+  
+  // Check if current user is professor (only professor should see translation feature)
+  const isProfessor = getSession()?.email === 'professor@tecace.com'
   const navigate = useNavigate()
   const location = useLocation()
   const { customization, updateCustomization } = useUICustomization()
@@ -84,8 +87,8 @@ export default function AdminSidebar({
   return (
     <aside className={`dashboard-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-content">
-        {/* Service Mode Toggle */}
-        {!isCollapsed && (
+        {/* Service Mode Toggle - Only show for professor account */}
+        {!isCollapsed && isProfessor && (
           <div style={{ padding: '12px', borderBottom: '1px solid var(--admin-border)', marginBottom: '12px' }}>
             <div style={{ display: 'flex', gap: '8px', background: 'var(--admin-bg)', borderRadius: '8px', padding: '4px' }}>
               <button
