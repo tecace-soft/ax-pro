@@ -438,34 +438,6 @@ export default function AdminDashboard() {
             ) : isProfessor ? (
               // Professor Dashboard - Exact Design Match
               <div className="professor-dashboard">
-                {/* Show Research Analysis Button */}
-                <div style={{ marginBottom: '20px' }}>
-                  <button
-                    onClick={() => setNewSectionsExpanded(!newSectionsExpanded)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 16px',
-                      background: 'var(--admin-card-bg)',
-                      color: 'var(--admin-text)',
-                      border: '1px solid var(--admin-border)',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: 500
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      {newSectionsExpanded ? (
-                        <polyline points="18,15 12,9 6,15"/>
-                      ) : (
-                        <polyline points="6,9 12,15 18,9"/>
-                      )}
-                    </svg>
-                    Show Research Analysis
-                  </button>
-                </div>
 
                 {/* Top Row: Radar Chart and Module Control */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
@@ -682,58 +654,56 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Research Field Analysis - Only show if expanded */}
-                {newSectionsExpanded && (
+                {/* Research Field Analysis - Always visible */}
+                <div style={{ 
+                  background: 'var(--admin-card-bg)', 
+                  borderRadius: '12px', 
+                  padding: '20px',
+                  border: '1px solid var(--admin-border)',
+                  marginBottom: '20px'
+                }}>
                   <div style={{ 
-                    background: 'var(--admin-card-bg)', 
-                    borderRadius: '12px', 
-                    padding: '20px',
-                    border: '1px solid var(--admin-border)',
+                    fontSize: '18px', 
+                    fontWeight: '600', 
+                    color: 'var(--admin-text)', 
+                    marginBottom: '16px'
+                  }}>
+                    Research Field Analysis
+                  </div>
+                  
+                  {/* Top Metrics Row */}
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(6, 1fr)', 
+                    gap: '16px',
                     marginBottom: '20px'
                   }}>
-                    <div style={{ 
-                      fontSize: '18px', 
-                      fontWeight: '600', 
-                      color: 'var(--admin-text)', 
-                      marginBottom: '16px'
-                    }}>
-                      Research Field Analysis
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: '#3b82f6' }}>{totalSessions}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Total Sessions</div>
                     </div>
-                    
-                    {/* Top Metrics Row */}
-                    <div style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: 'repeat(6, 1fr)', 
-                      gap: '16px',
-                      marginBottom: '20px'
-                    }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#3b82f6' }}>{totalSessions}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Total Sessions</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#10b981' }}>{totalQuestions}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Total Questions</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#f59e0b' }}>{avgQuestionsPerSession.toFixed(1)}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg Q/Session</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>{satisfactionRate.toFixed(1)}%</div>
-                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Satisfaction</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#ef4444' }}>{activeStudents}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Active Users</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#06b6d4' }}>{totalDocuments}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Documents</div>
-                      </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: '#10b981' }}>{totalQuestions}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Total Questions</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: '#f59e0b' }}>{avgQuestionsPerSession.toFixed(1)}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg Q/Session</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>{satisfactionRate.toFixed(1)}%</div>
+                      <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Satisfaction</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: '#ef4444' }}>{activeStudents}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Active Users</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: '#06b6d4' }}>{totalDocuments}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Documents</div>
                     </div>
                   </div>
-                )}
+                </div>
 
                 {/* Recent Conversations */}
                 <div style={{ 
@@ -780,204 +750,6 @@ export default function AdminDashboard() {
                   </div>
                 )}
                 
-                {/* Research Field Analysis - Professional Layout for 1920x1080 */}
-                <div className="ai-research-stats-section" style={{ display: newSectionsExpanded ? 'block' : 'none' }}>
-                  {/* Header Row - Title, View Mode, Toggle Button */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', gap: '12px' }}>
-                    <h2 className="section-title" style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>{t('Research Field Analysis')}</h2>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {/* View Mode Selector */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>View:</span>
-                        <button
-                          onClick={() => setViewMode('overview')}
-                          style={{
-                            padding: '8px 16px',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            background: viewMode === 'overview' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
-                            color: viewMode === 'overview' ? 'white' : 'var(--admin-text)',
-                            border: '1px solid var(--admin-border)',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          Overview
-                        </button>
-                        <button
-                          onClick={() => setViewMode('detailed')}
-                          style={{
-                            padding: '8px 16px',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            background: viewMode === 'detailed' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
-                            color: viewMode === 'detailed' ? 'white' : 'var(--admin-text)',
-                            border: '1px solid var(--admin-border)',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          Details
-                        </button>
-                      </div>
-                      
-                      {/* Toggle Button */}
-                      <button
-                        onClick={() => setNewSectionsExpanded(!newSectionsExpanded)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '8px 16px',
-                          background: 'var(--admin-card-bg)',
-                          color: 'var(--admin-text)',
-                          border: '1px solid var(--admin-border)',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          fontSize: '12px',
-                          fontWeight: 600
-                        }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          {newSectionsExpanded ? (
-                            <polyline points="18,15 12,9 6,15"/>
-                          ) : (
-                            <polyline points="6,9 12,15 18,9"/>
-                          )}
-                        </svg>
-                        {newSectionsExpanded ? 'Hide' : 'Show'}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Key Metrics - 6 boxes at top */}
-                  <div className="overview-stats-bar" style={{ 
-                    gridTemplateColumns: viewMode === 'overview' ? 'repeat(6, 1fr)' : 'repeat(3, 1fr)',
-                    marginBottom: '12px',
-                    gap: viewMode === 'overview' ? '6px' : '12px'
-                  }}>
-                  </div>
-                  
-                  {/* Key Metrics - 6 boxes at top */}
-                  <div className="overview-stats-bar" style={{ 
-                    gridTemplateColumns: viewMode === 'overview' ? 'repeat(6, 1fr)' : 'repeat(3, 1fr)',
-                    marginBottom: '12px',
-                    gap: viewMode === 'overview' ? '6px' : '12px'
-                  }}>
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Total Sessions')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalConversations}</div>
-                        {viewMode === 'detailed' && (
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
-                            +12.5% vs last week
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Total Questions')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalQuestions}</div>
-                        {viewMode === 'detailed' && (
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
-                            Avg 4.2 per session
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="18" y1="20" x2="18" y2="10"/>
-                          <line x1="12" y1="20" x2="12" y2="4"/>
-                          <line x1="6" y1="20" x2="6" y2="14"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Avg Q/Session')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{avgQuestionsPerSession}</div>
-                        {viewMode === 'detailed' && (
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
-                            Peak: 8 on 10/15
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                          <polyline points="22 4 12 14.01 9 11.01"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Satisfaction')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{satisfactionRate}%</div>
-                        {viewMode === 'detailed' && (
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
-                            8 positive, 2 neutral
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                          <circle cx="9" cy="7" r="4"/>
-                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Active Users')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{activeStudents}</div>
-                        {viewMode === 'detailed' && (
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
-                            15 unique this week
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="prof-overview-card" style={{ padding: viewMode === 'overview' ? '8px' : '12px' }}>
-                      <div className="prof-overview-icon" style={{ fontSize: viewMode === 'overview' ? '20px' : '24px' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                          <polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                      </div>
-                      <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Documents')}</div>
-                        <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalDocuments}</div>
-                        {viewMode === 'detailed' && (
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
-                            3 indexed, 1 pending
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
                   
                   <div className="research-stats-grid" style={{ 
                     gridTemplateColumns: viewMode === 'overview' ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)',
