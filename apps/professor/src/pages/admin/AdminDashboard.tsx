@@ -5,6 +5,7 @@ import { useTranslation } from '../../i18n/I18nProvider'
 import AdminHeader from '../../components/admin/Header'
 import AdminSidebar from '../../components/admin/Sidebar'
 import PerformanceRadar from '../../components/admin/PerformanceRadar'
+import ProfessorRadarChart from '../../components/admin/ProfessorRadarChart'
 import PerformanceTimeline from '../../components/admin/PerformanceTimeline'
 import DailyMessageActivity from '../../components/admin/DailyMessageActivity'
 import PromptControl from '../../components/admin/PromptControl'
@@ -440,15 +441,16 @@ export default function AdminDashboard() {
                 <div className="dashboard-grid" style={{ marginBottom: '24px' }}>
                   <div className="grid-left">
                     <div id="performance-radar">
-                      <PerformanceRadar 
-                        {...radarProps}
-                        timelineData={filteredRadarData}
-                        selectedDate={selectedRadarDate}
-                        onDateChange={setSelectedRadarDate}
-                        includeSimulatedData={includeSimulatedData}
-                        onSimulatedDataToggle={setIncludeSimulatedData}
-                        estimationMode={estimationMode}
-                        onEstimationModeChange={setEstimationMode}
+                      <ProfessorRadarChart 
+                        data={{
+                          relevance: radarProps.relevance,
+                          tone: radarProps.tone,
+                          length: radarProps.length,
+                          accuracy: radarProps.accuracy,
+                          toxicity: radarProps.toxicity,
+                          promptInjection: radarProps.promptInjection
+                        }}
+                        overallScore={Math.round(overallScore)}
                       />
                     </div>
                   </div>
