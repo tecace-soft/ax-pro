@@ -24,6 +24,7 @@ const Landing: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const [showPassword, setShowPassword] = useState(false);
+  const [isQuickLoginExpanded, setIsQuickLoginExpanded] = useState(false);
 
   // Check if user is already logged in
   React.useEffect(() => {
@@ -233,95 +234,125 @@ const Landing: React.FC = () => {
 
           {/* Demo Credentials */}
           <div className="card rounded-md p-4">
-            <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--text)' }}>
-              Quick Login (Click to use)
-            </h3>
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+                Quick Login (Click to use)
+              </h3>
               <button
-                onClick={() => {
-                  setFormData({ email: 'chatbot-user@tecace.com', password: 'user1234' });
-                }}
-                className="text-left p-3 rounded border hover:border-primary transition-colors"
+                onClick={() => setIsQuickLoginExpanded(!isQuickLoginExpanded)}
+                className="flex items-center gap-1 text-xs px-2 py-1 rounded border transition-colors"
                 style={{ 
                   borderColor: 'var(--border)',
                   backgroundColor: 'var(--card)',
-                  color: 'var(--text)'
+                  color: 'var(--text-muted)'
                 }}
               >
-                <div className="flex items-center gap-2">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                  <span className="font-medium">User</span>
-                </div>
-                <div className="text-xs mt-1 ml-6" style={{ color: 'var(--text-muted)' }}>Chat</div>
-              </button>
-              
-              <button
-                onClick={() => {
-                  setFormData({ email: 'chatbot-admin@tecace.com', password: 'admin1234' });
-                }}
-                className="text-left p-3 rounded border hover:border-primary transition-colors"
-                style={{ 
-                  borderColor: 'var(--border)',
-                  backgroundColor: 'var(--card)',
-                  color: 'var(--text)'
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                    <path d="M2 17l10 5 10-5"/>
-                    <path d="M2 12l10 5 10-5"/>
-                  </svg>
-                  <span className="font-medium">Admin</span>
-                </div>
-                <div className="text-xs mt-1 ml-6" style={{ color: 'var(--text-muted)' }}>Dashboard</div>
-              </button>
-              
-              <button
-                onClick={() => {
-                  setFormData({ email: 'professor@tecace.com', password: 'admin1234' });
-                }}
-                className="text-left p-3 rounded border hover:border-primary transition-colors"
-                style={{ 
-                  borderColor: 'var(--border)',
-                  backgroundColor: 'var(--card)',
-                  color: 'var(--text)'
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                  </svg>
-                  <span className="font-medium">Professor</span>
-                </div>
-                <div className="text-xs mt-1 ml-6" style={{ color: 'var(--text-muted)' }}>Education</div>
-              </button>
-              
-              <button
-                onClick={() => {
-                  setFormData({ email: 'hana@tecace.com', password: 'tsl1234' });
-                }}
-                className="text-left p-3 rounded border hover:border-primary transition-colors"
-                style={{ 
-                  borderColor: 'var(--border)',
-                  backgroundColor: 'var(--card)',
-                  color: 'var(--text)'
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M1 12h6m6 0h6m-13.2 5.2l4.2-4.2m0-6l-4.2-4.2"/>
-                  </svg>
-                  <span className="font-medium">Hana</span>
-                </div>
-                <div className="text-xs mt-1 ml-6" style={{ color: 'var(--text-muted)' }}>Custom</div>
+                <span>{isQuickLoginExpanded ? 'Hide' : 'Show'}</span>
+                <svg 
+                  width="12" 
+                  height="12" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2"
+                  style={{ 
+                    transform: isQuickLoginExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease'
+                  }}
+                >
+                  <polyline points="6,9 12,15 18,9"/>
+                </svg>
               </button>
             </div>
+            
+            {isQuickLoginExpanded && (
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  onClick={() => {
+                    setFormData({ email: 'chatbot-user@tecace.com', password: 'user1234' });
+                  }}
+                  className="text-left p-3 rounded border hover:border-primary transition-colors"
+                  style={{ 
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text)'
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span className="font-medium">User</span>
+                  </div>
+                  <div className="text-xs mt-1 ml-6" style={{ color: 'var(--text-muted)' }}>Chat</div>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setFormData({ email: 'chatbot-admin@tecace.com', password: 'admin1234' });
+                  }}
+                  className="text-left p-3 rounded border hover:border-primary transition-colors"
+                  style={{ 
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text)'
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                      <path d="M2 17l10 5 10-5"/>
+                      <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    <span className="font-medium">Admin</span>
+                  </div>
+                  <div className="text-xs mt-1 ml-6" style={{ color: 'var(--text-muted)' }}>Dashboard</div>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setFormData({ email: 'professor@tecace.com', password: 'admin1234' });
+                  }}
+                  className="text-left p-3 rounded border hover:border-primary transition-colors"
+                  style={{ 
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text)'
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    <span className="font-medium">Professor</span>
+                  </div>
+                  <div className="text-xs mt-1 ml-6" style={{ color: 'var(--text-muted)' }}>Education</div>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setFormData({ email: 'hana@tecace.com', password: 'tsl1234' });
+                  }}
+                  className="text-left p-3 rounded border hover:border-primary transition-colors"
+                  style={{ 
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text)'
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M1 12h6m6 0h6m-13.2 5.2l4.2-4.2m0-6l-4.2-4.2"/>
+                    </svg>
+                    <span className="font-medium">Hana</span>
+                  </div>
+                  <div className="text-xs mt-1 ml-6" style={{ color: 'var(--text-muted)' }}>Custom</div>
+                </button>
+              </div>
+            )}
           </div>
 
         </div>
