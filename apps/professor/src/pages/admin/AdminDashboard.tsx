@@ -7,6 +7,7 @@ import AdminSidebar from '../../components/admin/Sidebar'
 import PerformanceRadar from '../../components/admin/PerformanceRadar'
 import ProfessorRadarChart from '../../components/admin/ProfessorRadarChart'
 import PerformanceTimeline from '../../components/admin/PerformanceTimeline'
+import ProfessorPerformanceTimeline from '../../components/admin/ProfessorPerformanceTimeline'
 import DailyMessageActivity from '../../components/admin/DailyMessageActivity'
 import PromptControl from '../../components/admin/PromptControl'
 import RecentConversations from '../../components/admin/RecentConversations'
@@ -579,7 +580,7 @@ export default function AdminDashboard() {
                   border: '1px solid var(--admin-border)',
                   marginBottom: '20px'
                 }}>
-                  <PerformanceTimeline 
+                  <ProfessorPerformanceTimeline 
                     data={radarData}
                     onDateRangeChange={(start, end) => {
                       setStartDate(start)
