@@ -435,280 +435,318 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ) : isProfessor ? (
-              // Professor Dashboard - New Design
+              // Professor Dashboard - Exact Design Match
               <div className="professor-dashboard">
-                {/* Performance Radar Section - Top Priority */}
-                <div className="dashboard-grid" style={{ marginBottom: '24px' }}>
-                  <div className="grid-left">
-                    <div id="performance-radar">
-                      <ProfessorRadarChart 
-                        data={{
-                          relevance: radarProps.relevance,
-                          tone: radarProps.tone,
-                          length: radarProps.length,
-                          accuracy: radarProps.accuracy,
-                          toxicity: radarProps.toxicity,
-                          promptInjection: radarProps.promptInjection
-                        }}
-                        overallScore={Math.round(overallScore)}
-                      />
+                {/* Show Research Analysis Button */}
+                <div style={{ marginBottom: '20px' }}>
+                  <button
+                    onClick={() => setNewSectionsExpanded(!newSectionsExpanded)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 16px',
+                      background: 'var(--admin-card-bg)',
+                      color: 'var(--admin-text)',
+                      border: '1px solid var(--admin-border)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: 500
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      {newSectionsExpanded ? (
+                        <polyline points="18,15 12,9 6,15"/>
+                      ) : (
+                        <polyline points="6,9 12,15 18,9"/>
+                      )}
+                    </svg>
+                    Show Research Analysis
+                  </button>
+                </div>
+
+                {/* Top Row: Radar Chart and Module Control */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                  {/* Radar Chart */}
+                  <div style={{ 
+                    background: 'var(--admin-card-bg)', 
+                    borderRadius: '12px', 
+                    padding: '20px',
+                    border: '1px solid var(--admin-border)'
+                  }}>
+                    <ProfessorRadarChart 
+                      data={{
+                        relevance: radarProps.relevance,
+                        tone: radarProps.tone,
+                        length: radarProps.length,
+                        accuracy: radarProps.accuracy,
+                        toxicity: radarProps.toxicity,
+                        promptInjection: radarProps.promptInjection
+                      }}
+                      overallScore={Math.round(overallScore)}
+                    />
+                  </div>
+
+                  {/* Module Control */}
+                  <div style={{ 
+                    background: 'var(--admin-card-bg)', 
+                    borderRadius: '12px', 
+                    padding: '20px',
+                    border: '1px solid var(--admin-border)'
+                  }}>
+                    <div style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '600', 
+                      color: 'var(--admin-text)', 
+                      marginBottom: '16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      Module Control
+                      <span style={{ 
+                        background: '#3b82f6', 
+                        color: 'white', 
+                        padding: '2px 8px', 
+                        borderRadius: '12px', 
+                        fontSize: '12px',
+                        fontWeight: '500'
+                      }}>
+                        6/6
+                      </span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {[
+                        { name: 'Relevance', desc: 'Content Matching', color: '#ef4444', value: radarProps.relevance },
+                        { name: 'Tone', desc: 'Response Style', color: '#3b82f6', value: radarProps.tone },
+                        { name: 'Length', desc: 'Response Size', color: '#10b981', value: radarProps.length },
+                        { name: 'Accuracy', desc: 'Correct Answers', color: '#f59e0b', value: radarProps.accuracy },
+                        { name: 'Toxicity', desc: 'Safety Check', color: '#f97316', value: radarProps.toxicity },
+                        { name: 'Prompt Injection', desc: 'Security Filter', color: '#8b5cf6', value: radarProps.promptInjection }
+                      ].map((module, index) => (
+                        <div key={index} style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          padding: '8px 0'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ 
+                              width: '8px', 
+                              height: '8px', 
+                              borderRadius: '50%', 
+                              background: module.color 
+                            }}></div>
+                            <div>
+                              <div style={{ 
+                                fontSize: '14px', 
+                                fontWeight: '500', 
+                                color: 'var(--admin-text)' 
+                              }}>
+                                {module.name}
+                              </div>
+                              <div style={{ 
+                                fontSize: '12px', 
+                                color: 'var(--admin-text-muted)' 
+                              }}>
+                                {module.desc}
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ 
+                            background: module.color, 
+                            color: 'white', 
+                            padding: '4px 8px', 
+                            borderRadius: '6px', 
+                            fontSize: '12px',
+                            fontWeight: '500'
+                          }}>
+                            ON
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
 
                 {/* Performance Timeline */}
-                <div className="content-section" style={{ marginBottom: '24px' }}>
-                  <div id="performance-timeline">
-                    <PerformanceTimeline 
-                      data={radarData}
-                      onDateRangeChange={(start, end) => {
-                        setStartDate(start)
-                        setEndDate(end)
-                      }}
-                    />
-                  </div>
+                <div style={{ 
+                  background: 'var(--admin-card-bg)', 
+                  borderRadius: '12px', 
+                  padding: '20px',
+                  border: '1px solid var(--admin-border)',
+                  marginBottom: '20px'
+                }}>
+                  <PerformanceTimeline 
+                    data={radarData}
+                    onDateRangeChange={(start, end) => {
+                      setStartDate(start)
+                      setEndDate(end)
+                    }}
+                  />
                 </div>
 
                 {/* Daily Message Activity */}
-                <div className="content-section" style={{ marginBottom: '24px' }}>
-                  <div id="daily-activity">
-                    <DailyMessageActivity 
-                      highlightedChatId={highlightedChatId}
-                    />
+                <div style={{ 
+                  background: 'var(--admin-card-bg)', 
+                  borderRadius: '12px', 
+                  padding: '20px',
+                  border: '1px solid var(--admin-border)',
+                  marginBottom: '20px'
+                }}>
+                  <div style={{ 
+                    fontSize: '18px', 
+                    fontWeight: '600', 
+                    color: 'var(--admin-text)', 
+                    marginBottom: '16px'
+                  }}>
+                    일일 메시지 활동
                   </div>
-                </div>
+                  
+                  <div style={{ 
+                    fontSize: '16px', 
+                    fontWeight: '500', 
+                    color: 'var(--admin-text)', 
+                    marginBottom: '16px'
+                  }}>
+                    Daily Message Activity
+                  </div>
 
-                {/* Research Field Analysis */}
-                <div className="content-section" style={{ marginBottom: '24px' }}>
-                  <div id="research-analysis">
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center', 
-                      marginBottom: '16px' 
+                  {/* Metrics Row */}
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                    gap: '16px',
+                    marginBottom: '20px'
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: '700', color: '#3b82f6' }}>142</div>
+                      <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Total Messages</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: '700', color: '#10b981' }}>9</div>
+                      <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>User Feedback</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b' }}>9</div>
+                      <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Admin Reviews</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444' }}>6</div>
+                      <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Corrected</div>
+                    </div>
+                  </div>
+
+                  {/* Controls */}
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <select style={{
+                        padding: '6px 12px',
+                        background: 'var(--admin-card-bg)',
+                        color: 'var(--admin-text)',
+                        border: '1px solid var(--admin-border)',
+                        borderRadius: '6px',
+                        fontSize: '14px'
+                      }}>
+                        <option>Last 3 weeks</option>
+                      </select>
+                      <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)' }}>
+                        2025-10-07 to 2025-10-28
+                      </div>
+                    </div>
+                    <button style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '6px 12px',
+                      background: 'var(--admin-card-bg)',
+                      color: 'var(--admin-text)',
+                      border: '1px solid var(--admin-border)',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px'
                     }}>
-                      <h2 className="section-title">Research Field Analysis</h2>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <select
-                          value={viewMode}
-                          onChange={(e) => setViewMode(e.target.value as 'overview' | 'details')}
-                          style={{
-                            padding: '6px 12px',
-                            background: 'var(--admin-card-bg)',
-                            color: 'var(--admin-text)',
-                            border: '1px solid var(--admin-border)',
-                            borderRadius: '6px',
-                            fontSize: '14px'
-                          }}
-                        >
-                          <option value="overview">Overview</option>
-                          <option value="details">Details</option>
-                        </select>
-                        <button
-                          onClick={() => setNewSectionsExpanded(false)}
-                          style={{
-                            padding: '6px 12px',
-                            background: 'var(--admin-card-bg)',
-                            color: 'var(--admin-text)',
-                            border: '1px solid var(--admin-border)',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '14px'
-                          }}
-                        >
-                          Hide
-                        </button>
-                      </div>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="18,15 12,9 6,15"/>
+                      </svg>
+                      Hide
+                    </button>
+                  </div>
+                </div>
+
+                {/* Research Field Analysis - Only show if expanded */}
+                {newSectionsExpanded && (
+                  <div style={{ 
+                    background: 'var(--admin-card-bg)', 
+                    borderRadius: '12px', 
+                    padding: '20px',
+                    border: '1px solid var(--admin-border)',
+                    marginBottom: '20px'
+                  }}>
+                    <div style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '600', 
+                      color: 'var(--admin-text)', 
+                      marginBottom: '16px'
+                    }}>
+                      Research Field Analysis
                     </div>
-
-                    {/* Research Analysis Content */}
-                    <div className="ai-research-stats-section">
-                      {/* Top Metrics Row */}
-                      <div className="metrics-row">
-                        <div className="metric-card">
-                          <div className="metric-value">{totalSessions}</div>
-                          <div className="metric-label">Total Sessions</div>
-                        </div>
-                        <div className="metric-card">
-                          <div className="metric-value">{totalQuestions}</div>
-                          <div className="metric-label">Total Questions</div>
-                        </div>
-                        <div className="metric-card">
-                          <div className="metric-value">{avgQuestionsPerSession.toFixed(1)}</div>
-                          <div className="metric-label">Avg Q/Session</div>
-                        </div>
-                        <div className="metric-card">
-                          <div className="metric-value">{satisfactionRate.toFixed(1)}%</div>
-                          <div className="metric-label">Satisfaction</div>
-                        </div>
-                        <div className="metric-card">
-                          <div className="metric-value">{activeStudents}</div>
-                          <div className="metric-label">Active Users</div>
-                        </div>
-                        <div className="metric-card">
-                          <div className="metric-value">{totalDocuments}</div>
-                          <div className="metric-label">Documents</div>
-                        </div>
+                    
+                    {/* Top Metrics Row */}
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(6, 1fr)', 
+                      gap: '16px',
+                      marginBottom: '20px'
+                    }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#3b82f6' }}>{totalSessions}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Total Sessions</div>
                       </div>
-
-                      {/* Charts Row */}
-                      <div className="charts-row">
-                        <div className="chart-container">
-                          <h3>Research Fields</h3>
-                          <div className="bar-chart">
-                            <div className="bar-item">
-                              <span className="bar-label">Machine Learning</span>
-                              <div className="bar-track">
-                                <div className="bar-fill" style={{ width: '84%' }}></div>
-                              </div>
-                              <span className="bar-value">42</span>
-                            </div>
-                            <div className="bar-item">
-                              <span className="bar-label">Deep Learning</span>
-                              <div className="bar-track">
-                                <div className="bar-fill" style={{ width: '72%' }}></div>
-                              </div>
-                              <span className="bar-value">36</span>
-                            </div>
-                            <div className="bar-item">
-                              <span className="bar-label">NLP</span>
-                              <div className="bar-track">
-                                <div className="bar-fill" style={{ width: '68%' }}></div>
-                              </div>
-                              <span className="bar-value">34</span>
-                            </div>
-                            <div className="bar-item">
-                              <span className="bar-label">Computer Vision</span>
-                              <div className="bar-track">
-                                <div className="bar-fill" style={{ width: '56%' }}></div>
-                              </div>
-                              <span className="bar-value">28</span>
-                            </div>
-                            <div className="bar-item">
-                              <span className="bar-label">Reinforcement Learning</span>
-                              <div className="bar-track">
-                                <div className="bar-fill" style={{ width: '46%' }}></div>
-                              </div>
-                              <span className="bar-value">23</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="chart-container">
-                          <h3>Student Engagement</h3>
-                          <div className="engagement-stats">
-                            <div className="engagement-item">
-                              <div className="engagement-label">Active Students</div>
-                              <div className="engagement-value">32 (85% of enrolled)</div>
-                            </div>
-                            <div className="engagement-item">
-                              <div className="engagement-label">Questions Asked</div>
-                              <div className="engagement-value">247</div>
-                            </div>
-                            <div className="engagement-item">
-                              <div className="engagement-label">Topics Covered</div>
-                              <div className="engagement-value">8</div>
-                            </div>
-                            <div className="engagement-item">
-                              <div className="engagement-label">Engagement Rate</div>
-                              <div className="engagement-value">68%</div>
-                            </div>
-                            <div className="engagement-item">
-                              <div className="engagement-label">Avg/Session</div>
-                              <div className="engagement-value">3.2</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="chart-container">
-                          <h3>Topic Engagement</h3>
-                          <div className="topic-list">
-                            <div className="topic-item">
-                              <div className="topic-name">Neural Networks</div>
-                              <div className="topic-stats">8 sessions, 3.2 Q/session</div>
-                            </div>
-                            <div className="topic-item">
-                              <div className="topic-name">Transformer Architecture</div>
-                              <div className="topic-stats">6 sessions, 4.1 Q/session</div>
-                            </div>
-                            <div className="topic-item">
-                              <div className="topic-name">GANs</div>
-                              <div className="topic-stats">5 sessions, 2.8 Q/session</div>
-                            </div>
-                            <div className="topic-item">
-                              <div className="topic-name">CNN Architectures</div>
-                              <div className="topic-stats">7 sessions, 3.5 Q/session</div>
-                            </div>
-                            <div className="topic-item">
-                              <div className="topic-name">Optimization</div>
-                              <div className="topic-stats">4 sessions, 2.2 Q/session</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="chart-container">
-                          <h3>Satisfaction by Field</h3>
-                          <div className="satisfaction-chart">
-                            <div className="satisfaction-item">
-                              <span className="satisfaction-label">Machine Learning</span>
-                              <div className="satisfaction-track">
-                                <div className="satisfaction-fill" style={{ width: '88%' }}></div>
-                              </div>
-                              <span className="satisfaction-value">88%</span>
-                            </div>
-                            <div className="satisfaction-item">
-                              <span className="satisfaction-label">Deep Learning</span>
-                              <div className="satisfaction-track">
-                                <div className="satisfaction-fill" style={{ width: '82%' }}></div>
-                              </div>
-                              <span className="satisfaction-value">82%</span>
-                            </div>
-                            <div className="satisfaction-item">
-                              <span className="satisfaction-label">NLP</span>
-                              <div className="satisfaction-track">
-                                <div className="satisfaction-fill" style={{ width: '79%' }}></div>
-                              </div>
-                              <span className="satisfaction-value">79%</span>
-                            </div>
-                            <div className="satisfaction-item">
-                              <span className="satisfaction-label">Computer Vision</span>
-                              <div className="satisfaction-track">
-                                <div className="satisfaction-fill" style={{ width: '75%' }}></div>
-                              </div>
-                              <span className="satisfaction-value">75%</span>
-                            </div>
-                            <div className="satisfaction-item">
-                              <span className="satisfaction-label">Reinforcement Learning</span>
-                              <div className="satisfaction-track">
-                                <div className="satisfaction-fill" style={{ width: '71%' }}></div>
-                              </div>
-                              <span className="satisfaction-value">71%</span>
-                            </div>
-                          </div>
-                        </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#10b981' }}>{totalQuestions}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Total Questions</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#f59e0b' }}>{avgQuestionsPerSession.toFixed(1)}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg Q/Session</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>{satisfactionRate.toFixed(1)}%</div>
+                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Satisfaction</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#ef4444' }}>{activeStudents}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Active Users</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '20px', fontWeight: '700', color: '#06b6d4' }}>{totalDocuments}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Documents</div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Recent Conversations */}
-                <div className="content-section">
-                  <div id="recent-conversations">
-                    <RecentConversations 
-                      conversations={conversations}
-                      scrollToChatId={scrollToChatId}
-                      highlightedChatId={highlightedChatId}
-                      onScrollComplete={() => setScrollToChatId(null)}
-                    />
-                  </div>
-                </div>
-
-                {/* Prompt Control - Bottom Right */}
-                <div className="content-section">
-                  <div id="prompt-control">
-                    <h2 className="section-title">Prompt Control</h2>
-                    <PromptControl />
-                  </div>
+                <div style={{ 
+                  background: 'var(--admin-card-bg)', 
+                  borderRadius: '12px', 
+                  padding: '20px',
+                  border: '1px solid var(--admin-border)'
+                }}>
+                  <RecentConversations 
+                    conversations={conversations}
+                    scrollToChatId={scrollToChatId}
+                    highlightedChatId={highlightedChatId}
+                    onScrollComplete={() => setScrollToChatId(null)}
+                  />
                 </div>
               </div>
             ) : (
