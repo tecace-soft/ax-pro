@@ -24,6 +24,7 @@ import '../../styles/admin-components.css'
 import '../../styles/professor-overview.css'
 import '../../styles/performance-metrics-compact.css'
 import '../../styles/ai-research-stats.css'
+import '../../styles/professor-dashboard.css'
 
 function formatDate(d: Date): string {
   const year = d.getFullYear()
@@ -389,6 +390,281 @@ export default function AdminDashboard() {
                 <div id="admin-feedback" className="content-section" style={{ marginTop: '32px' }}>
                   <h2 className="section-title">Admin Feedback</h2>
                   <AdminFeedbackList onScrollToChat={() => {}} />
+                </div>
+              </div>
+            ) : isProfessor ? (
+              // Professor Dashboard - New Design
+              <div className="professor-dashboard">
+                {/* Performance Radar Section - Top Priority */}
+                <div className="dashboard-grid" style={{ marginBottom: '24px' }}>
+                  <div className="grid-left">
+                    <div id="performance-radar">
+                      <PerformanceRadar 
+                        {...radarProps}
+                        timelineData={filteredRadarData}
+                        selectedDate={selectedRadarDate}
+                        onDateChange={setSelectedRadarDate}
+                        includeSimulatedData={includeSimulatedData}
+                        onSimulatedDataToggle={setIncludeSimulatedData}
+                        estimationMode={estimationMode}
+                        onEstimationModeChange={setEstimationMode}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid-right">
+                    <div id="module-control">
+                      <PromptControl />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Performance Timeline */}
+                <div className="content-section" style={{ marginBottom: '24px' }}>
+                  <div id="performance-timeline">
+                    <PerformanceTimeline 
+                      data={radarData}
+                      onDateRangeChange={(start, end) => {
+                        setStartDate(start)
+                        setEndDate(end)
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Daily Message Activity */}
+                <div className="content-section" style={{ marginBottom: '24px' }}>
+                  <div id="daily-activity">
+                    <DailyMessageActivity 
+                      data={dailyData}
+                      onScrollToChat={scrollToChat}
+                      highlightedChatId={highlightedChatId}
+                    />
+                  </div>
+                </div>
+
+                {/* Research Field Analysis */}
+                <div className="content-section" style={{ marginBottom: '24px' }}>
+                  <div id="research-analysis">
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center', 
+                      marginBottom: '16px' 
+                    }}>
+                      <h2 className="section-title">Research Field Analysis</h2>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <select
+                          value={viewMode}
+                          onChange={(e) => setViewMode(e.target.value as 'overview' | 'details')}
+                          style={{
+                            padding: '6px 12px',
+                            background: 'var(--admin-card-bg)',
+                            color: 'var(--admin-text)',
+                            border: '1px solid var(--admin-border)',
+                            borderRadius: '6px',
+                            fontSize: '14px'
+                          }}
+                        >
+                          <option value="overview">Overview</option>
+                          <option value="details">Details</option>
+                        </select>
+                        <button
+                          onClick={() => setNewSectionsExpanded(false)}
+                          style={{
+                            padding: '6px 12px',
+                            background: 'var(--admin-card-bg)',
+                            color: 'var(--admin-text)',
+                            border: '1px solid var(--admin-border)',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '14px'
+                          }}
+                        >
+                          Hide
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Research Analysis Content */}
+                    <div className="ai-research-stats-section">
+                      {/* Top Metrics Row */}
+                      <div className="metrics-row">
+                        <div className="metric-card">
+                          <div className="metric-value">{totalSessions}</div>
+                          <div className="metric-label">Total Sessions</div>
+                        </div>
+                        <div className="metric-card">
+                          <div className="metric-value">{totalQuestions}</div>
+                          <div className="metric-label">Total Questions</div>
+                        </div>
+                        <div className="metric-card">
+                          <div className="metric-value">{avgQuestionsPerSession.toFixed(1)}</div>
+                          <div className="metric-label">Avg Q/Session</div>
+                        </div>
+                        <div className="metric-card">
+                          <div className="metric-value">{satisfactionRate.toFixed(1)}%</div>
+                          <div className="metric-label">Satisfaction</div>
+                        </div>
+                        <div className="metric-card">
+                          <div className="metric-value">{activeStudents}</div>
+                          <div className="metric-label">Active Users</div>
+                        </div>
+                        <div className="metric-card">
+                          <div className="metric-value">{totalDocuments}</div>
+                          <div className="metric-label">Documents</div>
+                        </div>
+                      </div>
+
+                      {/* Charts Row */}
+                      <div className="charts-row">
+                        <div className="chart-container">
+                          <h3>Research Fields</h3>
+                          <div className="bar-chart">
+                            <div className="bar-item">
+                              <span className="bar-label">Machine Learning</span>
+                              <div className="bar-track">
+                                <div className="bar-fill" style={{ width: '84%' }}></div>
+                              </div>
+                              <span className="bar-value">42</span>
+                            </div>
+                            <div className="bar-item">
+                              <span className="bar-label">Deep Learning</span>
+                              <div className="bar-track">
+                                <div className="bar-fill" style={{ width: '72%' }}></div>
+                              </div>
+                              <span className="bar-value">36</span>
+                            </div>
+                            <div className="bar-item">
+                              <span className="bar-label">NLP</span>
+                              <div className="bar-track">
+                                <div className="bar-fill" style={{ width: '68%' }}></div>
+                              </div>
+                              <span className="bar-value">34</span>
+                            </div>
+                            <div className="bar-item">
+                              <span className="bar-label">Computer Vision</span>
+                              <div className="bar-track">
+                                <div className="bar-fill" style={{ width: '56%' }}></div>
+                              </div>
+                              <span className="bar-value">28</span>
+                            </div>
+                            <div className="bar-item">
+                              <span className="bar-label">Reinforcement Learning</span>
+                              <div className="bar-track">
+                                <div className="bar-fill" style={{ width: '46%' }}></div>
+                              </div>
+                              <span className="bar-value">23</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="chart-container">
+                          <h3>Student Engagement</h3>
+                          <div className="engagement-stats">
+                            <div className="engagement-item">
+                              <div className="engagement-label">Active Students</div>
+                              <div className="engagement-value">32 (85% of enrolled)</div>
+                            </div>
+                            <div className="engagement-item">
+                              <div className="engagement-label">Questions Asked</div>
+                              <div className="engagement-value">247</div>
+                            </div>
+                            <div className="engagement-item">
+                              <div className="engagement-label">Topics Covered</div>
+                              <div className="engagement-value">8</div>
+                            </div>
+                            <div className="engagement-item">
+                              <div className="engagement-label">Engagement Rate</div>
+                              <div className="engagement-value">68%</div>
+                            </div>
+                            <div className="engagement-item">
+                              <div className="engagement-label">Avg/Session</div>
+                              <div className="engagement-value">3.2</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="chart-container">
+                          <h3>Topic Engagement</h3>
+                          <div className="topic-list">
+                            <div className="topic-item">
+                              <div className="topic-name">Neural Networks</div>
+                              <div className="topic-stats">8 sessions, 3.2 Q/session</div>
+                            </div>
+                            <div className="topic-item">
+                              <div className="topic-name">Transformer Architecture</div>
+                              <div className="topic-stats">6 sessions, 4.1 Q/session</div>
+                            </div>
+                            <div className="topic-item">
+                              <div className="topic-name">GANs</div>
+                              <div className="topic-stats">5 sessions, 2.8 Q/session</div>
+                            </div>
+                            <div className="topic-item">
+                              <div className="topic-name">CNN Architectures</div>
+                              <div className="topic-stats">7 sessions, 3.5 Q/session</div>
+                            </div>
+                            <div className="topic-item">
+                              <div className="topic-name">Optimization</div>
+                              <div className="topic-stats">4 sessions, 2.2 Q/session</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="chart-container">
+                          <h3>Satisfaction by Field</h3>
+                          <div className="satisfaction-chart">
+                            <div className="satisfaction-item">
+                              <span className="satisfaction-label">Machine Learning</span>
+                              <div className="satisfaction-track">
+                                <div className="satisfaction-fill" style={{ width: '88%' }}></div>
+                              </div>
+                              <span className="satisfaction-value">88%</span>
+                            </div>
+                            <div className="satisfaction-item">
+                              <span className="satisfaction-label">Deep Learning</span>
+                              <div className="satisfaction-track">
+                                <div className="satisfaction-fill" style={{ width: '82%' }}></div>
+                              </div>
+                              <span className="satisfaction-value">82%</span>
+                            </div>
+                            <div className="satisfaction-item">
+                              <span className="satisfaction-label">NLP</span>
+                              <div className="satisfaction-track">
+                                <div className="satisfaction-fill" style={{ width: '79%' }}></div>
+                              </div>
+                              <span className="satisfaction-value">79%</span>
+                            </div>
+                            <div className="satisfaction-item">
+                              <span className="satisfaction-label">Computer Vision</span>
+                              <div className="satisfaction-track">
+                                <div className="satisfaction-fill" style={{ width: '75%' }}></div>
+                              </div>
+                              <span className="satisfaction-value">75%</span>
+                            </div>
+                            <div className="satisfaction-item">
+                              <span className="satisfaction-label">Reinforcement Learning</span>
+                              <div className="satisfaction-track">
+                                <div className="satisfaction-fill" style={{ width: '71%' }}></div>
+                              </div>
+                              <span className="satisfaction-value">71%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Conversations */}
+                <div className="content-section">
+                  <div id="recent-conversations">
+                    <RecentConversations 
+                      conversations={conversations}
+                      onScrollToChat={scrollToChat}
+                      highlightedChatId={highlightedChatId}
+                    />
+                  </div>
                 </div>
               </div>
             ) : (
