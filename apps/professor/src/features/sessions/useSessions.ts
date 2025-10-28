@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sessionsApi } from '../../services/api';
 import { isBackendAvailable } from '../../services/devMode';
+import { getSession } from '../../services/auth';
 
 export interface Session {
   id: string;
@@ -22,6 +23,13 @@ export const useSessions = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Get user-specific localStorage key
+  const getUserStorageKey = () => {
+    const session = getSession();
+    const userId = session?.userId || 'anonymous';
+    return `axpro_sim_sessions_${userId}`;
+  };
+
   const fetchSessions = async () => {
     try {
       setLoading(true);
@@ -33,8 +41,10 @@ export const useSessions = () => {
         const data = await sessionsApi.list();
         setSessions(data);
       } else {
-        // Use local sessions for simulation mode
-        const localSessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
+        // Use local sessions for simulation mode - user-specific
+        const userStorageKey = getUserStorageKey();
+        const localSessions = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
+        console.log(`Loading sessions for user: ${getSession()?.userId || 'anonymous'}, key: ${userStorageKey}`);
         setSessions(localSessions);
       }
     } catch (err) {
@@ -68,10 +78,12 @@ export const useSessions = () => {
           updatedAt: new Date().toISOString()
         };
         
-        // Store in localStorage
-        const existingSessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
+        // Store in localStorage - user-specific
+        const userStorageKey = getUserStorageKey();
+        const existingSessions = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
         existingSessions.push(newSession);
-        localStorage.setItem('axpro_sim_sessions', JSON.stringify(existingSessions));
+        localStorage.setItem(userStorageKey, JSON.stringify(existingSessions));
+        console.log(`Created session for user: ${getSession()?.userId || 'anonymous'}, key: ${userStorageKey}`);
         
         console.log('Session created successfully:', newSession);
         await fetchSessions(); // Refresh list
@@ -92,8 +104,9 @@ export const useSessions = () => {
       if (backendAvailable) {
         await sessionsApi.update(id, updates);
       } else {
-        // Update local session for simulation mode
-        const localSessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
+        // Update local session for simulation mode - user-specific
+        const userStorageKey = getUserStorageKey();
+        const localSessions = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
         const sessionIndex = localSessions.findIndex((s: Session) => s.id === id);
         if (sessionIndex !== -1) {
           localSessions[sessionIndex] = {
@@ -101,7 +114,7 @@ export const useSessions = () => {
             ...updates,
             updatedAt: new Date().toISOString()
           };
-          localStorage.setItem('axpro_sim_sessions', JSON.stringify(localSessions));
+          localStorage.setItem(userStorageKey, JSON.stringify(localSessions));
         }
       }
       
@@ -123,16 +136,18 @@ export const useSessions = () => {
         await sessionsApi.delete(id);
       } else {
         console.log('Deleting from localStorage');
-        // Delete local session for simulation mode
-        const localSessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
+        // Delete local session for simulation mode - user-specific
+        const userStorageKey = getUserStorageKey();
+        const localSessions = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
         console.log('Current sessions before delete:', localSessions.length);
         const updatedSessions = localSessions.filter((s: Session) => s.id !== id);
         console.log('Sessions after delete:', updatedSessions.length);
-        localStorage.setItem('axpro_sim_sessions', JSON.stringify(updatedSessions));
+        localStorage.setItem(userStorageKey, JSON.stringify(updatedSessions));
         
-        // Also delete associated messages
-        localStorage.removeItem(`axpro_sim_messages_${id}`);
-        console.log('Deleted associated messages for session:', id);
+        // Also delete associated messages - user-specific
+        const userMessageStorageKey = `axpro_sim_messages_${getSession()?.userId || 'anonymous'}_${id}`;
+        localStorage.removeItem(userMessageStorageKey);
+        console.log('Deleted associated messages for session:', id, 'key:', userMessageStorageKey);
       }
       
       console.log('Refreshing sessions list');
