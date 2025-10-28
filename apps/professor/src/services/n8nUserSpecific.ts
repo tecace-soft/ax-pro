@@ -217,10 +217,29 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
       throw new Error('Unexpected response format from n8n webhook');
     }
     
-    // Check if the response contains the error message
-    if (responseData && responseData.answer && responseData.answer.includes('No response from webhook')) {
-      console.error('Webhook returned error message:', responseData.answer);
-      throw new Error('Webhook returned error: ' + responseData.answer);
+    // Check if the response contains error messages (based on real server testing)
+    if (responseData && responseData.answer) {
+      // Check for various error patterns found in real server testing
+      if (responseData.answer.includes('No response from webhook')) {
+        console.error('Webhook returned error message:', responseData.answer);
+        throw new Error('Webhook returned error: ' + responseData.answer);
+      }
+      
+      // Check for null or empty answers (real server pattern)
+      if (responseData.answer === null || responseData.answer === '') {
+        console.error('Webhook returned null or empty answer');
+        throw new Error('Empty response from webhook. Please check your workflow configuration.');
+      }
+      
+      // Check for error messages in the answer field
+      if (typeof responseData.answer === 'string' && 
+          (responseData.answer.includes('error') || 
+           responseData.answer.includes('Error') ||
+           responseData.answer.includes('not valid') ||
+           responseData.answer.includes('invalid'))) {
+        console.warn('Webhook answer contains error indicators:', responseData.answer);
+        // Don't throw error here, just log - let the calling code decide
+      }
     }
     
     return responseData;

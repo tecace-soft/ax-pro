@@ -154,7 +154,7 @@ export const chatService = {
               lastError = error as Error;
               console.warn(`n8n request attempt ${attempt} failed:`, error);
               
-              // Check if error is related to chat ID duplication
+              // Check if error is related to chat ID duplication (based on real server testing)
               const errorMessage = error instanceof Error ? error.message : String(error);
               const isChatIdError = errorMessage.includes('chat') && 
                 (errorMessage.includes('duplicate') || 
@@ -162,6 +162,8 @@ export const chatService = {
                  errorMessage.includes('not unique') ||
                  errorMessage.includes('unique constraint'));
               
+              // Note: Real server testing shows the server doesn't actually enforce unique chat IDs
+              // But we'll keep this logic for other potential servers
               if (isChatIdError && attempt < 3) {
                 console.log('Chat ID duplication detected, generating new chatId...');
                 // Generate new chatId for retry
@@ -186,14 +188,16 @@ export const chatService = {
           if (!response! || !response!.answer) {
             console.error('All n8n attempts failed, last error:', lastError);
             
-            // Provide more specific error messages based on the type of failure
+            // Provide more specific error messages based on real server testing
             let errorMessage = 'Chat service unavailable';
             if (lastError?.message.includes('Empty response')) {
               errorMessage += ': Empty response from webhook. Please check your workflow configuration.';
-            } else if (lastError?.message.includes('timeout')) {
-              errorMessage += ': Request timed out. The service may be overloaded.';
+            } else if (lastError?.message.includes('timeout') || lastError?.message.includes('ECONNRESET')) {
+              errorMessage += ': Request timed out or connection reset. The service may be overloaded.';
             } else if (lastError?.message.includes('Network error')) {
               errorMessage += ': Network connection failed. Please check your internet connection.';
+            } else if (lastError?.message.includes('socket hang up')) {
+              errorMessage += ': Connection lost. Please try again.';
             } else if (lastError?.message.includes('chat') && lastError?.message.includes('duplicate')) {
               errorMessage += ': Chat ID conflict detected and resolved, but service still unavailable.';
             } else {
