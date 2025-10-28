@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useUICustomization } from '../../hooks/useUICustomization'
 import { useTranslation } from '../../i18n/I18nProvider'
+import { getSession } from '../../services/auth'
 
 interface SidebarProps {
   serviceMode?: 'chatbot' | 'translation'
