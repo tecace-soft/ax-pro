@@ -436,10 +436,6 @@ export default function AdminDashboard() {
             ) : isProfessor ? (
               // Professor Dashboard - New Design
               <div className="professor-dashboard">
-                {/* Debug: Professor Dashboard Active */}
-                <div style={{ background: 'red', color: 'white', padding: '10px', marginBottom: '20px' }}>
-                  PROFESSOR DASHBOARD ACTIVE - isProfessor: {isProfessor.toString()}, User: {currentUser?.email || 'unknown'}
-                </div>
                 {/* Performance Radar Section - Top Priority */}
                 <div className="dashboard-grid" style={{ marginBottom: '24px' }}>
                   <div className="grid-left">
@@ -454,12 +450,6 @@ export default function AdminDashboard() {
                         estimationMode={estimationMode}
                         onEstimationModeChange={setEstimationMode}
                       />
-                    </div>
-                  </div>
-                  
-                  <div className="grid-right">
-                    <div id="module-control">
-                      <PromptControl />
                     </div>
                   </div>
                 </div>
@@ -708,6 +698,14 @@ export default function AdminDashboard() {
                       highlightedChatId={highlightedChatId}
                       onScrollComplete={() => setScrollToChatId(null)}
                     />
+                  </div>
+                </div>
+
+                {/* Prompt Control - Bottom Right */}
+                <div className="content-section">
+                  <div id="prompt-control">
+                    <h2 className="section-title">Prompt Control</h2>
+                    <PromptControl />
                   </div>
                 </div>
               </div>
