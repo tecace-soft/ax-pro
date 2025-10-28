@@ -48,8 +48,8 @@ export const migrateToUserSettings = (): void => {
         email: session.email,
         n8nConfigs: [{
           id: 'seokhoon_default',
-          name: 'SeokHoon Kang Webhook',
-          webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/63647efd-8c39-42d5-8e1f-b465d62091c6',
+          name: 'SeokHoon Kang Webhook (Using Admin Webhook)',
+          webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/328757ba-62e6-465e-be1b-2fff0fd1d353', // Use Admin's working webhook
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()

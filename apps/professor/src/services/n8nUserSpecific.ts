@@ -153,9 +153,9 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     console.log('Request payload:', JSON.stringify(request));
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('n8n webhook request timed out after 30 seconds');
+      console.log('n8n webhook request timed out after 60 seconds');
       controller.abort();
-    }, 30000); // 30 second timeout
+    }, 60000); // Increased to 60 seconds
     
     const response = await fetch(activeConfig.webhookUrl, {
       method: 'POST',
@@ -247,7 +247,7 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     console.error('Failed to send to n8n:', error);
     
     if (error.name === 'AbortError') {
-      throw new Error('Webhook request timed out after 30 seconds');
+      throw new Error('Webhook request timed out after 60 seconds');
     } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
       throw new Error('Network error: Unable to reach webhook');
     } else {
