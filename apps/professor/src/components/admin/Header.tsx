@@ -52,12 +52,7 @@ export default function AdminHeader({ performanceScore, performanceDate, current
             {displayWelcome}: {performanceScore}% ({getPerformanceLabel(performanceScore)}{performanceDate ? `, ${performanceDate}` : ''})
           </span>
           {currentUser && (
-            <span className="user-email" style={{ 
-              fontSize: '12px', 
-              color: 'var(--text-muted)', 
-              marginLeft: '8px',
-              fontWeight: '500'
-            }}>
+            <span className="user-email">
               {currentUser.email}
             </span>
           )}
