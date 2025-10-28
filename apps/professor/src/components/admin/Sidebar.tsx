@@ -394,51 +394,53 @@ export default function AdminSidebar({
           </div>
         </div>
 
-        {/* Metrics */}
-        <div className="sidebar-section">
-          <h3 className="sidebar-section-title">{t('admin.overview')}</h3>
-          <div className="metrics-grid">
-            <div className="metric-card">
-              <div className="metric-icon">
-                <IconMessage size={20} />
+        {/* Metrics - Only show in chatbot mode */}
+        {serviceMode === 'chatbot' && (
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-title">{t('admin.overview')}</h3>
+            <div className="metrics-grid">
+              <div className="metric-card">
+                <div className="metric-icon">
+                  <IconMessage size={20} />
+                </div>
+                <div className="metric-content">
+                  <div className="metric-value">{conversations}</div>
+                  <div className="metric-label">{t('admin.conversations')}</div>
+                </div>
               </div>
-              <div className="metric-content">
-                <div className="metric-value">{conversations}</div>
-                <div className="metric-label">{t('admin.conversations')}</div>
+              
+              <div className="metric-card">
+                <div className="metric-icon">
+                  <IconActivity size={20} />
+                </div>
+                <div className="metric-content">
+                  <div className="metric-value">{satisfaction}%</div>
+                  <div className="metric-label">{t('admin.satisfaction')}</div>
+                </div>
               </div>
-            </div>
-            
-            <div className="metric-card">
-              <div className="metric-icon">
-                <IconActivity size={20} />
+              
+              <div className="metric-card">
+                <div className="metric-icon">
+                  <IconDatabase size={20} />
+                </div>
+                <div className="metric-content">
+                  <div className="metric-value">{documents}</div>
+                  <div className="metric-label">{t('admin.documents')}</div>
+                </div>
               </div>
-              <div className="metric-content">
-                <div className="metric-value">{satisfaction}%</div>
-                <div className="metric-label">{t('admin.satisfaction')}</div>
-              </div>
-            </div>
-            
-            <div className="metric-card">
-              <div className="metric-icon">
-                <IconDatabase size={20} />
-              </div>
-              <div className="metric-content">
-                <div className="metric-value">{documents}</div>
-                <div className="metric-label">{t('admin.documents')}</div>
-              </div>
-            </div>
-            
-            <div className="metric-card">
-              <div className="metric-icon">
-                <IconBarChart size={20} />
-              </div>
-              <div className="metric-content">
-                <div className="metric-value">{performanceScore}%</div>
-                <div className="metric-label">{t('admin.performance')}</div>
+              
+              <div className="metric-card">
+                <div className="metric-icon">
+                  <IconBarChart size={20} />
+                </div>
+                <div className="metric-content">
+                  <div className="metric-value">{performanceScore}%</div>
+                  <div className="metric-label">{t('admin.performance')}</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Admin Filters - Only show in translation mode */}
         {serviceMode === 'translation' && !isCollapsed && (
@@ -610,6 +612,54 @@ export default function AdminSidebar({
                       </button>
                     ))}
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Metrics for Translation Mode - Show below filters */}
+        {serviceMode === 'translation' && !isCollapsed && (
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-title">{t('admin.overview')}</h3>
+            <div className="metrics-grid">
+              <div className="metric-card">
+                <div className="metric-icon">
+                  <IconMessage size={20} />
+                </div>
+                <div className="metric-content">
+                  <div className="metric-value">{conversations}</div>
+                  <div className="metric-label">{t('admin.conversations')}</div>
+                </div>
+              </div>
+              
+              <div className="metric-card">
+                <div className="metric-icon">
+                  <IconActivity size={20} />
+                </div>
+                <div className="metric-content">
+                  <div className="metric-value">{satisfaction}%</div>
+                  <div className="metric-label">{t('admin.satisfaction')}</div>
+                </div>
+              </div>
+              
+              <div className="metric-card">
+                <div className="metric-icon">
+                  <IconDatabase size={20} />
+                </div>
+                <div className="metric-content">
+                  <div className="metric-value">{documents}</div>
+                  <div className="metric-label">{t('admin.documents')}</div>
+                </div>
+              </div>
+              
+              <div className="metric-card">
+                <div className="metric-icon">
+                  <IconBarChart size={20} />
+                </div>
+                <div className="metric-content">
+                  <div className="metric-value">{performanceScore}%</div>
+                  <div className="metric-label">{t('admin.performance')}</div>
                 </div>
               </div>
             </div>
