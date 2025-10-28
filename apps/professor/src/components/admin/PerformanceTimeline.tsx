@@ -41,7 +41,7 @@ export default function PerformanceTimeline({
   const [playSpeed, setPlaySpeed] = useState(800);
   const [showDataControls, setShowDataControls] = useState(false);
   const [hoveredBar, setHoveredBar] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>('21d');
+  const [dateRange, setDateRange] = useState<DateRange>('90d');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [showCustomRange, setShowCustomRange] = useState(false);
@@ -116,7 +116,7 @@ export default function PerformanceTimeline({
             endDate: customEndDate
           }
         }
-        start.setDate(end.getDate() - 21)
+        start.setDate(end.getDate() - 90)
         break
     }
 
