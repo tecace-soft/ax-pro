@@ -437,7 +437,6 @@ export default function AdminDashboard() {
                 <div className="content-section" style={{ marginBottom: '24px' }}>
                   <div id="daily-activity">
                     <DailyMessageActivity 
-                      data={dailyData}
                       onScrollToChat={scrollToChat}
                       highlightedChatId={highlightedChatId}
                     />
