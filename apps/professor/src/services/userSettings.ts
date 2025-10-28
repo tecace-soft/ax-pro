@@ -47,12 +47,12 @@ const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
   uiCustomization: {}
 };
 
-// User-specific settings for SeokHoon Kang - TEMPORARILY USE ADMIN'S WORKING WEBHOOK
+// User-specific settings for SeokHoon Kang - HANA'S UNIQUE CHATBOT
 const SEOKHOON_KANG_SETTINGS: Partial<UserSettings> = {
   n8nConfigs: [{
     id: 'seokhoon_default',
-    name: 'SeokHoon Kang Webhook (Using Admin Webhook)',
-    webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/328757ba-62e6-465e-be1b-2fff0fd1d353', // Use Admin's working webhook
+    name: 'Hana Custom Chatbot',
+    webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/63647efd-8c39-42d5-8e1f-b465d62091c6', // Hana's unique chatbot
     isActive: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
