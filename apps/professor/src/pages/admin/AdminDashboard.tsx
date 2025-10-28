@@ -71,6 +71,9 @@ export default function AdminDashboard() {
   const [totalQuestions, setTotalQuestions] = useState(0)
   const [avgQuestionsPerSession, setAvgQuestionsPerSession] = useState(0)
   const [activeStudents, setActiveStudents] = useState(0)
+  
+  // Conversations data for professor dashboard
+  const [conversations, setConversations] = useState<any[]>([])
 
   // Collapsible section states - default based on user type
   const [isProfessor] = useState(() => {
@@ -188,6 +191,34 @@ export default function AdminDashboard() {
       setTotalQuestions(247)
       setAvgQuestionsPerSession(3.3)
       setActiveStudents(32)
+      
+      // Initialize conversations with mock data
+      setConversations([
+        {
+          id: 'conv_1',
+          title: 'Neural Network Architecture Discussion',
+          createdAt: '2024-01-15T10:30:00Z',
+          lastMessage: 'How do transformers work?',
+          messageCount: 8,
+          satisfaction: 4.5
+        },
+        {
+          id: 'conv_2', 
+          title: 'Deep Learning Optimization',
+          createdAt: '2024-01-14T14:20:00Z',
+          lastMessage: 'What is gradient descent?',
+          messageCount: 12,
+          satisfaction: 4.2
+        },
+        {
+          id: 'conv_3',
+          title: 'CNN vs RNN Comparison',
+          createdAt: '2024-01-13T09:15:00Z',
+          lastMessage: 'When to use CNN vs RNN?',
+          messageCount: 6,
+          satisfaction: 4.8
+        }
+      ])
     }
   }, [isProfessor])
 
