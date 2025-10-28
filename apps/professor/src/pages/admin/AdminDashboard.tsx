@@ -437,7 +437,6 @@ export default function AdminDashboard() {
                 <div className="content-section" style={{ marginBottom: '24px' }}>
                   <div id="daily-activity">
                     <DailyMessageActivity 
-                      onScrollToChat={scrollToChat}
                       highlightedChatId={highlightedChatId}
                     />
                   </div>
@@ -661,8 +660,9 @@ export default function AdminDashboard() {
                   <div id="recent-conversations">
                     <RecentConversations 
                       conversations={conversations}
-                      onScrollToChat={scrollToChat}
+                      scrollToChatId={scrollToChatId}
                       highlightedChatId={highlightedChatId}
+                      onScrollComplete={() => setScrollToChatId(null)}
                     />
                   </div>
                 </div>
