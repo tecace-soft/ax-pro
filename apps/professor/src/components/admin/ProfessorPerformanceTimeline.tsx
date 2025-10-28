@@ -9,26 +9,42 @@ export default function ProfessorPerformanceTimeline({ data, onDateRangeChange }
   const [dateRange, setDateRange] = useState('Last 3 weeks')
   const [selectedDate, setSelectedDate] = useState('2025-10-16')
 
-  // Mock data for the chart - software applications with performance values
-  const chartData = [
-    { name: 'Figma', barValue: 65, lineValue: 70 },
-    { name: 'Sketch', barValue: 45, lineValue: 50 },
-    { name: 'XD', barValue: 35, lineValue: 40 },
-    { name: 'Photoshop', barValue: 80, lineValue: 75 },
-    { name: 'Illustrator', barValue: 60, lineValue: 65 },
-    { name: 'AfterEffect', barValue: 40, lineValue: 45 },
-    { name: 'InDesign', barValue: 55, lineValue: 60 },
-    { name: 'Maya', barValue: 70, lineValue: 68 },
-    { name: 'Premiere', barValue: 50, lineValue: 55 },
-    { name: 'Final Cut', barValue: 45, lineValue: 50 },
-    { name: 'Figma', barValue: 90, lineValue: 85 },
-    { name: 'Sketch', barValue: 75, lineValue: 80 }
-  ]
+  // Generate more realistic data based on date range
+  const generateChartData = (range: string) => {
+    const baseData = [
+      'Figma', 'Sketch', 'XD', 'Photoshop', 'Illustrator', 'AfterEffect', 
+      'InDesign', 'Maya', 'Premiere', 'Final Cut', 'Blender', 'Cinema 4D',
+      'Unity', 'Unreal', 'ZBrush', 'Substance', 'Houdini', 'Nuke'
+    ]
+    
+    let dataPoints = []
+    if (range === 'Last 3 weeks') {
+      dataPoints = baseData.slice(0, 18) // 18 bars for 3 weeks
+    } else if (range === 'Last 3 months') {
+      dataPoints = baseData.concat(baseData.slice(0, 6)) // 24 bars for 3 months
+    } else if (range === 'Last 6 months') {
+      dataPoints = baseData.concat(baseData).concat(baseData.slice(0, 6)) // 42 bars for 6 months
+    }
+    
+    // Simple seeded random for consistent data
+    const seededRandom = (seed: number) => {
+      const x = Math.sin(seed) * 10000
+      return x - Math.floor(x)
+    }
+    
+    return dataPoints.map((name, index) => ({
+      name,
+      barValue: Math.floor(seededRandom(index + 1) * 40) + 30, // 30-70 range
+      lineValue: Math.floor(seededRandom(index + 100) * 40) + 40  // 40-80 range
+    }))
+  }
+
+  const chartData = generateChartData(dateRange)
 
   const maxValue = 100
   const chartHeight = 200
-  const chartWidth = 800
-  const barWidth = chartWidth / chartData.length - 4
+  const chartWidth = Math.max(800, chartData.length * 25) // Dynamic width based on data points
+  const barWidth = Math.max(8, Math.min(20, chartWidth / chartData.length - 2)) // Thinner bars, min 8px, max 20px
 
   return (
     <div style={{ 
@@ -142,7 +158,12 @@ export default function ProfessorPerformanceTimeline({ data, onDateRangeChange }
       </div>
 
       {/* Chart Area */}
-      <div style={{ position: 'relative', height: `${chartHeight + 40}px` }}>
+      <div style={{ 
+        position: 'relative', 
+        height: `${chartHeight + 40}px`,
+        overflowX: 'auto',
+        overflowY: 'hidden'
+      }}>
         {/* Chart Type Label */}
         <div style={{
           position: 'absolute',
@@ -183,7 +204,7 @@ export default function ProfessorPerformanceTimeline({ data, onDateRangeChange }
           {/* Bars */}
           {chartData.map((item, index) => {
             const barHeight = (item.barValue / maxValue) * chartHeight
-            const x = index * (barWidth + 4) + 2
+            const x = index * (barWidth + 2) + 1
             
             return (
               <rect
@@ -192,7 +213,7 @@ export default function ProfessorPerformanceTimeline({ data, onDateRangeChange }
                 y={chartHeight - barHeight}
                 width={barWidth}
                 height={barHeight}
-                fill="#8b5cf6"
+                fill="#3b82f6"
                 opacity="0.8"
               />
             )
@@ -201,7 +222,7 @@ export default function ProfessorPerformanceTimeline({ data, onDateRangeChange }
           {/* Line Chart */}
           <polyline
             points={chartData.map((item, index) => {
-              const x = index * (barWidth + 4) + 2 + barWidth / 2
+              const x = index * (barWidth + 2) + 1 + barWidth / 2
               const y = chartHeight - (item.lineValue / maxValue) * chartHeight
               return `${x},${y}`
             }).join(' ')}
@@ -212,7 +233,7 @@ export default function ProfessorPerformanceTimeline({ data, onDateRangeChange }
 
           {/* Line Chart Points */}
           {chartData.map((item, index) => {
-            const x = index * (barWidth + 4) + 2 + barWidth / 2
+            const x = index * (barWidth + 2) + 1 + barWidth / 2
             const y = chartHeight - (item.lineValue / maxValue) * chartHeight
             
             return (
@@ -230,7 +251,7 @@ export default function ProfessorPerformanceTimeline({ data, onDateRangeChange }
 
           {/* X-axis Labels */}
           {chartData.map((item, index) => {
-            const x = index * (barWidth + 4) + 2 + barWidth / 2
+            const x = index * (barWidth + 2) + 1 + barWidth / 2
             
             return (
               <text
