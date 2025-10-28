@@ -67,6 +67,7 @@ export default function AdminDashboard() {
   const [totalDocuments, setTotalDocuments] = useState(0)
   
   // Professor-specific metrics
+  const [totalSessions, setTotalSessions] = useState(0)
   const [totalQuestions, setTotalQuestions] = useState(0)
   const [avgQuestionsPerSession, setAvgQuestionsPerSession] = useState(0)
   const [activeStudents, setActiveStudents] = useState(0)
@@ -180,7 +181,15 @@ export default function AdminDashboard() {
     
     // Load real-time metrics
     loadMetrics()
-  }, [])
+    
+    // Initialize professor-specific metrics with mock data
+    if (isProfessor) {
+      setTotalSessions(75)
+      setTotalQuestions(247)
+      setAvgQuestionsPerSession(3.3)
+      setActiveStudents(32)
+    }
+  }, [isProfessor])
 
   const loadMetrics = async () => {
     try {
