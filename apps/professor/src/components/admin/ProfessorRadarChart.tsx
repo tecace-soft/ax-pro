@@ -74,11 +74,11 @@ export default function ProfessorRadarChart({
     ? Math.round(activeDataPoints.reduce((sum, point) => sum + point.value, 0) / activeDataPoints.length)
     : 0
 
-  // Chart dimensions
-  const chartSize = 400
+  // Chart dimensions - optimized size for compact layout (30% larger than before)
+  const chartSize = 300
   const center = chartSize / 2
   const centerY = center // 중앙 정렬
-  const maxRadius = 130
+  const maxRadius = 100
 
   // Calculate point coordinates
   const getPointCoordinates = (index: number, total: number, value: number) => {
@@ -108,7 +108,7 @@ export default function ProfessorRadarChart({
   const getLabelCoordinates = (index: number, total: number) => {
     const angleStep = 360 / total
     const angle = (index * angleStep) - 90
-    const labelRadius = maxRadius + 50 // 간격 줄임 (80 → 50)
+    const labelRadius = maxRadius + 30 // Adjusted for chart size
     
     const x = Math.cos(angle * Math.PI / 180) * labelRadius
     const y = Math.sin(angle * Math.PI / 180) * labelRadius
@@ -128,52 +128,114 @@ export default function ProfessorRadarChart({
     return { x, y, angle, textAlign }
   }
 
-  // Create background grid
+  // Create background grid (hex rings + radial lines + scale labels)
   const createBackgroundGrid = () => {
-    const gridLines = []
-    
-    // Circular grid
-    for (let percent = 20; percent <= 100; percent += 20) {
+    const gridLines = [] as JSX.Element[]
+
+    const sides = 6
+
+    // Hexagonal rings at 0%, 20%, 40%, 60%, 80%, 100% intervals
+    for (let percent = 0; percent <= 100; percent += 20) {
+      const radius = (percent / 100) * maxRadius
+      // Skip center point (0%) as it's just a dot
+      if (percent === 0) continue
+      
+      const points: string[] = []
+      for (let i = 0; i < sides; i++) {
+        const angle = (i * (360 / sides)) - 90
+        const x = center + Math.cos(angle * Math.PI / 180) * radius
+        const y = centerY + Math.sin(angle * Math.PI / 180) * radius
+        points.push(`${x},${y}`)
+      }
+      
       gridLines.push(
-        <circle
-          key={`circle-${percent}`}
-          cx={center}
-          cy={centerY}
-          r={(percent / 100) * maxRadius}
+        <polygon
+          key={`hex-${percent}`}
+          points={points.join(' ')}
           fill="none"
-          stroke="rgba(59, 230, 255, 0.15)"
-          strokeWidth="1"
+          stroke="rgba(59, 230, 255, 0.3)"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
       )
     }
-    
-    // Radial lines
-    for (let i = 0; i < activeDataPoints.length; i++) {
-      const angleStep = 360 / activeDataPoints.length
-      const angle = (i * angleStep) - 90
+
+    // Radial axis lines - ensure all 6 axes are drawn
+    for (let i = 0; i < sides; i++) {
+      const angle = (i * (360 / sides)) - 90
       const endX = Math.cos(angle * Math.PI / 180) * maxRadius
       const endY = Math.sin(angle * Math.PI / 180) * maxRadius
-      
       gridLines.push(
         <line
-          key={`line-${i}`}
+          key={`axis-${i}`}
           x1={center}
           y1={centerY}
           x2={center + endX}
           y2={centerY + endY}
-          stroke="rgba(59, 230, 255, 0.2)"
-          strokeWidth="1"
+          stroke="rgba(59, 230, 255, 0.35)"
+          strokeWidth={2}
+          strokeLinecap="round"
         />
       )
     }
+
+    // Scale labels - positioned exactly on hexagon grid lines
     
+    // Label "0" at center
+    gridLines.push(
+      <text key="scale-0" x={center} y={centerY} textAnchor="middle" dominantBaseline="middle" fill="rgba(180, 220, 255, 0.85)" fontSize="12" fontWeight={400}>0</text>
+    )
+    
+    // Labels 20, 40, 60, 80, 100 - match hexagon vertex at i=0
+    for (let percent = 20; percent <= 100; percent += 20) {
+      const radius = (percent / 100) * maxRadius
+      // EXACT hexagon calc: i=0 → angle = (0 * (360/6)) - 90 = -90°
+      const topAxisAngleDeg = (0 * (360 / sides)) - 90
+      const angleRad = topAxisAngleDeg * Math.PI / 180
+      const vertexX = center + Math.cos(angleRad) * radius
+      const vertexY = centerY + Math.sin(angleRad) * radius
+      
+      // Position label directly on the grid line (at vertex position)
+      const textX = vertexX
+      const textY = vertexY // On the grid line
+      
+      gridLines.push(
+        <text
+          key={`scale-${percent}`}
+          x={textX}
+          y={textY}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="rgba(180, 220, 255, 0.85)"
+          fontSize="12"
+          fontWeight={400}
+        >
+          {percent}
+        </text>
+      )
+    }
+
     return gridLines
   }
 
   return (
-    <div className="performance-radar-section">
+    <div 
+      className="performance-radar-section"
+      style={{
+        padding: '16px',
+        maxHeight: '400px',
+        overflow: 'hidden'
+      }}
+    >
       {/* Two column layout: Radar on left, Module Control on right */}
-      <div className="radar-main-layout">
+      <div 
+        className="radar-main-layout"
+        style={{
+          gap: '20px',
+          alignItems: 'flex-start'
+        }}
+      >
         {/* Left side: Radar chart */}
         <div className="radar-chart-section">
           <div className="radar-chart-container">
@@ -189,123 +251,142 @@ export default function ProfessorRadarChart({
                   stroke="rgba(59, 230, 255, 0.8)"
                   strokeWidth="2"
                 />
-                
-                {/* Data points */}
-                {activeDataPoints.map((point, index) => {
-                  const coords = getPointCoordinates(index, activeDataPoints.length, point.value)
-                  return (
-                    <g key={index} className="radar-point-large">
-                      <circle
-                        className="point-dot-large"
-                        cx={coords.x + center}
-                        cy={coords.y + center}
-                        r="6"
-                        fill={point.color}
-                        stroke="white"
-                        strokeWidth="2"
-                      />
-                      <text
-                        x={coords.x + center}
-                        y={coords.y + center - 15}
-                        textAnchor="middle"
-                        className="point-score-box"
-                        fill={point.color}
-                        fontSize="12"
-                        fontWeight="bold"
-                      >
-                        {point.value}
-                      </text>
-                    </g>
-                  )
-                })}
               </svg>
-              
-              {/* Center score */}
-              <div 
-                className="radar-center-large"
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)'
-                }}
-              >
-                <div className="center-score-large">{averageScore}</div>
-                <div className="center-label-large">OVERALL</div>
-              </div>
             </div>
             
-            {/* Labels */}
+            {/* Labels - Plain text only, no border, no color, no numbers */}
             {allDataPoints.map((point, index) => {
               const labelCoords = getLabelCoordinates(index, allDataPoints.length)
               const isActive = toggles[point.key as keyof typeof toggles]
               const isPromptInjection = point.key === 'promptInjection'
               
               // SVG 중앙을 기준으로 절대 위치 계산 (SVG가 50% 50%에 있으므로)
-              const svgCenterX = 200 // 400px / 2
-              const svgCenterY = 200 // 400px / 2
+              const svgCenterX = center // chartSize / 2
+              const svgCenterY = centerY // chartSize / 2
               const labelX = svgCenterX + labelCoords.x
               const labelY = svgCenterY + labelCoords.y
               
               return (
                 <div
                   key={index}
-                  className={`radar-label-clean radar-label-${point.key.toLowerCase()} ${!isActive ? 'label-inactive' : ''}`}
                   style={{
                     position: 'absolute',
                     left: `${labelX}px`,
                     top: `${labelY}px`,
                     transform: 'translate(-50%, -50%)',
                     zIndex: 10,
-                    borderColor: point.color,
-                    opacity: isActive ? 1 : 0.5
+                    opacity: isActive ? 1 : 0.5,
+                    fontSize: '14px',
+                    fontWeight: '400',
+                    color: 'var(--admin-text)',
+                    textAlign: 'center'
                   }}
                 >
-                  <div className="label-content">
-                    <span className="label-name" style={{ color: point.color }}>
-                      {isPromptInjection ? 'PROMPT INJECTION' : point.label.toUpperCase()}
-                    </span>
-                    <span className="label-score" style={{ color: point.color }}>
-                      {point.value}
-                    </span>
-                  </div>
+                  {isPromptInjection ? 'PROMPT INJECTION' : point.label.toUpperCase()}
                 </div>
               )
             })}
           </div>
         </div>
         
-        {/* Right side: Module Control panel (always visible) */}
-        <div className="module-control-panel">
-          <div className="module-control-header-side">
-            <span className="control-title">{t('admin.moduleControl')}</span>
-            <span className="control-badge">{activeCount} / {allDataPoints.length}</span>
+        {/* Right side: Module Control panel (professor-only styling) */}
+        <div
+          className="module-control-panel"
+          style={{
+            background: 'rgba(8, 20, 35, 0.55)',
+            border: '1px solid rgba(94, 126, 164, 0.18)',
+            borderRadius: 12,
+            padding: 0,
+            minWidth: 300,
+            maxHeight: '350px',
+            overflowY: 'auto'
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              borderBottom: '1px solid rgba(255,255,255,0.06)'
+            }}
+          >
+            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--admin-text)' }}>
+              {t('admin.moduleControl')}
+            </span>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '4px 10px',
+                borderRadius: 16,
+                fontSize: 12,
+                fontWeight: 700,
+                color: '#a8e9ff',
+                background:
+                  'linear-gradient(180deg, rgba(23, 60, 90, 0.9) 0%, rgba(12, 35, 55, 0.9) 100%)',
+                border: '1px solid rgba(88, 160, 200, 0.4)'
+              }}
+            >
+              {activeCount} / {allDataPoints.length}
+            </span>
           </div>
-          
-          <div className="control-list-side">
-            {allDataPoints.map((point) => (
-              <div key={point.key} className="control-item-side" data-key={point.key}>
-                <div className="control-info">
-                  <span className="control-icon" style={{ color: point.color }}>{point.icon}</span>
-                  <div className="control-text">
-                    <span className="control-label">{point.label}</span>
-                    <span className="control-description">{point.description}</span>
+
+          {/* Items */}
+          <div>
+            {allDataPoints.map((point, idx) => {
+              const isOn = toggles[point.key as keyof typeof toggles]
+              return (
+                <div
+                  key={point.key}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 14px',
+                    borderBottom:
+                      idx === allDataPoints.length - 1
+                        ? 'none'
+                        : '1px solid rgba(255,255,255,0.06)'
+                  }}
+                >
+                  {/* Left: label + description (no emoji) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)' }}>
+                      {point.label}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--admin-text-muted)' }}>
+                      {point.description}
+                    </span>
                   </div>
-                </div>
-                <div className="control-actions">
+                  {/* Right: ON/OFF pill */}
                   <button
-                    className={`control-toggle-btn ${toggles[point.key as keyof typeof toggles] ? 'enabled' : 'disabled'}`}
                     onClick={() => handleToggle(point.key)}
-                    style={{ 
-                      borderColor: point.color,
-                      backgroundColor: toggles[point.key as keyof typeof toggles] ? point.color : 'transparent'
+                    style={{
+                      border: '1px solid rgba(0,0,0,0.15)',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      padding: '6px 12px',
+                      minWidth: 44,
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 800,
+                      letterSpacing: 0.2,
+                      color: '#0b1220',
+                      backgroundColor: isOn ? point.color : 'transparent',
+                      boxShadow: isOn
+                        ? '0 2px 8px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.2)'
+                        : 'inset 0 0 0 1px rgba(120,140,160,0.4)',
+                      transition: 'all .15s ease'
                     }}
                   >
-                    {toggles[point.key as keyof typeof toggles] ? 'ON' : 'OFF'}
+                    {isOn ? 'ON' : 'OFF'}
                   </button>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
