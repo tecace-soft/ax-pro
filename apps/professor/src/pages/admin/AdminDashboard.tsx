@@ -5,6 +5,7 @@ import { useTranslation } from '../../i18n/I18nProvider'
 import AdminHeader from '../../components/admin/Header'
 import AdminSidebar from '../../components/admin/Sidebar'
 import PerformanceRadar from '../../components/admin/PerformanceRadar'
+import ProfessorRadarChart from '../../components/admin/ProfessorRadarChart'
 import DailyMessageActivity from '../../components/admin/DailyMessageActivity'
 import PromptControl from '../../components/admin/PromptControl'
 import RecentConversations from '../../components/admin/RecentConversations'
@@ -383,6 +384,69 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <>
+                {/* Performance Radar Toggle Button (Professor only) */}
+                {isProfessor && (
+                  <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => setPerformanceRadarExpanded(!performanceRadarExpanded)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 16px',
+                        background: 'var(--admin-card-bg)',
+                        color: 'var(--admin-text)',
+                        border: '1px solid var(--admin-border)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontSize: '14px',
+                        fontWeight: 500
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        {performanceRadarExpanded ? (
+                          <polyline points="18,15 12,9 6,15"/>
+                        ) : (
+                          <polyline points="6,9 12,15 18,9"/>
+                        )}
+                      </svg>
+                      {performanceRadarExpanded ? 'Hide' : 'Show'} Performance Radar
+                    </button>
+                  </div>
+                )}
+
+                {/* Performance Radar Section */}
+                <div className="dashboard-grid" style={{ display: isProfessor && !performanceRadarExpanded ? 'none' : 'block' }}>
+                  <div className="grid-left">
+                    <div id="performance-radar">
+                      {isProfessor ? (
+                        <ProfessorRadarChart 
+                          {...radarProps}
+                          timelineData={filteredRadarData}
+                          selectedDate={selectedRadarDate}
+                          onDateChange={setSelectedRadarDate}
+                          includeSimulatedData={includeSimulatedData}
+                          onIncludeSimulatedDataChange={setIncludeSimulatedData}
+                          estimationMode={estimationMode}
+                          onEstimationModeChange={setEstimationMode}
+                        />
+                      ) : (
+                        <PerformanceRadar 
+                          {...radarProps}
+                          timelineData={filteredRadarData}
+                          selectedDate={selectedRadarDate}
+                          onDateChange={setSelectedRadarDate}
+                          includeSimulatedData={includeSimulatedData}
+                          onIncludeSimulatedDataChange={setIncludeSimulatedData}
+                          estimationMode={estimationMode}
+                          onEstimationModeChange={setEstimationMode}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Show Research Analysis Button - Shown when hidden */}
                 {!newSectionsExpanded && (
                   <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
@@ -1247,55 +1311,6 @@ export default function AdminDashboard() {
                   )}
                 </div>
 
-                {/* Performance Radar Toggle Button (Professor only) */}
-                {isProfessor && (
-                  <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                    <button
-                      onClick={() => setPerformanceRadarExpanded(!performanceRadarExpanded)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        background: performanceRadarExpanded ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
-                        color: performanceRadarExpanded ? 'white' : 'var(--admin-text)',
-                        border: '1px solid var(--admin-border)',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        fontSize: '14px',
-                        fontWeight: 500
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        {performanceRadarExpanded ? (
-                          <polyline points="18,15 12,9 6,15"/>
-                        ) : (
-                          <polyline points="6,9 12,15 18,9"/>
-                        )}
-                      </svg>
-                      {performanceRadarExpanded ? 'Hide' : 'Show'} Performance Radar
-                    </button>
-                  </div>
-                )}
-
-                {/* Performance Radar Section */}
-                <div className="dashboard-grid" style={{ display: isProfessor && !performanceRadarExpanded ? 'none' : 'block' }}>
-                  <div className="grid-left">
-                    <div id="performance-radar">
-                      <PerformanceRadar 
-                        {...radarProps}
-                        timelineData={filteredRadarData}
-                        selectedDate={selectedRadarDate}
-                        onDateChange={setSelectedRadarDate}
-                        includeSimulatedData={includeSimulatedData}
-                        onIncludeSimulatedDataChange={setIncludeSimulatedData}
-                        estimationMode={estimationMode}
-                        onEstimationModeChange={setEstimationMode}
-                      />
-                    </div>
-                  </div>
-                </div>
 
                 {/* Content sections */}
                 <div className="content-module">
