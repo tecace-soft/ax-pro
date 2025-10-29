@@ -8,7 +8,7 @@ import {
   IconActivity,
   IconFileText
 } from '../../ui/icons'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useUICustomization } from '../../hooks/useUICustomization'
 import { useTranslation } from '../../i18n/I18nProvider'
@@ -25,6 +25,9 @@ interface SidebarProps {
   onToggleCollapse: () => void
   onScrollToSection: (sectionId: string) => void
   onServiceModeChange?: (mode: 'chatbot' | 'translation') => void
+  onTranslationFilterChange?: (filters: { term: string; subject: string }) => void
+  selectedLanguage?: string
+  onSelectedLanguageChange?: (lang: string) => void
 }
 
 export default function AdminSidebar({ 
@@ -37,7 +40,10 @@ export default function AdminSidebar({
   isCollapsed,
   onToggleCollapse,
   onScrollToSection,
-  onServiceModeChange
+  onServiceModeChange,
+  onTranslationFilterChange,
+  selectedLanguage: externalSelectedLanguage,
+  onSelectedLanguageChange
 }: SidebarProps) {
   
   // Check if current user is professor (only professor should see translation feature)
@@ -55,9 +61,60 @@ export default function AdminSidebar({
   // Admin filters
   const [userType, setUserType] = useState<'professor' | 'assistant'>('professor')
   const [selectedYear, setSelectedYear] = useState<string>('2025')
-  const [selectedSemester, setSelectedSemester] = useState<string>('fall')
-  const [selectedSubject, setSelectedSubject] = useState<string>('')
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('ko')
+  const [selectedSemester, setSelectedSemester] = useState<string>('winter')
+  const [selectedSubject, setSelectedSubject] = useState<string>('machine-learning')
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(externalSelectedLanguage || 'en')
+
+  // keep in sync with parent (right dropdown)
+  useEffect(() => {
+    if (externalSelectedLanguage && externalSelectedLanguage !== selectedLanguage) {
+      setSelectedLanguage(externalSelectedLanguage)
+    }
+  }, [externalSelectedLanguage])
+
+  // Language options per subject (always include Korean and English)
+  const baseLanguages = useMemo(() => ([
+    { value: 'en', label: '🇺🇸 English' },
+    { value: 'ko', label: '🇰🇷 한국어' }
+  ]), [])
+
+  const subjectLanguageMap: Record<string, Array<{ value: string; label: string }>> = {
+    'machine-learning': [
+      { value: 'ja', label: '🇯🇵 日本語' },
+      { value: 'zh', label: '🇨🇳 中文' },
+      { value: 'fr', label: '🇫🇷 Français' }
+    ],
+    'deep-learning': [
+      { value: 'zh', label: '🇨🇳 中文' },
+      { value: 'es', label: '🇪🇸 Español' },
+      { value: 'ru', label: '🇷🇺 Русский' }
+    ],
+    'nlp': [
+      { value: 'ja', label: '🇯🇵 日本語' },
+      { value: 'es', label: '🇪🇸 Español' },
+      { value: 'pt', label: '🇵🇹 Português' }
+    ],
+    'computer-vision': [
+      { value: 'fr', label: '🇫🇷 Français' },
+      { value: 'de', label: '🇩🇪 Deutsch' },
+      { value: 'it', label: '🇮🇹 Italiano' }
+    ],
+    'reinforcement-learning': [
+      { value: 'hi', label: '🇮🇳 Hindi' },
+      { value: 'ar', label: '🇸🇦 العربية' },
+      { value: 'tr', label: '🇹🇷 Türkçe' }
+    ]
+  }
+
+  const languageList = useMemo(() => {
+    const extras = selectedSubject ? (subjectLanguageMap[selectedSubject] || []) : []
+    // shuffle extras randomly
+    const shuffled = [...extras].sort(() => Math.random() - 0.5)
+    const combined = [...baseLanguages, ...shuffled]
+    // dedupe by value while preserving order
+    const seen = new Set<string>()
+    return combined.filter(l => (seen.has(l.value) ? false : (seen.add(l.value), true)))
+  }, [baseLanguages, selectedSubject])
 
   const handleNavigation = (sectionId: string) => {
     if (isDashboardPage) {
@@ -449,7 +506,6 @@ export default function AdminSidebar({
         {/* Admin Filters - Only show in translation mode */}
         {serviceMode === 'translation' && !isCollapsed && (
           <div className="sidebar-section">
-            <h3 className="sidebar-section-title">필터</h3>
             
             {/* User Type Selection */}
             <div style={{ marginBottom: '16px' }}>
@@ -492,17 +548,23 @@ export default function AdminSidebar({
               </div>
             </div>
 
-            {/* Subject Selection */}
+            {/* Term & Subject Selection */}
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '6px' }}>과목 선택</div>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '6px' }}>학기</div>
               
-              {/* Year and Semester */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              {/* Combined Term dropdown (Year + Season) */}
+              <div style={{ marginBottom: '12px' }}>
                 <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
+                  value={`${selectedYear}-${selectedSemester}`}
+                  onChange={(e) => {
+                    const [year, sem] = e.target.value.split('-')
+                    setSelectedYear(year)
+                    const newSem = sem as typeof selectedSemester
+                    setSelectedSemester(newSem)
+                    onTranslationFilterChange && onTranslationFilterChange({ term: `${year}-${newSem}`, subject: selectedSubject })
+                  }}
                   style={{
-                    flex: 1,
+                    width: '100%',
                     padding: '8px 12px',
                     background: 'var(--admin-card-bg)',
                     color: 'var(--admin-text)',
@@ -511,46 +573,39 @@ export default function AdminSidebar({
                     fontSize: '12px'
                   }}
                 >
-                  <option value="2025">2025</option>
-                  <option value="2024">2024</option>
-                  <option value="2023">2023</option>
-                </select>
-                <select
-                  value={selectedSemester}
-                  onChange={(e) => setSelectedSemester(e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    background: 'var(--admin-card-bg)',
-                    color: 'var(--admin-text)',
-                    border: '1px solid var(--admin-border)',
-                    borderRadius: '6px',
-                    fontSize: '12px'
-                  }}
-                >
-                  <option value="fall">가을</option>
-                  <option value="spring">봄</option>
-                  <option value="summer">여름</option>
-                  <option value="winter">겨울</option>
+                  {['2025','2024','2023'].flatMap((y) => ([
+                    { v: `${y}-winter`, l: `${y} 겨울` },
+                    { v: `${y}-fall`, l: `${y} 가을` },
+                    { v: `${y}-summer`, l: `${y} 여름` },
+                    { v: `${y}-spring`, l: `${y} 봄` }
+                  ])).map(opt => (
+                    <option key={opt.v} value={opt.v}>{opt.l}</option>
+                  ))}
                 </select>
               </div>
 
-              {/* Subject and Language in 2 columns */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                {/* Left: Subject List */}
+              {/* Subject and Language stacked */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {/* Subject List */}
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>과목</div>
                   <div style={{ 
                     background: 'var(--admin-card-bg)', 
                     border: '1px solid var(--admin-border)',
                     borderRadius: '6px',
-                    maxHeight: '180px',
+                    maxHeight: '300px',
                     overflowY: 'auto'
                   }}>
                     {['machine-learning', 'deep-learning', 'nlp', 'computer-vision', 'reinforcement-learning'].map((subj) => (
                       <button
                         key={subj}
-                        onClick={() => setSelectedSubject(subj)}
+                        onClick={() => { 
+                          setSelectedSubject(subj); 
+                          // default to English for every subject change
+                          setSelectedLanguage('en');
+                          onSelectedLanguageChange && onSelectedLanguageChange('en')
+                          onTranslationFilterChange && onTranslationFilterChange({ term: `${selectedYear}-${selectedSemester}`, subject: subj })
+                        }}
                         style={{
                           width: '100%',
                           padding: '8px 12px',
@@ -574,31 +629,20 @@ export default function AdminSidebar({
                   </div>
                 </div>
 
-                {/* Right: Language List */}
+                {/* Language List (dynamic per subject; KO/EN always shown) */}
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>언어</div>
                   <div style={{ 
                     background: 'var(--admin-card-bg)', 
                     border: '1px solid var(--admin-border)',
                     borderRadius: '6px',
-                    maxHeight: '180px',
+                    maxHeight: '300px',
                     overflowY: 'auto'
                   }}>
-                    {[
-                      { value: 'ko', label: '🇰🇷 한국어' },
-                      { value: 'en', label: '🇺🇸 English' },
-                      { value: 'ja', label: '🇯🇵 日本語' },
-                      { value: 'zh', label: '🇨🇳 中文' },
-                      { value: 'es', label: '🇪🇸 Español' },
-                      { value: 'hi', label: '🇮🇳 Hindi' },
-                      { value: 'fr', label: '🇫🇷 Français' },
-                      { value: 'ar', label: '🇸🇦 العربية' },
-                      { value: 'pt', label: '🇵🇹 Português' },
-                      { value: 'ru', label: '🇷🇺 Русский' }
-                    ].map((lang) => (
+                    {languageList.map((lang) => (
                       <button
                         key={lang.value}
-                        onClick={() => setSelectedLanguage(lang.value)}
+                        onClick={() => { setSelectedLanguage(lang.value); onSelectedLanguageChange && onSelectedLanguageChange(lang.value) }}
                         style={{
                           width: '100%',
                           padding: '8px 12px',
@@ -720,58 +764,7 @@ export default function AdminSidebar({
         </div>
       </div>
 
-      {/* Collapse Toggle Button */}
-      <button
-        onClick={onToggleCollapse}
-        style={{
-          position: 'absolute',
-          top: '50%',
-          right: '-16px',
-          transform: 'translateY(-50%) translateX(0)',
-          width: '32px',
-          height: '32px',
-          background: 'var(--admin-card-bg)',
-          border: '1px solid var(--admin-border)',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          zIndex: 10,
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'var(--admin-primary)'
-          e.currentTarget.style.borderColor = 'var(--admin-primary)'
-          e.currentTarget.style.transform = 'translateY(-50%) translateX(-2px)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'var(--admin-card-bg)'
-          e.currentTarget.style.borderColor = 'var(--admin-border)'
-          e.currentTarget.style.transform = 'translateY(-50%) translateX(0)'
-        }}
-        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        <svg 
-          width="16" 
-          height="16" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2"
-          style={{
-            color: isCollapsed ? 'var(--admin-primary)' : 'var(--admin-text)',
-            transition: 'color 0.2s ease'
-          }}
-        >
-          {isCollapsed ? (
-            <polyline points="9,18 15,12 9,6"/>
-          ) : (
-            <polyline points="15,18 9,12 15,6"/>
-          )}
-        </svg>
-      </button>
+      {/* Sidebar collapse toggle removed per UX feedback */}
     </aside>
   )
 }

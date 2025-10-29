@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import PerformanceTimeline from './PerformanceTimeline'
 import { DailyRow, EstimationMode } from '../../services/dailyAggregates'
 import { useTranslation } from '../../i18n/I18nProvider'
@@ -39,6 +39,7 @@ export default function ProfessorRadarChart({
   onEstimationModeChange = () => {}
 }: ProfessorRadarChartProps) {
   const { t } = useTranslation()
+  const [timelineExpanded, setTimelineExpanded] = useState(false)
   
   const [toggles, setToggles] = useState({
     relevance: true,
@@ -50,6 +51,23 @@ export default function ProfessorRadarChart({
   })
 
   const [, setIsModuleControlExpanded] = useState(false)
+
+  // Match left radar container height to Module Control height
+  const modulePanelRef = useRef<HTMLDivElement | null>(null)
+  const [matchedHeight, setMatchedHeight] = useState<number>(0)
+  useEffect(() => {
+    const update = () => {
+      const h = modulePanelRef.current?.offsetHeight ?? 0
+      setMatchedHeight(h)
+    }
+    update()
+    window.addEventListener('resize', update)
+    const id = window.setInterval(update, 300)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.clearInterval(id)
+    }
+  }, [])
 
   const allDataPoints = [
     { key: 'relevance', label: t('admin.relevance'), value: relevance, description: t('admin.contentMatching'), icon: '⚡', color: '#ff6b6b' },
@@ -74,11 +92,12 @@ export default function ProfessorRadarChart({
     ? Math.round(activeDataPoints.reduce((sum, point) => sum + point.value, 0) / activeDataPoints.length)
     : 0
 
-  // Chart dimensions - optimized size for compact layout (30% larger than before)
-  const chartSize = 300
+  // Chart dimensions - dynamic to fill available box (leaving small padding for labels)
+  const availableHeight = (matchedHeight || 420) - 64 // subtract inner paddings/spacing
+  const chartSize = Math.max(240, Math.min(540, Math.floor(availableHeight)))
   const center = chartSize / 2
   const centerY = center // 중앙 정렬
-  const maxRadius = 100
+  const maxRadius = Math.floor(chartSize * 0.38) // scale with SVG to fill area
 
   // Calculate point coordinates
   const getPointCoordinates = (index: number, total: number, value: number) => {
@@ -104,11 +123,19 @@ export default function ProfessorRadarChart({
     return `M ${points.join(' L ')} Z`
   }
 
-  // Calculate label coordinates
-  const getLabelCoordinates = (index: number, total: number) => {
+  // Calculate label coordinates near each data point
+  const getLabelCoordinates = (index: number, total: number, value: number) => {
     const angleStep = 360 / total
     const angle = (index * angleStep) - 90
-    const labelRadius = maxRadius + 30 // Adjusted for chart size
+    // place outside the actual point position with adaptive offset
+    const pointRadius = (value / 100) * maxRadius
+    let offset = Math.max(26, Math.floor(chartSize * 0.1))
+    // give extra space near the top (to avoid overlapping with 100 scale label)
+    const normalized = ((angle + 360) % 360)
+    if (normalized <= 22 || normalized >= 338) {
+      offset += 24
+    }
+    const labelRadius = pointRadius + offset
     
     const x = Math.cos(angle * Math.PI / 180) * labelRadius
     const y = Math.sin(angle * Math.PI / 180) * labelRadius
@@ -223,9 +250,9 @@ export default function ProfessorRadarChart({
     <div 
       className="performance-radar-section"
       style={{
-        padding: '16px',
-        maxHeight: '400px',
-        overflow: 'hidden'
+        padding: '16px 16px 12px 16px',
+        height: 'auto',
+        overflow: 'visible'
       }}
     >
       {/* Two column layout: Radar on left, Module Control on right */}
@@ -237,10 +264,15 @@ export default function ProfessorRadarChart({
         }}
       >
         {/* Left side: Radar chart */}
-        <div className="radar-chart-section">
-          <div className="radar-chart-container">
+        <div className="radar-chart-section" style={{ padding: '24px 32px', minHeight: matchedHeight || 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="radar-chart-container" style={{ width: chartSize, height: chartSize }}>
             <div className="radar-chart-large">
-              <svg className="radar-svg-large" width={chartSize} height={chartSize}>
+              <svg
+                className="radar-svg-large"
+                width={chartSize}
+                height={chartSize}
+                style={{ width: chartSize, height: chartSize, position: 'relative', left: 'auto', top: 'auto', transform: 'none' }}
+              >
                 {/* Background grid */}
                 {createBackgroundGrid()}
                 
@@ -254,9 +286,9 @@ export default function ProfessorRadarChart({
               </svg>
             </div>
             
-            {/* Labels - Plain text only, no border, no color, no numbers */}
+            {/* Labels - placed next to each point */}
             {allDataPoints.map((point, index) => {
-              const labelCoords = getLabelCoordinates(index, allDataPoints.length)
+              const labelCoords = getLabelCoordinates(index, allDataPoints.length, point.value)
               const isActive = toggles[point.key as keyof typeof toggles]
               const isPromptInjection = point.key === 'promptInjection'
               
@@ -276,10 +308,11 @@ export default function ProfessorRadarChart({
                     transform: 'translate(-50%, -50%)',
                     zIndex: 10,
                     opacity: isActive ? 1 : 0.5,
-                    fontSize: '14px',
+                    fontSize: '12px',
                     fontWeight: '400',
                     color: 'var(--admin-text)',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    pointerEvents: 'none'
                   }}
                 >
                   {isPromptInjection ? 'PROMPT INJECTION' : point.label.toUpperCase()}
@@ -298,9 +331,10 @@ export default function ProfessorRadarChart({
             borderRadius: 12,
             padding: 0,
             minWidth: 300,
-            maxHeight: '350px',
-            overflowY: 'auto'
+            maxHeight: 'none',
+            overflowY: 'visible'
           }}
+          ref={modulePanelRef}
         >
           {/* Header */}
           <div
@@ -308,11 +342,11 @@ export default function ProfessorRadarChart({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '10px 14px',
+              padding: '8px 12px',
               borderBottom: '1px solid rgba(255,255,255,0.06)'
             }}
           >
-            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--admin-text)' }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)' }}>
               {t('admin.moduleControl')}
             </span>
             <span
@@ -320,9 +354,9 @@ export default function ProfessorRadarChart({
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '4px 10px',
+                padding: '3px 8px',
                 borderRadius: 16,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: 700,
                 color: '#a8e9ff',
                 background:
@@ -345,7 +379,7 @@ export default function ProfessorRadarChart({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '10px 14px',
+                    padding: '8px 12px',
                     borderBottom:
                       idx === allDataPoints.length - 1
                         ? 'none'
@@ -354,10 +388,10 @@ export default function ProfessorRadarChart({
                 >
                   {/* Left: label + description (no emoji) */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--admin-text)' }}>
                       {point.label}
                     </span>
-                    <span style={{ fontSize: 12, color: 'var(--admin-text-muted)' }}>
+                    <span style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>
                       {point.description}
                     </span>
                   </div>
@@ -368,10 +402,10 @@ export default function ProfessorRadarChart({
                       border: '1px solid rgba(0,0,0,0.15)',
                       outline: 'none',
                       cursor: 'pointer',
-                      padding: '6px 12px',
-                      minWidth: 44,
+                      padding: '5px 10px',
+                      minWidth: 42,
                       borderRadius: 8,
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: 0.2,
                       color: '#0b1220',
@@ -391,19 +425,58 @@ export default function ProfessorRadarChart({
         </div>
       </div>
 
-      {/* Performance Timeline */}
+      {/* Performance Timeline - professor only: collapsed by default */}
       {timelineData && timelineData.length > 0 && (
-        <div className="timeline-section-wrapper" style={{ marginTop: '32px' }}>
-          <PerformanceTimeline
-            data={timelineData}
-            selectedDate={selectedDate}
-            onDateChange={onDateChange}
-            title="Performance Timeline"
-            includeSimulatedData={includeSimulatedData}
-            onIncludeSimulatedDataChange={onIncludeSimulatedDataChange}
-            estimationMode={estimationMode}
-            onEstimationModeChange={onEstimationModeChange}
-          />
+        <div className="timeline-section-wrapper" style={{ marginTop: 8, minHeight: 24, padding: 0 }}>
+          {!timelineExpanded ? (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', minHeight: 24, padding: 0, margin: 0 }}>
+              <button
+                onClick={() => setTimelineExpanded(true)}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: 8,
+                  border: '1px solid var(--admin-border)',
+                  background: 'var(--admin-card-bg)',
+                  color: 'var(--admin-text)',
+                  cursor: 'pointer'
+                }}
+              >
+                {t('admin.performanceTimeline') || 'Performance Timeline'} 열기
+              </button>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4, padding: 0 }}>
+                <button
+                  onClick={() => setTimelineExpanded(false)}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: 8,
+                    border: '1px solid var(--admin-border)',
+                    background: 'var(--admin-card-bg)',
+                    color: 'var(--admin-text)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  접기
+                </button>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 0, margin: 0, overflow: 'hidden' }}>
+                <div style={{ transform: 'scale(0.82)', transformOrigin: 'top center' }}>
+                <PerformanceTimeline
+                data={timelineData}
+                selectedDate={selectedDate}
+                onDateChange={onDateChange}
+                title="Performance Timeline"
+                includeSimulatedData={includeSimulatedData}
+                onIncludeSimulatedDataChange={onIncludeSimulatedDataChange}
+                estimationMode={estimationMode}
+                onEstimationModeChange={onEstimationModeChange}
+                />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

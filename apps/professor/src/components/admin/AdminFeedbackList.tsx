@@ -14,9 +14,10 @@ type ViewMode = 'card' | 'table'
 
 interface AdminFeedbackListProps {
   onScrollToChat?: (chatId: string) => void
+  useMock?: boolean
 }
 
-export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListProps) {
+export default function AdminFeedbackList({ onScrollToChat, useMock = false }: AdminFeedbackListProps) {
   const { t } = useTranslation()
   const [feedbacks, setFeedbacks] = useState<FeedbackWithChat[]>([])
   const [filteredFeedbacks, setFilteredFeedbacks] = useState<FeedbackWithChat[]>([])
@@ -43,19 +44,55 @@ export default function AdminFeedbackList({ onScrollToChat }: AdminFeedbackListP
     setError(null)
     
     try {
-      const data = await fetchAllAdminFeedback()
-      // Load chat data for each feedback
-      const feedbacksWithChat = await Promise.all(
-        data.map(async (feedback) => {
-          const chatData = await fetchChatById(feedback.chat_id)
+      if (useMock) {
+        // Generate mock feedbacks for professor account
+        const now = Date.now()
+        const verdicts: Array<'good' | 'bad'> = ['good', 'bad']
+        const makeMock = (i: number): FeedbackWithChat => {
+          const created = new Date(now - i * 3600_000).toISOString()
+          const idStr = `chat_${now - i * 1000}`
+          const verdict = Math.random() < 0.75 ? 'good' : 'bad'
+          const feedbackText = verdict === 'good' ? '-' : '조금 더 간결하게 정리해 주세요.'
+          const corrected = verdict === 'good' ? '-' : '요약: 핵심만 간단히 답변합니다.'
           return {
-            ...feedback,
-            chatData,
-            isEnabled: true // Default to enabled
+            id: i,
+            chat_id: idStr,
+            updated_at: created,
+            created_at: created,
+            feedback_verdict: verdict,
+            feedback_text: feedbackText,
+            corrected_response: corrected,
+            apply: false,
+            chatData: {
+              id: i,
+              chat_id: idStr,
+              session_id: `session_${1 + (i % 5)}`,
+              user_id: `user_${100 + i}`,
+              chat_message: `질문 ${i + 1}: 이 내용에 대해 설명해 주세요`,
+              response: `답변 ${i + 1}: 자세한 설명입니다.`,
+              created_at: created,
+              admin_feedback: null,
+              user_feedback: null
+            }
           }
-        })
-      )
-      setFeedbacks(feedbacksWithChat)
+        }
+        const mock = Array.from({ length: 20 }).map((_, i) => makeMock(i))
+        setFeedbacks(mock)
+      } else {
+        const data = await fetchAllAdminFeedback()
+        // Load chat data for each feedback
+        const feedbacksWithChat = await Promise.all(
+          data.map(async (feedback) => {
+            const chatData = await fetchChatById(feedback.chat_id)
+            return {
+              ...feedback,
+              chatData,
+              isEnabled: true // Default to enabled
+            }
+          })
+        )
+        setFeedbacks(feedbacksWithChat)
+      }
     } catch (error) {
       console.error('Failed to load admin feedback:', error)
       setError(error instanceof Error ? error.message : 'Failed to load admin feedback')

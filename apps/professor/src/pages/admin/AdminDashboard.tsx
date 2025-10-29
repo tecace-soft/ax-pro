@@ -81,6 +81,10 @@ export default function AdminDashboard() {
   
   // View mode state
   const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview')
+  // Translation filters
+  const [translationTerm, setTranslationTerm] = useState<string>('2025-winter')
+  const [translationSubject, setTranslationSubject] = useState<string>('machine-learning')
+  const [translationLanguage, setTranslationLanguage] = useState<string>('en')
   
   // Hover tooltip state
   const [hoveredField, setHoveredField] = useState<string | null>(null)
@@ -343,6 +347,12 @@ export default function AdminDashboard() {
             onToggleCollapse={toggleSidebar}
             onScrollToSection={scrollToSection}
             onServiceModeChange={setServiceMode}
+            onTranslationFilterChange={({ term, subject }) => {
+              setTranslationTerm(term)
+              setTranslationSubject(subject)
+            }}
+            selectedLanguage={translationLanguage}
+            onSelectedLanguageChange={setTranslationLanguage}
           />
           
           <main className="dashboard-main">
@@ -374,74 +384,84 @@ export default function AdminDashboard() {
                 </div>
                 
                 <div style={{ marginTop: '32px' }}>
-                  <TranslationHistory />
+                  <TranslationHistory
+                    selectedTerm={translationTerm}
+                    selectedSubject={translationSubject}
+                    selectedLanguage={translationLanguage}
+                    onSelectedLanguageChange={setTranslationLanguage}
+                  />
                 </div>
                 
                 <div id="admin-feedback" className="content-section" style={{ marginTop: '32px' }}>
                   <h2 className="section-title">Admin Feedback</h2>
-                  <AdminFeedbackList onScrollToChat={() => {}} />
+                  <AdminFeedbackList onScrollToChat={() => {}} useMock={isProfessor} />
                 </div>
               </div>
             ) : (
               <>
-                {/* Performance Radar Toggle Button (Professor only) */}
-                {isProfessor && (
-                  <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                    <button
-                      onClick={() => setPerformanceRadarExpanded(!performanceRadarExpanded)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        background: 'var(--admin-card-bg)',
-                        color: 'var(--admin-text)',
-                        border: '1px solid var(--admin-border)',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        fontSize: '14px',
-                        fontWeight: 500
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        {performanceRadarExpanded ? (
-                          <polyline points="18,15 12,9 6,15"/>
-                        ) : (
-                          <polyline points="6,9 12,15 18,9"/>
-                        )}
-                      </svg>
-                      {performanceRadarExpanded ? 'Hide' : 'Show'} Performance Radar
-                    </button>
-                  </div>
-                )}
-
                 {/* Performance Radar Section */}
-                <div className="dashboard-grid" style={{ display: isProfessor && !performanceRadarExpanded ? 'none' : 'block' }}>
+                <div className="dashboard-grid" style={{ display: 'block' }}>
                   <div className="grid-left">
-                    <div id="performance-radar">
-                      {isProfessor ? (
-                        <ProfessorRadarChart 
-                          {...radarProps}
-                          timelineData={filteredRadarData}
-                          selectedDate={selectedRadarDate}
-                          onDateChange={setSelectedRadarDate}
-                          includeSimulatedData={includeSimulatedData}
-                          onIncludeSimulatedDataChange={setIncludeSimulatedData}
-                          estimationMode={estimationMode}
-                          onEstimationModeChange={setEstimationMode}
-                        />
-                      ) : (
-                        <PerformanceRadar 
-                          {...radarProps}
-                          timelineData={filteredRadarData}
-                          selectedDate={selectedRadarDate}
-                          onDateChange={setSelectedRadarDate}
-                          includeSimulatedData={includeSimulatedData}
-                          onIncludeSimulatedDataChange={setIncludeSimulatedData}
-                          estimationMode={estimationMode}
-                          onEstimationModeChange={setEstimationMode}
-                        />
+                    <div id="performance-radar" style={{ position: 'relative' }}>
+                      {isProfessor && (
+                        <button
+                          onClick={() => setPerformanceRadarExpanded(!performanceRadarExpanded)}
+                          style={{
+                            position: 'absolute',
+                            top: 6,
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            zIndex: 5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 28,
+                            height: 28,
+                            padding: 0,
+                            background: 'transparent',
+                            color: 'rgba(255,255,255,0.45)',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            fontSize: '12px',
+                            fontWeight: 600
+                          }}
+                          aria-label={performanceRadarExpanded ? 'Hide Performance Radar' : 'Show Performance Radar'}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            {performanceRadarExpanded ? (
+                              <polyline points="18,15 12,9 6,15"/>
+                            ) : (
+                              <polyline points="6,9 12,15 18,9"/>
+                            )}
+                          </svg>
+                        </button>
+                      )}
+                      {performanceRadarExpanded && (
+                        isProfessor ? (
+                          <ProfessorRadarChart 
+                            {...radarProps}
+                            timelineData={filteredRadarData}
+                            selectedDate={selectedRadarDate}
+                            onDateChange={setSelectedRadarDate}
+                            includeSimulatedData={includeSimulatedData}
+                            onIncludeSimulatedDataChange={setIncludeSimulatedData}
+                            estimationMode={estimationMode}
+                            onEstimationModeChange={setEstimationMode}
+                          />
+                        ) : (
+                          <PerformanceRadar 
+                            {...radarProps}
+                            timelineData={filteredRadarData}
+                            selectedDate={selectedRadarDate}
+                            onDateChange={setSelectedRadarDate}
+                            includeSimulatedData={includeSimulatedData}
+                            onIncludeSimulatedDataChange={setIncludeSimulatedData}
+                            estimationMode={estimationMode}
+                            onEstimationModeChange={setEstimationMode}
+                          />
+                        )
                       )}
                     </div>
                   </div>
@@ -1385,7 +1405,7 @@ export default function AdminDashboard() {
 
                   <div id="admin-feedback" className="content-section">
                     <h2 className="section-title">Admin Feedback</h2>
-                    <AdminFeedbackList onScrollToChat={handleScrollToChat} />
+                  <AdminFeedbackList onScrollToChat={handleScrollToChat} useMock={isProfessor} />
                   </div>
 
                   <div id="user-feedback" className="content-section">
