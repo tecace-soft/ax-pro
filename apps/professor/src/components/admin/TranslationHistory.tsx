@@ -601,9 +601,9 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
                       {entry.adminFeedback ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {entry.adminFeedback.verdict === 'good' ? (
-                            <IconThumbsUp size={16} color="#00e3a5" title="Good" />
+                            <IconThumbsUp size={16} color="#00e3a5" />
                           ) : (
-                            <IconThumbsDown size={16} color="#ff6b6b" title="Bad" />
+                            <IconThumbsDown size={16} color="#ff6b6b" />
                           )}
                           <button
                             onClick={(e) => { e.stopPropagation(); handleFeedbackClick(entry, entry.adminFeedback!.verdict); }}
