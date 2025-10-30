@@ -33,7 +33,7 @@ interface AdminFeedbackModal {
 }
 
 export default function TranslationHistory({ selectedTerm = '2025-fall', selectedSubject = 'machine-learning', selectedLanguage: controlledLanguage = 'en', onSelectedLanguageChange }: { selectedTerm?: string; selectedSubject?: string; selectedLanguage?: string; onSelectedLanguageChange?: (lang: string) => void }) {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const [translations, setTranslations] = useState<TranslationEntry[]>([])
   const [filteredTranslations, setFilteredTranslations] = useState<TranslationEntry[]>([])
   const [selectedLanguage, setSelectedLanguage] = useState<string>(controlledLanguage || 'en')
@@ -161,7 +161,7 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
       // distribute sessions 1..5 evenly
       const sessionNo = (idx % 5) + 1
 
-      return {
+      const base: TranslationEntry = {
         id: String(idx + 1),
         date: dateStr,
         role,
@@ -170,6 +170,18 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
         originalLanguage: originalLang,
         translations: translationsSubset
       }
+
+      // Pre-seed some rows with admin feedback (about 35%)
+      if (Math.random() < 0.35) {
+        const verdict: 'good' | 'bad' = Math.random() < 0.8 ? 'good' : 'bad'
+        base.adminFeedback = {
+          verdict,
+          feedbackText: verdict === 'good' ? '좋습니다. 계속 진행하세요.' : '표현을 더 간결하게 수정해주세요.',
+          correctedResponse: verdict === 'bad' ? '수정 예시: 핵심만 간단히 전달합니다.' : undefined
+        }
+      }
+
+      return base
     }
 
     const newData: TranslationEntry[] = Array.from({ length: 30 }).map((_, i) => makeEntry(i))
@@ -192,18 +204,31 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
     setFilteredTranslations(translations)
   }, [selectedTerm, selectedSubject, translations])
 
-  const languageNames: Record<string, string> = {
-    'ko': '한국어',
-    'en': 'English',
-    'ja': '日本語',
-    'zh': '中文 (Mandarin Chinese)',
-    'es': 'Español',
-    'hi': 'हिन्दी',
-    'fr': 'Français',
-    'ar': 'العربية',
-    'pt': 'Português',
-    'ru': 'Русский'
-  }
+  const languageNames: Record<string, string> = language === 'en'
+    ? {
+      ko: 'Korean',
+      en: 'English',
+      ja: 'Japanese',
+      zh: 'Mandarin Chinese',
+      es: 'Spanish',
+      hi: 'Hindi',
+      fr: 'French',
+      ar: 'Arabic',
+      pt: 'Portuguese',
+      ru: 'Russian'
+    }
+    : {
+      ko: '한국어',
+      en: 'English',
+      ja: '日本語',
+      zh: '中文 (Mandarin Chinese)',
+      es: 'Español',
+      hi: 'हिन्दी',
+      fr: 'Français',
+      ar: 'العربية',
+      pt: 'Português',
+      ru: 'Русский'
+    }
 
   const getTranslationForLanguage = (entry: TranslationEntry, lang: string) => {
     // Exact language already in original
@@ -325,7 +350,7 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>번역 기록</h2>
+          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>{t('translation.title')}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
             <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)' }}>Recent Translations ({translations.length})</div>
             <span style={{ fontSize: '12px', padding: '4px 8px', background: 'rgba(59,230,255,0.15)', color: '#a8e9ff', border: '1px solid rgba(59,230,255,0.35)', borderRadius: '12px' }}>
@@ -343,7 +368,9 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
             <span style={{ fontSize: '12px', padding: '4px 8px', background: 'rgba(37,99,235,0.15)', color: '#93c5fd', border: '1px solid rgba(37,99,235,0.35)', borderRadius: '12px' }}>
               {(() => {
                 const [y, s] = selectedTerm.split('-')
-                const sm: Record<string, string> = { spring: '봄', summer: '여름', fall: '가을', winter: '겨울' }
+                const sm: Record<string, string> = language === 'en'
+                  ? { spring: 'Spring', summer: 'Summer', fall: 'Fall', winter: 'Winter' }
+                  : { spring: '봄', summer: '여름', fall: '가을', winter: '겨울' }
                 return `${y} ${sm[s] || s}`
               })()}
             </span>
@@ -376,7 +403,7 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
       }}>
         {/* Session selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>수업 회차</span>
+          <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{language === 'en' ? 'Session' : '수업 회차'}</span>
           <select
             value={selectedSession}
             onChange={(e) => setSelectedSession(e.target.value)}
@@ -408,7 +435,7 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
               cursor: 'pointer'
             }}
           >
-            목록
+            {language === 'en' ? 'List' : '목록'}
           </button>
         </div>
 
@@ -425,9 +452,9 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
             fontSize: '14px'
           }}
         >
-          <option value="date-desc">최신순</option>
-          <option value="date-asc">과거순</option>
-          <option value="user">사용자 순</option>
+          <option value="date-desc">{language === 'en' ? 'Newest' : '최신순'}</option>
+          <option value="date-asc">{language === 'en' ? 'Oldest' : '과거순'}</option>
+          <option value="user">{language === 'en' ? 'By user' : '사용자 순'}</option>
         </select>
 
         {/* Filter by Original Language */}
@@ -443,23 +470,23 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
             fontSize: '14px'
           }}
         >
-          <option value="all">모든 언어</option>
-          <option value="en">원문: English</option>
-          <option value="zh">원문: Mandarin Chinese</option>
-          <option value="es">원문: Spanish</option>
-          <option value="hi">원문: Hindi</option>
-          <option value="fr">원문: French</option>
-          <option value="ar">원문: Arabic</option>
-          <option value="pt">원문: Portuguese</option>
-          <option value="ru">원문: Russian</option>
-          <option value="ko">원문: Korean</option>
-          <option value="ja">원문: Japanese</option>
+          <option value="all">{language === 'en' ? 'All languages' : '모든 언어'}</option>
+          <option value="en">{language === 'en' ? 'Original: English' : '원문: English'}</option>
+          <option value="zh">{language === 'en' ? 'Original: Mandarin Chinese' : '원문: Mandarin Chinese'}</option>
+          <option value="es">{language === 'en' ? 'Original: Spanish' : '원문: Spanish'}</option>
+          <option value="hi">{language === 'en' ? 'Original: Hindi' : '원문: Hindi'}</option>
+          <option value="fr">{language === 'en' ? 'Original: French' : '원문: French'}</option>
+          <option value="ar">{language === 'en' ? 'Original: Arabic' : '원문: Arabic'}</option>
+          <option value="pt">{language === 'en' ? 'Original: Portuguese' : '원문: Portuguese'}</option>
+          <option value="ru">{language === 'en' ? 'Original: Russian' : '원문: Russian'}</option>
+          <option value="ko">{language === 'en' ? 'Original: Korean' : '원문: Korean'}</option>
+          <option value="ja">{language === 'en' ? 'Original: Japanese' : '원문: Japanese'}</option>
         </select>
 
         {/* Search */}
         <input
           type="text"
-          placeholder="검색..."
+          placeholder={language === 'en' ? 'Search...' : '검색...'}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
@@ -513,14 +540,14 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
         border: '1px solid var(--admin-border)',
         overflowX: 'auto'
       }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--admin-border)' }}>
-              <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 600, width: 200 }}>일시/역할</th>
-              <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 700, background: 'rgba(59,230,255,0.12)' }}>원문</th>
-              <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 700, background: 'rgba(37,99,235,0.12)' }}>
+              <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 600, width: 200 }}>{t('translation.columns.meta')}</th>
+              <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 700, background: 'rgba(59,230,255,0.12)', width: 'calc((100% - 200px)/2)' }}>{t('translation.columns.original')}</th>
+              <th style={{ padding: '12px', textAlign: 'left', color: 'var(--admin-text-muted)', fontWeight: 700, background: 'rgba(37,99,235,0.12)', width: 'calc((100% - 200px)/2)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
-                  <span>번역</span>
+                  <span>{t('translation.columns.translation')}</span>
                   <select
                     value={selectedLanguage}
                     onChange={(e) => {
@@ -570,13 +597,49 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
                   <td style={{ padding: '12px', color: 'var(--admin-text)', whiteSpace: 'nowrap', width: 200 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>{entry.date}</span>
-                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: entry.role === 'professor' ? 'rgba(59,230,255,0.15)' : 'rgba(255,196,0,0.2)', color: entry.role === 'professor' ? '#a8e9ff' : '#ffd166', border: '1px solid rgba(255,255,255,0.2)' }}>
-                        {entry.role === 'professor' ? '교수' : '조교'}
-                      </span>
-                      <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>{`Session ${entry.sessionNo}`}</span>
+                      {/* Session label removed for more space */}
+                      {entry.adminFeedback ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {entry.adminFeedback.verdict === 'good' ? (
+                            <IconThumbsUp size={16} color="#00e3a5" title="Good" />
+                          ) : (
+                            <IconThumbsDown size={16} color="#ff6b6b" title="Bad" />
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleFeedbackClick(entry, entry.adminFeedback!.verdict); }}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--admin-primary)',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              padding: 0
+                            }}
+                          >
+                            {t('translation.feedback.edit')}
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleFeedbackClick(entry, 'good'); }}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                            title="Good"
+                          >
+                            <IconThumbsUp size={16} color="#00e3a5" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleFeedbackClick(entry, 'bad'); }}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                            title="Bad"
+                          >
+                            <IconThumbsDown size={16} color="#ff6b6b" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
-                  <td style={{ padding: '12px', color: 'var(--admin-text)' }}>
+                  <td style={{ padding: '12px', color: 'var(--admin-text)', width: 'calc((100% - 200px)/2)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ fontSize: '11px', padding: '2px 6px', background: 'var(--admin-border)', borderRadius: '4px', color: 'var(--admin-text-muted)' }}>
                         {languageNames[entry.originalLanguage] || entry.originalLanguage}
@@ -584,7 +647,7 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
                       <span>{entry.originalText}</span>
                     </div>
                   </td>
-                  <td style={{ padding: '12px', background: 'rgba(37,99,235,0.10)' }}>
+                  <td style={{ padding: '12px', background: 'rgba(37,99,235,0.10)', width: 'calc((100% - 200px)/2)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--admin-primary)', flex: 1 }}>
                         <span style={{ fontSize: '11px', padding: '2px 6px', background: 'var(--admin-primary)', color: 'white', borderRadius: '4px' }}>
                           {languageNames[rowLang] || rowLang}
@@ -627,22 +690,23 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
           left: 0, 
           right: 0, 
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
+          background: 'rgba(4, 18, 32, 0.7)',
+          backdropFilter: 'blur(4px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000,
+          zIndex: 9999,
           padding: '20px'
         }}>
           <div style={{
-            background: 'var(--admin-card-bg)',
+            background: 'var(--admin-bg)',
             border: '1px solid var(--admin-border)',
             borderRadius: '8px',
-            maxWidth: '600px',
-            width: '100%',
-            padding: '24px',
+            width: 'min(720px, 96vw)',
+            padding: '20px 20px 16px',
             maxHeight: '90vh',
-            overflow: 'auto'
+            overflow: 'auto',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--admin-text)' }}>
@@ -666,13 +730,13 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
             </div>
             
             {/* Original Text */}
-            <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '8px' }}>
                 원문:
               </p>
               <div style={{
-                padding: '12px',
-                background: 'rgba(9, 14, 34, 0.4)',
+                padding: '10px 12px',
+                background: 'rgba(9, 14, 34, 0.55)',
                 border: '1px solid var(--admin-border)',
                 borderRadius: '6px'
               }}>
@@ -683,13 +747,13 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
             </div>
             
             {/* Translated Text */}
-            <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '8px' }}>
                 번역:
               </p>
               <div style={{
-                padding: '12px',
-                background: 'rgba(9, 14, 34, 0.4)',
+                padding: '10px 12px',
+                background: 'rgba(9, 14, 34, 0.55)',
                 border: '1px solid var(--admin-border)',
                 borderRadius: '6px'
               }}>
@@ -710,9 +774,9 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
                 placeholder="Explain what was wrong with this translation..."
                 style={{
                   width: '100%',
-                  height: '80px',
-                  padding: '12px',
-                  background: 'rgba(9, 14, 34, 0.6)',
+                  minHeight: '80px',
+                  padding: '10px 12px',
+                  background: 'rgba(9, 14, 34, 0.65)',
                   color: 'var(--admin-text)',
                   border: '1px solid var(--admin-border)',
                   borderRadius: '6px',
@@ -734,9 +798,9 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
                 placeholder="Enter the corrected translation..."
                 style={{
                   width: '100%',
-                  height: '100px',
-                  padding: '12px',
-                  background: 'rgba(9, 14, 34, 0.6)',
+                  minHeight: '100px',
+                  padding: '10px 12px',
+                  background: 'rgba(9, 14, 34, 0.65)',
                   color: 'var(--admin-text)',
                   border: '1px solid var(--admin-border)',
                   borderRadius: '6px',
@@ -770,7 +834,7 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
                 disabled={isSubmitting}
                 style={{
                   padding: '8px 16px',
-                  background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
+                  background: 'var(--admin-primary)',
                   color: '#041220',
                   border: 'none',
                   borderRadius: '6px',
