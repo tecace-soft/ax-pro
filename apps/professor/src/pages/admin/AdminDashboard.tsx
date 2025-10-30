@@ -72,9 +72,9 @@ export default function AdminDashboard() {
     const session = getSession()
     return session?.email === 'professor@tecace.com'
   })
-  const [newSectionsExpanded, setNewSectionsExpanded] = useState(isProfessor)
+  const [newSectionsExpanded, setNewSectionsExpanded] = useState(false) // Collapsed by default for professor
   const [performanceRadarExpanded, setPerformanceRadarExpanded] = useState(true)
-  const [dailyActivityExpanded, setDailyActivityExpanded] = useState(true)
+  const [dailyActivityExpanded, setDailyActivityExpanded] = useState(false) // Collapsed by default for professor
 
   // Service mode (Chatbot vs Translation) - Only available for professor
   const [serviceMode, setServiceMode] = useState<'chatbot' | 'translation'>('chatbot')

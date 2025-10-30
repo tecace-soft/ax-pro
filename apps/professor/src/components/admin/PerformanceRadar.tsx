@@ -271,7 +271,7 @@ export default function PerformanceRadar({
                 >
                   <div className="label-content">
                     <span className="label-name" style={{ color: point.color }}>
-                      {isPromptInjection ? 'PROMPT INJECTION' : point.label.toUpperCase()}
+                      {point.label.toUpperCase()}
                     </span>
                     <span className="label-score" style={{ color: point.color }}>
                       {point.value}

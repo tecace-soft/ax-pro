@@ -149,7 +149,7 @@ const translations = {
     'admin.length': 'Length',
     'admin.accuracy': 'Accuracy',
     'admin.toxicity': 'Toxicity',
-    'admin.promptInjection': 'Prompt Injection',
+    'admin.promptInjection': 'PI',
     'admin.contentMatching': 'Content Matching',
     'admin.responseStyle': 'Response Style',
     'admin.responseSize': 'Response Size',

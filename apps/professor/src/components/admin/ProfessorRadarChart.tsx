@@ -312,7 +312,6 @@ export default function ProfessorRadarChart({
             {allDataPoints.map((point, index) => {
               const labelCoords = getLabelCoordinates(index, allDataPoints.length, point.value)
               const isActive = toggles[point.key as keyof typeof toggles]
-              const isPromptInjection = point.key === 'promptInjection'
               
               // SVG 중앙을 기준으로 절대 위치 계산 (SVG가 50% 50%에 있으므로)
               const svgCenterX = center // chartSize / 2
@@ -337,7 +336,7 @@ export default function ProfessorRadarChart({
                     pointerEvents: 'none'
                   }}
                 >
-                  {isPromptInjection ? 'PROMPT INJECTION' : point.label.toUpperCase()}
+                  {point.label.toUpperCase()}
                 </div>
               )
             })}
