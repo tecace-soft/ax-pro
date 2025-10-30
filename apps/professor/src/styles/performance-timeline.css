@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 15px 20px;
+  padding: 8px 12px;
   border-bottom: 1px solid rgba(59, 230, 255, 0.2);
   flex-wrap: wrap;
   gap: 15px;
@@ -399,7 +399,7 @@
 
 /* 차트 영역 */
 .timeline-chart {
-  padding: 20px 20px 4px 20px;
+  padding: 0;
   width: 100%;
   box-sizing: border-box;
 }
@@ -408,7 +408,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  height: 100px;
+  height: 90px;
   padding: 0;
   gap: 1px;
   margin-bottom: 0;

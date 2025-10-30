@@ -30,6 +30,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('table')
+  const [displayLanguage, setDisplayLanguage] = useState<'en' | 'ko'>('en')
 
   useEffect(() => {
     loadFeedback()
@@ -45,31 +46,70 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
     
     try {
       if (useMock) {
-        // Generate mock feedbacks for professor account
+        // Generate richer mock feedbacks for professor account
         const now = Date.now()
-        const verdicts: Array<'good' | 'bad'> = ['good', 'bad']
+        const sampleQuestions = [
+          '과제 제출 마감일과 형식이 어떻게 되나요?',
+          '시험 범위를 알려주세요.',
+          '강의 노트 요약을 부탁드립니다.',
+          '연구 주제 추천해줄 수 있나요?',
+          '다음 수업에서 다룰 주제가 뭔가요?',
+        ]
+        const sampleAnswersKo = [
+          '마감일은 다음 주 금요일이며 PDF 형식으로 제출해 주세요.',
+          '시험은 1-6주차 내용을 중심으로 출제됩니다.',
+          '핵심 개념을 중심으로 요약하면 다음과 같습니다...',
+          '흥미로운 주제는 강화학습과 컴퓨터 비전의 융합입니다.',
+          '다음 시간에는 모델 성능 평가 방법을 학습합니다.',
+        ]
+        const sampleAnswersEn = [
+          'The deadline is next Friday; please submit as a PDF.',
+          'The exam will cover materials from weeks 1 to 6.',
+          'Here is a concise summary focusing on key concepts...',
+          'An interesting topic is the fusion of reinforcement learning and computer vision.',
+          'Next class we will learn methods for evaluating model performance.',
+        ]
+        const badFeedbacks = [
+          '조금 더 간결하게 정리해 주세요.',
+          '중복된 내용이 있어 요점을 위주로 수정해 주세요.',
+          '학생이 바로 실행할 수 있도록 구체적인 지침을 추가하세요.',
+        ]
+        const corrections = [
+          '요약: 핵심만 간단히 답변합니다.',
+          '불필요한 문장을 제거하고 핵심만 남겼습니다.',
+          '구체적인 단계와 예시를 추가했습니다.',
+        ]
+
         const makeMock = (i: number): FeedbackWithChat => {
-          const created = new Date(now - i * 3600_000).toISOString()
-          const idStr = `chat_${now - i * 1000}`
-          const verdict = Math.random() < 0.75 ? 'good' : 'bad'
-          const feedbackText = verdict === 'good' ? '-' : '조금 더 간결하게 정리해 주세요.'
-          const corrected = verdict === 'good' ? '-' : '요약: 핵심만 간단히 답변합니다.'
+          const created = new Date(now - i * 45 * 60_000).toISOString() // every 45 min
+          const idStr = `chat_${(now - i * 1000).toString(36)}`
+          const verdict: 'good' | 'bad' = Math.random() < 0.7 ? 'good' : 'bad'
+          const feedbackText = verdict === 'good' ? '—' : badFeedbacks[i % badFeedbacks.length]
+          // For translation context: corrected should be a translated sentence
+          const corrected = verdict === 'good' ? '—' : corrections[i % corrections.length]
+          const q = sampleQuestions[i % sampleQuestions.length]
+          const a_ko = sampleAnswersKo[i % sampleAnswersKo.length]
+          const a_en = sampleAnswersEn[i % sampleAnswersEn.length]
+          const role = Math.random() < 0.85 ? '교수' : '조교'
           return {
-            id: i,
+            id: i + 1,
             chat_id: idStr,
             updated_at: created,
             created_at: created,
             feedback_verdict: verdict,
             feedback_text: feedbackText,
-            corrected_response: corrected,
-            apply: false,
+            corrected_response: verdict === 'good' ? a_en : `${a_en} (${corrected})`,
+            apply: Math.random() < 0.15, // small fraction applied
             chatData: {
-              id: i,
+              id: i + 1,
               chat_id: idStr,
               session_id: `session_${1 + (i % 5)}`,
-              user_id: `user_${100 + i}`,
-              chat_message: `질문 ${i + 1}: 이 내용에 대해 설명해 주세요`,
-              response: `답변 ${i + 1}: 자세한 설명입니다.`,
+              user_id: role,
+              chat_message: q,
+              response: a_ko,
+              // extra fields for language display
+              response_en: a_en,
+              response_ko: a_ko,
               created_at: created,
               admin_feedback: null,
               user_feedback: null
@@ -395,6 +435,20 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
           />
         </div>
 
+        {/* Language Selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Language:</span>
+          <select
+            value={displayLanguage}
+            onChange={(e) => setDisplayLanguage(e.target.value as 'en' | 'ko')}
+            className="px-3 py-2 rounded-md text-sm"
+            style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)' }}
+          >
+            <option value="en">English</option>
+            <option value="ko">한국어</option>
+          </select>
+        </div>
+
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <select
@@ -478,8 +532,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
             <thead>
               <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
                 <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Date</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>User ID</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Chat ID</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>Role</th>
                 <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px' }}>Verdict</th>
                 <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '180px' }}>Feedback</th>
                 <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '180px' }}>Corrected</th>
@@ -502,16 +555,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                     {formatDate(feedback.updated_at || feedback.created_at)}
                   </td>
                   <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text)' }}>
-                    {feedback.chatData?.user_id || 'N/A'}
-                  </td>
-                  <td className="px-3 py-2 text-xs">
-                    <button
-                      onClick={() => onScrollToChat?.(feedback.chat_id)}
-                      className="text-blue-400 hover:text-blue-300 underline cursor-pointer truncate max-w-[120px] block"
-                      title={`Click to scroll to ${feedback.chat_id}`}
-                    >
-                      {feedback.chat_id.length > 15 ? feedback.chat_id.substring(0, 15) + '...' : feedback.chat_id}
-                    </button>
+                    {feedback.chatData?.user_id || '교수'}
                   </td>
                   <td className="px-3 py-2 text-center">
                     {feedback.feedback_verdict === 'good' ? (
@@ -526,8 +570,8 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                     </div>
                   </td>
                   <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)' }}>
-                    <div className="truncate" title={feedback.corrected_response || ''}>
-                      {feedback.corrected_response || '-'}
+                    <div className="truncate" title={(displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response) : ((feedback as any).chatData?.response_ko || feedback.corrected_response)) || ''}>
+                      {displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response || '-') : ((feedback as any).chatData?.response_ko || feedback.corrected_response || '-')}
                     </div>
                   </td>
                   <td className="px-3 py-2 text-center">

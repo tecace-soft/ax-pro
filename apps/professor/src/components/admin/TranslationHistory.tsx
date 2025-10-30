@@ -32,7 +32,7 @@ interface AdminFeedbackModal {
   existingFeedback?: TranslationEntry['adminFeedback']
 }
 
-export default function TranslationHistory({ selectedTerm = '2025-fall', selectedSubject = 'machine-learning', selectedLanguage: controlledLanguage = 'en', onSelectedLanguageChange }: { selectedTerm?: string; selectedSubject?: string; selectedLanguage?: string; onSelectedLanguageChange?: (lang: string) => void }) {
+export default function TranslationHistory({ selectedTerm = '2025-fall', selectedSubject = 'machine-learning', selectedLanguage: controlledLanguage = 'en', onSelectedLanguageChange, availableLanguages = ['en','ko','ja','zh'] }: { selectedTerm?: string; selectedSubject?: string; selectedLanguage?: string; onSelectedLanguageChange?: (lang: string) => void; availableLanguages?: string[] }) {
   const { t, language } = useTranslation()
   const [translations, setTranslations] = useState<TranslationEntry[]>([])
   const [filteredTranslations, setFilteredTranslations] = useState<TranslationEntry[]>([])
@@ -66,80 +66,36 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
     if (!selectedSubject || !selectedTerm) return
 
     // Natural sentence pairs per language
-    const pairs = [
-      {
-        en: 'Hi everyone, good morning.',
-        ko: '안녕하세요 여러분, 좋은 아침입니다.',
-        ja: '皆さん、おはようございます。',
-        zh: '大家好，早上好。',
-        es: 'Hola a todos, buenos días.',
-        fr: 'Bonjour à tous, bon matin.',
-        pt: 'Olá a todos, bom dia.',
-        ru: 'Всем привет, доброе утро.',
-        hi: 'सभी को नमस्ते, शुभ प्रभात।',
-        ar: 'مرحباً بالجميع، صباح الخير.'
-      },
-      {
-        en: 'Today we will cover the basics of this topic.',
-        ko: '오늘은 이 주제의 기초를 다루겠습니다.',
-        ja: '今日はこのトピックの基礎を扱います。',
-        zh: '今天我们将讲解这个主题的基础。',
-        es: 'Hoy veremos lo básico de este tema.',
-        fr: "Aujourd'hui nous verrons les bases de ce sujet.",
-        pt: 'Hoje veremos o básico deste tema.',
-        ru: 'Сегодня мы разберём основы этой темы.',
-        hi: 'आज हम इस विषय की बुनियादी बातें सीखेंगे।',
-        ar: 'اليوم سنغطي أساسيات هذا الموضوع.'
-      },
-      {
-        en: 'Please open your notebook and follow along.',
-        ko: '노트를 열고 함께 따라와 주세요.',
-        ja: 'ノートを開いて一緒に進めてください。',
-        zh: '请打开笔记本并跟着一起做。',
-        es: 'Abran su cuaderno y sigan conmigo.',
-        fr: 'Ouvrez votre cahier et suivez-moi.',
-        pt: 'Abram o caderno e sigam comigo.',
-        ru: 'Откройте тетрадь и следуйте вместе со мной.',
-        hi: 'कृपया अपनी नोटबुक खोलें और साथ चलें।',
-        ar: 'يرجى فتح الدفتر والمتابعة معي.'
-      },
-      {
-        en: 'Practice is the best way to learn effectively.',
-        ko: '효과적으로 배우는 가장 좋은 방법은 연습입니다.',
-        ja: '効果的に学ぶ最良の方法は練習です。',
-        zh: '提高学习效果的最佳方法是练习。',
-        es: 'La práctica es la mejor forma de aprender de manera efectiva.',
-        fr: "La pratique est la meilleure façon d'apprendre efficacement.",
-        pt: 'A prática é a melhor forma de aprender com eficácia.',
-        ru: 'Практика — лучший способ эффективно учиться.',
-        hi: 'प्रभावी ढंग से सीखने का सबसे अच्छा तरीका अभ्यास है।',
-        ar: 'أفضل طريقة للتعلم بفعالية هي الممارسة.'
-      },
-      {
-        en: 'Let’s move on to the next example.',
-        ko: '다음 예제로 넘어가 보겠습니다.',
-        ja: '次の例に進みましょう。',
-        zh: '我们继续看下一个示例。',
-        es: 'Pasemos al siguiente ejemplo.',
-        fr: 'Passons au prochain exemple.',
-        pt: 'Vamos para o próximo exemplo.',
-        ru: 'Перейдём к следующему примеру.',
-        hi: 'आइए अगले उदाहरण पर आगे बढ़ते हैं।',
-        ar: 'دعونا ننتقل إلى المثال التالي.'
-      }
-    ]
+    const subjectPairs: Record<string, Array<Record<string, string>>> = {
+      'machine-learning': [
+        { en: 'Let\'s move on to the next example.', ko: '다음 예제로 넘어가 보겠습니다.', ja: '次の例に進みましょう。', zh: '我们继续看下一个示例。', es: 'Pasemos al siguiente ejemplo.', fr: 'Passons au prochain exemple.', pt: 'Vamos para o próximo exemplo.', ru: 'Перейдём к следующему примеру.', hi: 'आइए अगले उदाहरण पर आगे बढ़ते हैं।', ar: 'دعونا ننتقل إلى المثال التالي.' },
+        { en: 'Please open your notebook and follow along.', ko: '노트를 열고 함께 따라와 주세요.', ja: 'ノートを開いて一緒に進めましょう。', zh: '请打开笔记本并跟着做。', es: 'Por favor, abre tu cuaderno y sigue con nosotros.', fr: 'Ouvrez votre cahier et suivez avec nous.', pt: 'Abra seu caderno e acompanhe.', ru: 'Откройте тетрадь и следуйте вместе.', hi: 'कृपया अपनी नोटबुक खोलें और साथ चलें।', ar: 'يرجى فتح دفتر الملاحظات والمتابعة.' },
+        { en: 'Practice is the best way to learn effectively.', ko: '효과적으로 배우는 가장 좋은 방법은 연습입니다.', ja: '効果的に学ぶ一番の方法は練習です。', zh: '有效学习的最佳方式是练习。', es: 'La práctica es la mejor forma de aprender eficazmente.', fr: "La pratique est la meilleure façon d'apprendre efficacement.", pt: 'A prática é a melhor forma de aprender efetivamente.', ru: 'Практика — лучший способ эффективно учиться.', hi: 'प्रभावी रूप से सीखने का सबसे अच्छा तरीका अभ्यास है।', ar: 'أفضل طريقة للتعلم بفعالية هي التدريب.' }
+      ],
+      'deep-learning': [
+        { en: 'Neural networks learn by adjusting weights.', ko: '신경망은 가중치를 조정하며 학습합니다.', ja: 'ニューラルネットは重みを調整して学習します。', zh: '神经网络通过调整权重来学习。', es: 'Las redes neuronales aprenden ajustando pesos.', fr: 'Les réseaux neuronaux apprennent en ajustant les poids.' },
+        { en: 'We will discuss overfitting and regularization.', ko: '오버피팅과 정규화를 논의하겠습니다.', ja: '過学習と正則化について議論します。', zh: '我们将讨论过拟合和正则化。', es: 'Discutiremos el sobreajuste y la regularización.' }
+      ],
+      'nlp': [
+        { en: 'Tokenization splits text into units.', ko: '토크나이제이션은 문장을 단위로 나눕니다.', ja: 'トークナイズはテキストを単位に分割します。', zh: '分词将文本拆分为单元。' },
+        { en: 'Embeddings map words to vectors.', ko: '임베딩은 단어를 벡터로 매핑합니다.', ja: '埋め込みは単語をベクトルにマッピングします。', zh: '嵌入将词语映射到向量。' }
+      ],
+      'computer-vision': [
+        { en: 'Convolutions extract local features.', ko: '합성곱은 지역 특징을 추출합니다.', ja: '畳み込みは局所的な特徴を抽出します。', zh: '卷积用于提取局部特征。' },
+        { en: 'We apply data augmentation to images.', ko: '이미지에 데이터 증강을 적용합니다.', ja: '画像にデータ拡張を適用します。', zh: '我们对图像应用数据增强。' }
+      ],
+      'reinforcement-learning': [
+        { en: 'The agent learns from rewards.', ko: '에이전트는 보상으로부터 학습합니다.', ja: 'エージェントは報酬から学びます。', zh: '智能体从奖励中学习。' },
+        { en: 'We explore the environment with policy.', ko: '정책을 통해 환경을 탐색합니다.', ja: 'ポリシーで環境を探索します。', zh: '我们用策略探索环境。' }
+      ]
+    }
+
+    const pairs = subjectPairs[selectedSubject] || subjectPairs['machine-learning']
 
     const langsOrder = ['en','ko','ja','zh','es','fr','pt','ru','hi','ar']
 
-    const pickLangSubset = (forceLang: string) => {
-      const others = langsOrder.filter(l => l !== 'en' && l !== forceLang)
-      const countExtras = Math.max(0, Math.min(3, Math.floor(Math.random() * 4))) // 0..3 extras in addition to en and forceLang
-      const shuffled = [...others].sort(() => Math.random() - 0.5)
-      const subset = ['en']
-      if (forceLang !== 'en') subset.push(forceLang)
-      subset.push(...shuffled.slice(0, countExtras))
-      return subset
-    }
+    // availableLanguages comes from sidebar for current subject; always include English and Korean
+    const getTargets = () => Array.from(new Set(['en','ko', ...availableLanguages]))
 
     const makeEntry = (idx: number): TranslationEntry => {
       const date = new Date('2025-10-27T14:00:00Z')
@@ -153,8 +109,8 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
       const originalText = occasionallyMixEnglish ? `${baseKo} ${((pair as any)['en'] as string)}` : baseKo
 
       // choose translation languages (2~5 total) ensuring English and current selected language
-      const langSubset = pickLangSubset(selectedLanguage)
-      const translationsSubset = langSubset.map(l => ({ language: l, text: (pair as any)[l] as string }))
+      const targets = getTargets()
+      const translationsSubset = targets.map(l => ({ language: l, text: ((pair as any)[l] as string) || ((pair as any)['en'] as string) }))
 
       // role distribution: mostly professor
       const role: 'professor' | 'assistant' = Math.random() < 0.85 ? 'professor' : 'assistant'
@@ -189,7 +145,7 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
     // apply session filter after generation
     const filteredBySession = newData.filter(r => String(r.sessionNo) === selectedSession)
     setFilteredTranslations(filteredBySession)
-  }, [selectedSubject, selectedTerm, selectedLanguage])
+  }, [selectedSubject, selectedTerm, selectedLanguage, availableLanguages])
 
   // Update session filter when dropdown changes
   useEffect(() => {
@@ -245,6 +201,15 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
     const label = languageNames[lang] || lang
     return { language: lang, text: `${englishBase} (${label})` }
   }
+
+  // Ensure selectedLanguage is part of availableLanguages
+  useEffect(() => {
+    if (!availableLanguages.includes(selectedLanguage)) {
+      const next = availableLanguages.includes('en') ? 'en' : (availableLanguages[0] || 'en')
+      setSelectedLanguage(next)
+      onSelectedLanguageChange && onSelectedLanguageChange(next)
+    }
+  }, [availableLanguages])
 
   const exportData = (format: 'CSV' | 'JSON') => {
     if (format === 'CSV') {
@@ -565,16 +530,12 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
                       cursor: 'pointer'
                     }}
                   >
-                    <option value="en">🇺🇸 English</option>
-                    <option value="zh">🇨🇳 Mandarin Chinese</option>
-                    <option value="es">🇪🇸 Spanish</option>
-                    <option value="hi">🇮🇳 Hindi</option>
-                    <option value="fr">🇫🇷 French</option>
-                    <option value="ar">🇸🇦 Arabic</option>
-                    <option value="pt">🇵🇹 Portuguese</option>
-                    <option value="ru">🇷🇺 Russian</option>
-                    <option value="ko">🇰🇷 Korean</option>
-                    <option value="ja">🇯🇵 Japanese</option>
+                    {Array.from(new Set(availableLanguages)).map((lng) => (
+                      <option key={lng} value={lng}>
+                        {lng === 'en' && '🇺🇸 '}{lng === 'ko' && '🇰🇷 '}{lng === 'ja' && '🇯🇵 '}{lng === 'zh' && '🇨🇳 '}{lng === 'es' && '🇪🇸 '}{lng === 'hi' && '🇮🇳 '}{lng === 'fr' && '🇫🇷 '}{lng === 'ar' && '🇸🇦 '}{lng === 'pt' && '🇵🇹 '}{lng === 'ru' && '🇷🇺 '}
+                        {languageNames[lng] || lng}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </th>
