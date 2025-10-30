@@ -94,7 +94,7 @@ export default function ProfessorRadarChart({
 
   // Chart dimensions - dynamic to fill available box (leaving small padding for labels)
   const availableHeight = (matchedHeight || 420) - 64 // subtract inner paddings/spacing
-  const chartSize = Math.max(240, Math.min(540, Math.floor(availableHeight)))
+  const chartSize = Math.max(240, Math.min(400, Math.floor(availableHeight)))
   const center = chartSize / 2
   const centerY = center // 중앙 정렬
   const maxRadius = Math.floor(chartSize * 0.38) // scale with SVG to fill area
@@ -109,6 +109,26 @@ export default function ProfessorRadarChart({
     const y = Math.sin(angle * Math.PI / 180) * radius
     
     return { x, y, angle }
+  }
+
+  const CircleStat = ({ size = 90, value = 68, label = 'Engagement', color = '#a78bfa' }: { size?: number; value?: number; label?: string; color?: string }) => {
+    const radius = (size - 14) / 2
+    const circumference = 2 * Math.PI * radius
+    const progress = Math.max(0, Math.min(100, value))
+    const dash = (progress / 100) * circumference
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <circle cx={size/2} cy={size/2} r={radius} stroke="rgba(255,255,255,0.08)" strokeWidth={10} fill="none" />
+          <circle cx={size/2} cy={size/2} r={radius} stroke={color} strokeWidth={10} fill="none" strokeDasharray={`${dash} ${circumference - dash}`} strokeLinecap="round" transform={`rotate(-90 ${size/2} ${size/2})`} />
+          <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="var(--admin-text)" fontSize="14" fontWeight={700}>{value}</text>
+        </svg>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontSize: 12, color: 'var(--admin-text-muted)' }}>{label}</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--admin-text)' }}>{value}%</span>
+        </div>
+      </div>
+    )
   }
 
   // Create SVG path
@@ -259,12 +279,14 @@ export default function ProfessorRadarChart({
       <div 
         className="radar-main-layout"
         style={{
-          gap: '20px',
+          display: 'grid',
+          gridTemplateColumns: '2fr 1fr 1fr 1fr',
+          gap: '16px',
           alignItems: 'flex-start'
         }}
       >
         {/* Left side: Radar chart */}
-        <div className="radar-chart-section" style={{ padding: '24px 32px', minHeight: matchedHeight || 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="radar-chart-section" style={{ padding: '12px 8px', minHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="radar-chart-container" style={{ width: chartSize, height: chartSize }}>
             <div className="radar-chart-large">
               <svg
@@ -322,7 +344,7 @@ export default function ProfessorRadarChart({
           </div>
         </div>
         
-        {/* Right side: Module Control panel (professor-only styling) */}
+        {/* Middle: Module Control panel (professor-only styling) */}
         <div
           className="module-control-panel"
           style={{
@@ -330,8 +352,10 @@ export default function ProfessorRadarChart({
             border: '1px solid rgba(94, 126, 164, 0.18)',
             borderRadius: 12,
             padding: 0,
-            minWidth: 300,
-            maxHeight: 'none',
+            minWidth: 120,
+            width: 'auto',
+            minHeight: 360,
+            maxHeight: 360,
             overflowY: 'visible'
           }}
           ref={modulePanelRef}
@@ -339,10 +363,10 @@ export default function ProfessorRadarChart({
           {/* Header */}
           <div
             style={{
-              display: 'flex',
+              display: 'grid',
+              gridTemplateColumns: '1fr auto',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '8px 12px',
+              padding: '6px 10px',
               borderBottom: '1px solid rgba(255,255,255,0.06)'
             }}
           >
@@ -369,17 +393,18 @@ export default function ProfessorRadarChart({
           </div>
 
           {/* Items */}
-          <div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', rowGap: 4, paddingBottom: 8 }}>
             {allDataPoints.map((point, idx) => {
               const isOn = toggles[point.key as keyof typeof toggles]
               return (
                 <div
                   key={point.key}
                   style={{
-                    display: 'flex',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
+                    gap: 8,
+                    padding: '6px 10px',
                     borderBottom:
                       idx === allDataPoints.length - 1
                         ? 'none'
@@ -387,11 +412,11 @@ export default function ProfessorRadarChart({
                   }}
                 >
                   {/* Left: label + description (no emoji) */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--admin-text)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--admin-text)' }}>
                       {point.label}
                     </span>
-                    <span style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>
+                    <span style={{ fontSize: 10, color: 'var(--admin-text-muted)' }}>
                       {point.description}
                     </span>
                   </div>
@@ -402,10 +427,10 @@ export default function ProfessorRadarChart({
                       border: '1px solid rgba(0,0,0,0.15)',
                       outline: 'none',
                       cursor: 'pointer',
-                      padding: '5px 10px',
-                      minWidth: 42,
-                      borderRadius: 8,
-                      fontSize: 11,
+                      padding: '4px 8px',
+                      minWidth: 36,
+                      borderRadius: 7,
+                      fontSize: 10,
                       fontWeight: 800,
                       letterSpacing: 0.2,
                       color: '#0b1220',
@@ -423,17 +448,104 @@ export default function ProfessorRadarChart({
             })}
           </div>
         </div>
+
+        {/* Right column: Circular mini charts (copied indicators) */}
+        <div
+          style={{
+            background: 'rgba(8, 20, 35, 0.55)',
+            border: '1px solid rgba(94,126,164,0.18)',
+            borderRadius: 12,
+            padding: '12px',
+            minWidth: 260,
+            minHeight: 360,
+            maxHeight: 360,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            justifyContent: 'space-between'
+          }}
+          className="engagement-panel"
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)' }}>Student Engagement</span>
+          </div>
+          <CircleStat label="Active Users" value={32} color="#22d3ee" size={80} />
+          <CircleStat label="Engagement Rate" value={68} color="#a78bfa" size={80} />
+          <CircleStat label="Topics Covered" value={8} color="#f59e0b" size={80} />
+        </div>
+
+        {/* Fourth column: Satisfaction by Field (placeholder bars) */}
+        <div
+          style={{
+            background: 'rgba(8, 20, 35, 0.55)',
+            border: '1px solid rgba(94,126,164,0.18)',
+            borderRadius: 12,
+            padding: '12px',
+            minWidth: 260,
+            minHeight: 360,
+            maxHeight: 360,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10
+          }}
+          className="satisfaction-panel"
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)' }}>Satisfaction by Field</span>
+          </div>
+          {[
+            { name: 'Machine Learning', val: 88 },
+            { name: 'Deep Learning', val: 82 },
+            { name: 'NLP', val: 79 },
+            { name: 'Computer Vision', val: 75 },
+            { name: 'Reinforcement', val: 71 }
+          ].map((row) => (
+            <div key={row.name} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--admin-text-muted)' }}>
+                <span>{row.name}</span>
+                <span>{row.val}%</span>
+              </div>
+              <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 6 }}>
+                <div style={{ width: `${row.val}%`, height: '100%', background: 'linear-gradient(90deg, #3be6ff, #59caff)', borderRadius: 6 }} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* Responsive stacking for narrow screens */}
+      <style>
+        {`
+          /* 4 columns down to 1280px; 2 columns between 768px–1279px; stack below 768px */
+          @media (max-width: 1279px) and (min-width: 768px) {
+            .radar-main-layout {
+              grid-template-columns: 1.5fr 1fr; /* radar grows more than right column */
+            }
+            .engagement-panel { grid-column: auto; }
+            .satisfaction-panel { grid-column: auto; }
+          }
+
+          @media (max-width: 767px) {
+            .radar-main-layout {
+              grid-template-columns: 1fr;
+            }
+            .radar-chart-section { order: 1; }
+            .module-control-panel { order: 2; }
+            .engagement-panel { order: 3; }
+            .satisfaction-panel { order: 4; }
+          }
+        `}
+      </style>
 
       {/* Performance Timeline - professor only: collapsed by default */}
       {timelineData && timelineData.length > 0 && (
-        <div className="timeline-section-wrapper" style={{ marginTop: 8, minHeight: 32, padding: '8px 0' }}>
+        <div className="timeline-section-wrapper" style={{ marginTop: 0, minHeight: 0, padding: '2px 0 0 0', lineHeight: 1, borderTop: 'none' }}>
           {!timelineExpanded ? (
             <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 0, margin: 0 }}>
               <button
                 onClick={() => setTimelineExpanded(true)}
                 style={{
-                  padding: '6px 12px',
+                  padding: '4px 8px',
                   borderRadius: 8,
                   border: '1px solid var(--admin-border)',
                   background: 'var(--admin-card-bg)',
@@ -448,7 +560,7 @@ export default function ProfessorRadarChart({
             </div>
           ) : (
             <>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4, padding: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 0, padding: 0 }}>
                 <button
                   onClick={() => setTimelineExpanded(false)}
                   style={{
@@ -464,7 +576,7 @@ export default function ProfessorRadarChart({
                 </button>
               </div>
               <div style={{ display: 'flex', justifyContent: 'center', padding: 0, margin: 0, overflow: 'hidden' }}>
-                <div style={{ transform: 'scale(0.82)', transformOrigin: 'top center' }}>
+                <div style={{ transform: 'scale(0.82)', transformOrigin: 'top center', margin: 0 }}>
                 <PerformanceTimeline
                 data={timelineData}
                 selectedDate={selectedDate}

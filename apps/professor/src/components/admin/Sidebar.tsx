@@ -28,6 +28,7 @@ interface SidebarProps {
   onTranslationFilterChange?: (filters: { term: string; subject: string }) => void
   selectedLanguage?: string
   onSelectedLanguageChange?: (lang: string) => void
+  onAvailableLanguagesChange?: (langs: string[]) => void
 }
 
 export default function AdminSidebar({ 
@@ -43,7 +44,8 @@ export default function AdminSidebar({
   onServiceModeChange,
   onTranslationFilterChange,
   selectedLanguage: externalSelectedLanguage,
-  onSelectedLanguageChange
+  onSelectedLanguageChange,
+  onAvailableLanguagesChange
 }: SidebarProps) {
   
   // Check if current user is professor (only professor should see translation feature)
@@ -158,6 +160,11 @@ export default function AdminSidebar({
   const addableLanguages = useMemo(() => {
     const current = new Set(managedLangBySubject[selectedSubject] || [])
     return allLanguageValues.filter(v => !current.has(v))
+  }, [managedLangBySubject, selectedSubject])
+
+  // notify parent whenever available languages for current subject change
+  useEffect(() => {
+    onAvailableLanguagesChange && onAvailableLanguagesChange(managedLangBySubject[selectedSubject] || ['en','ko'])
   }, [managedLangBySubject, selectedSubject])
 
   const handleNavigation = (sectionId: string) => {
@@ -824,6 +831,7 @@ export default function AdminSidebar({
                           ...prev,
                           [selectedSubject]: (prev[selectedSubject] || []).filter(x => x !== v)
                         }))
+                        // callback will be triggered by effect
                       }}
                       style={{ background: 'transparent', border: 'none', color: 'var(--admin-text-muted)', cursor: 'pointer' }}
                       title={language === 'en' ? 'Remove' : '삭제'}
@@ -854,6 +862,7 @@ export default function AdminSidebar({
                     ...prev,
                     [selectedSubject]: Array.from(new Set([...(prev[selectedSubject] || []), val]))
                   }))
+                  // callback will be triggered by effect
                 }}
                 style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text)', cursor: 'pointer' }}
               >

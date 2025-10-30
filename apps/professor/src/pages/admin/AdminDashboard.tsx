@@ -85,6 +85,7 @@ export default function AdminDashboard() {
   const [translationTerm, setTranslationTerm] = useState<string>('2025-winter')
   const [translationSubject, setTranslationSubject] = useState<string>('machine-learning')
   const [translationLanguage, setTranslationLanguage] = useState<string>('en')
+  const [availableLanguages, setAvailableLanguages] = useState<string[]>(['en','ko','ja','zh'])
   
   // Hover tooltip state
   const [hoveredField, setHoveredField] = useState<string | null>(null)
@@ -353,6 +354,7 @@ export default function AdminDashboard() {
             }}
             selectedLanguage={translationLanguage}
             onSelectedLanguageChange={setTranslationLanguage}
+            onAvailableLanguagesChange={setAvailableLanguages}
           />
           
           <main className="dashboard-main">
@@ -389,6 +391,7 @@ export default function AdminDashboard() {
                     selectedSubject={translationSubject}
                     selectedLanguage={translationLanguage}
                     onSelectedLanguageChange={setTranslationLanguage}
+                    availableLanguages={availableLanguages}
                   />
                 </div>
                 
