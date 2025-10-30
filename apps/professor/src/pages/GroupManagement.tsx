@@ -6,6 +6,7 @@ import { getSession, logout } from '../services/auth';
 import { getUserByEmail } from '../services/authService';
 import { getUserGroups, Group } from '../services/groupService';
 import GroupCreationModal from '../components/GroupCreationModal';
+import { checkAndMigrateSettings } from '../services/migrateToUserSettings';
 
 const GroupManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -77,9 +78,15 @@ const GroupManagement: React.FC = () => {
     if (!session) return;
 
     // Clone session and adjust role to match selected group's context
-    const nextSession = { ...session, role: isUserAdministrator(group) ? ('admin' as const) : ('user' as const) };
+    const nextSession = { 
+      ...session, 
+      role: isUserAdministrator(group) ? ('admin' as const) : ('user' as const),
+      selectedGroupId: group.group_id,
+    };
     try {
       sessionStorage.setItem('axpro_session', JSON.stringify(nextSession));
+      // Re-apply universal settings for the new session so admin/dashboard and chat use correct config
+      checkAndMigrateSettings();
     } catch (e) {
       console.error('Failed to persist impersonated session', e);
     }

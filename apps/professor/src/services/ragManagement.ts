@@ -7,11 +7,11 @@ const UPLOAD_WEBHOOK_ID = (import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID |
 
 // n8n webhook endpoints for different operations
 const ENDPOINTS = {
-  UPLOAD: `${N8N_BASE_URL}/webhook/${UPLOAD_WEBHOOK_ID}`,
-  LIST_FILES: `${N8N_BASE_URL}/webhook/${(import.meta as any).env?.VITE_N8N_LIST_FILES_WEBHOOK_ID || 'list-files'}`,
-  DELETE_FILE: `${N8N_BASE_URL}/webhook/${(import.meta as any).env?.VITE_N8N_DELETE_FILE_WEBHOOK_ID || 'delete-file'}`,
-  REINDEX_FILE: `${N8N_BASE_URL}/webhook/${(import.meta as any).env?.VITE_N8N_REINDEX_FILE_WEBHOOK_ID || 'reindex-file'}`,
-  GET_FILE_STATUS: `${N8N_BASE_URL}/webhook/${(import.meta as any).env?.VITE_N8N_FILE_STATUS_WEBHOOK_ID || 'file-status'}`,
+  UPLOAD: `${N8N_BASE_URL}/webhook-test/${UPLOAD_WEBHOOK_ID}`,
+  LIST_FILES: `${N8N_BASE_URL}/webhook-test/${(import.meta as any).env?.VITE_N8N_LIST_FILES_WEBHOOK_ID || 'list-files'}`,
+  DELETE_FILE: `${N8N_BASE_URL}/webhook-test/${(import.meta as any).env?.VITE_N8N_DELETE_FILE_WEBHOOK_ID || 'delete-file'}`,
+  REINDEX_FILE: `${N8N_BASE_URL}/webhook-test/${(import.meta as any).env?.VITE_N8N_REINDEX_FILE_WEBHOOK_ID || 'reindex-file'}`,
+  GET_FILE_STATUS: `${N8N_BASE_URL}/webhook-test/${(import.meta as any).env?.VITE_N8N_FILE_STATUS_WEBHOOK_ID || 'file-status'}`,
 };
 
 export interface FileUploadResult {
@@ -964,10 +964,12 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
 
     console.log(`🌐 n8n Webhook URL: ${n8nWebhookUrl}`);
 
+    const groupIdFromSession = (session as any)?.selectedGroupId || null;
     const payload = [{
       fileUrl: fullFileUrl,
       fileName: fileName,
       source: 'supabase-storage',
+      groupId: groupIdFromSession,
     }];
 
     console.log(`📦 Payload being sent:`, payload);

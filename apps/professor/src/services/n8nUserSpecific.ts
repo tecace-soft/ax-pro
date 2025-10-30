@@ -9,6 +9,9 @@ export interface N8nConfig {
   updatedAt: string;
 }
 
+// Hard-coded universal admin webhook fallback
+const UNIVERSAL_N8N_WEBHOOK = 'https://n8n.srv978041.hstgr.cloud/webhook/328757ba-62e6-465e-be1b-2fff0fd1d353';
+
 export interface N8nRequest {
   sessionId: string;
   chatId: string;
@@ -56,10 +59,26 @@ export const getActiveN8nConfig = (): N8nConfig | null => {
   try {
     const activeConfig = getUserActiveN8nConfig();
     console.log('Active user n8n config:', activeConfig);
-    return activeConfig;
+    if (activeConfig) return activeConfig;
+    // Fallback to universal webhook if none is configured
+    return {
+      id: 'universal_default',
+      name: 'Universal Default Webhook (Admin)',
+      webhookUrl: UNIVERSAL_N8N_WEBHOOK,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   } catch (error) {
     console.error('Failed to get active user n8n config:', error);
-    return null;
+    return {
+      id: 'universal_default',
+      name: 'Universal Default Webhook (Admin)',
+      webhookUrl: UNIVERSAL_N8N_WEBHOOK,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   }
 };
 

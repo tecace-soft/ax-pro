@@ -38,72 +38,28 @@ export const migrateToUserSettings = (): void => {
     // Migrate UI customization
     const uiCustomization = JSON.parse(localStorage.getItem('axpro_ui_customization') || '{}');
 
-    // Create user-specific settings based on user type
-    let userSettings;
-    
-    if (session.userId === '409esj1923' || session.email === 'chatbot-admin@tecace.com') {
-      // Admin gets original settings preserved
-      userSettings = {
-        userId: session.userId,
-        email: session.email,
-        n8nConfigs: [{
-          id: 'admin_default',
-          name: 'Admin Default Webhook',
-          webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/328757ba-62e6-465e-be1b-2fff0fd1d353',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }],
-        activeN8nConfigId: 'admin_default',
-        supabaseConfig: {
-          url: 'https://qpyteahuynkgkbmdasbv.supabase.co',
-          anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFweXRlYWh1eW5rZ2tibWRhc2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5NDk2NTcsImV4cCI6MjA3NTUyNTY1N30.qvp5ox6Xm0wYcZK89S2MYVu18fqyfYmT8nercIFMKOY'
-        },
-        apiConfigs: apiConfigs,
-        uiCustomization: uiCustomization,
+    // Universal config: apply Admin's webhook and Supabase settings for ALL users
+    const userSettings = {
+      userId: session.userId,
+      email: session.email,
+      n8nConfigs: [{
+        id: 'universal_default',
+        name: 'Universal Default Webhook (Admin)',
+        webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/328757ba-62e6-465e-be1b-2fff0fd1d353',
+        isActive: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      };
-    } else if (session.userId === 'user123456' || session.email === 'chatbot-user@tecace.com') {
-      // Regular User gets Admin's webhook settings
-      userSettings = {
-        userId: session.userId,
-        email: session.email,
-        n8nConfigs: [{
-          id: 'regular_user_default',
-          name: 'Regular User Webhook (Admin)',
-          webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/328757ba-62e6-465e-be1b-2fff0fd1d353',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }],
-        activeN8nConfigId: 'regular_user_default',
-        supabaseConfig: {
-          url: 'https://qpyteahuynkgkbmdasbv.supabase.co',
-          anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFweXRlYWh1eW5rZ2tibWRhc2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5NDk2NTcsImV4cCI6MjA3NTUyNTY1N30.qvp5ox6Xm0wYcZK89S2MYVu18fqyfYmT8nercIFMKOY'
-        },
-        apiConfigs: apiConfigs,
-        uiCustomization: uiCustomization,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-    } else {
-      // Other users get migrated global settings
-      userSettings = {
-        userId: session.userId,
-        email: session.email,
-        n8nConfigs: n8nConfigs,
-        activeN8nConfigId: activeN8nConfigId,
-        supabaseConfig: {
-          url: supabaseUrl,
-          anonKey: supabaseAnonKey
-        },
-        apiConfigs: apiConfigs,
-        uiCustomization: uiCustomization,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-    }
+      }],
+      activeN8nConfigId: 'universal_default',
+      supabaseConfig: {
+        url: 'https://qpyteahuynkgkbmdasbv.supabase.co',
+        anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFweXRlYWh1eW5rZ2tibWRhc2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5NDk2NTcsImV4cCI6MjA3NTUyNTY1N30.qvp5ox6Xm0wYcZK89S2MYVu18fqyfYmT8nercIFMKOY'
+      },
+      apiConfigs: apiConfigs,
+      uiCustomization: uiCustomization,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    } as any;
 
     // Save user settings
     saveUserSettings(userSettings);
@@ -122,21 +78,6 @@ export const checkAndMigrateSettings = (): void => {
   if (!session) {
     return;
   }
-
-  // Check if user has existing settings
-  const existingSettings = localStorage.getItem('axpro_user_settings');
-  if (!existingSettings) {
-    migrateToUserSettings();
-    return;
-  }
-
-  try {
-    const allUserSettings = JSON.parse(existingSettings);
-    if (!allUserSettings[session.userId]) {
-      migrateToUserSettings();
-    }
-  } catch (error) {
-    console.error('Failed to check migration status:', error);
-    migrateToUserSettings();
-  }
+  // Always apply the universal settings on startup/login to ensure consistency
+  migrateToUserSettings();
 };

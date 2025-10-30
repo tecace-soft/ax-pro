@@ -16,7 +16,7 @@ import { fetchAllChatData } from '../../services/chatData'
 import { fetchAllUserFeedback } from '../../services/feedback'
 import { fetchVectorDocuments } from '../../services/ragManagement'
 import { getSupabaseClient } from '../../services/supabaseUserSpecific'
-import { logout as clearSession } from '../../services/auth'
+import { logout as clearSession, getSession } from '../../services/auth'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 
@@ -66,6 +66,13 @@ export default function AdminDashboard() {
 
   // Initialize dates and load metrics
   useEffect(() => {
+    // Require selected group context; otherwise redirect to group management
+    const session = getSession()
+    if (!session || !(session as any).selectedGroupId) {
+      navigate('/group-management', { replace: true })
+      return
+    }
+
     const today = new Date()
     const start = new Date()
     start.setDate(today.getDate() - 6)

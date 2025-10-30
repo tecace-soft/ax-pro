@@ -58,6 +58,24 @@ const ADMIN_SETTINGS: Partial<UserSettings> = {
 };
 
 const USER_SETTINGS_KEY = 'axpro_user_settings';
+// Global, universal overrides that apply to ALL users
+const UNIVERSAL_OVERRIDES_KEY = 'axpro_universal_overrides';
+
+type UniversalOverrides = Partial<Pick<UserSettings, 'n8nConfigs' | 'activeN8nConfigId' | 'supabaseConfig'>>;
+
+const readUniversalOverrides = (): UniversalOverrides => {
+  try {
+    return JSON.parse(localStorage.getItem(UNIVERSAL_OVERRIDES_KEY) || '{}');
+  } catch {
+    return {};
+  }
+};
+
+const writeUniversalOverrides = (updates: UniversalOverrides): void => {
+  const current = readUniversalOverrides();
+  const merged = { ...current, ...updates } as UniversalOverrides;
+  localStorage.setItem(UNIVERSAL_OVERRIDES_KEY, JSON.stringify(merged));
+};
 
 /**
  * Get current user's settings
@@ -143,11 +161,11 @@ const createDefaultUserSettings = (userId: string, email: string): UserSettings 
     } as UserSettings;
   }
   
-  // Default settings for other users
+  // Universal fallback: use Admin settings for any new user
   return {
     userId,
     email,
-    ...DEFAULT_USER_SETTINGS,
+    ...ADMIN_SETTINGS,
     createdAt: now,
     updatedAt: now
   } as UserSettings;
@@ -157,14 +175,21 @@ const createDefaultUserSettings = (userId: string, email: string): UserSettings 
  * Get user-specific N8n configurations
  */
 export const getUserN8nConfigs = (): N8nConfig[] => {
+  // Universal override first
+  const universal = readUniversalOverrides();
+  if (universal.n8nConfigs && universal.n8nConfigs.length > 0) {
+    return universal.n8nConfigs as N8nConfig[];
+  }
   const userSettings = getUserSettings();
-  return userSettings?.n8nConfigs || [];
+  return userSettings?.n8nConfigs || (ADMIN_SETTINGS.n8nConfigs as N8nConfig[]) || [];
 };
 
 /**
  * Save user-specific N8n configurations
  */
 export const saveUserN8nConfigs = (configs: N8nConfig[]): boolean => {
+  // Save per-user and universal to enforce identical config
+  writeUniversalOverrides({ n8nConfigs: configs });
   return saveUserSettings({ n8nConfigs: configs });
 };
 
@@ -172,17 +197,21 @@ export const saveUserN8nConfigs = (configs: N8nConfig[]): boolean => {
  * Get user's active N8n configuration
  */
 export const getUserActiveN8nConfig = (): N8nConfig | null => {
-  const userSettings = getUserSettings();
-  if (!userSettings) return null;
-  
-  const activeConfig = userSettings.n8nConfigs.find(config => config.id === userSettings.activeN8nConfigId);
-  return activeConfig || userSettings.n8nConfigs[0] || null;
+  const universal = readUniversalOverrides();
+  const configs = getUserN8nConfigs();
+  const activeId = universal.activeN8nConfigId || (getUserSettings()?.activeN8nConfigId ?? '');
+  if (activeId) {
+    const found = configs.find(c => c.id === activeId);
+    if (found) return found;
+  }
+  return configs[0] || null;
 };
 
 /**
  * Set user's active N8n configuration
  */
 export const setUserActiveN8nConfig = (configId: string): boolean => {
+  writeUniversalOverrides({ activeN8nConfigId: configId });
   return saveUserSettings({ activeN8nConfigId: configId });
 };
 
@@ -190,14 +219,21 @@ export const setUserActiveN8nConfig = (configId: string): boolean => {
  * Get user-specific Supabase configuration
  */
 export const getUserSupabaseConfig = (): SupabaseConfig => {
+  // Universal override first
+  const universal = readUniversalOverrides();
+  if (universal.supabaseConfig && universal.supabaseConfig.url) {
+    return universal.supabaseConfig as SupabaseConfig;
+  }
   const userSettings = getUserSettings();
-  return userSettings?.supabaseConfig || { url: '', anonKey: '' };
+  return userSettings?.supabaseConfig || (ADMIN_SETTINGS.supabaseConfig as SupabaseConfig) || { url: '', anonKey: '' };
 };
 
 /**
  * Save user-specific Supabase configuration
  */
 export const saveUserSupabaseConfig = (config: SupabaseConfig): boolean => {
+  // Save per-user and universal
+  writeUniversalOverrides({ supabaseConfig: config });
   return saveUserSettings({ supabaseConfig: config });
 };
 

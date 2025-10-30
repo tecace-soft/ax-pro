@@ -43,19 +43,27 @@ export interface UserFeedbackData {
 let supabaseClient: SupabaseClient | null = null;
 let currentConfig: string | null = null;
 
+// Hard-coded universal admin defaults (applied if nothing else is available)
+const UNIVERSAL_SUPABASE: SupabaseConfig = {
+  url: 'https://qpyteahuynkgkbmdasbv.supabase.co',
+  anonKey:
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFweXRlYWh1eW5rZ2tibWRhc2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5NDk2NTcsImV4cCI6MjA3NTUyNTY1N30.qvp5ox6Xm0wYcZK89S2MYVu18fqyfYmT8nercIFMKOY',
+};
+
 /**
  * Get or create a singleton Supabase client using current user's settings
  */
 export const getSupabaseClient = (): SupabaseClient => {
-  const config = getUserSupabaseConfig();
+  const userConfig = getUserSupabaseConfig();
+  const config: SupabaseConfig = {
+    url: userConfig?.url || UNIVERSAL_SUPABASE.url,
+    anonKey: userConfig?.anonKey || UNIVERSAL_SUPABASE.anonKey,
+  };
   const configKey = `${config.url}:${config.anonKey}`;
   
   // Only create a new client if config changed or client doesn't exist
   if (!supabaseClient || currentConfig !== configKey) {
-    if (!config.url || !config.anonKey) {
-      throw new Error('Supabase configuration not set for current user. Please configure in Settings > Database.');
-    }
-    
+    // Always have hard-coded fallback; no throwing here
     supabaseClient = createClient(config.url, config.anonKey);
     currentConfig = configKey;
     console.log('✅ Supabase client initialized for current user');

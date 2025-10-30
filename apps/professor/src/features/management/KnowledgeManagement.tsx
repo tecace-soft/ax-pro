@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Table, Column } from '../../components/ui/Table';
 import { StatusBadge } from '../../components/ui/Badges';
@@ -15,8 +16,10 @@ import {
   IndexRow, 
   SyncRow 
 } from '../../services/management';
+import { getSession } from '../../services/auth';
 
 const KnowledgeManagement: React.FC = () => {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'files' | 'index' | 'sync'>('files');
   const [files, setFiles] = useState<FileRow[]>([]);
@@ -31,6 +34,13 @@ const KnowledgeManagement: React.FC = () => {
   });
 
   useEffect(() => {
+    // Require selected group context; otherwise redirect to group management
+    const session = getSession();
+    if (!session || !(session as any).selectedGroupId) {
+      navigate('/group-management', { replace: true });
+      return;
+    }
+
     fetchData();
   }, [activeTab, searchTerm, pagination.page, pagination.pageSize]);
 
