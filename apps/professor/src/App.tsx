@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider } from './theme/ThemeProvider';
 import { I18nProvider } from './i18n/I18nProvider';
 import Landing from './pages/Landing';
+import Signup from './pages/Signup';
+import GroupManagement from './pages/GroupManagement';
 import ChatShell from './pages/ChatShell';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
@@ -40,8 +42,17 @@ const App: React.FC = () => {
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<Landing />} />
+              <Route path="/signup" element={<Signup />} />
               
               {/* Protected routes */}
+              <Route 
+                path="/group-management" 
+                element={
+                  <ProtectedRoute requiredRole="user">
+                    <GroupManagement />
+                  </ProtectedRoute>
+                } 
+              />
               <Route 
                 path="/chat" 
                 element={

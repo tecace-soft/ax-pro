@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { login, getSession } from '../services/auth';
 import { authApi } from '../services/api';
 import { isBackendAvailable } from '../services/devMode';
@@ -66,15 +66,11 @@ const Landing: React.FC = () => {
       await authApi.demoLogin(formData.email, formData.password);
       
       // Also store in local session for compatibility
-      const session = login(formData.email, formData.password);
+      const session = await login(formData.email, formData.password);
       
       if (session) {
-        // Admin goes to dashboard, user goes to chat
-        if (session.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/chat');
-        }
+        // All users go to group management after login
+        navigate('/group-management');
       } else {
         setError(t('auth.error'));
       }
@@ -82,15 +78,11 @@ const Landing: React.FC = () => {
       console.log('Backend API failed, trying local auth:', apiError);
       
       // Fallback to local auth if backend is not available
-      const session = login(formData.email, formData.password);
+      const session = await login(formData.email, formData.password);
       
       if (session) {
-        // Admin goes to dashboard, user goes to chat
-        if (session.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/chat');
-        }
+        // All users go to group management after login
+        navigate('/group-management');
       } else {
         setError(t('auth.error'));
       }
@@ -210,82 +202,19 @@ const Landing: React.FC = () => {
             </div>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="card rounded-md p-4" style={{ backgroundColor: 'var(--primary-light)' }}>
-            <h3 className="text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-              Demo Credentials (Click to auto-fill)
-            </h3>
-            <div className="space-y-2 text-xs">
-              <button
-                onClick={() => {
-                  setFormData({ email: 'chatbot-user@tecace.com', password: 'user1234' });
-                }}
-                className="w-full text-left p-3 rounded border hover:bg-gray-50 transition-colors"
-                style={{ 
-                  borderColor: 'var(--border)',
-                  backgroundColor: 'var(--card)',
-                  color: 'var(--text)'
-                }}
+
+          {/* Signup Link */}
+          <div className="text-center mt-6">
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              New user?{' '}
+              <Link
+                to="/signup"
+                className="font-medium hover:underline"
+                style={{ color: 'var(--primary)' }}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">👤 Regular User</div>
-                    <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                      chatbot-user@tecace.com
-                    </div>
-                  </div>
-                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    → Chat Interface
-                  </div>
-                </div>
-              </button>
-              <button
-                onClick={() => {
-                  setFormData({ email: 'chatbot-admin@tecace.com', password: 'admin1234' });
-                }}
-                className="w-full text-left p-3 rounded border hover:bg-gray-50 transition-colors"
-                style={{ 
-                  borderColor: 'var(--border)',
-                  backgroundColor: 'var(--card)',
-                  color: 'var(--text)'
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">👑 Admin User</div>
-                    <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                      chatbot-admin@tecace.com
-                    </div>
-                  </div>
-                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    → Admin Dashboard
-                  </div>
-                </div>
-              </button>
-              <button
-                onClick={() => {
-                  setFormData({ email: 'hana@tecace.com', password: 'tsl1234' });
-                }}
-                className="w-full text-left p-3 rounded border hover:bg-gray-50 transition-colors"
-                style={{ 
-                  borderColor: 'var(--border)',
-                  backgroundColor: 'var(--card)',
-                  color: 'var(--text)'
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">👨‍💼 SeokHoon Kang</div>
-                    <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                      hana@tecace.com
-                    </div>
-                  </div>
-                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    → Admin Dashboard (Custom Settings)
-                  </div>
-                </div>
-              </button>
-            </div>
+                Create an account
+              </Link>
+            </p>
           </div>
 
         </div>

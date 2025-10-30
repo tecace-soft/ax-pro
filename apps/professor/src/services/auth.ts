@@ -2,6 +2,7 @@
 // Handles demo-only login verification and session management
 
 import React from 'react';
+import { authenticateUser } from './authService';
 
 export type Role = "user" | "admin";
 
@@ -23,11 +24,6 @@ const DEMO_CREDENTIALS = {
     password: 'user1234',
     role: 'user' as const,
     userId: 'user123456'
-  },
-  'hana@tecace.com': {
-    password: 'tsl1234',
-    role: 'admin' as const,
-    userId: 'seokhoon_kang_001'
   }
 };
 
@@ -35,32 +31,41 @@ const SESSION_KEY = 'axpro_session';
 
 /**
  * Attempts to log in a user with the provided credentials
+ * Checks database users only (no demo credentials)
  * @param email - User's email address
  * @param password - User's password
  * @returns Session | null - Session data if successful, null if failed
  */
-export const login = (email: string, password: string): Session | null => {
+export const login = async (email: string, password: string): Promise<Session | null> => {
   const normalizedEmail = email.toLowerCase().trim();
-  const credentials = DEMO_CREDENTIALS[normalizedEmail as keyof typeof DEMO_CREDENTIALS];
-
-  if (!credentials || credentials.password !== password) {
-    return null;
-  }
-
-  // Create session data
-  const session: Session = {
-    email: normalizedEmail,
-    userId: credentials.userId,
-    role: credentials.role,
-    createdAt: Date.now()
-  };
-
-  // Store session in sessionStorage
+  
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    return session;
+    const dbUser = await authenticateUser(normalizedEmail, password);
+    
+    if (dbUser) {
+      // Create session data for database user
+      const session: Session = {
+        email: normalizedEmail,
+        userId: dbUser.user_id,
+        role: 'user' as const, // All database users get 'user' role
+        createdAt: Date.now()
+      };
+      
+      // Store session in sessionStorage
+      try {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        console.log('✅ Database user logged in:', session);
+        return session;
+      } catch (error) {
+        console.error('Failed to store session:', error);
+        return null;
+      }
+    }
+    
+    console.log('❌ Invalid credentials');
+    return null;
   } catch (error) {
-    console.error('Failed to store session:', error);
+    console.error('Authentication error:', error);
     return null;
   }
 };
@@ -133,8 +138,8 @@ export const useAuth = () => {
     setSession(getSession());
   }, []);
 
-  const loginUser = (email: string, password: string) => {
-    const result = login(email, password);
+  const loginUser = async (email: string, password: string) => {
+    const result = await login(email, password);
     setSession(result);
     return result;
   };

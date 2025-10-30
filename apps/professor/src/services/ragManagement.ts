@@ -938,17 +938,9 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     const { getSession } = await import('./auth');
     const session = getSession();
     
-    // Determine webhook based on user
-    let userSpecificWebhookId: string;
-    if (session?.userId === 'seokhoon_kang_001' || session?.email === 'hana@tecace.com') {
-      // SeokHoon Kang uses his FILE INDEXING webhook (not chat webhook)
-      userSpecificWebhookId = 'bc7f7d96-1c7f-48c8-8def-6f4a367f7212';
-      console.log(`👤 Using SeokHoon Kang's FILE INDEXING webhook`);
-    } else {
-      // Admin and other users use the default file indexing webhook
-      userSpecificWebhookId = UPLOAD_WEBHOOK_ID;
-      console.log(`👤 Using default FILE INDEXING webhook`);
-    }
+    // Use the default file indexing webhook for all users
+    const userSpecificWebhookId = UPLOAD_WEBHOOK_ID;
+    console.log(`👤 Using default FILE INDEXING webhook`);
     
     // DEV/PRODUCTION SELECTOR
     // Default to PRODUCTION mode, only use DEV if explicitly enabled

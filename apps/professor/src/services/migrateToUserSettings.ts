@@ -41,30 +41,7 @@ export const migrateToUserSettings = (): void => {
     // Create user-specific settings based on user type
     let userSettings;
     
-    if (session.userId === 'seokhoon_kang_001' || session.email === 'hana@tecace.com') {
-      // SeokHoon Kang gets his custom settings
-      userSettings = {
-        userId: session.userId,
-        email: session.email,
-        n8nConfigs: [{
-          id: 'seokhoon_default',
-          name: 'SeokHoon Kang Webhook',
-          webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/63647efd-8c39-42d5-8e1f-b465d62091c6',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }],
-        activeN8nConfigId: 'seokhoon_default',
-        supabaseConfig: {
-          url: 'https://oomjruguisqdahcrvfws.supabase.co',
-          anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vbWpydWd1aXNxZGFoY3J2ZndzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjAxNTUsImV4cCI6MjA3NjYzNjE1NX0.gPLhFgvyCXozmUwbdNDTRp2_-pDH4rHQCJuyPotR8Vo'
-        },
-        apiConfigs: apiConfigs,
-        uiCustomization: uiCustomization,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-    } else if (session.userId === '409esj1923' || session.email === 'chatbot-admin@tecace.com') {
+    if (session.userId === '409esj1923' || session.email === 'chatbot-admin@tecace.com') {
       // Admin gets original settings preserved
       userSettings = {
         userId: session.userId,

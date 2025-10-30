@@ -40,23 +40,6 @@ const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
   uiCustomization: {}
 };
 
-// User-specific settings for SeokHoon Kang
-const SEOKHOON_KANG_SETTINGS: Partial<UserSettings> = {
-  n8nConfigs: [{
-    id: 'seokhoon_default',
-    name: 'SeokHoon Kang Webhook',
-    webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/63647efd-8c39-42d5-8e1f-b465d62091c6',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }],
-  activeN8nConfigId: 'seokhoon_default',
-  supabaseConfig: {
-    url: 'https://oomjruguisqdahcrvfws.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vbWpydWd1aXNxZGFoY3J2ZndzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjAxNTUsImV4cCI6MjA3NjYzNjE1NX0.gPLhFgvyCXozmUwbdNDTRp2_-pDH4rHQCJuyPotR8Vo'
-  }
-};
-
 // User-specific settings for Admin (preserves original settings)
 const ADMIN_SETTINGS: Partial<UserSettings> = {
   n8nConfigs: [{
@@ -137,17 +120,6 @@ export const saveUserSettings = (settings: Partial<UserSettings>): boolean => {
  */
 const createDefaultUserSettings = (userId: string, email: string): UserSettings => {
   const now = new Date().toISOString();
-  
-  // Check if this is SeokHoon Kang's account
-  if (userId === 'seokhoon_kang_001' || email === 'hana@tecace.com') {
-    return {
-      userId,
-      email,
-      ...SEOKHOON_KANG_SETTINGS,
-      createdAt: now,
-      updatedAt: now
-    } as UserSettings;
-  }
   
   // Check if this is Admin's account
   if (userId === '409esj1923' || email === 'chatbot-admin@tecace.com') {
