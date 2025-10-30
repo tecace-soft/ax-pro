@@ -258,7 +258,7 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
 
   const handleAdminFeedbackClick = (entry: TranslationEntry) => {
     if (entry.adminFeedback) {
-      const rowLang = getLanguageForRow(entry.id)
+      const rowLang = selectedLanguage
       const translation = getTranslationForLanguage(entry, rowLang)
       
       setSupervisorFeedback(entry.adminFeedback.feedbackText || '')
