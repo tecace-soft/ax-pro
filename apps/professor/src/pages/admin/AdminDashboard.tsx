@@ -361,25 +361,25 @@ export default function AdminDashboard() {
             ) : serviceMode === 'translation' && isProfessor ? (
               // Translation Service Mode
               <div style={{ padding: '20px' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '20px' }}>번역 서비스</h1>
+                <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '20px' }}>{t('translation.title')}</h1>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '20px' }}>
                   {/* Translation Stats */}
                   <div style={{ padding: '16px', background: 'var(--admin-card-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
-                    <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginBottom: '8px' }}>총 번역 건수</div>
+                    <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginBottom: '8px' }}>{t('translation.totalTranslations') || 'Total translations'}</div>
                     <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--admin-primary)' }}>1,247</div>
-                    <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>+23% 이번 주</div>
+                    <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>{t('translation.thisWeekDelta') || '+23% this week'}</div>
                   </div>
                   
                   <div style={{ padding: '16px', background: 'var(--admin-card-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
-                    <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginBottom: '8px' }}>평균 번역 속도</div>
-                    <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--admin-success)' }}>1.2초</div>
-                    <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>실시간 STT</div>
+                    <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginBottom: '8px' }}>{t('translation.avgSpeed') || 'Average translation speed'}</div>
+                    <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--admin-success)' }}>1.2s</div>
+                    <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>{t('translation.realTimeStt') || 'real-time STT'}</div>
                   </div>
                   
                   <div style={{ padding: '16px', background: 'var(--admin-card-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
-                    <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginBottom: '8px' }}>번역 정확도</div>
+                    <div style={{ fontSize: '14px', color: 'var(--admin-text-muted)', marginBottom: '8px' }}>{t('translation.accuracy') || 'Translation accuracy'}</div>
                     <div style={{ fontSize: '32px', fontWeight: 700, color: '#f59e0b' }}>94.2%</div>
-                    <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>본문 인식률</div>
+                    <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>{t('translation.textRecognition') || 'text recognition'}</div>
                   </div>
                 </div>
                 

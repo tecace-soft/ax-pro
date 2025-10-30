@@ -51,7 +51,7 @@ export default function AdminSidebar({
   const navigate = useNavigate()
   const location = useLocation()
   const { customization, updateCustomization } = useUICustomization()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   
   const isDashboardPage = location.pathname === '/admin/dashboard'
   const [isEditing, setIsEditing] = useState(false)
@@ -64,6 +64,32 @@ export default function AdminSidebar({
   const [selectedSemester, setSelectedSemester] = useState<string>('winter')
   const [selectedSubject, setSelectedSubject] = useState<string>('machine-learning')
   const [selectedLanguage, setSelectedLanguage] = useState<string>(externalSelectedLanguage || 'en')
+  const [isManageLangOpen, setIsManageLangOpen] = useState(false)
+  const [isManageSubjectOpen, setIsManageSubjectOpen] = useState(false)
+  // per-subject managed translation target languages (always include en/ko)
+  const [managedLangBySubject, setManagedLangBySubject] = useState<Record<string, string[]>>({
+    'machine-learning': ['en','ko','ja','zh','fr'],
+    'deep-learning': ['en','ko','zh','es','ru'],
+    'nlp': ['en','ko','ja','es','pt'],
+    'computer-vision': ['en','ko','fr','de','it'],
+    'reinforcement-learning': ['en','ko','hi','ar','tr']
+  })
+
+  // Subject management (add/remove and localized names)
+  const [managedSubjects, setManagedSubjects] = useState<string[]>([
+    'machine-learning',
+    'deep-learning',
+    'nlp',
+    'computer-vision',
+    'reinforcement-learning'
+  ])
+  const [subjectLabelMap, setSubjectLabelMap] = useState<Record<string, { en: string; ko: string }>>({
+    'machine-learning': { en: 'Intro to Machine Learning', ko: '머신러닝 기초' },
+    'deep-learning': { en: 'Deep Learning', ko: '딥러닝' },
+    'nlp': { en: 'Natural Language Processing', ko: '자연어 처리' },
+    'computer-vision': { en: 'Computer Vision', ko: '컴퓨터 비전' },
+    'reinforcement-learning': { en: 'Reinforcement Learning', ko: '강화 학습' }
+  })
 
   // keep in sync with parent (right dropdown)
   useEffect(() => {
@@ -106,15 +132,33 @@ export default function AdminSidebar({
     ]
   }
 
+  // Build the displayed language list from managedLangBySubject
   const languageList = useMemo(() => {
-    const extras = selectedSubject ? (subjectLanguageMap[selectedSubject] || []) : []
-    // shuffle extras randomly
-    const shuffled = [...extras].sort(() => Math.random() - 0.5)
-    const combined = [...baseLanguages, ...shuffled]
-    // dedupe by value while preserving order
-    const seen = new Set<string>()
-    return combined.filter(l => (seen.has(l.value) ? false : (seen.add(l.value), true)))
-  }, [baseLanguages, selectedSubject])
+    const values = managedLangBySubject[selectedSubject] || ['en','ko']
+    // map to labels based on current UI language
+    const valueToLabel: Record<string, string> = {
+      en: '🇺🇸 ' + (language === 'en' ? 'English' : 'English'),
+      ko: '🇰🇷 ' + (language === 'en' ? 'Korean' : '한국어'),
+      ja: '🇯🇵 ' + (language === 'en' ? 'Japanese' : '日本語'),
+      zh: '🇨🇳 ' + (language === 'en' ? 'Mandarin Chinese' : '中文'),
+      es: '🇪🇸 ' + (language === 'en' ? 'Spanish' : 'Español'),
+      fr: '🇫🇷 ' + (language === 'en' ? 'French' : 'Français'),
+      pt: '🇵🇹 ' + (language === 'en' ? 'Portuguese' : 'Português'),
+      ru: '🇷🇺 ' + (language === 'en' ? 'Russian' : 'Русский'),
+      de: '🇩🇪 ' + (language === 'en' ? 'German' : 'Deutsch'),
+      it: '🇮🇹 ' + (language === 'en' ? 'Italian' : 'Italiano'),
+      hi: '🇮🇳 ' + (language === 'en' ? 'Hindi' : 'हिन्दी'),
+      ar: '🇸🇦 ' + (language === 'en' ? 'Arabic' : 'العربية'),
+      tr: '🇹🇷 ' + (language === 'en' ? 'Turkish' : 'Türkçe')
+    }
+    return values.map(v => ({ value: v, label: valueToLabel[v] || v }))
+  }, [managedLangBySubject, selectedSubject, language])
+
+  const allLanguageValues = ['en','ko','ja','zh','es','hi','fr','ar','pt','ru','de','it','tr']
+  const addableLanguages = useMemo(() => {
+    const current = new Set(managedLangBySubject[selectedSubject] || [])
+    return allLanguageValues.filter(v => !current.has(v))
+  }, [managedLangBySubject, selectedSubject])
 
   const handleNavigation = (sectionId: string) => {
     if (isDashboardPage) {
@@ -164,7 +208,7 @@ export default function AdminSidebar({
                   transition: 'all 0.2s'
                 }}
               >
-                챗봇
+                {language === 'en' ? 'Chatbot' : '챗봇'}
               </button>
               <button
                 onClick={() => onServiceModeChange && onServiceModeChange('translation')}
@@ -181,7 +225,7 @@ export default function AdminSidebar({
                   transition: 'all 0.2s'
                 }}
               >
-                번역
+                {language === 'en' ? 'Translate' : '번역'}
               </button>
             </div>
           </div>
@@ -509,7 +553,7 @@ export default function AdminSidebar({
             
             {/* User Type Selection */}
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '6px' }}>사용자 유형</div>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '6px' }}>{language === 'en' ? 'User Type' : '사용자 유형'}</div>
               <div style={{ display: 'flex', gap: '4px', background: 'var(--admin-card-bg)', borderRadius: '6px', padding: '4px' }}>
                 <button
                   onClick={() => setUserType('professor')}
@@ -526,7 +570,7 @@ export default function AdminSidebar({
                     transition: 'all 0.2s'
                   }}
                 >
-                  교수
+                  {language === 'en' ? 'Professor' : '교수'}
                 </button>
                 <button
                   onClick={() => setUserType('assistant')}
@@ -543,14 +587,14 @@ export default function AdminSidebar({
                     transition: 'all 0.2s'
                   }}
                 >
-                  조교
+                  {language === 'en' ? 'Assistant' : '조교'}
                 </button>
               </div>
             </div>
 
             {/* Term & Subject Selection */}
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '6px' }}>학기</div>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '6px' }}>{language === 'en' ? 'Term' : '학기'}</div>
               
               {/* Combined Term dropdown (Year + Season) */}
               <div style={{ marginBottom: '12px' }}>
@@ -574,10 +618,10 @@ export default function AdminSidebar({
                   }}
                 >
                   {['2025','2024','2023'].flatMap((y) => ([
-                    { v: `${y}-winter`, l: `${y} 겨울` },
-                    { v: `${y}-fall`, l: `${y} 가을` },
-                    { v: `${y}-summer`, l: `${y} 여름` },
-                    { v: `${y}-spring`, l: `${y} 봄` }
+                    { v: `${y}-winter`, l: language === 'en' ? `${y} Winter` : `${y} 겨울` },
+                    { v: `${y}-fall`, l: language === 'en' ? `${y} Fall` : `${y} 가을` },
+                    { v: `${y}-summer`, l: language === 'en' ? `${y} Summer` : `${y} 여름` },
+                    { v: `${y}-spring`, l: language === 'en' ? `${y} Spring` : `${y} 봄` }
                   ])).map(opt => (
                     <option key={opt.v} value={opt.v}>{opt.l}</option>
                   ))}
@@ -588,7 +632,15 @@ export default function AdminSidebar({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {/* Subject List */}
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>과목</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--admin-text-muted)' }}>{language === 'en' ? 'Subject' : '과목'}</div>
+                    <button
+                      onClick={() => setIsManageSubjectOpen(true)}
+                      style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text-muted)', cursor: 'pointer' }}
+                    >
+                      {language === 'en' ? 'Manage' : '관리'}
+                    </button>
+                  </div>
                   <div style={{ 
                     background: 'var(--admin-card-bg)', 
                     border: '1px solid var(--admin-border)',
@@ -596,7 +648,7 @@ export default function AdminSidebar({
                     maxHeight: '300px',
                     overflowY: 'auto'
                   }}>
-                    {['machine-learning', 'deep-learning', 'nlp', 'computer-vision', 'reinforcement-learning'].map((subj) => (
+                    {managedSubjects.map((subj) => (
                       <button
                         key={subj}
                         onClick={() => { 
@@ -619,46 +671,34 @@ export default function AdminSidebar({
                           borderBottom: '1px solid var(--admin-border)'
                         }}
                       >
-                        {subj === 'machine-learning' && '머신러닝 기초'}
-                        {subj === 'deep-learning' && '딥러닝'}
-                        {subj === 'nlp' && '자연어 처리'}
-                        {subj === 'computer-vision' && '컴퓨터 비전'}
-                        {subj === 'reinforcement-learning' && '강화 학습'}
+                        {(subjectLabelMap[subj]?.[language as 'en' | 'ko']) || subj}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Language List (dynamic per subject; KO/EN always shown) */}
+                {/* Language List (display-only; managed via Manage) */}
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>언어</div>
-                  <div style={{ 
-                    background: 'var(--admin-card-bg)', 
-                    border: '1px solid var(--admin-border)',
-                    borderRadius: '6px',
-                    maxHeight: '300px',
-                    overflowY: 'auto'
-                  }}>
-                    {languageList.map((lang) => (
-                      <button
-                        key={lang.value}
-                        onClick={() => { setSelectedLanguage(lang.value); onSelectedLanguageChange && onSelectedLanguageChange(lang.value) }}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          fontSize: '12px',
-                          background: selectedLanguage === lang.value ? 'var(--admin-primary)' : 'transparent',
-                          color: selectedLanguage === lang.value ? 'white' : 'var(--admin-text)',
-                          border: 'none',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          borderBottom: '1px solid var(--admin-border)'
-                        }}
-                      >
-                        {lang.label}
-                      </button>
-                    ))}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--admin-text-muted)' }}>{language === 'en' ? 'Languages (targets)' : '언어 (대상)'}</div>
+                    <button
+                      onClick={() => setIsManageLangOpen(true)}
+                      style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text-muted)', cursor: 'pointer' }}
+                    >
+                      {language === 'en' ? 'Manage' : '관리'}
+                    </button>
+                  </div>
+                  <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '6px', padding: '8px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {languageList.map((lang) => (
+                        <span key={lang.value} style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '14px', border: '1px solid var(--admin-border)', color: 'var(--admin-text-muted)', background: 'rgba(255,255,255,0.02)' }}>
+                          {lang.label}
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--admin-text-muted)' }}>
+                      {language === 'en' ? 'Use the dropdown in the table header to switch active language.' : '우측 표 헤더의 드롭다운에서 활성 언어를 변경하세요.'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -765,6 +805,133 @@ export default function AdminSidebar({
       </div>
 
       {/* Sidebar collapse toggle removed per UX feedback */}
+
+      {/* Manage Languages Modal */}
+      {isManageLangOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(4, 18, 32, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ width: '420px', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '10px', padding: '16px' }}>
+            <h3 style={{ margin: 0, marginBottom: '12px', color: 'var(--admin-text)' }}>{language === 'en' ? 'Manage target languages' : '번역 대상 언어 관리'}</h3>
+
+            {/* Current list with remove */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+              {(managedLangBySubject[selectedSubject] || []).map(v => (
+                <span key={v} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', border: '1px solid var(--admin-border)', borderRadius: '16px', color: 'var(--admin-text)' }}>
+                  {languageList.find(l => l.value === v)?.label || v}
+                  {v !== 'en' && v !== 'ko' && (
+                    <button
+                      onClick={() => {
+                        setManagedLangBySubject(prev => ({
+                          ...prev,
+                          [selectedSubject]: (prev[selectedSubject] || []).filter(x => x !== v)
+                        }))
+                      }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--admin-text-muted)', cursor: 'pointer' }}
+                      title={language === 'en' ? 'Remove' : '삭제'}
+                    >
+                      ×
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+
+            {/* Add new language */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <select
+                id="add-lang-select"
+                style={{ flex: 1, padding: '8px 10px', background: 'var(--admin-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)', borderRadius: '6px' }}
+              >
+                {addableLanguages.map(v => (
+                  <option key={v} value={v}>{languageList.find(l => l.value === v)?.label || v}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => {
+                  const el = document.getElementById('add-lang-select') as HTMLSelectElement | null
+                  const val = el?.value
+                  if (!val) return
+                  setManagedLangBySubject(prev => ({
+                    ...prev,
+                    [selectedSubject]: Array.from(new Set([...(prev[selectedSubject] || []), val]))
+                  }))
+                }}
+                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text)', cursor: 'pointer' }}
+              >
+                {language === 'en' ? 'Add' : '추가'}
+              </button>
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+              <button onClick={() => setIsManageLangOpen(false)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text)', cursor: 'pointer' }}>
+                {language === 'en' ? 'Close' : '닫기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Subjects Modal */}
+      {isManageSubjectOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(4, 18, 32, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ width: 'min(560px, 92vw)', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '10px', padding: '16px' }}>
+            <h3 style={{ margin: 0, marginBottom: '12px', color: 'var(--admin-text)' }}>{language === 'en' ? 'Manage subjects' : '과목 관리'}</h3>
+
+            {/* Existing subjects */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+              {managedSubjects.map(key => (
+                <span key={key} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', border: '1px solid var(--admin-border)', borderRadius: '16px', color: 'var(--admin-text)' }}>
+                  {subjectLabelMap[key]?.[language as 'en' | 'ko'] || key}
+                  <button
+                    onClick={() => {
+                      setManagedSubjects(prev => prev.filter(s => s !== key))
+                      setManagedLangBySubject(prev => {
+                        const { [key]: _, ...rest } = prev
+                        return rest
+                      })
+                      if (selectedSubject === key) {
+                        const next = managedSubjects.find(s => s !== key) || 'machine-learning'
+                        setSelectedSubject(next)
+                      }
+                    }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--admin-text-muted)', cursor: 'pointer' }}
+                    title={language === 'en' ? 'Remove' : '삭제'}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+
+            {/* Add new subject */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+              <input id="sub-slug" placeholder={language === 'en' ? 'slug (e.g., data-mining)' : '슬러그'} style={{ flex: '1 1 140px', minWidth: 0, padding: '8px 10px', background: 'var(--admin-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)', borderRadius: '6px' }} />
+              <input id="sub-en" placeholder={language === 'en' ? 'English name' : '영문명'} style={{ flex: '1 1 140px', minWidth: 0, padding: '8px 10px', background: 'var(--admin-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)', borderRadius: '6px' }} />
+              <input id="sub-ko" placeholder={language === 'en' ? 'Korean name' : '한글명'} style={{ flex: '1 1 140px', minWidth: 0, padding: '8px 10px', background: 'var(--admin-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)', borderRadius: '6px' }} />
+              <button
+                onClick={() => {
+                  const slug = (document.getElementById('sub-slug') as HTMLInputElement | null)?.value?.trim()
+                  const en = (document.getElementById('sub-en') as HTMLInputElement | null)?.value?.trim()
+                  const ko = (document.getElementById('sub-ko') as HTMLInputElement | null)?.value?.trim()
+                  if (!slug || !en || !ko) return
+                  setManagedSubjects(prev => Array.from(new Set([...prev, slug])))
+                  setSubjectLabelMap(prev => ({ ...prev, [slug]: { en, ko } }))
+                  setManagedLangBySubject(prev => ({ ...prev, [slug]: ['en','ko'] }))
+                }}
+                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text)', cursor: 'pointer', flex: '0 0 auto' }}
+              >
+                {language === 'en' ? 'Add' : '추가'}
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+              <button onClick={() => setIsManageSubjectOpen(false)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text)', cursor: 'pointer' }}>
+                {language === 'en' ? 'Close' : '닫기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   )
 }

@@ -427,18 +427,20 @@ export default function ProfessorRadarChart({
 
       {/* Performance Timeline - professor only: collapsed by default */}
       {timelineData && timelineData.length > 0 && (
-        <div className="timeline-section-wrapper" style={{ marginTop: 8, minHeight: 24, padding: 0 }}>
+        <div className="timeline-section-wrapper" style={{ marginTop: 8, minHeight: 32, padding: '8px 0' }}>
           {!timelineExpanded ? (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', minHeight: 24, padding: 0, margin: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 0, margin: 0 }}>
               <button
                 onClick={() => setTimelineExpanded(true)}
                 style={{
-                  padding: '4px 8px',
+                  padding: '6px 12px',
                   borderRadius: 8,
                   border: '1px solid var(--admin-border)',
                   background: 'var(--admin-card-bg)',
                   color: 'var(--admin-text)',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 500
                 }}
               >
                 {t('admin.performanceTimeline') || 'Performance Timeline'} 열기
