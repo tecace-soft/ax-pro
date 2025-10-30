@@ -13,6 +13,9 @@ export interface ChatData {
   session_id?: string;  // Session identifier
   chat_message: string;  // User's input message
   response: string;      // Bot's response
+  // Optional bilingual fields for translation demo (professor mock only)
+  response_en?: string;
+  response_ko?: string;
   user_id: string;       // User identifier
   admin_feedback?: AdminFeedbackData | null;
   user_feedback?: any | null;
