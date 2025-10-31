@@ -502,12 +502,12 @@ export default function AdminDashboard() {
                 <div className="ai-research-stats-section" style={{ display: newSectionsExpanded ? 'block' : 'none' }}>
                   {/* Header Row - Title, View Mode, Toggle Button */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', gap: '12px' }}>
-                    <h2 className="section-title" style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>{t('Research Field Analysis')}</h2>
+                    <h2 className="section-title" style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>{t('dashboard.researchFieldAnalysis')}</h2>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       {/* View Mode Selector */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>View:</span>
+                        <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>{t('dashboard.view')}</span>
                         <button
                           onClick={() => setViewMode('overview')}
                           style={{
@@ -522,7 +522,7 @@ export default function AdminDashboard() {
                             transition: 'all 0.2s'
                           }}
                         >
-                          Overview
+                          {t('dashboard.overview')}
                         </button>
                         <button
                           onClick={() => setViewMode('detailed')}
@@ -538,7 +538,7 @@ export default function AdminDashboard() {
                             transition: 'all 0.2s'
                           }}
                         >
-                          Details
+                          {t('dashboard.details')}
                         </button>
                       </div>
                       
@@ -567,7 +567,7 @@ export default function AdminDashboard() {
                             <polyline points="6,9 12,15 18,9"/>
                           )}
                         </svg>
-                        {newSectionsExpanded ? 'Hide' : 'Show'}
+                        {newSectionsExpanded ? t('dashboard.hide') : t('dashboard.show')}
                       </button>
                     </div>
                   </div>
@@ -594,7 +594,7 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Total Sessions')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('dashboard.totalSessions')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalConversations}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
@@ -611,7 +611,7 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Total Questions')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('dashboard.totalQuestions')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalQuestions}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
@@ -630,7 +630,7 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Avg Q/Session')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('dashboard.avgQSession')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{avgQuestionsPerSession}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
@@ -648,7 +648,7 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Satisfaction')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('dashboard.satisfaction')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{satisfactionRate}%</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
@@ -668,7 +668,7 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Active Users')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('dashboard.activeUsers')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{activeStudents}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
@@ -686,7 +686,7 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Documents')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('admin.documents')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalDocuments}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
@@ -704,7 +704,7 @@ export default function AdminDashboard() {
                   }}>
                     {/* Field Distribution */}
                     <div className="research-stat-card">
-                      <h3 className="stat-card-title">{t('Research Fields')}</h3>
+                      <h3 className="stat-card-title">{t('dashboard.researchFields')}</h3>
                       <div className="field-stats">
                         <div 
                           className="field-item"
@@ -720,7 +720,7 @@ export default function AdminDashboard() {
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '85%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">42 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 12%</span>}</div>
+                          <div className="field-count">42 {t('dashboard.questions')}{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 12%</span>}</div>
                         </div>
                         <div 
                           className="field-item"
@@ -736,7 +736,7 @@ export default function AdminDashboard() {
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '72%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">36 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 8%</span>}</div>
+                          <div className="field-count">36 {t('dashboard.questions')}{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 8%</span>}</div>
                         </div>
                         <div 
                           className="field-item"
@@ -752,7 +752,7 @@ export default function AdminDashboard() {
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '68%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">34 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 15%</span>}</div>
+                          <div className="field-count">34 {t('dashboard.questions')}{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 15%</span>}</div>
                         </div>
                         <div 
                           className="field-item"
@@ -768,7 +768,7 @@ export default function AdminDashboard() {
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '55%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">28 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 5%</span>}</div>
+                          <div className="field-count">28 {t('dashboard.questions')}{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 5%</span>}</div>
                         </div>
                         <div 
                           className="field-item"
@@ -784,23 +784,23 @@ export default function AdminDashboard() {
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '45%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">23 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 3%</span>}</div>
+                          <div className="field-count">23 {t('dashboard.questions')}{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 3%</span>}</div>
                         </div>
                         {viewMode === 'detailed' && (
                           <>
                             <div className="field-item">
-                              <div className="field-name">Transfer Learning</div>
+                              <div className="field-name">{t('dashboard.topic.transferLearning')}</div>
                               <div className="field-bar">
                                 <div className="field-progress" style={{ width: '38%', backgroundColor: 'var(--admin-primary)' }}></div>
                               </div>
-                              <div className="field-count">19 questions</div>
+                              <div className="field-count">19 {t('dashboard.questions')}</div>
                             </div>
                             <div className="field-item">
-                              <div className="field-name">AutoML</div>
+                              <div className="field-name">{t('dashboard.topic.automl')}</div>
                               <div className="field-bar">
                                 <div className="field-progress" style={{ width: '32%', backgroundColor: 'var(--admin-primary)' }}></div>
                               </div>
-                              <div className="field-count">16 questions</div>
+                              <div className="field-count">16 {t('dashboard.questions')}</div>
                             </div>
                           </>
                         )}
@@ -809,69 +809,69 @@ export default function AdminDashboard() {
 
                     {/* Topic Engagement */}
                     <div className="research-stat-card">
-                      <h3 className="stat-card-title">{t('Topic Engagement')}</h3>
+                      <h3 className="stat-card-title">{t('dashboard.topicEngagement')}</h3>
                       <div className="topic-stats">
                         <div className="topic-item">
-                          <div className="topic-name">Neural Networks</div>
+                          <div className="topic-name">{t('dashboard.topic.neuralNetworks')}</div>
                           <div className="topic-metrics">
-                            <span className="topic-sessions">8 sessions</span>
-                            <span className="topic-avg">3.2 Q/session</span>
-                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 26 questions</div>}
+                            <span className="topic-sessions">8 {t('dashboard.sessions')}</span>
+                            <span className="topic-avg">3.2 {t('dashboard.qSession')}</span>
+                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 26 {t('dashboard.questions')}</div>}
                           </div>
                         </div>
                         <div className="topic-item">
-                          <div className="topic-name">Transformer Architecture</div>
+                          <div className="topic-name">{t('dashboard.topic.transformerArchitecture')}</div>
                           <div className="topic-metrics">
-                            <span className="topic-sessions">6 sessions</span>
-                            <span className="topic-avg">4.1 Q/session</span>
+                            <span className="topic-sessions">6 {t('dashboard.sessions')}</span>
+                            <span className="topic-avg">4.1 {t('dashboard.qSession')}</span>
                             {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 24 questions</div>}
                           </div>
                         </div>
                         <div className="topic-item">
-                          <div className="topic-name">GANs</div>
+                          <div className="topic-name">{t('dashboard.topic.gans')}</div>
                           <div className="topic-metrics">
-                            <span className="topic-sessions">5 sessions</span>
-                            <span className="topic-avg">2.8 Q/session</span>
+                            <span className="topic-sessions">5 {t('dashboard.sessions')}</span>
+                            <span className="topic-avg">2.8 {t('dashboard.qSession')}</span>
                             {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 14 questions</div>}
                           </div>
                         </div>
                         <div className="topic-item">
-                          <div className="topic-name">CNN Architectures</div>
+                          <div className="topic-name">{t('dashboard.topic.cnnArchitectures')}</div>
                           <div className="topic-metrics">
-                            <span className="topic-sessions">7 sessions</span>
-                            <span className="topic-avg">3.5 Q/session</span>
+                            <span className="topic-sessions">7 {t('dashboard.sessions')}</span>
+                            <span className="topic-avg">3.5 {t('dashboard.qSession')}</span>
                             {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 25 questions</div>}
                           </div>
                         </div>
                         <div className="topic-item">
-                          <div className="topic-name">Optimization</div>
+                          <div className="topic-name">{t('dashboard.topic.optimization')}</div>
                           <div className="topic-metrics">
-                            <span className="topic-sessions">4 sessions</span>
-                            <span className="topic-avg">2.2 Q/session</span>
+                            <span className="topic-sessions">4 {t('dashboard.sessions')}</span>
+                            <span className="topic-avg">2.2 {t('dashboard.qSession')}</span>
                             {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 9 questions</div>}
                           </div>
                         </div>
                         {viewMode === 'detailed' && (
                           <>
                             <div className="topic-item">
-                              <div className="topic-name">Attention Mechanisms</div>
+                              <div className="topic-name">{t('dashboard.topic.attentionMechanisms')}</div>
                               <div className="topic-metrics">
-                                <span className="topic-sessions">5 sessions</span>
-                                <span className="topic-avg">3.6 Q/session</span>
+                                <span className="topic-sessions">5 {t('dashboard.sessions')}</span>
+                                <span className="topic-avg">3.6 {t('dashboard.qSession')}</span>
                               </div>
                             </div>
                             <div className="topic-item">
-                              <div className="topic-name">Object Detection</div>
+                              <div className="topic-name">{t('dashboard.topic.objectDetection')}</div>
                               <div className="topic-metrics">
-                                <span className="topic-sessions">3 sessions</span>
-                                <span className="topic-avg">2.7 Q/session</span>
+                                <span className="topic-sessions">3 {t('dashboard.sessions')}</span>
+                                <span className="topic-avg">2.7 {t('dashboard.qSession')}</span>
                               </div>
                             </div>
                             <div className="topic-item">
-                              <div className="topic-name">Model Compression</div>
+                              <div className="topic-name">{t('dashboard.topic.modelCompression')}</div>
                               <div className="topic-metrics">
-                                <span className="topic-sessions">3 sessions</span>
-                                <span className="topic-avg">2.3 Q/session</span>
+                                <span className="topic-sessions">3 {t('dashboard.sessions')}</span>
+                                <span className="topic-avg">2.3 {t('dashboard.qSession')}</span>
                               </div>
                             </div>
                           </>
@@ -927,7 +927,7 @@ export default function AdminDashboard() {
                         {/* Questions Bar Chart */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Questions Asked</span>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.questionsAsked')}</span>
                             <span style={{ fontSize: '20px', fontWeight: 700, color: '#10b981' }}>247</span>
                           </div>
                           <div style={{ height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
@@ -987,7 +987,7 @@ export default function AdminDashboard() {
                         {viewMode === 'overview' ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg/Session</span>
+                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.avgQSession')}</span>
                               <span style={{ fontSize: '20px', fontWeight: 700, color: '#ec4899' }}>3.2</span>
                             </div>
                             <div style={{ width: '60px', height: '60px', position: 'relative', margin: '0 auto' }}>
@@ -1084,14 +1084,14 @@ export default function AdminDashboard() {
                         {viewMode === 'detailed' && (
                           <>
                             <div className="satisfaction-item">
-                              <div className="satisfaction-field">Transfer Learning</div>
+                              <div className="satisfaction-field">{t('dashboard.topic.transferLearning')}</div>
                               <div className="satisfaction-gauge">
                                 <div className="gauge-fill" style={{ width: '68%', backgroundColor: 'var(--admin-primary)' }}></div>
                                 <span className="gauge-text">68%</span>
                               </div>
                             </div>
                             <div className="satisfaction-item">
-                              <div className="satisfaction-field">AutoML</div>
+                              <div className="satisfaction-field">{t('dashboard.topic.automl')}</div>
                               <div className="satisfaction-gauge">
                                 <div className="gauge-fill" style={{ width: '65%', backgroundColor: 'var(--admin-primary)' }}></div>
                                 <span className="gauge-text">65%</span>
