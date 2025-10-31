@@ -611,14 +611,14 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
           <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0, fontSize: fs.cell }}>
             <thead>
               <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', fontSize: fs.header }}>Date</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px', fontSize: fs.header }}>User ID</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', fontSize: fs.header }}>Chat ID</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', fontSize: fs.header }}>Reaction</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', fontSize: fs.header }}>Comment</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', fontSize: fs.header }}>User Message</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', fontSize: fs.header }}>AI Response</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', fontSize: fs.header }}>Delete</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.date')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.userId')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.chatId')}</th>
+                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.reaction')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.comment')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', fontSize: fs.header }}>{t('admin.userMessage')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', fontSize: fs.header }}>{t('admin.aiResponse')}</th>
+                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.delete')}</th>
               </tr>
             </thead>
             <tbody>
@@ -698,7 +698,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                     <button
                       onClick={() => handleDelete(feedback.id!)}
                       className="icon-btn hover:bg-red-500/20 transition-colors"
-                      title="Delete feedback"
+                      title={t('adminFeedback.deleteFeedback')}
                     >
                       <IconTrash size={16} style={{ color: 'var(--admin-danger)' }} />
                     </button>
@@ -728,8 +728,8 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     {getReactionIcon(feedback.reaction)}
-                    <span className="text-sm font-medium" style={{ color: 'var(--admin-text)' }}>
-                      User: 
+                    <span className="text-sm font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.sm }}>
+                      {t('admin.user')}: 
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -767,7 +767,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                         handleDelete(feedback.id!)
                       }}
                       className="icon-btn hover:bg-red-500/20 transition-colors"
-                      title="Delete feedback"
+                      title={t('adminFeedback.deleteFeedback')}
                     >
                       <IconTrash size={16} style={{ color: 'var(--admin-danger)' }} />
                     </button>
