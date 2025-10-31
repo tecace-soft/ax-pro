@@ -24,6 +24,7 @@ export async function fetchSystemPrompt(): Promise<string> {
     const { data, error } = await supabase
       .from('prompts')
       .select('*')
+      .is('group_id', null)
       .order('created_at', { ascending: false })
       .limit(1);
 
