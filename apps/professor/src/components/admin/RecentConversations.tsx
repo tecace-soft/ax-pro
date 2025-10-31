@@ -781,7 +781,7 @@ export default function RecentConversations({
                       </button>
                     )}
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '400px', overflow: 'hidden' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '280px', overflow: 'hidden' }}>
                     <div 
                       className="truncate cursor-pointer hover:text-blue-400"
                       onClick={() => handleFeedbackClick(conversation, 'good')}
@@ -790,7 +790,7 @@ export default function RecentConversations({
                       {conversation.chat_message}
                     </div>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '400px', overflow: 'hidden' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '300px', overflow: 'hidden' }}>
                     <div className="truncate" title={conversation.response}>
                       {conversation.response}
                     </div>
