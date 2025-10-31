@@ -611,14 +611,14 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
           <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0, fontSize: fs.cell }}>
             <thead>
               <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', maxWidth: '100px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.date')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.userId')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px', maxWidth: '80px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.chatId')}</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.reaction')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '120px', maxWidth: '200px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.comment')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', maxWidth: '220px', fontSize: fs.header }}>{t('admin.userMessage')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', maxWidth: '240px', fontSize: fs.header }}>{t('admin.aiResponse')}</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.delete')}</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '90px', maxWidth: '90px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.date')}</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '65px', maxWidth: '65px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.userId')}</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '75px', maxWidth: '75px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.chatId')}</th>
+                <th className="px-2 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '55px', maxWidth: '55px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.reaction')}</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '120px', maxWidth: '180px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.comment')}</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', maxWidth: '200px', fontSize: fs.header }}>{t('admin.userMessage')}</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', maxWidth: '220px', fontSize: fs.header }}>{t('admin.aiResponse')}</th>
+                <th className="px-2 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '55px', maxWidth: '55px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.delete')}</th>
               </tr>
             </thead>
             <tbody>
@@ -632,16 +632,16 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                     borderColor: 'var(--admin-border)'
                   }}
                 >
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
+                  <td className="px-2 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '90px', overflow: 'hidden' }}>
                     <button
                       onClick={() => handleFilterByDate(feedback.created_at || '')}
-                      className="hover:underline cursor-pointer"
-                      title="Click to filter by date"
+                      className="hover:underline cursor-pointer truncate block w-full text-left"
+                      title={formatDate(feedback.created_at)}
                     >
                       {formatDate(feedback.created_at)}
                     </button>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '70px', overflow: 'hidden' }}>
+                  <td className="px-2 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '65px', overflow: 'hidden' }}>
                     <button
                       onClick={() => handleFilterByUser(feedback.user_id)}
                       className="hover:underline cursor-pointer text-blue-300 truncate block w-full text-left"
@@ -650,7 +650,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                       {feedback.user_id}
                     </button>
                   </td>
-                  <td className="px-3 py-2" style={{ fontSize: fs.cell, maxWidth: '80px', overflow: 'hidden' }}>
+                  <td className="px-2 py-2" style={{ fontSize: fs.cell, maxWidth: '75px', overflow: 'hidden' }}>
                     <button
                       onClick={() => {
                         // First scroll to the chat in Recent Conversations
@@ -672,29 +672,29 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                       {feedback.chat_id}
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-center" style={{ fontSize: fs.cell, maxWidth: '60px' }}>
+                  <td className="px-2 py-2 text-center" style={{ fontSize: fs.cell, maxWidth: '55px' }}>
                     {feedback.reaction === 'good' ? (
                       <IconThumbsUp size={fontSize === 'small' ? 14 : fontSize === 'medium' ? 16 : 18} style={{ color: 'var(--admin-success)', display: 'inline' }} />
                     ) : (
                       <IconThumbsDown size={fontSize === 'small' ? 14 : fontSize === 'medium' ? 16 : 18} style={{ color: 'var(--admin-danger)', display: 'inline' }} />
                     )}
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, minWidth: '120px', maxWidth: '200px', overflow: 'hidden' }}>
+                  <td className="px-2 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, minWidth: '120px', maxWidth: '180px', overflow: 'hidden' }}>
                     <div className="truncate" title={feedback.feedback_text || ''}>
                       {feedback.feedback_text || '-'}
                     </div>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '220px', overflow: 'hidden' }}>
+                  <td className="px-2 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '200px', overflow: 'hidden' }}>
                     <div className="truncate" title={feedback.chatData?.chat_message || ''}>
                       {feedback.chatData?.chat_message || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '240px', overflow: 'hidden' }}>
+                  <td className="px-2 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '220px', overflow: 'hidden' }}>
                     <div className="truncate" title={feedback.chatData?.response || ''}>
                       {feedback.chatData?.response || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-2 py-2 text-center">
                     <button
                       onClick={() => handleDelete(feedback.id!)}
                       className="icon-btn hover:bg-red-500/20 transition-colors"
