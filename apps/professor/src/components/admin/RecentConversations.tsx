@@ -39,7 +39,7 @@ export default function RecentConversations({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('date-desc')
-  const [displayLimit, setDisplayLimit] = useState(10)
+  const [displayLimit, setDisplayLimit] = useState(20)
   const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON'>('CSV')
   const [filterSessionId, setFilterSessionId] = useState<string | null>(null)
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
@@ -89,10 +89,12 @@ export default function RecentConversations({
           onScrollComplete?.()
         } else {
           // If not found in displayed conversations, check if it's in filtered but not displayed
-          // In that case, increase display limit to include it
-          const chatExists = filteredConversations.find(c => c.chat_id === scrollToChatId)
-          if (chatExists && displayLimit < filteredConversations.length) {
-            setDisplayLimit(filteredConversations.length)
+          // In that case, increase display limit just enough to include it (not all)
+          const chatIndex = filteredConversations.findIndex(c => c.chat_id === scrollToChatId)
+          if (chatIndex !== -1 && chatIndex >= displayLimit) {
+            // Increase limit to show the chat plus a few more (max 20 rows total if possible)
+            const newLimit = Math.min(chatIndex + 5, filteredConversations.length, 20)
+            setDisplayLimit(newLimit)
             // Try again after limit increase
             setTimeout(() => {
               const retryElement = document.getElementById(`chat-${scrollToChatId}`)
@@ -116,8 +118,8 @@ export default function RecentConversations({
                 onScrollComplete?.()
               }
             }, 200)
-          } else if (!chatExists) {
-            // Chat might be filtered out, clear filters temporarily to show it
+          } else if (chatIndex === -1) {
+            // Chat might be filtered out
             console.warn(`Chat ${scrollToChatId} not found in filtered conversations. It might be filtered out.`)
           }
         }
