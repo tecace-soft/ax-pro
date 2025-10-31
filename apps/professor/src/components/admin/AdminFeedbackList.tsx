@@ -743,7 +743,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                       <IconThumbsDown size={fontSize === 'small' ? 14 : fontSize === 'medium' ? 16 : 18} style={{ color: 'var(--admin-danger)', display: 'inline' }} />
                     )}
                   </td>
-                  <td className="px-3 py-2 max-w-[220px]" style={{ color: 'var(--admin-text)', position: 'relative', fontSize: fs.cell }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', position: 'relative', fontSize: fs.cell, maxWidth: '350px', overflow: 'hidden' }}>
                     {editingFeedback?.id === feedback.id && editingFeedback.field === 'feedback' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <textarea
