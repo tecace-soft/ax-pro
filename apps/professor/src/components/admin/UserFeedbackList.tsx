@@ -382,6 +382,49 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
       {/* Controls Bar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        {/* Font Size Control */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>{t('adminFeedback.fontSize')}:</span>
+          <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
+            <button
+              onClick={() => setFontSize('small')}
+              className="px-3 py-2 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: fontSize === 'small' ? 'var(--admin-primary)' : 'transparent',
+                color: fontSize === 'small' ? '#041220' : 'var(--admin-text)',
+                fontSize: fs.sm
+              }}
+              title={t('adminFeedback.fontSizeSmall')}
+            >
+              A
+            </button>
+            <button
+              onClick={() => setFontSize('medium')}
+              className="px-3 py-2 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: fontSize === 'medium' ? 'var(--admin-primary)' : 'transparent',
+                color: fontSize === 'medium' ? '#041220' : 'var(--admin-text)',
+                fontSize: fs.base
+              }}
+              title={t('adminFeedback.fontSizeMedium')}
+            >
+              A
+            </button>
+            <button
+              onClick={() => setFontSize('large')}
+              className="px-3 py-2 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: fontSize === 'large' ? 'var(--admin-primary)' : 'transparent',
+                color: fontSize === 'large' ? '#041220' : 'var(--admin-text)',
+                fontSize: fs.base
+              }}
+              title={t('adminFeedback.fontSizeLarge')}
+            >
+              A
+            </button>
+          </div>
+        </div>
+
         {/* View Mode Toggle */}
         <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
           <button
