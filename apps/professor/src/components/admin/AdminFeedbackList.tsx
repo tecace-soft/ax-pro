@@ -524,14 +524,18 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       </div>
 
       {/* Content */}
-      {filteredFeedbacks.length === 0 ? (
-        <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
-          <p>{searchTerm || filterVerdict !== 'all' ? 'No feedback matches your filters' : 'No admin feedback found'}</p>
-        </div>
-      ) : (() => {
+      {(() => {
         const displayedFeedbacks = filteredFeedbacks.slice(0, displayLimit)
         const hasMore = filteredFeedbacks.length > displayLimit
-        
+
+        if (filteredFeedbacks.length === 0) {
+          return (
+            <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
+              <p>{searchTerm || filterVerdict !== 'all' ? 'No feedback matches your filters' : 'No admin feedback found'}</p>
+            </div>
+          )
+        }
+
         return viewMode === 'table' ? (
         /* Table View */
         <>
@@ -631,6 +635,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
         </>
       ) : (
         /* Card View */
+        <>
         <div className="space-y-3">
           {displayedFeedbacks.map((feedback) => (
             <div 
@@ -779,7 +784,9 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
             </button>
           </div>
         )}
-      ))()
+        </>
+      )
+      })()
       }
     </div>
   )
