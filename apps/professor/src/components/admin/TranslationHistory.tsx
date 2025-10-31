@@ -382,7 +382,7 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
             }}
           >
             {['5','4','3','2','1'].map(s => (
-              <option key={s} value={s}>{`Session ${s}`}</option>
+              <option key={s} value={s}>{language === 'en' ? `Session ${s}` : `수업 회차 ${s}`}</option>
             ))}
           </select>
         </div>
@@ -638,7 +638,7 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
               fontWeight: 500
             }}
           >
-            Load More ({translations.length - displayLimit} remaining)
+            {t('adminFeedback.loadMore')} ({translations.length - displayLimit} {t('adminFeedback.remaining')})
           </button>
         </div>
       )}
