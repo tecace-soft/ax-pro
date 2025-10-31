@@ -39,7 +39,7 @@ export default function RecentConversations({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('date-desc')
-  const [displayLimit, setDisplayLimit] = useState(20)
+  const [displayLimit, setDisplayLimit] = useState(10)
   const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON'>('CSV')
   const [filterSessionId, setFilterSessionId] = useState<string | null>(null)
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
@@ -83,7 +83,7 @@ export default function RecentConversations({
       
       if (chatIndex !== -1 && chatIndex >= displayLimit) {
         // Increase limit to show the chat (but cap at 20 if possible)
-        const newLimit = Math.min(chatIndex + 1, filteredConversations.length, Math.max(20, chatIndex + 1))
+        const newLimit = Math.min(chatIndex + 1, filteredConversations.length, Math.max(chatIndex + 1, 20))
         console.log('📈 Increasing display limit to:', newLimit)
         setDisplayLimit(newLimit)
       }
