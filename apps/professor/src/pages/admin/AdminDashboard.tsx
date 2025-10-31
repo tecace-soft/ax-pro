@@ -986,32 +986,96 @@ export default function AdminDashboard() {
                   {viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
                       <h3 className="stat-card-title">{t('dashboard.hourlyActivityPattern')}</h3>
-                      <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                        <svg viewBox="0 0 100 50" style={{ width: '100%', height: '80px' }}>
+                      <div style={{ padding: '20px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                        <svg viewBox="0 0 800 300" style={{ width: '100%', height: '240px' }} preserveAspectRatio="xMidYMid meet">
+                          <defs>
+                            <linearGradient id="activityGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor="var(--admin-primary)" stopOpacity="0.3"/>
+                              <stop offset="100%" stopColor="var(--admin-primary)" stopOpacity="0.05"/>
+                            </linearGradient>
+                          </defs>
+                          
                           {/* Y-axis grid lines */}
-                          <line x1="5" y1="45" x2="95" y2="45" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="2,2"/>
-                          <line x1="5" y1="30" x2="95" y2="30" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="2,2"/>
-                          <line x1="5" y1="15" x2="95" y2="15" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="2,2"/>
+                          <line x1="80" y1="40" x2="80" y2="220" stroke="var(--admin-border)" strokeWidth="1.5"/>
+                          <line x1="80" y1="220" x2="720" y2="220" stroke="var(--admin-border)" strokeWidth="1.5"/>
+                          
+                          {/* Horizontal grid lines */}
+                          <line x1="80" y1="180" x2="720" y2="180" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="4,4" opacity="0.5"/>
+                          <line x1="80" y1="140" x2="720" y2="140" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="4,4" opacity="0.5"/>
+                          <line x1="80" y1="100" x2="720" y2="100" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="4,4" opacity="0.5"/>
+                          <line x1="80" y1="60" x2="720" y2="60" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="4,4" opacity="0.5"/>
+                          
+                          {/* Y-axis labels */}
+                          <text x="75" y="225" textAnchor="end" fontSize="12" fill="var(--admin-text-muted)" fontWeight="500">0</text>
+                          <text x="75" y="185" textAnchor="end" fontSize="12" fill="var(--admin-text-muted)" fontWeight="500">20</text>
+                          <text x="75" y="145" textAnchor="end" fontSize="12" fill="var(--admin-text-muted)" fontWeight="500">40</text>
+                          <text x="75" y="105" textAnchor="end" fontSize="12" fill="var(--admin-text-muted)" fontWeight="500">60</text>
+                          <text x="75" y="65" textAnchor="end" fontSize="12" fill="var(--admin-text-muted)" fontWeight="500">80</text>
+                          
+                          {/* Area fill under the line */}
+                          <path d="M 80,220 L 100,200 L 120,190 L 140,170 L 160,150 L 180,130 L 200,110 L 220,90 L 240,70 L 260,110 L 280,140 L 300,190 L 320,210 L 340,200 L 360,180 L 380,160 L 400,150 L 420,140 L 440,135 L 460,130 L 480,128 L 500,125 L 520,128 L 540,132 L 560,138 L 580,145 L 600,150 L 620,148 L 640,145 L 660,142 L 680,138 L 700,135 L 720,125 L 720,220 Z" 
+                            fill="url(#activityGradient)"/>
                           
                           {/* Activity line - peaks at 10am, 2pm, 6pm */}
-                          <polyline points="5,45 10,40 15,38 20,35 25,32 30,28 35,25 40,22 45,28 50,38 55,42 60,48 65,45 70,40 75,35 80,32 85,30 90,28 95,25"
-                            fill="none" stroke="var(--admin-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <circle cx="5" cy="45" r="1.5" fill="var(--admin-primary)"/>
-                          <circle cx="50" cy="38" r="2" fill="var(--admin-primary)"/>
-                          <circle cx="60" cy="48" r="2" fill="var(--admin-primary)"/>
-                          <circle cx="95" cy="25" r="1.5" fill="var(--admin-primary)"/>
+                          <polyline points="80,220 100,200 120,190 140,170 160,150 180,130 200,110 220,90 240,70 260,110 280,140 300,190 320,210 340,200 360,180 380,160 400,150 420,140 440,135 460,130 480,128 500,125 520,128 540,132 560,138 580,145 600,150 620,148 640,145 660,142 680,138 700,135 720,125"
+                            fill="none" stroke="var(--admin-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
                           
-                          {/* X-axis labels */}
-                          <text x="5" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">0</text>
-                          <text x="25" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">6</text>
-                          <text x="50" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">12</text>
-                          <text x="75" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">18</text>
-                          <text x="95" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">24</text>
+                          {/* Data points - regular */}
+                          <circle cx="80" cy="220" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="140" cy="170" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="200" cy="110" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="260" cy="110" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="340" cy="200" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="400" cy="150" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="480" cy="128" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="560" cy="138" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="640" cy="145" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="720" cy="125" r="3" fill="var(--admin-primary)"/>
+                          
+                          {/* Peak points - larger and highlighted */}
+                          <circle cx="300" cy="190" r="5" fill="var(--admin-primary)"/>
+                          <circle cx="300" cy="190" r="8" fill="var(--admin-primary)" opacity="0.2"/>
+                          <circle cx="320" cy="210" r="6" fill="#10b981"/>
+                          <circle cx="320" cy="210" r="10" fill="#10b981" opacity="0.2"/>
+                          <circle cx="600" cy="150" r="5" fill="#f59e0b"/>
+                          <circle cx="600" cy="150" r="8" fill="#f59e0b" opacity="0.2"/>
+                          
+                          {/* Peak labels */}
+                          <text x="300" y="175" textAnchor="middle" fontSize="11" fill="var(--admin-text)" fontWeight="600">10AM</text>
+                          <text x="320" y="195" textAnchor="middle" fontSize="11" fill="#10b981" fontWeight="600">2PM</text>
+                          <text x="600" y="135" textAnchor="middle" fontSize="11" fill="#f59e0b" fontWeight="600">6PM</text>
+                          
+                          {/* X-axis labels - with proper spacing */}
+                          <text x="80" y="245" textAnchor="middle" fontSize="13" fill="var(--admin-text-muted)" fontWeight="500">0</text>
+                          <text x="200" y="245" textAnchor="middle" fontSize="13" fill="var(--admin-text-muted)" fontWeight="500">6</text>
+                          <text x="320" y="245" textAnchor="middle" fontSize="13" fill="var(--admin-text-muted)" fontWeight="500">12</text>
+                          <text x="440" y="245" textAnchor="middle" fontSize="13" fill="var(--admin-text-muted)" fontWeight="500">18</text>
+                          <text x="560" y="245" textAnchor="middle" fontSize="13" fill="var(--admin-text-muted)" fontWeight="500">24</text>
+                          
+                          {/* Additional time labels for better readability */}
+                          <text x="140" y="260" textAnchor="middle" fontSize="11" fill="var(--admin-text-muted)" opacity="0.7">3</text>
+                          <text x="260" y="260" textAnchor="middle" fontSize="11" fill="var(--admin-text-muted)" opacity="0.7">9</text>
+                          <text x="380" y="260" textAnchor="middle" fontSize="11" fill="var(--admin-text-muted)" opacity="0.7">15</text>
+                          <text x="500" y="260" textAnchor="middle" fontSize="11" fill="var(--admin-text-muted)" opacity="0.7">21</text>
                         </svg>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px', fontSize: '9px', color: 'var(--admin-text-muted)' }}>
-                          <div>{t('dashboard.peak')}: 10AM - 42 {t('dashboard.sessions')}</div>
-                          <div>{t('dashboard.peak')}: 2PM - 48 {t('dashboard.sessions')}</div>
-                          <div>{t('dashboard.peak')}: 6PM - 45 {t('dashboard.sessions')}</div>
+                        
+                        {/* Peak information cards */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '20px' }}>
+                          <div style={{ padding: '12px', background: 'var(--admin-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>{t('dashboard.peak')}: 10AM</div>
+                            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-primary)' }}>42</div>
+                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>{t('dashboard.sessions')}</div>
+                          </div>
+                          <div style={{ padding: '12px', background: 'var(--admin-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>{t('dashboard.peak')}: 2PM</div>
+                            <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>48</div>
+                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>{t('dashboard.sessions')}</div>
+                          </div>
+                          <div style={{ padding: '12px', background: 'var(--admin-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>{t('dashboard.peak')}: 6PM</div>
+                            <div style={{ fontSize: '18px', fontWeight: 700, color: '#f59e0b' }}>45</div>
+                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>{t('dashboard.sessions')}</div>
+                          </div>
                         </div>
                       </div>
                     </div>
