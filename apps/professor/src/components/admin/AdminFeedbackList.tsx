@@ -798,7 +798,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                         className="truncate" 
                         title={feedback.feedback_text || ''}
                         onClick={() => handleStartEdit(feedback.id!, 'feedback')}
-                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px' }}
+                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px', fontSize: fs.cell }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.background = 'rgba(59, 230, 255, 0.1)'
                         }}
@@ -810,7 +810,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)', position: 'relative' }}>
+                  <td className="px-3 py-2 max-w-[220px]" style={{ color: 'var(--admin-text-muted)', position: 'relative', fontSize: fs.cell }}>
                     {editingFeedback?.id === feedback.id && editingFeedback.field === 'corrected' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <textarea
@@ -867,7 +867,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                         className="truncate" 
                         title={(displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response) : ((feedback as any).chatData?.response_ko || feedback.corrected_response)) || ''}
                         onClick={() => handleStartEdit(feedback.id!, 'corrected')}
-                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px' }}
+                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px', fontSize: fs.cell }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.background = 'rgba(59, 230, 255, 0.1)'
                         }}
