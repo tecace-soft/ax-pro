@@ -59,71 +59,62 @@ export default function RecentConversations({
   // Handle scroll to specific chat
   useEffect(() => {
     if (scrollToChatId) {
-      // Expand the chat if it's not already expanded
+      console.log('🔍 ScrollToChat triggered for:', scrollToChatId)
+      
+      // Expand the chat if it's not already expanded (for card view)
       setExpandedChats(prev => {
         const newSet = new Set(prev)
         newSet.add(scrollToChatId)
         return newSet
       })
 
+      // Ensure the chat is displayed (increase limit if needed)
+      const chatIndex = filteredConversations.findIndex(c => c.chat_id === scrollToChatId)
+      console.log('📊 Chat index:', chatIndex, 'Display limit:', displayLimit, 'Filtered count:', filteredConversations.length)
+      
+      if (chatIndex !== -1 && chatIndex >= displayLimit) {
+        // Increase limit to show the chat (but cap at 20 if possible)
+        const newLimit = Math.min(chatIndex + 1, filteredConversations.length, Math.max(20, chatIndex + 1))
+        console.log('📈 Increasing display limit to:', newLimit)
+        setDisplayLimit(newLimit)
+      }
+
       // Wait for DOM update, then scroll
-      setTimeout(() => {
-        const chatElement = document.getElementById(`chat-${scrollToChatId}`)
-        if (chatElement) {
-          chatElement.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
-          })
-          // Add highlight effect
-          chatElement.style.transition = 'all 0.3s ease'
-          chatElement.style.backgroundColor = 'rgba(59, 230, 255, 0.15)'
-          chatElement.style.borderColor = 'var(--admin-primary)'
-          chatElement.style.boxShadow = '0 0 20px rgba(59, 230, 255, 0.3)'
+      const attemptScroll = (attempt = 0) => {
+        setTimeout(() => {
+          const chatElement = document.getElementById(`chat-${scrollToChatId}`)
+          console.log('🔎 Looking for element:', `chat-${scrollToChatId}`, 'Found:', !!chatElement)
           
-          setTimeout(() => {
-            chatElement.style.backgroundColor = ''
-            chatElement.style.borderColor = ''
-            chatElement.style.boxShadow = ''
-          }, 3000)
-          
-          onScrollComplete?.()
-        } else {
-          // If not found in displayed conversations, check if it's in filtered but not displayed
-          // In that case, increase display limit just enough to include it (not all)
-          const chatIndex = filteredConversations.findIndex(c => c.chat_id === scrollToChatId)
-          if (chatIndex !== -1 && chatIndex >= displayLimit) {
-            // Increase limit to show the chat plus a few more (max 20 rows total if possible)
-            const newLimit = Math.min(chatIndex + 5, filteredConversations.length, 20)
-            setDisplayLimit(newLimit)
-            // Try again after limit increase
+          if (chatElement) {
+            console.log('✅ Scrolling to chat element')
+            chatElement.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' 
+            })
+            // Add highlight effect
+            chatElement.style.transition = 'all 0.3s ease'
+            chatElement.style.backgroundColor = 'rgba(59, 230, 255, 0.2)'
+            chatElement.style.borderColor = 'var(--admin-primary)'
+            chatElement.style.boxShadow = '0 0 20px rgba(59, 230, 255, 0.4)'
+            
             setTimeout(() => {
-              const retryElement = document.getElementById(`chat-${scrollToChatId}`)
-              if (retryElement) {
-                retryElement.scrollIntoView({ 
-                  behavior: 'smooth', 
-                  block: 'center' 
-                })
-                // Add highlight effect
-                retryElement.style.transition = 'all 0.3s ease'
-                retryElement.style.backgroundColor = 'rgba(59, 230, 255, 0.15)'
-                retryElement.style.borderColor = 'var(--admin-primary)'
-                retryElement.style.boxShadow = '0 0 20px rgba(59, 230, 255, 0.3)'
-                
-                setTimeout(() => {
-                  retryElement.style.backgroundColor = ''
-                  retryElement.style.borderColor = ''
-                  retryElement.style.boxShadow = ''
-                }, 3000)
-                
-                onScrollComplete?.()
-              }
-            }, 200)
-          } else if (chatIndex === -1) {
-            // Chat might be filtered out
-            console.warn(`Chat ${scrollToChatId} not found in filtered conversations. It might be filtered out.`)
+              chatElement.style.backgroundColor = ''
+              chatElement.style.borderColor = ''
+              chatElement.style.boxShadow = ''
+            }, 3000)
+            
+            onScrollComplete?.()
+          } else if (attempt < 3) {
+            // Retry up to 3 times with increasing delays
+            console.log(`⏳ Retry attempt ${attempt + 1}/3`)
+            attemptScroll(attempt + 1)
+          } else {
+            console.error('❌ Chat element not found after retries:', scrollToChatId)
           }
-        }
-      }, 100)
+        }, attempt === 0 ? 200 : 300 * (attempt + 1))
+      }
+      
+      attemptScroll()
     }
   }, [scrollToChatId, onScrollComplete, filteredConversations, displayLimit])
 

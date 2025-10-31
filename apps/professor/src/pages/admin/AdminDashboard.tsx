@@ -1354,7 +1354,10 @@ export default function AdminDashboard() {
                     <RecentConversations 
                       scrollToChatId={scrollToChatId}
                       highlightedChatId={highlightedChatId}
-                      onScrollComplete={() => setScrollToChatId(null)}
+                      onScrollComplete={() => {
+                        console.log('✅ Scroll complete, clearing scrollToChatId')
+                        setScrollToChatId(null)
+                      }}
                     />
                   </div>
 
