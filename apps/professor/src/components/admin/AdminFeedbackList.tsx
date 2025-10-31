@@ -31,6 +31,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   const [filterDate, setFilterDate] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [displayLanguage, setDisplayLanguage] = useState<'en' | 'ko'>('en')
+  const [displayLimit, setDisplayLimit] = useState<number>(10)
 
   useEffect(() => {
     loadFeedback()
@@ -38,6 +39,8 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
   useEffect(() => {
     applyFiltersAndSort()
+    // Reset display limit when filters change
+    setDisplayLimit(10)
   }, [feedbacks, searchTerm, sortBy, filterVerdict, filterUserId, filterDate])
 
   const loadFeedback = async () => {
@@ -525,8 +528,13 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
         <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
           <p>{searchTerm || filterVerdict !== 'all' ? 'No feedback matches your filters' : 'No admin feedback found'}</p>
         </div>
-      ) : viewMode === 'table' ? (
+      ) : (() => {
+        const displayedFeedbacks = filteredFeedbacks.slice(0, displayLimit)
+        const hasMore = filteredFeedbacks.length > displayLimit
+        
+        return viewMode === 'table' ? (
         /* Table View */
+        <>
         <div className="overflow-x-auto">
           <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
@@ -541,7 +549,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
               </tr>
             </thead>
             <tbody>
-              {filteredFeedbacks.map((feedback, index) => (
+              {displayedFeedbacks.map((feedback, index) => (
                 <tr 
                   key={feedback.id}
                   className="border-b transition-colors hover:bg-gray-100/5"
@@ -605,10 +613,26 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
             </tbody>
           </table>
         </div>
+        {hasMore && (
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => setDisplayLimit(prev => prev + 10)}
+              className="px-6 py-2 rounded-md text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: 'rgba(59, 230, 255, 0.1)',
+                color: 'var(--admin-primary)',
+                border: '1px solid var(--admin-primary)'
+              }}
+            >
+              Load More ({filteredFeedbacks.length - displayLimit} remaining)
+            </button>
+          </div>
+        )}
+        </>
       ) : (
         /* Card View */
         <div className="space-y-3">
-          {filteredFeedbacks.map((feedback) => (
+          {displayedFeedbacks.map((feedback) => (
             <div 
               key={feedback.id}
               className="rounded-lg border"
@@ -740,7 +764,23 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
             </div>
           ))}
         </div>
-      )}
+        {hasMore && (
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => setDisplayLimit(prev => prev + 10)}
+              className="px-6 py-2 rounded-md text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: 'rgba(59, 230, 255, 0.1)',
+                color: 'var(--admin-primary)',
+                border: '1px solid var(--admin-primary)'
+              }}
+            >
+              Load More ({filteredFeedbacks.length - displayLimit} remaining)
+            </button>
+          </div>
+        )}
+      ))()
+      }
     </div>
   )
 }
