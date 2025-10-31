@@ -275,12 +275,10 @@ export default function ProfessorRadarChart({
         overflow: 'visible'
       }}
     >
-      {/* Two column layout: Radar on left, Module Control on right */}
+      {/* Four column layout: Radar, Module Control, Engagement, Satisfaction */}
       <div 
         className="radar-main-layout"
         style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr 1fr 1fr',
           gap: '16px',
           alignItems: 'flex-start'
         }}
@@ -515,23 +513,70 @@ export default function ProfessorRadarChart({
       {/* Responsive stacking for narrow screens */}
       <style>
         {`
-          /* 4 columns down to 1280px; 2 columns between 768px–1279px; stack below 768px */
-          @media (max-width: 1279px) and (min-width: 768px) {
-            .radar-main-layout {
-              grid-template-columns: 1.5fr 1fr; /* radar grows more than right column */
-            }
-            .engagement-panel { grid-column: auto; }
-            .satisfaction-panel { grid-column: auto; }
+          /* Default: 4 columns for wide screens */
+          .radar-main-layout {
+            display: grid !important;
+            grid-template-columns: 2fr 1fr 1fr 1fr !important;
+            gap: 16px !important;
+            align-items: flex-start !important;
           }
 
+          /* 3 columns for medium-wide screens (1024px - 1439px) */
+          @media (max-width: 1439px) and (min-width: 1024px) {
+            .radar-main-layout {
+              grid-template-columns: 1.5fr 1fr 1fr !important;
+            }
+            .satisfaction-panel {
+              grid-column: 1 / -1 !important;
+            }
+          }
+
+          /* 2 columns for medium screens (768px - 1023px) */
+          @media (max-width: 1023px) and (min-width: 768px) {
+            .radar-main-layout {
+              grid-template-columns: 1fr 1fr !important;
+            }
+            .radar-chart-section { 
+              grid-column: 1 / -1 !important;
+              order: 1;
+            }
+            .module-control-panel { 
+              order: 2;
+            }
+            .engagement-panel { 
+              order: 3;
+            }
+            .satisfaction-panel { 
+              order: 4;
+              grid-column: 1 / -1 !important;
+            }
+          }
+
+          /* Stack vertically for narrow screens (below 768px) */
           @media (max-width: 767px) {
             .radar-main-layout {
-              grid-template-columns: 1fr;
+              grid-template-columns: 1fr !important;
             }
-            .radar-chart-section { order: 1; }
-            .module-control-panel { order: 2; }
-            .engagement-panel { order: 3; }
-            .satisfaction-panel { order: 4; }
+            .radar-chart-section { 
+              order: 1 !important;
+              width: 100% !important;
+              min-width: unset !important;
+            }
+            .module-control-panel { 
+              order: 2 !important;
+              width: 100% !important;
+              min-width: unset !important;
+            }
+            .engagement-panel { 
+              order: 3 !important;
+              width: 100% !important;
+              min-width: unset !important;
+            }
+            .satisfaction-panel { 
+              order: 4 !important;
+              width: 100% !important;
+              min-width: unset !important;
+            }
           }
         `}
       </style>
