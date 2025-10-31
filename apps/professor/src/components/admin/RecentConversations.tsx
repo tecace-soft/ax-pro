@@ -1055,10 +1055,11 @@ export default function RecentConversations({
             className="px-6 py-2 rounded-md text-sm font-medium"
             style={{
               background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
-              color: '#041220'
+              color: '#041220',
+              fontSize: fs.base
             }}
           >
-            Load More ({filteredConversations.length - displayLimit} remaining)
+            {t('adminFeedback.loadMore')} ({filteredConversations.length - displayLimit} {t('adminFeedback.remaining')})
           </button>
         </div>
       )}
