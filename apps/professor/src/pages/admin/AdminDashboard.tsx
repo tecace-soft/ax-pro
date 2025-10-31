@@ -1350,7 +1350,6 @@ export default function AdminDashboard() {
                   )}
 
                   <div id="recent-conversations" className="content-section">
-                    <h2 className="section-title">{t('admin.recentConversations')}</h2>
                     <RecentConversations 
                       scrollToChatId={scrollToChatId}
                       highlightedChatId={highlightedChatId}
@@ -1362,7 +1361,6 @@ export default function AdminDashboard() {
                   </div>
 
                   <div id="admin-feedback" className="content-section">
-                    <h2 className="section-title">Admin Feedback</h2>
                   <AdminFeedbackList onScrollToChat={handleScrollToChat} useMock={isProfessor} />
                   </div>
 
@@ -1372,7 +1370,6 @@ export default function AdminDashboard() {
                   </div>
 
                   <div id="prompt-control" className="content-section">
-                    <h2 className="section-title">{t('admin.promptControl')}</h2>
                     <PromptControl />
                   </div>
                 </div>
