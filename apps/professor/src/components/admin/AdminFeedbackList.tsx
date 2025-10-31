@@ -916,11 +916,11 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
           <div className="flex justify-center mt-4">
             <button
               onClick={() => setDisplayLimit(prev => prev + 10)}
-              className="px-6 py-2 rounded-md text-sm font-medium transition-colors"
+              className="px-6 py-2 rounded-md text-sm font-medium"
               style={{
-                backgroundColor: 'rgba(59, 230, 255, 0.1)',
-                color: 'var(--admin-primary)',
-                border: '1px solid var(--admin-primary)'
+                background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
+                color: '#041220',
+                fontSize: fs.base
               }}
             >
               {t('adminFeedback.loadMore')} ({filteredFeedbacks.length - displayLimit} {t('adminFeedback.remaining')})
@@ -1068,11 +1068,11 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
           <div className="flex justify-center mt-4">
             <button
               onClick={() => setDisplayLimit(prev => prev + 10)}
-              className="px-6 py-2 rounded-md text-sm font-medium transition-colors"
+              className="px-6 py-2 rounded-md text-sm font-medium"
               style={{
-                backgroundColor: 'rgba(59, 230, 255, 0.1)',
-                color: 'var(--admin-primary)',
-                border: '1px solid var(--admin-primary)'
+                background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
+                color: '#041220',
+                fontSize: fs.base
               }}
             >
               {t('adminFeedback.loadMore')} ({filteredFeedbacks.length - displayLimit} {t('adminFeedback.remaining')})
