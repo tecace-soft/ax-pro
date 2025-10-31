@@ -684,12 +684,12 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                       {feedback.feedback_text || '-'}
                     </div>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '350px', overflow: 'hidden' }}>
                     <div className="truncate" title={feedback.chatData?.chat_message || ''}>
                       {feedback.chatData?.chat_message || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '350px', overflow: 'hidden' }}>
                     <div className="truncate" title={feedback.chatData?.response || ''}>
                       {feedback.chatData?.response || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
