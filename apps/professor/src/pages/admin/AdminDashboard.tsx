@@ -615,7 +615,7 @@ export default function AdminDashboard() {
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalQuestions}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
-                            Avg 4.2 per session
+                            {t('dashboard.avgPerSession')}: 4.2
                           </div>
                         )}
                       </div>
@@ -634,7 +634,7 @@ export default function AdminDashboard() {
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{avgQuestionsPerSession}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
-                            Peak: 8 on 10/15
+                            {t('dashboard.peak')}: 8 (10/15)
                           </div>
                         )}
                       </div>
@@ -824,7 +824,7 @@ export default function AdminDashboard() {
                           <div className="topic-metrics">
                             <span className="topic-sessions">6 {t('dashboard.sessions')}</span>
                             <span className="topic-avg">4.1 {t('dashboard.qSession')}</span>
-                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 24 questions</div>}
+                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>{t('dashboard.total')}: 24 {t('dashboard.questions')}</div>}
                           </div>
                         </div>
                         <div className="topic-item">
@@ -879,206 +879,43 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    {/* Student Engagement - Enhanced with Mixed Visualizations */}
+                    {/* Response Time by Field */}
                     <div className="research-stat-card">
-                      <h3 className="stat-card-title">{t('Student Engagement')}</h3>
-                      <div className="engagement-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-{/* Large Metric - Active Students */}
-                        {viewMode === 'overview' ? (
-                          <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ width: '60px', height: '60px', position: 'relative' }}>
-                              <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="#3b82f6" strokeWidth="8" strokeLinecap="round" 
-                                  strokeDasharray={`${280} 282`} strokeDashoffset="70" transform="rotate(-90 50 50)"/>
-                                <text x="50" y="55" textAnchor="middle" fontSize="18" fontWeight="700" fill="var(--admin-text)">32</text>
-                              </svg>
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '2px' }}>{t('dashboard.activeStudents')}</div>
-                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>85% of enrolled</div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ gridColumn: 'span 2', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.activeStudentsDistribution')}</span>
-                              <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>32 Total</span>
-                            </div>
-                            {/* Pie Chart */}
-                            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '80px' }}>
-                              <circle cx="50" cy="50" r="35" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
-                              <path d="M 50 15 A 35 35 0 0 1 76.8 29.2" fill="#3b82f6" stroke="#3b82f6" strokeWidth="8"/>
-                              <path d="M 76.8 29.2 A 35 35 0 0 1 76.8 70.8" fill="#10b981" stroke="#10b981" strokeWidth="8"/>
-                              <path d="M 76.8 70.8 A 35 35 0 0 1 50 85" fill="#f59e0b" stroke="#f59e0b" strokeWidth="8"/>
-                              <path d="M 50 85 A 35 35 0 0 1 23.2 70.8" fill="#8b5cf6" stroke="#8b5cf6" strokeWidth="8"/>
-                              <text x="50" y="48" textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--admin-text)">32</text>
-                            </svg>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', marginTop: '4px', fontSize: '8px' }}>
-                              <div style={{ color: '#3b82f6' }}>ML: 8</div>
-                              <div style={{ color: '#10b981' }}>DL: 7</div>
-                              <div style={{ color: '#f59e0b' }}>CV: 6</div>
-                              <div style={{ color: '#8b5cf6' }}>NLP: 5</div>
-                              <div style={{ color: 'var(--admin-text-muted)' }}>Other: 6</div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Questions Bar Chart */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.questionsAsked')}</span>
-                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#10b981' }}>247</span>
-                          </div>
-                          <div style={{ height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: '85%', height: '100%', background: '#10b981', borderRadius: '4px' }}></div>
-                          </div>
-                        </div>
-
-                        {/* Topics Covered */}
-                        {viewMode === 'overview' ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Topics Covered</span>
-                              <span style={{ fontSize: '20px', fontWeight: 700, color: '#f59e0b' }}>8</span>
-                            </div>
-                            <div style={{ position: 'relative', width: '100%', height: '60px' }}>
-                              <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="8" 
-                                  strokeDasharray="200" strokeDashoffset="40" transform="rotate(-90 50 50)" strokeLinecap="round"/>
-                              </svg>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '6px' }}>Weekly Activity Trend</div>
-                            {/* Mini Line Chart */}
-                            <svg viewBox="0 0 100 60" style={{ width: '100%', height: '50px' }}>
-                              <polyline points="5,40 15,35 25,30 35,38 45,32 55,28 65,25 75,22 85,20 95,18"
-                                fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <circle cx="5" cy="40" r="1.5" fill="#f59e0b"/>
-                              <circle cx="15" cy="35" r="1.5" fill="#f59e0b"/>
-                              <circle cx="25" cy="30" r="1.5" fill="#f59e0b"/>
-                              <circle cx="35" cy="38" r="1.5" fill="#f59e0b"/>
-                              <circle cx="45" cy="32" r="1.5" fill="#f59e0b"/>
-                              <circle cx="55" cy="28" r="1.5" fill="#f59e0b"/>
-                              <circle cx="65" cy="25" r="1.5" fill="#f59e0b"/>
-                              <circle cx="75" cy="22" r="1.5" fill="#f59e0b"/>
-                              <circle cx="85" cy="20" r="1.5" fill="#f59e0b"/>
-                              <circle cx="95" cy="18" r="1.5" fill="#f59e0b"/>
-                            </svg>
-                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>↑ 42% this week</div>
-                          </div>
-                        )}
-
-                        {/* Engagement Rate with Gauge */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Engagement Rate</span>
-                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#8b5cf6' }}>68%</span>
-                          </div>
-                          <div style={{ height: '6px', background: 'var(--admin-border)', borderRadius: '3px', overflow: 'hidden' }}>
-                            <div style={{ width: '68%', height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #7c3aed)' }}></div>
-                          </div>
-                        </div>
-
-                        {/* Avg per Session */}
-                        {viewMode === 'overview' ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.avgQSession')}</span>
-                              <span style={{ fontSize: '20px', fontWeight: 700, color: '#ec4899' }}>3.2</span>
-                            </div>
-                            <div style={{ width: '60px', height: '60px', position: 'relative', margin: '0 auto' }}>
-                              <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--admin-border)" strokeWidth="10"/>
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="#ec4899" strokeWidth="10" 
-                                  strokeDasharray="240" strokeDashoffset="70" transform="rotate(-90 50 50)" strokeLinecap="round"/>
-                                <text x="50" y="58" textAnchor="middle" fontSize="16" fontWeight="700" fill="#ec4899">Q</text>
-                              </svg>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '6px' }}>Engagement Radar</div>
-                            {/* Mini Radar Chart */}
-                            <svg viewBox="0 0 100 60" style={{ width: '100%', height: '50px' }}>
-                              <polygon points="50,5 70,15 75,30 60,40 50,35 40,40 25,30 30,15" 
-                                fill="#ec4899" fillOpacity="0.2" stroke="#ec4899" strokeWidth="1"/>
-                              <line x1="50" y1="5" x2="70" y2="15" stroke="#ec4899" strokeWidth="1"/>
-                              <line x1="50" y1="5" x2="30" y2="15" stroke="#ec4899" strokeWidth="1"/>
-                              <line x1="50" y1="5" x2="50" y2="35" stroke="#ec4899" strokeWidth="1"/>
-                              <circle cx="50" cy="35" r="2" fill="#ec4899"/>
-                            </svg>
-                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>High engagement</div>
-                          </div>
-                        )}
-                        {viewMode === 'detailed' && (
-                          <>
-                            {/* Avg Response Time */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg Response Time</span>
-                                <span style={{ fontSize: '20px', fontWeight: 700, color: '#06b6d4' }}>1.2s</span>
-                              </div>
-                              <div style={{ height: '6px', background: 'var(--admin-border)', borderRadius: '3px', overflow: 'hidden' }}>
-                                <div style={{ width: '75%', height: '100%', background: 'linear-gradient(90deg, #06b6d4, #0891b2)' }}></div>
-                              </div>
-                            </div>
-
-                            {/* Total Downloads */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Total Downloads</span>
-                                <span style={{ fontSize: '20px', fontWeight: 700, color: '#84cc16' }}>94</span>
-                              </div>
-                              <div style={{ height: '6px', background: 'var(--admin-border)', borderRadius: '3px', overflow: 'hidden' }}>
-                                <div style={{ width: '62%', height: '100%', background: 'linear-gradient(90deg, #84cc16, #65a30d)' }}></div>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Satisfaction by Field */}
-                    <div className="research-stat-card">
-                      <h3 className="stat-card-title">{t('Satisfaction by Field')}</h3>
+                      <h3 className="stat-card-title">{t('dashboard.responseTimeByField')}</h3>
                       <div className="satisfaction-stats">
                         <div className="satisfaction-item">
                           <div className="satisfaction-field">{t('dashboard.machineLearning')}</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '88%', backgroundColor: 'var(--admin-primary)' }}></div>
-                            <span className="gauge-text">88%</span>
+                            <div className="gauge-fill" style={{ width: '78%', backgroundColor: '#06b6d4' }}></div>
+                            <span className="gauge-text">0.8s</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
                           <div className="satisfaction-field">{t('dashboard.deepLearning')}</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '82%', backgroundColor: 'var(--admin-primary)' }}></div>
-                            <span className="gauge-text">82%</span>
+                            <div className="gauge-fill" style={{ width: '85%', backgroundColor: '#06b6d4' }}></div>
+                            <span className="gauge-text">0.9s</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
                           <div className="satisfaction-field">{t('dashboard.nlp')}</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '79%', backgroundColor: 'var(--admin-primary)' }}></div>
-                            <span className="gauge-text">79%</span>
+                            <div className="gauge-fill" style={{ width: '92%', backgroundColor: '#06b6d4' }}></div>
+                            <span className="gauge-text">1.1s</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
                           <div className="satisfaction-field">{t('dashboard.computerVision')}</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '75%', backgroundColor: 'var(--admin-primary)' }}></div>
-                            <span className="gauge-text">75%</span>
+                            <div className="gauge-fill" style={{ width: '88%', backgroundColor: '#06b6d4' }}></div>
+                            <span className="gauge-text">1.0s</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
                           <div className="satisfaction-field">{t('dashboard.reinforcement')}</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '71%', backgroundColor: 'var(--admin-primary)' }}></div>
-                            <span className="gauge-text">71%</span>
+                            <div className="gauge-fill" style={{ width: '75%', backgroundColor: '#06b6d4' }}></div>
+                            <span className="gauge-text">0.7s</span>
                           </div>
                         </div>
                         {viewMode === 'detailed' && (
@@ -1086,19 +923,61 @@ export default function AdminDashboard() {
                             <div className="satisfaction-item">
                               <div className="satisfaction-field">{t('dashboard.topic.transferLearning')}</div>
                               <div className="satisfaction-gauge">
-                                <div className="gauge-fill" style={{ width: '68%', backgroundColor: 'var(--admin-primary)' }}></div>
-                                <span className="gauge-text">68%</span>
+                                <div className="gauge-fill" style={{ width: '82%', backgroundColor: '#06b6d4' }}></div>
+                                <span className="gauge-text">0.9s</span>
                               </div>
                             </div>
                             <div className="satisfaction-item">
                               <div className="satisfaction-field">{t('dashboard.topic.automl')}</div>
                               <div className="satisfaction-gauge">
-                                <div className="gauge-fill" style={{ width: '65%', backgroundColor: 'var(--admin-primary)' }}></div>
-                                <span className="gauge-text">65%</span>
+                                <div className="gauge-fill" style={{ width: '80%', backgroundColor: '#06b6d4' }}></div>
+                                <span className="gauge-text">0.8s</span>
                               </div>
                             </div>
                           </>
                         )}
+                      </div>
+                    </div>
+
+                    {/* Question Complexity Distribution */}
+                    <div className="research-stat-card">
+                      <h3 className="stat-card-title">{t('dashboard.questionComplexity')}</h3>
+                      <div className="engagement-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        {/* Basic Questions */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.complexity.basic')}</span>
+                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#10b981' }}>42%</span>
+                          </div>
+                          <div style={{ height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '42%', height: '100%', background: '#10b981', borderRadius: '4px' }}></div>
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>115 {t('dashboard.questions')}</div>
+                        </div>
+
+                        {/* Intermediate Questions */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.complexity.intermediate')}</span>
+                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#f59e0b' }}>38%</span>
+                          </div>
+                          <div style={{ height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '38%', height: '100%', background: '#f59e0b', borderRadius: '4px' }}></div>
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>104 {t('dashboard.questions')}</div>
+                        </div>
+
+                        {/* Advanced Questions */}
+                        <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.complexity.advanced')}</span>
+                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#ef4444' }}>20%</span>
+                          </div>
+                          <div style={{ height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '20%', height: '100%', background: '#ef4444', borderRadius: '4px' }}></div>
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>56 {t('dashboard.questions')}</div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1106,7 +985,7 @@ export default function AdminDashboard() {
                   {/* 24-Hour Activity Pattern - Detailed Mode Only */}
                   {viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
-                      <h3 className="stat-card-title">24-Hour Activity Pattern</h3>
+                      <h3 className="stat-card-title">{t('dashboard.hourlyActivityPattern')}</h3>
                       <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                         <svg viewBox="0 0 100 50" style={{ width: '100%', height: '80px' }}>
                           {/* Y-axis grid lines */}
@@ -1130,9 +1009,9 @@ export default function AdminDashboard() {
                           <text x="95" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">24</text>
                         </svg>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px', fontSize: '9px', color: 'var(--admin-text-muted)' }}>
-                          <div>Peak: 10AM - 42 sessions</div>
-                          <div>Peak: 2PM - 48 sessions</div>
-                          <div>Peak: 6PM - 45 sessions</div>
+                          <div>{t('dashboard.peak')}: 10AM - 42 {t('dashboard.sessions')}</div>
+                          <div>{t('dashboard.peak')}: 2PM - 48 {t('dashboard.sessions')}</div>
+                          <div>{t('dashboard.peak')}: 6PM - 45 {t('dashboard.sessions')}</div>
                         </div>
                       </div>
                     </div>
@@ -1141,14 +1020,14 @@ export default function AdminDashboard() {
                   {/* Subject-Based Statistics - Detailed Mode Only */}
                   {viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
-                      <h3 className="stat-card-title">Session and Satisfaction by Subject</h3>
+                      <h3 className="stat-card-title">{t('dashboard.sessionAndSatisfaction')}</h3>
                       <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                         <div style={{ display: 'grid', gap: '8px' }}>
                           {/* Subject 1 */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text)' }}>Anesthesia (Year 4)</div>
-                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>24 sessions • 3.2 avg questions</div>
+                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>24 {t('dashboard.sessions')} • 3.2 {t('dashboard.avgPerSession')}</div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981' }}>4.6★</div>
@@ -1160,7 +1039,7 @@ export default function AdminDashboard() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text)' }}>Small Animal Internal Medicine (Year 3)</div>
-                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>31 sessions • 2.8 avg questions</div>
+                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>31 {t('dashboard.sessions')} • 2.8 {t('dashboard.avgPerSession')}</div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981' }}>4.3★</div>
@@ -1211,7 +1090,7 @@ export default function AdminDashboard() {
                   {/* Real-time Activity Log - Detailed Mode Only */}
                   {viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
-                      <h3 className="stat-card-title">Real-time Activity Log</h3>
+                      <h3 className="stat-card-title">{t('dashboard.realtimeActivityLog')}</h3>
                       <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                         <div style={{ display: 'grid', gap: '6px' }}>
                           {/* Activity 1 */}
@@ -1287,7 +1166,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         <div style={{ marginTop: '12px', textAlign: 'center' }}>
-                          <button style={{ fontSize: '10px', padding: '6px 12px', background: 'var(--admin-card-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)', borderRadius: '6px', cursor: 'pointer' }}>View All Activity</button>
+                          <button style={{ fontSize: '10px', padding: '6px 12px', background: 'var(--admin-card-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)', borderRadius: '6px', cursor: 'pointer' }}>{t('dashboard.viewAllActivity')}</button>
                         </div>
                       </div>
                     </div>
@@ -1296,38 +1175,38 @@ export default function AdminDashboard() {
                   {/* System Status - Detailed Mode Only */}
                   {viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
-                      <h3 className="stat-card-title">System Status</h3>
+                      <h3 className="stat-card-title">{t('dashboard.systemPerformance')}</h3>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                         {/* API Response Time */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>API Response Time</div>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>245ms</div>
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>Average latency</div>
-                          <div style={{ fontSize: '9px', color: '#10b981' }}>✓ Excellent</div>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>{t('dashboard.apiResponseTime')}</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>245{t('dashboard.ms')}</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>{t('dashboard.averageLatency')}</div>
+                          <div style={{ fontSize: '9px', color: '#10b981' }}>✓ {t('dashboard.excellent')}</div>
                         </div>
                         
                         {/* Model Uptime */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>Model Uptime</div>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>{t('dashboard.modelUptime')}</div>
                           <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>99.8%</div>
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>24-hour availability</div>
-                          <div style={{ fontSize: '9px', color: '#10b981' }}>✓ Normal</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>{t('dashboard.hourAvailability')}</div>
+                          <div style={{ fontSize: '9px', color: '#10b981' }}>✓ {t('dashboard.normal')}</div>
                         </div>
                         
                         {/* Response Success Rate */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>Response Rate (30d)</div>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>{t('dashboard.responseRate30d')}</div>
                           <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>94.2%</div>
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>Answered queries</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>{t('dashboard.answeredQueries')}</div>
                           <div style={{ fontSize: '9px', color: '#10b981' }}>↑ +2.1%</div>
                         </div>
                         
                         {/* Avg Session Length */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>Avg Session Length</div>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-text)' }}>8.5 min</div>
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>Per student average</div>
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>→ Stable</div>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>{t('dashboard.avgSessionLength')}</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-text)' }}>8.5 {t('dashboard.min')}</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>{t('dashboard.perStudentAverage')}</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>→ {t('dashboard.stable')}</div>
                         </div>
                       </div>
                     </div>
