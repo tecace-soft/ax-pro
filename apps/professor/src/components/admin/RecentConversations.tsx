@@ -59,16 +59,56 @@ export default function RecentConversations({
   // Handle scroll to specific chat
   useEffect(() => {
     if (scrollToChatId) {
-      const chatElement = document.getElementById(`chat-${scrollToChatId}`)
-      if (chatElement) {
-        chatElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        })
-        onScrollComplete?.()
-      }
+      // Expand the chat if it's not already expanded
+      setExpandedChats(prev => {
+        const newSet = new Set(prev)
+        newSet.add(scrollToChatId)
+        return newSet
+      })
+
+      // Wait for DOM update, then scroll
+      setTimeout(() => {
+        const chatElement = document.getElementById(`chat-${scrollToChatId}`)
+        if (chatElement) {
+          chatElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          })
+          // Add highlight effect
+          chatElement.style.transition = 'all 0.3s ease'
+          chatElement.style.backgroundColor = 'rgba(59, 230, 255, 0.15)'
+          chatElement.style.borderColor = 'var(--admin-primary)'
+          chatElement.style.boxShadow = '0 0 20px rgba(59, 230, 255, 0.3)'
+          
+          setTimeout(() => {
+            chatElement.style.backgroundColor = ''
+            chatElement.style.borderColor = ''
+            chatElement.style.boxShadow = ''
+          }, 3000)
+          
+          onScrollComplete?.()
+        } else {
+          // If not found in displayed conversations, check if it's in filtered but not displayed
+          // In that case, increase display limit to include it
+          const chatExists = conversations.find(c => c.chat_id === scrollToChatId)
+          if (chatExists && displayLimit < conversations.length) {
+            setDisplayLimit(conversations.length)
+            // Try again after limit increase
+            setTimeout(() => {
+              const retryElement = document.getElementById(`chat-${scrollToChatId}`)
+              if (retryElement) {
+                retryElement.scrollIntoView({ 
+                  behavior: 'smooth', 
+                  block: 'center' 
+                })
+                onScrollComplete?.()
+              }
+            }, 100)
+          }
+        }
+      }, 100)
     }
-  }, [scrollToChatId, onScrollComplete])
+  }, [scrollToChatId, onScrollComplete, conversations, displayLimit])
 
   const loadConversations = async () => {
     setIsLoading(true)
