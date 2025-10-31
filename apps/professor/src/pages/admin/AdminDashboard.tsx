@@ -310,13 +310,22 @@ export default function AdminDashboard() {
   }
 
   const handleScrollToChat = (chatId: string) => {
-    setScrollToChatId(chatId)
+    // Reset scrollToChatId first to trigger useEffect even if it's the same chatId
+    setScrollToChatId(null)
     setHighlightedChatId(chatId)
     
     // Scroll to Recent Conversations section first
     const section = document.getElementById('recent-conversations')
     if (section) {
       section.scrollIntoView({ behavior: 'smooth' })
+      
+      // Wait for section scroll, then set scrollToChatId
+      setTimeout(() => {
+        setScrollToChatId(chatId)
+      }, 300)
+    } else {
+      // If section not found, set immediately
+      setScrollToChatId(chatId)
     }
     
     // Clear highlight after 3 seconds
