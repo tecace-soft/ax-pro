@@ -615,9 +615,9 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                 <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.userId')}</th>
                 <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px', maxWidth: '80px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.chatId')}</th>
                 <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.reaction')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '150px', maxWidth: '250px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.comment')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', maxWidth: '250px', fontSize: fs.header }}>{t('admin.userMessage')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', maxWidth: '280px', fontSize: fs.header }}>{t('admin.aiResponse')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '120px', maxWidth: '200px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.comment')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', maxWidth: '220px', fontSize: fs.header }}>{t('admin.userMessage')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', maxWidth: '240px', fontSize: fs.header }}>{t('admin.aiResponse')}</th>
                 <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.delete')}</th>
               </tr>
             </thead>
@@ -679,17 +679,17 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                       <IconThumbsDown size={fontSize === 'small' ? 14 : fontSize === 'medium' ? 16 : 18} style={{ color: 'var(--admin-danger)', display: 'inline' }} />
                     )}
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, minWidth: '150px', maxWidth: '250px', overflow: 'hidden' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, minWidth: '120px', maxWidth: '200px', overflow: 'hidden' }}>
                     <div className="truncate" title={feedback.feedback_text || ''}>
                       {feedback.feedback_text || '-'}
                     </div>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '250px', overflow: 'hidden' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '220px', overflow: 'hidden' }}>
                     <div className="truncate" title={feedback.chatData?.chat_message || ''}>
                       {feedback.chatData?.chat_message || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '280px', overflow: 'hidden' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '240px', overflow: 'hidden' }}>
                     <div className="truncate" title={feedback.chatData?.response || ''}>
                       {feedback.chatData?.response || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
