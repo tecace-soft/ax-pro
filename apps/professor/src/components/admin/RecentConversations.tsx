@@ -730,13 +730,13 @@ export default function RecentConversations({
           <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0, fontSize: fs.cell }}>
             <thead>
               <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', fontSize: fs.header }}>Date</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', fontSize: fs.header }}>User ID</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '120px', fontSize: fs.header }}>Session ID</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', fontSize: fs.header }}>User Message</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', fontSize: fs.header }}>AI Response</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px', fontSize: fs.header }}>User FB</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', fontSize: fs.header }}>Admin</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', maxWidth: '100px', fontSize: fs.header }}>Date</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>User ID</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '90px', maxWidth: '90px', fontSize: fs.header }}>Session ID</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.header }}>User Message</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.header }}>AI Response</th>
+                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>User FB</th>
+                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px', maxWidth: '80px', fontSize: fs.header }}>Admin</th>
               </tr>
             </thead>
             <tbody>
@@ -761,27 +761,27 @@ export default function RecentConversations({
                       {formatDate(conversation.created_at)}
                     </button>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '70px', overflow: 'hidden' }}>
                     <button
                       onClick={() => handleFilterByUser(conversation.user_id)}
-                      className="hover:underline cursor-pointer text-blue-300"
-                      title="Click to filter by user"
+                      className="hover:underline cursor-pointer text-blue-300 truncate block w-full text-left"
+                      title={conversation.user_id}
                     >
                       {conversation.user_id}
                     </button>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '90px', overflow: 'hidden' }}>
                     {conversation.session_id && (
                       <button
                         onClick={() => handleFilterBySession(conversation.session_id!)}
-                        className="hover:underline cursor-pointer text-green-300"
-                        title="Click to filter by session"
+                        className="hover:underline cursor-pointer text-green-300 truncate block w-full text-left"
+                        title={conversation.session_id}
                       >
-                        {conversation.session_id.substring(0, 12)}...
+                        {conversation.session_id}
                       </button>
                     )}
                   </td>
-                  <td className="px-3 py-2 max-w-[250px]" style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
                     <div 
                       className="truncate cursor-pointer hover:text-blue-400"
                       onClick={() => handleFeedbackClick(conversation, 'good')}
@@ -790,7 +790,7 @@ export default function RecentConversations({
                       {conversation.chat_message}
                     </div>
                   </td>
-                  <td className="px-3 py-2 max-w-[250px]" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
                     <div className="truncate" title={conversation.response}>
                       {conversation.response}
                     </div>

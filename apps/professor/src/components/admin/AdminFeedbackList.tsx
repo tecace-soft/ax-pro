@@ -708,13 +708,13 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
           <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0, fontSize: fs.cell }}>
             <thead>
               <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.date')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.role')}</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.verdict')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '180px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.feedback')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '180px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.corrected')}</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.apply')}</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.delete')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', maxWidth: '100px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.date')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.role')}</th>
+                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.verdict')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '150px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.feedback')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.header }}>{t('adminFeedback.tableHeader.corrected')}</th>
+                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.apply')}</th>
+                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.delete')}</th>
               </tr>
             </thead>
             <tbody>
@@ -731,8 +731,10 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                   <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
                     {formatDate(feedback.updated_at || feedback.created_at)}
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
-                    {feedback.chatData?.user_id || '교수'}
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '60px', overflow: 'hidden' }}>
+                    <div className="truncate" title={feedback.chatData?.user_id || '교수'}>
+                      {feedback.chatData?.user_id || '교수'}
+                    </div>
                   </td>
                   <td className="px-3 py-2 text-center" style={{ fontSize: fs.cell }}>
                     {feedback.feedback_verdict === 'good' ? (
@@ -810,7 +812,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-2 max-w-[220px]" style={{ color: 'var(--admin-text-muted)', position: 'relative', fontSize: fs.cell }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', position: 'relative', fontSize: fs.cell }}>
                     {editingFeedback?.id === feedback.id && editingFeedback.field === 'corrected' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <textarea
