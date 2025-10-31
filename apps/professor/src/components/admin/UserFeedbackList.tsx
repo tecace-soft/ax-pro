@@ -462,7 +462,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
-          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Sort by:</span>
+          <span className="text-sm" style={{ color: 'var(--admin-text)', fontSize: fs.sm }}>{t('adminFeedback.sortBy')}</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -470,28 +470,30 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
             style={{
               backgroundColor: 'rgba(9, 14, 34, 0.6)',
               color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
+              border: '1px solid var(--admin-border)',
+              fontSize: fs.sm
             }}
           >
-            <option value="date-desc">Date/Time (Newest)</option>
-            <option value="date-asc">Date/Time (Oldest)</option>
-            <option value="user">User ID</option>
+            <option value="date-desc">{t('adminFeedback.sortDateNewest')}</option>
+            <option value="date-asc">{t('adminFeedback.sortDateOldest')}</option>
+            <option value="user">{t('admin.user')} ID</option>
           </select>
         </div>
 
         {/* Search */}
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Search:</span>
+          <span className="text-sm" style={{ color: 'var(--admin-text)', fontSize: fs.sm }}>{t('adminFeedback.search')}</span>
           <input
             type="text"
-            placeholder="Search feedback..."
+            placeholder={t('adminFeedback.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1 px-3 py-2 rounded-md text-sm"
             style={{
               backgroundColor: 'rgba(9, 14, 34, 0.6)',
               color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
+              border: '1px solid var(--admin-border)',
+              fontSize: fs.sm
             }}
           />
         </div>
@@ -499,21 +501,21 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
         {/* Filter Indicators */}
         {(filterUserId || filterDate) && (
           <div className="flex items-center gap-2">
-            <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>Filters:</span>
+            <span className="text-xs" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>Filters:</span>
             {filterUserId && (
-              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: 'var(--admin-primary)' }}>
-                User: {filterUserId}
+              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: 'var(--admin-primary)', fontSize: fs.sm }}>
+                {t('admin.user')}: {filterUserId}
               </span>
             )}
             {filterDate && (
-              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(168, 85, 247, 0.2)', color: 'var(--admin-accent)' }}>
-                Date: {new Date(filterDate).toLocaleDateString()}
+              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(168, 85, 247, 0.2)', color: 'var(--admin-accent)', fontSize: fs.sm }}>
+                {t('adminFeedback.tableHeader.date')}: {new Date(filterDate).toLocaleDateString()}
               </span>
             )}
             <button
               onClick={clearAllFilters}
               className="px-2 py-1 rounded text-xs hover:bg-gray-500/20"
-              style={{ color: 'var(--admin-text-muted)' }}
+              style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}
               title="Clear all filters"
             >
               ✕ Clear
@@ -547,7 +549,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
               fontSize: fs.sm
             }}
           >
-            Export
+            {t('adminFeedback.export')}
           </button>
         </div>
       </div>
@@ -598,7 +600,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
       {/* Feedback List */}
       {displayedFeedbacks.length === 0 ? (
         <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
-          <p>{searchTerm || filterReaction !== 'all' ? 'No feedback matches your filters' : 'No user feedback found'}</p>
+          <p style={{ fontSize: fs.cell }}>{searchTerm || filterReaction !== 'all' ? t('adminFeedback.noMatches') : t('adminFeedback.noFeedback')}</p>
         </div>
       ) : viewMode === 'table' ? (
         /* Table View */
