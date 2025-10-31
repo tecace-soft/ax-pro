@@ -1319,31 +1319,6 @@ export default function AdminDashboard() {
                   {/* Daily Message Activity */}
                   {dailyActivityExpanded && (
                     <div id="daily-message-activity" className="content-section">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h2 className="section-title" style={{ margin: 0 }}>일일 메시지 활동</h2>
-                        <button
-                          onClick={() => setDailyActivityExpanded(false)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '8px 16px',
-                            background: 'var(--admin-card-bg)',
-                            color: 'var(--admin-text)',
-                            border: '1px solid var(--admin-border)',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            fontSize: '14px',
-                            fontWeight: 500
-                          }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="18,15 12,9 6,15"/>
-                          </svg>
-                          Hide
-                        </button>
-                      </div>
                       <DailyMessageActivity />
                     </div>
                   )}
@@ -1364,7 +1339,6 @@ export default function AdminDashboard() {
                   </div>
 
                   <div id="user-feedback" className="content-section">
-                    <h2 className="section-title">{t('admin.userFeedback')}</h2>
                     <UserFeedbackList onScrollToChat={handleScrollToChat} />
                   </div>
 
