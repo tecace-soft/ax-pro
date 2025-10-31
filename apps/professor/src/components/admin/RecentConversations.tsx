@@ -90,9 +90,9 @@ export default function RecentConversations({
         } else {
           // If not found in displayed conversations, check if it's in filtered but not displayed
           // In that case, increase display limit to include it
-          const chatExists = conversations.find(c => c.chat_id === scrollToChatId)
-          if (chatExists && displayLimit < conversations.length) {
-            setDisplayLimit(conversations.length)
+          const chatExists = filteredConversations.find(c => c.chat_id === scrollToChatId)
+          if (chatExists && displayLimit < filteredConversations.length) {
+            setDisplayLimit(filteredConversations.length)
             // Try again after limit increase
             setTimeout(() => {
               const retryElement = document.getElementById(`chat-${scrollToChatId}`)
@@ -101,14 +101,29 @@ export default function RecentConversations({
                   behavior: 'smooth', 
                   block: 'center' 
                 })
+                // Add highlight effect
+                retryElement.style.transition = 'all 0.3s ease'
+                retryElement.style.backgroundColor = 'rgba(59, 230, 255, 0.15)'
+                retryElement.style.borderColor = 'var(--admin-primary)'
+                retryElement.style.boxShadow = '0 0 20px rgba(59, 230, 255, 0.3)'
+                
+                setTimeout(() => {
+                  retryElement.style.backgroundColor = ''
+                  retryElement.style.borderColor = ''
+                  retryElement.style.boxShadow = ''
+                }, 3000)
+                
                 onScrollComplete?.()
               }
-            }, 100)
+            }, 200)
+          } else if (!chatExists) {
+            // Chat might be filtered out, clear filters temporarily to show it
+            console.warn(`Chat ${scrollToChatId} not found in filtered conversations. It might be filtered out.`)
           }
         }
       }, 100)
     }
-  }, [scrollToChatId, onScrollComplete, conversations, displayLimit])
+  }, [scrollToChatId, onScrollComplete, filteredConversations, displayLimit])
 
   const loadConversations = async () => {
     setIsLoading(true)
