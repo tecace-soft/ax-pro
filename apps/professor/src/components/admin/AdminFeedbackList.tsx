@@ -27,11 +27,14 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('date-desc')
   const [filterVerdict, setFilterVerdict] = useState<'all' | 'good' | 'bad'>('all')
+  const [filterApply, setFilterApply] = useState<'all' | 'applied' | 'not-applied'>('all')
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [displayLanguage, setDisplayLanguage] = useState<'en' | 'ko'>('en')
   const [displayLimit, setDisplayLimit] = useState<number>(10)
+  const [editingFeedback, setEditingFeedback] = useState<{ id: number; field: 'feedback' | 'corrected'; originalValue: string } | null>(null)
+  const [editValue, setEditValue] = useState<string>('')
 
   useEffect(() => {
     loadFeedback()
@@ -41,7 +44,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
     applyFiltersAndSort()
     // Reset display limit when filters change
     setDisplayLimit(10)
-  }, [feedbacks, searchTerm, sortBy, filterVerdict, filterUserId, filterDate])
+  }, [feedbacks, searchTerm, sortBy, filterVerdict, filterApply, filterUserId, filterDate])
 
   const loadFeedback = async () => {
     setIsLoading(true)
@@ -158,6 +161,15 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       filtered = filtered.filter(f => f.feedback_verdict === filterVerdict)
     }
 
+    // Filter by apply status
+    if (filterApply !== 'all') {
+      if (filterApply === 'applied') {
+        filtered = filtered.filter(f => f.apply === true)
+      } else if (filterApply === 'not-applied') {
+        filtered = filtered.filter(f => !f.apply)
+      }
+    }
+
     // Filter by user ID
     if (filterUserId) {
       filtered = filtered.filter(f => f.chatData?.user_id === filterUserId)
@@ -250,6 +262,63 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
     setFilterDate(null)
     setSearchTerm('')
     setFilterVerdict('all')
+    setFilterApply('all')
+  }
+
+  const handleStartEdit = (feedbackId: number, field: 'feedback' | 'corrected') => {
+    const feedback = feedbacks.find(f => f.id === feedbackId)
+    if (!feedback) return
+    
+    let value = ''
+    if (field === 'feedback') {
+      value = feedback.feedback_text || ''
+    } else {
+      value = displayLanguage === 'en' 
+        ? ((feedback as any).chatData?.response_en || feedback.corrected_response || '')
+        : ((feedback as any).chatData?.response_ko || feedback.corrected_response || '')
+    }
+    
+    setEditingFeedback({ id: feedbackId, field, originalValue: value })
+    setEditValue(value)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingFeedback(null)
+    setEditValue('')
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingFeedback) return
+    
+    const feedback = feedbacks.find(f => f.id === editingFeedback.id)
+    if (!feedback) return
+
+    // Show confirmation dialog
+    if (!window.confirm(t('adminFeedback.confirmSave'))) {
+      return
+    }
+
+    try {
+      const { updateAdminFeedbackField } = await import('../../services/feedback')
+      
+      if (editingFeedback.field === 'feedback') {
+        await updateAdminFeedbackField(editingFeedback.id, { feedback_text: editValue })
+        setFeedbacks(prev => prev.map(f => 
+          f.id === editingFeedback.id ? { ...f, feedback_text: editValue } : f
+        ))
+      } else {
+        await updateAdminFeedbackField(editingFeedback.id, { corrected_response: editValue })
+        setFeedbacks(prev => prev.map(f => 
+          f.id === editingFeedback.id ? { ...f, corrected_response: editValue } : f
+        ))
+      }
+      
+      setEditingFeedback(null)
+      setEditValue('')
+    } catch (error) {
+      console.error('Failed to update feedback:', error)
+      alert('Failed to save changes. Please try again.')
+    }
   }
 
   const handleDelete = async (feedbackId: number) => {
@@ -481,7 +550,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       </div>
 
       {/* Verdict Filter Tabs */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 flex-wrap items-center">
         <button
           onClick={() => setFilterVerdict('all')}
           className={`px-4 py-2 rounded-md text-sm transition-colors ${
@@ -521,6 +590,50 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
         >
           <IconThumbsDown size={14} /> {t('adminFeedback.bad')} ({feedbacks.filter(f => f.feedback_verdict === 'bad').length})
         </button>
+        
+        {/* Apply Filter */}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <span className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>{t('adminFeedback.tableHeader.apply')}:</span>
+          <button
+            onClick={() => setFilterApply('all')}
+            className={`px-3 py-2 rounded-md text-sm transition-colors ${
+              filterApply === 'all' ? 'font-semibold' : ''
+            }`}
+            style={{
+              backgroundColor: filterApply === 'all' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
+              color: filterApply === 'all' ? '#041220' : 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+          >
+            {t('adminFeedback.all')} ({feedbacks.length})
+          </button>
+          <button
+            onClick={() => setFilterApply('applied')}
+            className={`px-3 py-2 rounded-md text-sm transition-colors ${
+              filterApply === 'applied' ? 'font-semibold' : ''
+            }`}
+            style={{
+              backgroundColor: filterApply === 'applied' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
+              color: filterApply === 'applied' ? '#041220' : 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+          >
+            {t('adminFeedback.filterApplied')} ({feedbacks.filter(f => f.apply).length})
+          </button>
+          <button
+            onClick={() => setFilterApply('not-applied')}
+            className={`px-3 py-2 rounded-md text-sm transition-colors ${
+              filterApply === 'not-applied' ? 'font-semibold' : ''
+            }`}
+            style={{
+              backgroundColor: filterApply === 'not-applied' ? 'rgba(100, 116, 139, 0.4)' : 'rgba(9, 14, 34, 0.4)',
+              color: 'var(--admin-text)',
+              border: '1px solid var(--admin-border)'
+            }}
+          >
+            {t('adminFeedback.filterNotApplied')} ({feedbacks.filter(f => !f.apply).length})
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -576,15 +689,143 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                       <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)', display: 'inline' }} />
                     )}
                   </td>
-                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text)' }}>
-                    <div className="truncate" title={feedback.feedback_text || ''}>
-                      {feedback.feedback_text || '-'}
-                    </div>
+                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text)', position: 'relative' }}>
+                    {editingFeedback?.id === feedback.id && editingFeedback.field === 'feedback' ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <textarea
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          style={{
+                            padding: '6px',
+                            background: 'var(--admin-card-bg)',
+                            color: 'var(--admin-text)',
+                            border: '1px solid var(--admin-primary)',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            minHeight: '60px',
+                            resize: 'vertical',
+                            width: '100%',
+                            fontFamily: 'inherit'
+                          }}
+                          autoFocus
+                        />
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={handleSaveEdit}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--admin-primary)',
+                              color: '#041220',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              fontWeight: 600
+                            }}
+                          >
+                            {t('adminFeedback.save')}
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'rgba(9, 14, 34, 0.4)',
+                              color: 'var(--admin-text)',
+                              border: '1px solid var(--admin-border)',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {t('adminFeedback.cancel')}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        className="truncate" 
+                        title={feedback.feedback_text || ''}
+                        onClick={() => handleStartEdit(feedback.id!, 'feedback')}
+                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(59, 230, 255, 0.1)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent'
+                        }}
+                      >
+                        {feedback.feedback_text || '-'}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)' }}>
-                    <div className="truncate" title={(displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response) : ((feedback as any).chatData?.response_ko || feedback.corrected_response)) || ''}>
-                      {displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response || '-') : ((feedback as any).chatData?.response_ko || feedback.corrected_response || '-')}
-                    </div>
+                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)', position: 'relative' }}>
+                    {editingFeedback?.id === feedback.id && editingFeedback.field === 'corrected' ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <textarea
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          style={{
+                            padding: '6px',
+                            background: 'var(--admin-card-bg)',
+                            color: 'var(--admin-text)',
+                            border: '1px solid var(--admin-primary)',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            minHeight: '60px',
+                            resize: 'vertical',
+                            width: '100%',
+                            fontFamily: 'inherit'
+                          }}
+                          autoFocus
+                        />
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={handleSaveEdit}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--admin-primary)',
+                              color: '#041220',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              fontWeight: 600
+                            }}
+                          >
+                            {t('adminFeedback.save')}
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'rgba(9, 14, 34, 0.4)',
+                              color: 'var(--admin-text)',
+                              border: '1px solid var(--admin-border)',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {t('adminFeedback.cancel')}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        className="truncate" 
+                        title={(displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response) : ((feedback as any).chatData?.response_ko || feedback.corrected_response)) || ''}
+                        onClick={() => handleStartEdit(feedback.id!, 'corrected')}
+                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(59, 230, 255, 0.1)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent'
+                        }}
+                      >
+                        {displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response || '-') : ((feedback as any).chatData?.response_ko || feedback.corrected_response || '-')}
+                      </div>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-center">
                     <button
