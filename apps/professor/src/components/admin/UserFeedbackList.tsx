@@ -501,7 +501,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
         {/* Filter Indicators */}
         {(filterUserId || filterDate) && (
           <div className="flex items-center gap-2">
-            <span className="text-xs" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>Filters:</span>
+            <span className="text-xs" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>{t('admin.filters')}:</span>
             {filterUserId && (
               <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: 'var(--admin-primary)', fontSize: fs.sm }}>
                 {t('admin.user')}: {filterUserId}
@@ -816,22 +816,22 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                   {feedback.chatData ? (
                     <div className="space-y-3">
                       <div>
-                        <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-primary)' }}>
-                          User Message:
+                        <p className="font-medium mb-1" style={{ color: 'var(--admin-primary)', fontSize: fs.sm }}>
+                          {t('admin.userMessage')}:
                         </p>
-                        <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
+                        <p style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
                           {feedback.chatData.chat_message}
                         </p>
                       </div>
                       
                       <div>
-                        <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-accent)' }}>
-                          AI Response:
+                        <p className="font-medium mb-1" style={{ color: 'var(--admin-accent)', fontSize: fs.sm }}>
+                          {t('admin.aiResponse')}:
                         </p>
                         <button
                           onClick={() => onScrollToChat?.(feedback.chat_id)}
-                          className="text-sm text-left w-full p-2 rounded hover:bg-blue-500/10 transition-colors cursor-pointer"
-                          style={{ color: 'var(--admin-text)' }}
+                          className="text-left w-full p-2 rounded hover:bg-blue-500/10 transition-colors cursor-pointer"
+                          style={{ color: 'var(--admin-text)', fontSize: fs.cell }}
                           title="Click to scroll to this chat in Recent Conversations"
                         >
                           {feedback.chatData.response}
