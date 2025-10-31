@@ -47,7 +47,27 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
     
     try {
       const data = await fetchAllUserFeedback()
-      setFeedbacks(data)
+      // Load chat data for all feedbacks
+      const feedbacksWithChat = await Promise.all(
+        data.map(async (feedback) => {
+          try {
+            const chatData = await fetchChatById(feedback.chat_id)
+            return {
+              ...feedback,
+              chatData,
+              isEnabled: true
+            }
+          } catch (error) {
+            console.warn(`Failed to load chat data for ${feedback.chat_id}:`, error)
+            return {
+              ...feedback,
+              chatData: null,
+              isEnabled: true
+            }
+          }
+        })
+      )
+      setFeedbacks(feedbacksWithChat)
     } catch (error) {
       console.error('Failed to load user feedback:', error)
       setError(error instanceof Error ? error.message : 'Failed to load user feedback')
@@ -60,7 +80,27 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
     setIsRefreshing(true)
     try {
       const data = await fetchAllUserFeedback()
-      setFeedbacks(data)
+      // Load chat data for all feedbacks
+      const feedbacksWithChat = await Promise.all(
+        data.map(async (feedback) => {
+          try {
+            const chatData = await fetchChatById(feedback.chat_id)
+            return {
+              ...feedback,
+              chatData,
+              isEnabled: true
+            }
+          } catch (error) {
+            console.warn(`Failed to load chat data for ${feedback.chat_id}:`, error)
+            return {
+              ...feedback,
+              chatData: null,
+              isEnabled: true
+            }
+          }
+        })
+      )
+      setFeedbacks(feedbacksWithChat)
     } catch (error) {
       console.error('Failed to refresh user feedback:', error)
       setError(error instanceof Error ? error.message : 'Failed to refresh user feedback')
@@ -306,6 +346,16 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
   return (
     <div className="admin-card">
+      <style>{`
+        .highlight-row {
+          animation: highlight-flash 2s ease-in-out;
+        }
+        @keyframes highlight-flash {
+          0% { background-color: rgba(59, 230, 255, 0.3) !important; }
+          50% { background-color: rgba(59, 230, 255, 0.5) !important; }
+          100% { background-color: inherit; }
+        }
+      `}</style>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
@@ -516,6 +566,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
               {displayedFeedbacks.map((feedback, index) => (
                 <tr 
                   key={feedback.id}
+                  data-feedback-id={feedback.id}
                   className="border-b transition-colors hover:bg-gray-100/5"
                   style={{
                     backgroundColor: index % 2 === 0 ? 'rgba(9, 14, 34, 0.3)' : 'rgba(9, 14, 34, 0.2)',
@@ -542,9 +593,22 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                   </td>
                   <td className="px-3 py-2 text-xs">
                     <button
-                      onClick={() => onScrollToChat?.(feedback.chat_id)}
+                      onClick={() => {
+                        // First scroll to the chat in Recent Conversations
+                        onScrollToChat?.(feedback.chat_id)
+                        // Then highlight this row
+                        const rowElement = document.querySelector(`[data-feedback-id="${feedback.id}"]`)
+                        if (rowElement) {
+                          rowElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                          // Add highlight effect
+                          rowElement.classList.add('highlight-row')
+                          setTimeout(() => {
+                            rowElement.classList.remove('highlight-row')
+                          }, 2000)
+                        }
+                      }}
                       className="text-blue-400 hover:text-blue-300 underline cursor-pointer truncate max-w-[120px] block"
-                      title={`Click to scroll to ${feedback.chat_id}`}
+                      title={`Click to scroll to ${feedback.chat_id} in Recent Conversations and highlight this row`}
                     >
                       {feedback.chat_id.length > 15 ? feedback.chat_id.substring(0, 15) + '...' : feedback.chat_id}
                     </button>
@@ -563,12 +627,12 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                   </td>
                   <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)' }}>
                     <div className="truncate" title={feedback.chatData?.chat_message || ''}>
-                      {feedback.chatData?.chat_message || 'N/A'}
+                      {feedback.chatData?.chat_message || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
                   </td>
                   <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)' }}>
                     <div className="truncate" title={feedback.chatData?.response || ''}>
-                      {feedback.chatData?.response || 'N/A'}
+                      {feedback.chatData?.response || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
                   </td>
                   <td className="px-3 py-2 text-center">
