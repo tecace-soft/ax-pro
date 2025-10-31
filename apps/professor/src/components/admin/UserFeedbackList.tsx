@@ -32,6 +32,15 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('table')
+  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium')
+  
+  // Font size mapping
+  const fontSizeMap = {
+    small: { base: '11px', sm: '10px', header: '10px', cell: '11px' },
+    medium: { base: '14px', sm: '12px', header: '12px', cell: '14px' },
+    large: { base: '16px', sm: '14px', header: '14px', cell: '16px' }
+  }
+  const fs = fontSizeMap[fontSize]
 
   useEffect(() => {
     loadFeedback()
@@ -476,7 +485,8 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
             style={{
               backgroundColor: 'rgba(9, 14, 34, 0.6)',
               color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
+              border: '1px solid var(--admin-border)',
+              fontSize: fs.sm
             }}
             value={exportFormat}
             onChange={(e) => setExportFormat(e.target.value as 'CSV' | 'JSON')}
@@ -490,7 +500,8 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
             style={{
               backgroundColor: 'rgba(59, 230, 255, 0.1)',
               color: 'var(--admin-primary)',
-              border: '1px solid var(--admin-primary)'
+              border: '1px solid var(--admin-primary)',
+              fontSize: fs.sm
             }}
           >
             Export
@@ -549,17 +560,17 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
       ) : viewMode === 'table' ? (
         /* Table View */
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+          <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0, fontSize: fs.cell }}>
             <thead>
               <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Date</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>User ID</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Chat ID</th>
-                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px' }}>Reaction</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>Comment</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>User Message</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>AI Response</th>
-                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px' }}>Delete</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', fontSize: fs.header }}>Date</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px', fontSize: fs.header }}>User ID</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', fontSize: fs.header }}>Chat ID</th>
+                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', fontSize: fs.header }}>Reaction</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', fontSize: fs.header }}>Comment</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', fontSize: fs.header }}>User Message</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', fontSize: fs.header }}>AI Response</th>
+                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', fontSize: fs.header }}>Delete</th>
               </tr>
             </thead>
             <tbody>
@@ -573,7 +584,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                     borderColor: 'var(--admin-border)'
                   }}
                 >
-                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
                     <button
                       onClick={() => handleFilterByDate(feedback.created_at || '')}
                       className="hover:underline cursor-pointer"
@@ -582,7 +593,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                       {formatDate(feedback.created_at)}
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text)' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
                     <button
                       onClick={() => handleFilterByUser(feedback.user_id)}
                       className="hover:underline cursor-pointer text-blue-300"
@@ -591,7 +602,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                       {feedback.user_id}
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-xs">
+                  <td className="px-3 py-2" style={{ fontSize: fs.cell }}>
                     <button
                       onClick={() => {
                         // First scroll to the chat in Recent Conversations
@@ -613,24 +624,24 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                       {feedback.chat_id.length > 15 ? feedback.chat_id.substring(0, 15) + '...' : feedback.chat_id}
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-3 py-2 text-center" style={{ fontSize: fs.cell }}>
                     {feedback.reaction === 'good' ? (
-                      <IconThumbsUp size={16} style={{ color: 'var(--admin-success)', display: 'inline' }} />
+                      <IconThumbsUp size={fontSize === 'small' ? 14 : fontSize === 'medium' ? 16 : 18} style={{ color: 'var(--admin-success)', display: 'inline' }} />
                     ) : (
-                      <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)', display: 'inline' }} />
+                      <IconThumbsDown size={fontSize === 'small' ? 14 : fontSize === 'medium' ? 16 : 18} style={{ color: 'var(--admin-danger)', display: 'inline' }} />
                     )}
                   </td>
-                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text)' }}>
+                  <td className="px-3 py-2 max-w-[220px]" style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
                     <div className="truncate" title={feedback.feedback_text || ''}>
                       {feedback.feedback_text || '-'}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)' }}>
+                  <td className="px-3 py-2 max-w-[220px]" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
                     <div className="truncate" title={feedback.chatData?.chat_message || ''}>
                       {feedback.chatData?.chat_message || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)' }}>
+                  <td className="px-3 py-2 max-w-[220px]" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
                     <div className="truncate" title={feedback.chatData?.response || ''}>
                       {feedback.chatData?.response || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
