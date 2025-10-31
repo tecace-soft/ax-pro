@@ -564,10 +564,11 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
           style={{
             backgroundColor: filterReaction === 'all' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
             color: filterReaction === 'all' ? '#041220' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)'
+            border: '1px solid var(--admin-border)',
+            fontSize: fs.sm
           }}
         >
-          All ({feedbacks.length})
+          {t('adminFeedback.all')} ({feedbacks.length})
         </button>
         <button
           onClick={() => setFilterReaction('good')}
@@ -577,10 +578,11 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
           style={{
             backgroundColor: filterReaction === 'good' ? 'var(--admin-success)' : 'rgba(9, 14, 34, 0.4)',
             color: filterReaction === 'good' ? '#ffffff' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)'
+            border: '1px solid var(--admin-border)',
+            fontSize: fs.sm
           }}
         >
-          <IconThumbsUp size={14} /> Good ({feedbacks.filter(f => f.reaction === 'good').length})
+          <IconThumbsUp size={14} /> {t('adminFeedback.good')} ({feedbacks.filter(f => f.reaction === 'good').length})
         </button>
         <button
           onClick={() => setFilterReaction('bad')}
@@ -590,10 +592,11 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
           style={{
             backgroundColor: filterReaction === 'bad' ? 'var(--admin-danger)' : 'rgba(9, 14, 34, 0.4)',
             color: filterReaction === 'bad' ? '#ffffff' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)'
+            border: '1px solid var(--admin-border)',
+            fontSize: fs.sm
           }}
         >
-          <IconThumbsDown size={14} /> Bad ({feedbacks.filter(f => f.reaction === 'bad').length})
+          <IconThumbsDown size={14} /> {t('adminFeedback.bad')} ({feedbacks.filter(f => f.reaction === 'bad').length})
         </button>
       </div>
 
