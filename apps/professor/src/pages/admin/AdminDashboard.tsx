@@ -493,7 +493,7 @@ export default function AdminDashboard() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="6,9 12,15 18,9"/>
                       </svg>
-                      Show Research Analysis
+                      {t('dashboard.showResearchAnalysis')}
                     </button>
                   </div>
                 )}
@@ -716,7 +716,7 @@ export default function AdminDashboard() {
                           onMouseLeave={() => setHoveredField(null)}
                           style={{ cursor: 'pointer', position: 'relative' }}
                         >
-                          <div className="field-name">Machine Learning</div>
+                          <div className="field-name">{t('dashboard.machineLearning')}</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '85%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
@@ -732,7 +732,7 @@ export default function AdminDashboard() {
                           onMouseLeave={() => setHoveredField(null)}
                           style={{ cursor: 'pointer' }}
                         >
-                          <div className="field-name">Deep Learning</div>
+                          <div className="field-name">{t('dashboard.deepLearning')}</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '72%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
@@ -748,7 +748,7 @@ export default function AdminDashboard() {
                           onMouseLeave={() => setHoveredField(null)}
                           style={{ cursor: 'pointer' }}
                         >
-                          <div className="field-name">NLP</div>
+                          <div className="field-name">{t('dashboard.nlp')}</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '68%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
@@ -764,7 +764,7 @@ export default function AdminDashboard() {
                           onMouseLeave={() => setHoveredField(null)}
                           style={{ cursor: 'pointer' }}
                         >
-                          <div className="field-name">Computer Vision</div>
+                          <div className="field-name">{t('dashboard.computerVision')}</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '55%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
@@ -780,7 +780,7 @@ export default function AdminDashboard() {
                           onMouseLeave={() => setHoveredField(null)}
                           style={{ cursor: 'pointer' }}
                         >
-                          <div className="field-name">Reinforcement Learning</div>
+                          <div className="field-name">{t('dashboard.reinforcement')}</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '45%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
@@ -895,14 +895,14 @@ export default function AdminDashboard() {
                               </svg>
                             </div>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '2px' }}>Active Students</div>
+                              <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '2px' }}>{t('dashboard.activeStudents')}</div>
                               <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>85% of enrolled</div>
                             </div>
                           </div>
                         ) : (
                           <div style={{ gridColumn: 'span 2', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Active Students Distribution</span>
+                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.activeStudentsDistribution')}</span>
                               <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>32 Total</span>
                             </div>
                             {/* Pie Chart */}
@@ -1047,35 +1047,35 @@ export default function AdminDashboard() {
                       <h3 className="stat-card-title">{t('Satisfaction by Field')}</h3>
                       <div className="satisfaction-stats">
                         <div className="satisfaction-item">
-                          <div className="satisfaction-field">Machine Learning</div>
+                          <div className="satisfaction-field">{t('dashboard.machineLearning')}</div>
                           <div className="satisfaction-gauge">
                             <div className="gauge-fill" style={{ width: '88%', backgroundColor: 'var(--admin-primary)' }}></div>
                             <span className="gauge-text">88%</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
-                          <div className="satisfaction-field">Deep Learning</div>
+                          <div className="satisfaction-field">{t('dashboard.deepLearning')}</div>
                           <div className="satisfaction-gauge">
                             <div className="gauge-fill" style={{ width: '82%', backgroundColor: 'var(--admin-primary)' }}></div>
                             <span className="gauge-text">82%</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
-                          <div className="satisfaction-field">NLP</div>
+                          <div className="satisfaction-field">{t('dashboard.nlp')}</div>
                           <div className="satisfaction-gauge">
                             <div className="gauge-fill" style={{ width: '79%', backgroundColor: 'var(--admin-primary)' }}></div>
                             <span className="gauge-text">79%</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
-                          <div className="satisfaction-field">Computer Vision</div>
+                          <div className="satisfaction-field">{t('dashboard.computerVision')}</div>
                           <div className="satisfaction-gauge">
                             <div className="gauge-fill" style={{ width: '75%', backgroundColor: 'var(--admin-primary)' }}></div>
                             <span className="gauge-text">75%</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
-                          <div className="satisfaction-field">Reinforcement Learning</div>
+                          <div className="satisfaction-field">{t('dashboard.reinforcement')}</div>
                           <div className="satisfaction-gauge">
                             <div className="gauge-fill" style={{ width: '71%', backgroundColor: 'var(--admin-primary)' }}></div>
                             <span className="gauge-text">71%</span>
@@ -1360,7 +1360,7 @@ export default function AdminDashboard() {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="6,9 12,15 18,9"/>
                         </svg>
-                        Show Daily Message Activity
+                        {t('dashboard.showDailyMessageActivity')}
                       </button>
                     </div>
                   )}

@@ -326,7 +326,7 @@ export default function AdminSidebar({
                     fontSize: '12px', 
                     color: 'var(--admin-text-muted)'
                   }}>
-                    {customization.chatSubtitle || 'Main AI Assistant for HR Support'}
+                    {customization.chatSubtitle || t('sidebar.mainAssistant')}
                   </p>
                 </>
               )}
@@ -356,7 +356,7 @@ export default function AdminSidebar({
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  Performance
+                  {t('sidebar.performance')}
                 </div>
                 <div style={{ 
                   fontSize: '9px', 
@@ -379,14 +379,14 @@ export default function AdminSidebar({
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  ACTIVE
+                  {t('sidebar.active')}
                 </div>
                 <div style={{ 
                   fontSize: '9px', 
                   color: 'var(--admin-text-muted)',
                   textTransform: 'uppercase'
                 }}>
-                  STATUS
+                  {t('sidebar.status')}
                 </div>
               </div>
             </div>
@@ -419,7 +419,7 @@ export default function AdminSidebar({
                       <polyline points="17 21 17 13 7 13 7 21"></polyline>
                       <polyline points="7 3 7 8 15 8"></polyline>
                     </svg>
-                    Save
+                    {t('sidebar.save')}
                   </button>
                   <button
                     onClick={handleCancel}
@@ -444,7 +444,7 @@ export default function AdminSidebar({
                       <line x1="18" y1="6" x2="6" y2="18"></line>
                       <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
-                    Cancel
+                    {t('sidebar.cancel')}
                   </button>
                 </>
               ) : (
@@ -472,7 +472,7 @@ export default function AdminSidebar({
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
-                    Edit
+                    {t('sidebar.edit')}
                   </button>
                   <button
                     onClick={() => navigate('/settings?tab=photo')}
@@ -498,7 +498,7 @@ export default function AdminSidebar({
                       <circle cx="8.5" cy="8.5" r="1.5"></circle>
                       <polyline points="21 15 16 10 5 21"></polyline>
                     </svg>
-                    Photo
+                    {t('sidebar.photo')}
                   </button>
                 </>
               )}

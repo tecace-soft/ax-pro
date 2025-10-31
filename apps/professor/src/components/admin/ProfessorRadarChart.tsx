@@ -465,11 +465,11 @@ export default function ProfessorRadarChart({
           className="engagement-panel"
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)' }}>Student Engagement</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)' }}>{t('dashboard.studentEngagement')}</span>
           </div>
-          <CircleStat label="Active Users" value={32} color="#22d3ee" size={80} />
-          <CircleStat label="Engagement Rate" value={68} color="#a78bfa" size={80} />
-          <CircleStat label="Topics Covered" value={8} color="#f59e0b" size={80} />
+          <CircleStat label={t('dashboard.activeUsers')} value={32} color="#22d3ee" size={80} />
+          <CircleStat label={t('dashboard.engagementRate')} value={68} color="#a78bfa" size={80} />
+          <CircleStat label={t('dashboard.topicsCovered')} value={8} color="#f59e0b" size={80} />
         </div>
 
         {/* Fourth column: Satisfaction by Field (placeholder bars) */}
@@ -489,18 +489,18 @@ export default function ProfessorRadarChart({
           className="satisfaction-panel"
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)' }}>Satisfaction by Field</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)' }}>{t('dashboard.satisfactionByField')}</span>
           </div>
           {[
-            { name: 'Machine Learning', val: 88 },
-            { name: 'Deep Learning', val: 82 },
-            { name: 'NLP', val: 79 },
-            { name: 'Computer Vision', val: 75 },
-            { name: 'Reinforcement', val: 71 }
+            { key: 'machineLearning', val: 88 },
+            { key: 'deepLearning', val: 82 },
+            { key: 'nlp', val: 79 },
+            { key: 'computerVision', val: 75 },
+            { key: 'reinforcement', val: 71 }
           ].map((row) => (
-            <div key={row.name} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div key={row.key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--admin-text-muted)' }}>
-                <span>{row.name}</span>
+                <span>{t(`dashboard.${row.key}`)}</span>
                 <span>{row.val}%</span>
               </div>
               <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 6 }}>
