@@ -91,6 +91,9 @@ export default function AdminDashboard() {
   const [hoveredField, setHoveredField] = useState<string | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
   
+  // Get user email from session
+  const userEmail = getSession()?.email || ''
+  
   // Sample chatbot history data
   const fieldHistory: Record<string, { title: string; chats: Array<{ question: string; answer: string }> }> = {
     'Machine Learning': {
@@ -341,7 +344,8 @@ export default function AdminDashboard() {
         <AdminHeader 
           performanceScore={overallScore} 
           performanceDate={formatDate(new Date())}
-          currentTime={currentTime} 
+          currentTime={currentTime}
+          userEmail={userEmail} 
           onSignOut={signOut}
         />
         
