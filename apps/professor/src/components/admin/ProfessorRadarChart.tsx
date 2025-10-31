@@ -93,7 +93,7 @@ export default function ProfessorRadarChart({
     : 0
 
   // Chart dimensions - dynamic to fill available box (leaving small padding for labels)
-  const availableHeight = (matchedHeight || 420) - 64 // subtract inner paddings/spacing
+  const availableHeight = (matchedHeight || 360) - 32 // subtract inner paddings/spacing (reduced from 64)
   const chartSize = Math.max(240, Math.min(400, Math.floor(availableHeight)))
   const center = chartSize / 2
   const centerY = center // 중앙 정렬
@@ -270,9 +270,10 @@ export default function ProfessorRadarChart({
     <div 
       className="performance-radar-section"
       style={{
-        padding: '16px 16px 12px 16px',
+        padding: '16px 16px 8px 16px',
         height: 'auto',
-        overflow: 'visible'
+        overflow: 'visible',
+        marginBottom: 0
       }}
     >
       {/* Four column layout: Radar, Module Control, Engagement, Satisfaction */}
@@ -284,7 +285,7 @@ export default function ProfessorRadarChart({
         }}
       >
         {/* Left side: Radar chart */}
-        <div className="radar-chart-section" style={{ padding: '12px 8px', minHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="radar-chart-section" style={{ padding: '12px 8px 12px 8px', minHeight: 360, maxHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="radar-chart-container" style={{ width: chartSize, height: chartSize }}>
             <div className="radar-chart-large">
               <svg
@@ -539,16 +540,20 @@ export default function ProfessorRadarChart({
             .radar-chart-section { 
               grid-column: 1 / -1 !important;
               order: 1;
+              min-width: unset !important;
             }
             .module-control-panel { 
               order: 2;
+              min-width: unset !important;
             }
             .engagement-panel { 
               order: 3;
+              min-width: unset !important;
             }
             .satisfaction-panel { 
               order: 4;
               grid-column: 1 / -1 !important;
+              min-width: unset !important;
             }
           }
 

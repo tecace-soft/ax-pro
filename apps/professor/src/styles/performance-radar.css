@@ -107,13 +107,13 @@
   background: rgba(18, 27, 61, 0.4);
   border: 1px solid rgba(59, 230, 255, 0.15);
   border-radius: 16px;
-  padding: 40px 60px 80px 60px; /* 상단 여백 줄이고 하단 여백 유지 */
+  padding: 12px 8px; /* Minimal padding, controlled by inline styles */
   overflow: visible;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   width: 100%;
-  min-height: 600px; /* 충분한 높이 */
+  /* min-height removed - controlled by inline styles to match Module Control panel */
 }
 
 .radar-chart-container {
