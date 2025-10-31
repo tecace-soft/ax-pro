@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { settingsService, ApiConfig } from '../services/settings';
+import { useGroupAuth } from '../hooks/useGroupAuth';
+import { withGroupParam } from '../utils/navigation';
 import { 
   getN8nConfigs, 
   addN8nConfig, 
@@ -18,6 +20,7 @@ import { isSimulationModeEnabled, setSimulationModeEnabled } from '../services/d
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
+  useGroupAuth(); // Require auth and group (also syncs URL)
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage } = useTranslation();
   const [configs, setConfigs] = useState<ApiConfig[]>([]);
@@ -217,7 +220,7 @@ const Settings: React.FC = () => {
       <div className="flex justify-between items-center p-4 border-b" style={{ borderColor: 'var(--border)' }}>
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => navigate('/chat')}
+            onClick={() => navigate(withGroupParam('/chat'))}
             className="text-sm link"
           >
             ← Back to Chat

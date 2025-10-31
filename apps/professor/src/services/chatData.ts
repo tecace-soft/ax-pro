@@ -1,18 +1,27 @@
 import { getSupabaseClient } from './supabaseUserSpecific';
 import type { ChatData } from './supabaseUserSpecific';
+import { getSession } from './auth';
 
 /**
- * Fetch all chat data ordered by most recent first
+ * Fetch all chat data ordered by most recent first, filtered by group_id
  */
 export async function fetchAllChatData(limit: number = 100): Promise<ChatData[]> {
   try {
     const supabase = getSupabaseClient();
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
     
-    console.log('Fetching chat data from Supabase...');
+    if (!groupId) {
+      console.warn('No group_id in session, cannot fetch group-specific chat data');
+      return [];
+    }
+    
+    console.log('Fetching chat data from Supabase for group_id:', groupId);
     
     const { data, error } = await supabase
       .from('chat')
       .select('*')
+      .eq('group_id', groupId)
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -21,7 +30,7 @@ export async function fetchAllChatData(limit: number = 100): Promise<ChatData[]>
       throw new Error(`Failed to fetch chat data: ${error.message}`);
     }
 
-    console.log(`✅ Fetched ${data?.length || 0} chat records`);
+    console.log(`✅ Fetched ${data?.length || 0} chat records for group_id: ${groupId}`);
     return data || [];
   } catch (error) {
     console.error('Failed to fetch chat data:', error);
@@ -30,16 +39,24 @@ export async function fetchAllChatData(limit: number = 100): Promise<ChatData[]>
 }
 
 /**
- * Fetch chat data for a specific session
+ * Fetch chat data for a specific session, filtered by group_id
  */
 export async function fetchChatDataBySession(sessionId: string): Promise<ChatData[]> {
   try {
     const supabase = getSupabaseClient();
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
+    
+    if (!groupId) {
+      console.warn('No group_id in session, cannot fetch group-specific chat data');
+      return [];
+    }
     
     const { data, error } = await supabase
       .from('chat')
       .select('*')
       .eq('session_id', sessionId)
+      .eq('group_id', groupId)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -55,15 +72,23 @@ export async function fetchChatDataBySession(sessionId: string): Promise<ChatDat
 }
 
 /**
- * Fetch chat data by date range
+ * Fetch chat data by date range, filtered by group_id
  */
 export async function fetchChatDataByDateRange(startDate: string, endDate: string): Promise<ChatData[]> {
   try {
     const supabase = getSupabaseClient();
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
+    
+    if (!groupId) {
+      console.warn('No group_id in session, cannot fetch group-specific chat data');
+      return [];
+    }
     
     const { data, error } = await supabase
       .from('chat')
       .select('*')
+      .eq('group_id', groupId)
       .gte('created_at', startDate)
       .lte('created_at', endDate)
       .order('created_at', { ascending: false });

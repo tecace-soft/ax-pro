@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { withGroupParam } from '../../utils/navigation';
 import { sessionsApi } from '../../services/api';
 import { isBackendAvailable } from '../../services/devMode';
 
@@ -142,9 +143,9 @@ export const useSessions = () => {
       const remainingSessions = sessions.filter(s => s.id !== id);
       console.log('Remaining sessions:', remainingSessions.length);
       if (remainingSessions.length > 0) {
-        navigate(`/chat/${remainingSessions[0].id}`);
+        navigate(withGroupParam(`/chat/${remainingSessions[0].id}`));
       } else {
-        navigate('/chat');
+        navigate(withGroupParam('/chat'));
       }
       console.log('Delete session completed successfully');
     } catch (err) {

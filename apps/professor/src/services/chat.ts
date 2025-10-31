@@ -114,10 +114,11 @@ export const chatService = {
       console.log('Backend unavailable, trying n8n for chat...');
       const n8nAvailable = isN8nWebhookAvailable();
       const n8nConfig = getActiveN8nConfig();
-      console.log('n8n webhook available:', n8nAvailable);
+      console.log('n8n webhook available (env/localStorage check):', n8nAvailable);
       console.log('Active n8n config:', n8nConfig);
       
-      if (n8nAvailable && n8nConfig && n8nConfig.webhookUrl) {
+      // Proceed if we have a usable webhook URL from active config OR availability flag
+      if ((n8nConfig && n8nConfig.webhookUrl) || n8nAvailable) {
         console.log('Using n8n webhook:', n8nConfig.webhookUrl);
         try {
           const session = getSession();
@@ -129,7 +130,8 @@ export const chatService = {
             chatId,
             userId: session?.userId || 'unknown',
             action: 'sendMessage',
-            chatInput: content
+            chatInput: content,
+            groupId: (session as any)?.selectedGroupId || undefined,
           };
 
           console.log('=== CHAT SERVICE DEBUG ===');

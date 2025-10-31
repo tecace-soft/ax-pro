@@ -16,10 +16,11 @@ import {
   IndexRow, 
   SyncRow 
 } from '../../services/management';
-import { getSession } from '../../services/auth';
+import { useGroupAuth } from '../../hooks/useGroupAuth';
 
 const KnowledgeManagement: React.FC = () => {
   const navigate = useNavigate();
+  useGroupAuth(); // Require auth and group (also syncs URL)
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'files' | 'index' | 'sync'>('files');
   const [files, setFiles] = useState<FileRow[]>([]);

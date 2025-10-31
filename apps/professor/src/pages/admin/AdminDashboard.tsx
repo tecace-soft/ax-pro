@@ -17,6 +17,7 @@ import { fetchAllUserFeedback } from '../../services/feedback'
 import { fetchVectorDocuments } from '../../services/ragManagement'
 import { getSupabaseClient } from '../../services/supabaseUserSpecific'
 import { logout as clearSession, getSession } from '../../services/auth'
+import { useGroupAuth } from '../../hooks/useGroupAuth'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
 
@@ -34,6 +35,9 @@ export default function AdminDashboard() {
   const { theme } = useTheme()
   const { t } = useTranslation()
   
+  // Require auth and group (also syncs URL)
+  useGroupAuth();
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [, setStartDate] = useState<string>('')
   const [, setEndDate] = useState<string>('')

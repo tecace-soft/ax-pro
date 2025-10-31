@@ -93,9 +93,9 @@ const GroupManagement: React.FC = () => {
 
     // Route: admins -> dashboard, members -> chat
     if (nextSession.role === 'admin') {
-      navigate('/admin/dashboard');
+      navigate(`/admin/dashboard?group=${group.group_id}`);
     } else {
-      navigate('/chat');
+      navigate(`/chat?group=${group.group_id}`);
     }
   };
 

@@ -8,6 +8,8 @@ import { isBackendAvailable } from '../services/devMode';
 import SessionList from '../features/sessions/SessionList';
 import ThreadView from '../features/thread/ThreadView';
 import { useUICustomization } from '../hooks/useUICustomization';
+import { useGroupAuth } from '../hooks/useGroupAuth';
+import { withGroupParam } from '../utils/navigation';
 
 const ChatShell: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -18,6 +20,9 @@ const ChatShell: React.FC = () => {
   const [user, setUser] = useState<{ email: string; userId: string; role: string } | null>(null);
   const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
   const [currentSession, setCurrentSession] = useState<any>(null);
+
+  // Check auth and group on mount (also syncs URL)
+  useGroupAuth();
 
   // Check auth on mount
   useEffect(() => {
@@ -158,7 +163,7 @@ const ChatShell: React.FC = () => {
               {user.role === 'admin' && (
                 <>
                   <button
-                    onClick={() => navigate('/admin/dashboard')}
+                    onClick={() => navigate(withGroupParam('/admin/dashboard'))}
                     className="p-2 rounded-md border transition-colors"
                     style={{
                       borderColor: 'var(--border)',
@@ -174,7 +179,7 @@ const ChatShell: React.FC = () => {
                     </svg>
                   </button>
                   <button
-                    onClick={() => navigate('/settings')}
+                    onClick={() => navigate(withGroupParam('/settings'))}
                     className="p-2 rounded-md border transition-colors"
                     style={{
                       borderColor: 'var(--border)',

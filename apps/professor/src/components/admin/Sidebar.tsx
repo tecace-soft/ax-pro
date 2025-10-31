@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useUICustomization } from '../../hooks/useUICustomization'
 import { useTranslation } from '../../i18n/I18nProvider'
+import { withGroupParam } from '../../utils/navigation'
 
 interface SidebarProps {
   conversations: number
@@ -48,7 +49,7 @@ export default function AdminSidebar({
     if (isDashboardPage) {
       onScrollToSection(sectionId)
     } else {
-      navigate(`/admin/dashboard?section=${sectionId}`)
+      navigate(withGroupParam(`/admin/dashboard?section=${sectionId}`))
     }
   }
 
@@ -310,7 +311,7 @@ export default function AdminSidebar({
                     Edit
                   </button>
                   <button
-                    onClick={() => navigate('/settings?tab=photo')}
+                    onClick={() => navigate(withGroupParam('/settings?tab=photo'))}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -429,7 +430,7 @@ export default function AdminSidebar({
             </button>
             <button 
               className="nav-item"
-              onClick={() => navigate('/admin/knowledge-management')}
+              onClick={() => navigate(withGroupParam('/admin/knowledge-management'))}
             >
               <IconDatabase size={18} />
               <span>{t('admin.knowledgeBase')}</span>

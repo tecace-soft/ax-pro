@@ -10,7 +10,7 @@ export interface N8nConfig {
 }
 
 // Hard-coded universal admin webhook fallback
-const UNIVERSAL_N8N_WEBHOOK = 'https://n8n.srv978041.hstgr.cloud/webhook/328757ba-62e6-465e-be1b-2fff0fd1d353';
+const UNIVERSAL_N8N_WEBHOOK = 'https://n8n.srv978041.hstgr.cloud/webhook/db3d9fbd-73bd-444a-a689-842446fffdd9';
 
 export interface N8nRequest {
   sessionId: string;
@@ -18,6 +18,7 @@ export interface N8nRequest {
   userId: string;
   action: 'sendMessage';
   chatInput: string;
+  groupId?: string;
 }
 
 export interface N8nResponse {
@@ -266,7 +267,8 @@ export const testN8nConnection = async (webhookUrl: string): Promise<boolean> =>
       chatId: 'test-chat-' + Date.now(),
       userId: 'test-user',
       action: 'sendMessage',
-      chatInput: 'Test connection'
+      chatInput: 'Test connection',
+      groupId: 'test-group'
     };
 
     const response = await fetch(webhookUrl, {

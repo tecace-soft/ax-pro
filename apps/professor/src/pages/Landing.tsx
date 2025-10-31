@@ -28,11 +28,17 @@ const Landing: React.FC = () => {
   React.useEffect(() => {
     const session = getSession();
     if (session) {
-      // Admin goes to dashboard, user goes to chat
+      const groupId = (session as any)?.selectedGroupId;
+      // If no group selected, redirect to group management
+      if (!groupId) {
+        navigate('/group-management');
+        return;
+      }
+      // Admin goes to dashboard, user goes to chat (with group param)
       if (session.role === 'admin') {
-        navigate('/admin/dashboard');
+        navigate(`/admin/dashboard?group=${groupId}`);
       } else {
-        navigate('/chat');
+        navigate(`/chat?group=${groupId}`);
       }
     }
   }, [navigate]);
