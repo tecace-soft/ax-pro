@@ -353,7 +353,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-          Admin Feedback ({filteredFeedbacks.length} feedback entries)
+          {t('adminFeedback.title')} ({filteredFeedbacks.length} {t('adminFeedback.feedbackEntries')})
         </h3>
         <button 
           className="icon-btn"
@@ -376,7 +376,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
               backgroundColor: viewMode === 'card' ? 'var(--admin-primary)' : 'transparent',
               color: viewMode === 'card' ? '#041220' : 'var(--admin-text)',
             }}
-            title="Card View"
+            title={t('adminFeedback.cardView')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="3" width="7" height="7" />
@@ -392,7 +392,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
               backgroundColor: viewMode === 'table' ? 'var(--admin-primary)' : 'transparent',
               color: viewMode === 'table' ? '#041220' : 'var(--admin-text)',
             }}
-            title="Table View"
+            title={t('adminFeedback.tableView')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="3" y1="6" x2="21" y2="6" />
@@ -404,7 +404,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
-          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Sort by:</span>
+          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>{t('adminFeedback.sortBy')}</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -415,18 +415,18 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
               border: '1px solid var(--admin-border)'
             }}
           >
-            <option value="date-desc">Date/Time (Newest)</option>
-            <option value="date-asc">Date/Time (Oldest)</option>
-            <option value="verdict">Verdict</option>
+            <option value="date-desc">{t('adminFeedback.sortDateNewest')}</option>
+            <option value="date-asc">{t('adminFeedback.sortDateOldest')}</option>
+            <option value="verdict">{t('adminFeedback.sortVerdict')}</option>
           </select>
         </div>
 
         {/* Search */}
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Search:</span>
+          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>{t('adminFeedback.search')}</span>
           <input
             type="text"
-            placeholder="Search feedback..."
+            placeholder={t('adminFeedback.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1 px-3 py-2 rounded-md text-sm"
@@ -440,7 +440,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
         {/* Language Selector */}
         <div className="flex items-center gap-2">
-          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Language:</span>
+          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>{t('adminFeedback.language')}</span>
           <select
             value={displayLanguage}
             onChange={(e) => setDisplayLanguage(e.target.value as 'en' | 'ko')}
@@ -475,7 +475,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
               border: '1px solid var(--admin-primary)'
             }}
           >
-            Export
+            {t('adminFeedback.export')}
           </button>
         </div>
       </div>
@@ -493,7 +493,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
             border: '1px solid var(--admin-border)'
           }}
         >
-          All ({feedbacks.length})
+          {t('adminFeedback.all')} ({feedbacks.length})
         </button>
         <button
           onClick={() => setFilterVerdict('good')}
@@ -506,7 +506,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
             border: '1px solid var(--admin-border)'
           }}
         >
-          <IconThumbsUp size={14} /> Good ({feedbacks.filter(f => f.feedback_verdict === 'good').length})
+          <IconThumbsUp size={14} /> {t('adminFeedback.good')} ({feedbacks.filter(f => f.feedback_verdict === 'good').length})
         </button>
         <button
           onClick={() => setFilterVerdict('bad')}
@@ -519,7 +519,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
             border: '1px solid var(--admin-border)'
           }}
         >
-          <IconThumbsDown size={14} /> Bad ({feedbacks.filter(f => f.feedback_verdict === 'bad').length})
+          <IconThumbsDown size={14} /> {t('adminFeedback.bad')} ({feedbacks.filter(f => f.feedback_verdict === 'bad').length})
         </button>
       </div>
 
@@ -531,7 +531,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
         if (filteredFeedbacks.length === 0) {
           return (
             <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
-              <p>{searchTerm || filterVerdict !== 'all' ? 'No feedback matches your filters' : 'No admin feedback found'}</p>
+              <p>{searchTerm || filterVerdict !== 'all' ? t('adminFeedback.noMatches') : t('adminFeedback.noFeedback')}</p>
             </div>
           )
         }
@@ -543,13 +543,13 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
           <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
               <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Date</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>Role</th>
-                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px' }}>Verdict</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '180px' }}>Feedback</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '180px' }}>Corrected</th>
-                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>Apply</th>
-                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px' }}>Delete</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>{t('adminFeedback.tableHeader.date')}</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>{t('adminFeedback.tableHeader.role')}</th>
+                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px' }}>{t('adminFeedback.tableHeader.verdict')}</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '180px' }}>{t('adminFeedback.tableHeader.feedback')}</th>
+                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '180px' }}>{t('adminFeedback.tableHeader.corrected')}</th>
+                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>{t('adminFeedback.tableHeader.apply')}</th>
+                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px' }}>{t('adminFeedback.tableHeader.delete')}</th>
               </tr>
             </thead>
             <tbody>
@@ -593,7 +593,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                       style={{
                         backgroundColor: feedback.apply ? 'var(--admin-primary)' : 'rgba(100, 116, 139, 0.3)'
                       }}
-                      title={feedback.apply ? 'Applied to prompt' : 'Not applied'}
+                      title={feedback.apply ? t('adminFeedback.appliedToPrompt') : t('adminFeedback.notApplied')}
                     >
                       <span
                         className="inline-block h-3 w-3 transform rounded-full bg-white transition-transform"
@@ -607,7 +607,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                     <button
                       onClick={() => handleDelete(feedback.id!)}
                       className="icon-btn hover:bg-red-500/20 transition-colors"
-                      title="Delete feedback"
+                      title={t('adminFeedback.deleteFeedback')}
                     >
                       <IconTrash size={16} style={{ color: 'var(--admin-danger)' }} />
                     </button>
@@ -628,7 +628,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                 border: '1px solid var(--admin-primary)'
               }}
             >
-              Load More ({filteredFeedbacks.length - displayLimit} remaining)
+              {t('adminFeedback.loadMore')} ({filteredFeedbacks.length - displayLimit} {t('adminFeedback.remaining')})
             </button>
           </div>
         )}
@@ -669,7 +669,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                     {/* Apply to Prompt Toggle */}
                     <label className="flex items-center gap-2 cursor-pointer">
                       <span className="text-xs" style={{ color: 'var(--admin-text)' }}>
-                        Apply to Prompt:
+                        {t('adminFeedback.applyToPrompt')}
                       </span>
                       <button
                         onClick={() => toggleApply(feedback.id!)}
@@ -690,7 +690,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                     <button
                       onClick={() => handleDelete(feedback.id!)}
                       className="icon-btn hover:bg-red-500/20 transition-colors"
-                      title="Delete feedback"
+                      title={t('adminFeedback.deleteFeedback')}
                     >
                       <IconTrash size={16} style={{ color: 'var(--admin-danger)' }} />
                     </button>
@@ -703,7 +703,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                   {feedback.chatData?.chat_message && (
                     <div>
                       <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-text-muted)' }}>
-                        User Message:
+                        {t('adminFeedback.userMessage')}
                       </p>
                       <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
                         {feedback.chatData.chat_message}
@@ -713,7 +713,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
                   {/* Chat ID */}
                   <p className="text-xs mb-2" style={{ color: 'var(--admin-text-muted)' }}>
-                    Chat ID: 
+                    {t('adminFeedback.chatId')} 
                     <button
                       onClick={() => onScrollToChat?.(feedback.chat_id)}
                       className="ml-1 text-blue-400 hover:text-blue-300 underline cursor-pointer"
@@ -727,7 +727,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                   {feedback.chatData?.response && (
                     <div>
                       <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-text-muted)' }}>
-                        Original AI Response:
+                        {t('adminFeedback.originalResponse')}
                       </p>
                       <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
                         {feedback.chatData.response}
@@ -739,7 +739,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                   {feedback.feedback_text && (
                     <div>
                       <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-warning, #ff9800)' }}>
-                        Supervisor Feedback:
+                        {t('adminFeedback.supervisorFeedback')}
                       </p>
                       <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
                         {feedback.feedback_text}
@@ -757,7 +757,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                       }}
                     >
                       <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-primary)' }}>
-                        Corrected Response:
+                        {t('adminFeedback.correctedResponse')}
                       </p>
                       <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
                         {feedback.corrected_response}
@@ -780,7 +780,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                 border: '1px solid var(--admin-primary)'
               }}
             >
-              Load More ({filteredFeedbacks.length - displayLimit} remaining)
+              {t('adminFeedback.loadMore')} ({filteredFeedbacks.length - displayLimit} {t('adminFeedback.remaining')})
             </button>
           </div>
         )}
