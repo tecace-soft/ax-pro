@@ -368,7 +368,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-          User Feedback ({filteredFeedbacks.length})
+          {t('admin.userFeedback')} ({filteredFeedbacks.length})
         </h3>
         <button 
           className="icon-btn"
