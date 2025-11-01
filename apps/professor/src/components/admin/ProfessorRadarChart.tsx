@@ -92,24 +92,14 @@ export default function ProfessorRadarChart({
     ? Math.round(activeDataPoints.reduce((sum, point) => sum + point.value, 0) / activeDataPoints.length)
     : 0
 
-  // Chart dimensions - dynamic to fill available box (leaving small padding for labels)
-  const availableHeight = (matchedHeight || 360) - 32 // subtract inner paddings/spacing (reduced from 64)
+  // Chart dimensions - dynamic to fill available box (leaving space for labels)
+  const availableHeight = (matchedHeight || 360) - 40 // subtract inner paddings/spacing + label space
   const chartSize = Math.max(240, Math.min(400, Math.floor(availableHeight)))
   const center = chartSize / 2
   const centerY = center // 중앙 정렬
-  const maxRadius = Math.floor(chartSize * 0.38) // scale with SVG to fill area
+  // Reduce maxRadius to leave more space for labels
+  const maxRadius = Math.floor(chartSize * 0.32) // Reduced from 0.38 to leave space for labels
 
-  // Calculate point coordinates
-  const getPointCoordinates = (index: number, total: number, value: number) => {
-    const angleStep = 360 / total
-    const angle = (index * angleStep) - 90
-    
-    const radius = (value / 100) * maxRadius
-    const x = Math.cos(angle * Math.PI / 180) * radius
-    const y = Math.sin(angle * Math.PI / 180) * radius
-    
-    return { x, y, angle }
-  }
 
   const CircleStat = ({ size = 90, value = 68, label = 'Engagement', color = '#a78bfa' }: { size?: number; value?: number; label?: string; color?: string }) => {
     const radius = (size - 14) / 2
@@ -131,34 +121,108 @@ export default function ProfessorRadarChart({
     )
   }
 
-  // Create SVG path
+  // Create SVG path - dynamically change shape based on active points (symmetrical)
   const createRadarPath = () => {
-    if (activeDataPoints.length < 3) return ''
+    const activeCount = activeDataPoints.length
+    if (activeCount < 2) return ''
     
-    const points = activeDataPoints.map((point, index) => {
-      const coords = getPointCoordinates(index, activeDataPoints.length, point.value)
-      return `${coords.x + center},${coords.y + center}`
+    // For symmetrical shape, map active points to evenly distributed positions
+    const activePointsList = allDataPoints.filter(point => toggles[point.key as keyof typeof toggles])
+    
+    // Calculate coordinates for active points on symmetrical axes
+    const points = activePointsList.map((point, index) => {
+      // Evenly distribute active points around circle
+      const angle = (index * (360 / activeCount)) - 90
+      const radius = (point.value / 100) * maxRadius
+      // Ensure minimum radius for visibility
+      const minRadius = 3
+      const finalRadius = Math.max(minRadius, radius)
+      const x = Math.cos(angle * Math.PI / 180) * finalRadius
+      const y = Math.sin(angle * Math.PI / 180) * finalRadius
+      return `${x + center},${y + center}`
     })
     
+    // Connect points in order and close the path
     return `M ${points.join(' L ')} Z`
   }
-
-  // Calculate label coordinates near each data point
-  const getLabelCoordinates = (index: number, total: number, value: number) => {
-    const angleStep = 360 / total
-    const angle = (index * angleStep) - 90
-    // place outside the actual point position with adaptive offset
-    const pointRadius = (value / 100) * maxRadius
-    let offset = Math.max(26, Math.floor(chartSize * 0.1))
-    // give extra space near the top (to avoid overlapping with 100 scale label)
-    const normalized = ((angle + 360) % 360)
-    if (normalized <= 22 || normalized >= 338) {
-      offset += 24
-    }
-    const labelRadius = pointRadius + offset
+  
+  // Create lines from center to each point - always show lines even for low values (symmetrical)
+  const createRadarLines = () => {
+    const activePointsList = allDataPoints.filter(point => toggles[point.key as keyof typeof toggles])
+    const activeCount = activePointsList.length
     
-    const x = Math.cos(angle * Math.PI / 180) * labelRadius
-    const y = Math.sin(angle * Math.PI / 180) * labelRadius
+    return activePointsList.map((point, index) => {
+      // Evenly distribute active points around circle for symmetrical layout
+      const angle = (index * (360 / activeCount)) - 90
+      const radius = (point.value / 100) * maxRadius
+      // Ensure minimum radius for visibility
+      const minRadius = 3
+      const finalRadius = Math.max(minRadius, radius)
+      const lineEndX = center + Math.cos(angle * Math.PI / 180) * finalRadius
+      const lineEndY = centerY + Math.sin(angle * Math.PI / 180) * finalRadius
+      
+      return (
+        <line
+          key={`line-${point.key}`}
+          x1={center}
+          y1={centerY}
+          x2={lineEndX}
+          y2={lineEndY}
+          stroke="rgba(59, 230, 255, 0.5)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      )
+    })
+  }
+
+  // Calculate label coordinates near each data point (positioned right next to the point)
+  const getLabelCoordinates = (activeIndex: number, value: number, activeCount: number) => {
+    // Evenly distribute labels around circle based on active count
+    const angleStep = 360 / activeCount
+    const angle = (activeIndex * angleStep) - 90
+    
+    // Calculate the actual point position
+    const pointRadius = (value / 100) * maxRadius
+    // Ensure minimum radius for visibility
+    const minRadius = 3
+    const finalPointRadius = Math.max(minRadius, pointRadius)
+    
+    // Position label right next to the point - keep offset consistent for all points
+    // Check if this is a top axis (where "100" scale label is)
+    const normalized = ((angle + 360) % 360)
+    const isTopAxis = normalized <= 25 || normalized >= 335 // Narrower range, just for top axis
+    
+    // Base offset - keep it consistent for ALL points so labels are always close
+    let offset = 18 // Standard offset for all points, regardless of value
+    
+    // Special handling ONLY for top axis to avoid "100" scale label overlap
+    // Only when point is actually very close to "100" (high value)
+    if (isTopAxis && value > 85) {
+      // Point is very close to "100" label area - need to push label past it
+      offset = 40 // Larger offset to get past "100" label area
+    } else if (isTopAxis && value > 75) {
+      // Point is getting close to "100" area - moderate offset
+      offset = 25
+    }
+    // For all other cases (non-top axes, or top axes with lower values), keep 18px offset
+    
+    // Label radius: position at point radius + offset (always close to point)
+    const labelRadius = finalPointRadius + offset
+    
+    // Ensure label doesn't go outside chart bounds
+    const maxSafeRadius = (chartSize / 2) - 5 // Leave 5px margin from edge
+    const safeLabelRadius = Math.min(labelRadius, maxSafeRadius)
+    
+    let x = Math.cos(angle * Math.PI / 180) * safeLabelRadius
+    let y = Math.sin(angle * Math.PI / 180) * safeLabelRadius
+    
+    // For top axis with very high values (85+), add Y offset to push label upward from "100"
+    if (isTopAxis && value > 85) {
+      y -= 22 // Move label significantly up to clear "100" scale label
+    } else if (isTopAxis && value > 75) {
+      y -= 12 // Moderate upward movement
+    }
     
     let textAlign = 'center'
     
@@ -174,30 +238,58 @@ export default function ProfessorRadarChart({
     
     return { x, y, angle, textAlign }
   }
+  
+  // Get point coordinates for drawing lines - always use 6 axes
+  const getPointCoordinatesForAxis = (originalIndex: number, value: number) => {
+    const totalAxes = 6 // Always 6 axes
+    const angleStep = 360 / totalAxes
+    const angle = (originalIndex * angleStep) - 90
+    
+    // Ensure minimum radius for visibility (even for values like 1 or 2)
+    const minRadius = 3 // Minimum 3px radius so lines are always visible
+    const radius = Math.max(minRadius, (value / 100) * maxRadius)
+    
+    const x = Math.cos(angle * Math.PI / 180) * radius
+    const y = Math.sin(angle * Math.PI / 180) * radius
+    
+    return { x, y, angle, radius }
+  }
 
-  // Create background grid (hex rings + radial lines + scale labels)
+  // Create background grid - dynamically change shape based on active points count (symmetrical)
   const createBackgroundGrid = () => {
     const gridLines = [] as JSX.Element[]
 
-    const sides = 6
+    const activeCount = activeDataPoints.length
+    if (activeCount < 3) return gridLines
 
-    // Hexagonal rings at 0%, 20%, 40%, 60%, 80%, 100% intervals
+    // For symmetrical shapes, evenly distribute axes based on active count
+    // 3 active → triangle, 4 → square, 5 → pentagon, 6 → hexagon
+    const sides = activeCount
+
+    // Grid rings at 0%, 20%, 40%, 60%, 80%, 100% intervals
+    // Draw symmetrical polygon based on active count
     for (let percent = 0; percent <= 100; percent += 20) {
       const radius = (percent / 100) * maxRadius
       // Skip center point (0%) as it's just a dot
       if (percent === 0) continue
       
       const points: string[] = []
+      // Create symmetrical polygon - evenly distribute points around circle
       for (let i = 0; i < sides; i++) {
+        // Start from top (-90 degrees) and evenly distribute
         const angle = (i * (360 / sides)) - 90
         const x = center + Math.cos(angle * Math.PI / 180) * radius
         const y = centerY + Math.sin(angle * Math.PI / 180) * radius
         points.push(`${x},${y}`)
       }
       
+      // Determine shape name for key
+      const shapeNames = ['triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon']
+      const shapeName = shapeNames[Math.min(sides - 3, shapeNames.length - 1)] || 'polygon'
+      
       gridLines.push(
         <polygon
-          key={`hex-${percent}`}
+          key={`${shapeName}-${percent}`}
           points={points.join(' ')}
           fill="none"
           stroke="rgba(59, 230, 255, 0.3)"
@@ -208,8 +300,9 @@ export default function ProfessorRadarChart({
       )
     }
 
-    // Radial axis lines - ensure all 6 axes are drawn
+    // Radial axis lines - draw axes symmetrically based on active count
     for (let i = 0; i < sides; i++) {
+      // Evenly distribute axes around circle for symmetrical shape
       const angle = (i * (360 / sides)) - 90
       const endX = Math.cos(angle * Math.PI / 180) * maxRadius
       const endY = Math.sin(angle * Math.PI / 180) * maxRadius
@@ -234,24 +327,20 @@ export default function ProfessorRadarChart({
       <text key="scale-0" x={center} y={centerY} textAnchor="middle" dominantBaseline="middle" fill="rgba(180, 220, 255, 0.85)" fontSize="12" fontWeight={400}>0</text>
     )
     
-    // Labels 20, 40, 60, 80, 100 - match hexagon vertex at i=0
+    // Labels 20, 40, 60, 80, 100 - position on top axis (first axis, i=0)
     for (let percent = 20; percent <= 100; percent += 20) {
       const radius = (percent / 100) * maxRadius
-      // EXACT hexagon calc: i=0 → angle = (0 * (360/6)) - 90 = -90°
-      const topAxisAngleDeg = (0 * (360 / sides)) - 90
+      // Top axis is always at -90 degrees (i=0)
+      const topAxisAngleDeg = -90
       const angleRad = topAxisAngleDeg * Math.PI / 180
       const vertexX = center + Math.cos(angleRad) * radius
       const vertexY = centerY + Math.sin(angleRad) * radius
       
-      // Position label directly on the grid line (at vertex position)
-      const textX = vertexX
-      const textY = vertexY // On the grid line
-      
       gridLines.push(
         <text
           key={`scale-${percent}`}
-          x={textX}
-          y={textY}
+          x={vertexX}
+          y={vertexY}
           textAnchor="middle"
           dominantBaseline="middle"
           fill="rgba(180, 220, 255, 0.85)"
@@ -285,8 +374,8 @@ export default function ProfessorRadarChart({
         }}
       >
         {/* Left side: Radar chart */}
-        <div className="radar-chart-section" style={{ padding: '12px 8px 12px 8px', minHeight: 360, maxHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="radar-chart-container" style={{ width: chartSize, height: chartSize }}>
+        <div className="radar-chart-section" style={{ padding: '12px 16px 12px 16px', minHeight: 360, maxHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'visible' }}>
+          <div className="radar-chart-container" style={{ width: chartSize, height: chartSize, position: 'relative' }}>
             <div className="radar-chart-large">
               <svg
                 className="radar-svg-large"
@@ -297,6 +386,9 @@ export default function ProfessorRadarChart({
                 {/* Background grid */}
                 {createBackgroundGrid()}
                 
+                {/* Lines from center to each active point */}
+                {createRadarLines()}
+                
                 {/* Radar polygon */}
                 <path
                   d={createRadarPath()}
@@ -304,38 +396,64 @@ export default function ProfessorRadarChart({
                   stroke="rgba(59, 230, 255, 0.8)"
                   strokeWidth="2"
                 />
+                
+                {/* Data points (dots) at each axis position (symmetrical) */}
+                {activeDataPoints.map((point, index) => {
+                  const activeCount = activeDataPoints.length
+                  // Evenly distribute active points around circle
+                  const angle = (index * (360 / activeCount)) - 90
+                  const radius = (point.value / 100) * maxRadius
+                  // Ensure minimum radius for visibility
+                  const minRadius = 3
+                  const finalRadius = Math.max(minRadius, radius)
+                  const pointX = center + Math.cos(angle * Math.PI / 180) * finalRadius
+                  const pointY = centerY + Math.sin(angle * Math.PI / 180) * finalRadius
+                  
+                  return (
+                    <circle
+                      key={`point-${point.key}`}
+                      cx={pointX}
+                      cy={pointY}
+                      r="4"
+                      fill={point.color}
+                      stroke="rgba(255, 255, 255, 0.9)"
+                      strokeWidth="1.5"
+                    />
+                  )
+                })}
               </svg>
             </div>
             
-            {/* Labels - placed next to each point */}
-            {allDataPoints.map((point, index) => {
-              const labelCoords = getLabelCoordinates(index, allDataPoints.length, point.value)
-              const isActive = toggles[point.key as keyof typeof toggles]
+            {/* Labels - placed at symmetrical positions for active points */}
+            {activeDataPoints.map((point, activeIndex) => {
+              const activeCount = activeDataPoints.length
+              const labelCoords = getLabelCoordinates(activeIndex, point.value, activeCount)
               
-              // SVG 중앙을 기준으로 절대 위치 계산 (SVG가 50% 50%에 있으므로)
-              const svgCenterX = center // chartSize / 2
-              const svgCenterY = centerY // chartSize / 2
+              // SVG 중앙을 기준으로 절대 위치 계산
+              const svgCenterX = center
+              const svgCenterY = centerY
               const labelX = svgCenterX + labelCoords.x
               const labelY = svgCenterY + labelCoords.y
               
               return (
                 <div
-                  key={index}
+                  key={point.key}
                   style={{
                     position: 'absolute',
                     left: `${labelX}px`,
                     top: `${labelY}px`,
                     transform: 'translate(-50%, -50%)',
                     zIndex: 10,
-                    opacity: isActive ? 1 : 0.5,
+                    opacity: 1,
                     fontSize: '12px',
                     fontWeight: '400',
                     color: 'var(--admin-text)',
                     textAlign: 'center',
-                    pointerEvents: 'none'
+                    pointerEvents: 'none',
+                    whiteSpace: 'nowrap'
                   }}
                 >
-                  {point.label.toUpperCase()}
+                  {point.label}
                 </div>
               )
             })}

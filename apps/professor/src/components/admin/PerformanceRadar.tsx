@@ -104,28 +104,71 @@ export default function PerformanceRadar({
     return `M ${points.join(' L ')} Z`
   }
 
-  // Calculate label coordinates
-  const getLabelCoordinates = (index: number, total: number) => {
-    const angleStep = 360 / total
-    const angle = (index * angleStep) - 90
-    const labelRadius = maxRadius + 50 // 간격 줄임 (80 → 50)
+  // Calculate label coordinates - positioned right next to each data point
+  const getLabelCoordinates = (index: number, total: number, value: number, isActive: boolean) => {
+    // Get the active point index if this point is active
+    const activePointIndex = isActive ? activeDataPoints.findIndex(p => 
+      allDataPoints[index].key === p.key
+    ) : -1
     
-    const x = Math.cos(angle * Math.PI / 180) * labelRadius
-    const y = Math.sin(angle * Math.PI / 180) * labelRadius
-    
-    let textAlign = 'center'
-    
-    if (angle >= -45 && angle <= 45) {
-      textAlign = 'center'
-    } else if (angle > 45 && angle <= 135) {
-      textAlign = 'left'
-    } else if (angle > 135 || angle <= -135) {
-      textAlign = 'center'
+    if (isActive && activePointIndex !== -1) {
+      // Calculate position based on active point's actual position
+      const angleStep = 360 / activeDataPoints.length
+      const angle = (activePointIndex * angleStep) - 90
+      
+      // Calculate the actual point radius based on value
+      const pointRadius = (value / 100) * maxRadius
+      const minRadius = 3
+      const finalPointRadius = Math.max(minRadius, pointRadius)
+      
+      // Position label right next to the point with small offset
+      let offset = 20 // Offset from point
+      const normalized = ((angle + 360) % 360)
+      if (normalized <= 25 || normalized >= 335) {
+        offset += 15 // Extra space at top for scale labels
+      }
+      
+      const labelRadius = finalPointRadius + offset
+      const maxSafeRadius = (chartSize / 2) - 10
+      const safeLabelRadius = Math.min(labelRadius, maxSafeRadius)
+      
+      const x = Math.cos(angle * Math.PI / 180) * safeLabelRadius
+      const y = Math.sin(angle * Math.PI / 180) * safeLabelRadius
+      
+      let textAlign = 'center'
+      if (angle >= -45 && angle <= 45) {
+        textAlign = 'center'
+      } else if (angle > 45 && angle <= 135) {
+        textAlign = 'left'
+      } else if (angle > 135 || angle <= -135) {
+        textAlign = 'center'
+      } else {
+        textAlign = 'right'
+      }
+      
+      return { x, y, angle, textAlign }
     } else {
-      textAlign = 'right'
+      // For inactive points, use original axis position but hide or position differently
+      const angleStep = 360 / total
+      const angle = (index * angleStep) - 90
+      const labelRadius = maxRadius + 50
+      
+      const x = Math.cos(angle * Math.PI / 180) * labelRadius
+      const y = Math.sin(angle * Math.PI / 180) * labelRadius
+      
+      let textAlign = 'center'
+      if (angle >= -45 && angle <= 45) {
+        textAlign = 'center'
+      } else if (angle > 45 && angle <= 135) {
+        textAlign = 'left'
+      } else if (angle > 135 || angle <= -135) {
+        textAlign = 'center'
+      } else {
+        textAlign = 'right'
+      }
+      
+      return { x, y, angle, textAlign }
     }
-    
-    return { x, y, angle, textAlign }
   }
 
   // Create background grid
@@ -245,8 +288,8 @@ export default function PerformanceRadar({
             
             {/* Labels */}
             {allDataPoints.map((point, index) => {
-              const labelCoords = getLabelCoordinates(index, allDataPoints.length)
               const isActive = toggles[point.key as keyof typeof toggles]
+              const labelCoords = getLabelCoordinates(index, allDataPoints.length, point.value, isActive)
               const isPromptInjection = point.key === 'promptInjection'
               
               // SVG 중앙을 기준으로 절대 위치 계산 (SVG가 50% 50%에 있으므로)
@@ -265,15 +308,16 @@ export default function PerformanceRadar({
                     top: `${labelY}px`,
                     transform: 'translate(-50%, -50%)',
                     zIndex: 10,
-                    borderColor: point.color,
-                    opacity: isActive ? 1 : 0.5
+                    borderColor: isActive ? point.color : 'rgba(120, 140, 160, 0.2)',
+                    opacity: isActive ? 1 : 0.25,
+                    backgroundColor: isActive ? 'rgba(8, 20, 35, 0.8)' : 'rgba(8, 20, 35, 0.4)'
                   }}
                 >
                   <div className="label-content">
-                    <span className="label-name" style={{ color: point.color }}>
+                    <span className="label-name" style={{ color: isActive ? point.color : 'rgba(180, 200, 220, 0.4)' }}>
                       {point.label.toUpperCase()}
                     </span>
-                    <span className="label-score" style={{ color: point.color }}>
+                    <span className="label-score" style={{ color: isActive ? point.color : 'rgba(180, 200, 220, 0.4)' }}>
                       {point.value}
                     </span>
                   </div>
