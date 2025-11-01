@@ -744,7 +744,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                     )}
                   </td>
                   <td className="px-3 py-2" style={{ color: 'var(--admin-text)', position: 'relative', fontSize: fs.cell, maxWidth: '250px', overflow: 'hidden' }}>
-                    {editingFeedback?.id === feedback.id && editingFeedback.field === 'feedback' ? (
+                    {editingFeedback && editingFeedback.id === feedback.id && editingFeedback.field === 'feedback' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <textarea
                           value={editValue}
@@ -813,7 +813,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                     )}
                   </td>
                   <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', position: 'relative', fontSize: fs.cell, maxWidth: '280px', overflow: 'hidden' }}>
-                    {editingFeedback?.id === feedback.id && editingFeedback.field === 'corrected' ? (
+                    {editingFeedback && editingFeedback.id === feedback.id && editingFeedback.field === 'corrected' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <textarea
                           value={editValue}
