@@ -71,26 +71,26 @@ export default function AdminSidebar({
   // per-subject managed translation target languages (always include en/ko)
   const [managedLangBySubject, setManagedLangBySubject] = useState<Record<string, string[]>>({
     'machine-learning': ['en','ko','ja','zh','fr'],
-    'deep-learning': ['en','ko','zh','es','ru'],
-    'nlp': ['en','ko','ja','es','pt'],
     'computer-vision': ['en','ko','fr','de','it'],
-    'reinforcement-learning': ['en','ko','hi','ar','tr']
+    'ai-introduction': ['en','ko','ja','zh','es'],
+    'big-data-analysis': ['en','ko','ja','zh','pt'],
+    'logistic-regression': ['en','ko','ja','zh','ru']
   })
 
-  // Subject management (add/remove and localized names)
+  // Subject management (add/remove and localized names) - Updated with actual YouTube lecture titles
   const [managedSubjects, setManagedSubjects] = useState<string[]>([
     'machine-learning',
-    'deep-learning',
-    'nlp',
     'computer-vision',
-    'reinforcement-learning'
+    'ai-introduction',
+    'big-data-analysis',
+    'logistic-regression'
   ])
   const [subjectLabelMap, setSubjectLabelMap] = useState<Record<string, { en: string; ko: string }>>({
-    'machine-learning': { en: 'Intro to Machine Learning', ko: '머신러닝 기초' },
-    'deep-learning': { en: 'Deep Learning', ko: '딥러닝' },
-    'nlp': { en: 'Natural Language Processing', ko: '자연어 처리' },
+    'machine-learning': { en: 'Machine Learning', ko: '머신러닝' },
     'computer-vision': { en: 'Computer Vision', ko: '컴퓨터 비전' },
-    'reinforcement-learning': { en: 'Reinforcement Learning', ko: '강화 학습' }
+    'ai-introduction': { en: 'Artificial Intelligence', ko: '인공지능' },
+    'big-data-analysis': { en: 'Big Data', ko: '빅데이터' },
+    'logistic-regression': { en: 'Statistics', ko: '통계' }
   })
 
   // keep in sync with parent (right dropdown)
@@ -112,25 +112,25 @@ export default function AdminSidebar({
       { value: 'zh', label: '🇨🇳 中文' },
       { value: 'fr', label: '🇫🇷 Français' }
     ],
-    'deep-learning': [
-      { value: 'zh', label: '🇨🇳 中文' },
-      { value: 'es', label: '🇪🇸 Español' },
-      { value: 'ru', label: '🇷🇺 Русский' }
-    ],
-    'nlp': [
+    'ai-introduction': [
       { value: 'ja', label: '🇯🇵 日本語' },
-      { value: 'es', label: '🇪🇸 Español' },
+      { value: 'zh', label: '🇨🇳 中文' },
+      { value: 'es', label: '🇪🇸 Español' }
+    ],
+    'big-data-analysis': [
+      { value: 'ja', label: '🇯🇵 日本語' },
+      { value: 'zh', label: '🇨🇳 中文' },
       { value: 'pt', label: '🇵🇹 Português' }
+    ],
+    'logistic-regression': [
+      { value: 'ja', label: '🇯🇵 日本語' },
+      { value: 'zh', label: '🇨🇳 中文' },
+      { value: 'ru', label: '🇷🇺 Русский' }
     ],
     'computer-vision': [
       { value: 'fr', label: '🇫🇷 Français' },
       { value: 'de', label: '🇩🇪 Deutsch' },
       { value: 'it', label: '🇮🇹 Italiano' }
-    ],
-    'reinforcement-learning': [
-      { value: 'hi', label: '🇮🇳 Hindi' },
-      { value: 'ar', label: '🇸🇦 العربية' },
-      { value: 'tr', label: '🇹🇷 Türkçe' }
     ]
   }
 
@@ -326,7 +326,7 @@ export default function AdminSidebar({
                     fontSize: '12px', 
                     color: 'var(--admin-text-muted)'
                   }}>
-                    {customization.chatSubtitle || 'Main AI Assistant for HR Support'}
+                    {customization.chatSubtitle || t('sidebar.mainAssistant')}
                   </p>
                 </>
               )}
@@ -356,7 +356,7 @@ export default function AdminSidebar({
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  Performance
+                  {t('sidebar.performance')}
                 </div>
                 <div style={{ 
                   fontSize: '9px', 
@@ -379,14 +379,14 @@ export default function AdminSidebar({
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  ACTIVE
+                  {t('sidebar.active')}
                 </div>
                 <div style={{ 
                   fontSize: '9px', 
                   color: 'var(--admin-text-muted)',
                   textTransform: 'uppercase'
                 }}>
-                  STATUS
+                  {t('sidebar.status')}
                 </div>
               </div>
             </div>
@@ -419,7 +419,7 @@ export default function AdminSidebar({
                       <polyline points="17 21 17 13 7 13 7 21"></polyline>
                       <polyline points="7 3 7 8 15 8"></polyline>
                     </svg>
-                    Save
+                    {t('sidebar.save')}
                   </button>
                   <button
                     onClick={handleCancel}
@@ -444,7 +444,7 @@ export default function AdminSidebar({
                       <line x1="18" y1="6" x2="6" y2="18"></line>
                       <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
-                    Cancel
+                    {t('sidebar.cancel')}
                   </button>
                 </>
               ) : (
@@ -472,7 +472,7 @@ export default function AdminSidebar({
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
-                    Edit
+                    {t('sidebar.edit')}
                   </button>
                   <button
                     onClick={() => navigate('/settings?tab=photo')}
@@ -498,7 +498,7 @@ export default function AdminSidebar({
                       <circle cx="8.5" cy="8.5" r="1.5"></circle>
                       <polyline points="21 15 16 10 5 21"></polyline>
                     </svg>
-                    Photo
+                    {t('sidebar.photo')}
                   </button>
                 </>
               )}

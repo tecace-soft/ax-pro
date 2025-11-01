@@ -32,6 +32,15 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('table')
+  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium')
+  
+  // Font size mapping
+  const fontSizeMap = {
+    small: { base: '11px', sm: '10px', header: '10px', cell: '11px' },
+    medium: { base: '14px', sm: '12px', header: '12px', cell: '14px' },
+    large: { base: '16px', sm: '14px', header: '14px', cell: '16px' }
+  }
+  const fs = fontSizeMap[fontSize]
 
   useEffect(() => {
     loadFeedback()
@@ -47,7 +56,27 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
     
     try {
       const data = await fetchAllUserFeedback()
-      setFeedbacks(data)
+      // Load chat data for all feedbacks
+      const feedbacksWithChat = await Promise.all(
+        data.map(async (feedback) => {
+          try {
+            const chatData = await fetchChatById(feedback.chat_id)
+            return {
+              ...feedback,
+              chatData,
+              isEnabled: true
+            }
+          } catch (error) {
+            console.warn(`Failed to load chat data for ${feedback.chat_id}:`, error)
+            return {
+              ...feedback,
+              chatData: null,
+              isEnabled: true
+            }
+          }
+        })
+      )
+      setFeedbacks(feedbacksWithChat)
     } catch (error) {
       console.error('Failed to load user feedback:', error)
       setError(error instanceof Error ? error.message : 'Failed to load user feedback')
@@ -60,7 +89,27 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
     setIsRefreshing(true)
     try {
       const data = await fetchAllUserFeedback()
-      setFeedbacks(data)
+      // Load chat data for all feedbacks
+      const feedbacksWithChat = await Promise.all(
+        data.map(async (feedback) => {
+          try {
+            const chatData = await fetchChatById(feedback.chat_id)
+            return {
+              ...feedback,
+              chatData,
+              isEnabled: true
+            }
+          } catch (error) {
+            console.warn(`Failed to load chat data for ${feedback.chat_id}:`, error)
+            return {
+              ...feedback,
+              chatData: null,
+              isEnabled: true
+            }
+          }
+        })
+      )
+      setFeedbacks(feedbacksWithChat)
     } catch (error) {
       console.error('Failed to refresh user feedback:', error)
       setError(error instanceof Error ? error.message : 'Failed to refresh user feedback')
@@ -306,10 +355,20 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
   return (
     <div className="admin-card">
+      <style>{`
+        .highlight-row {
+          animation: highlight-flash 2s ease-in-out;
+        }
+        @keyframes highlight-flash {
+          0% { background-color: rgba(59, 230, 255, 0.3) !important; }
+          50% { background-color: rgba(59, 230, 255, 0.5) !important; }
+          100% { background-color: inherit; }
+        }
+      `}</style>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-          User Feedback ({filteredFeedbacks.length})
+          {t('admin.userFeedback')} ({filteredFeedbacks.length})
         </h3>
         <button 
           className="icon-btn"
@@ -323,6 +382,49 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
       {/* Controls Bar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        {/* Font Size Control */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>{t('adminFeedback.fontSize')}:</span>
+          <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
+            <button
+              onClick={() => setFontSize('small')}
+              className="px-3 py-2 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: fontSize === 'small' ? 'var(--admin-primary)' : 'transparent',
+                color: fontSize === 'small' ? '#041220' : 'var(--admin-text)',
+                fontSize: fs.sm
+              }}
+              title={t('adminFeedback.fontSizeSmall')}
+            >
+              A
+            </button>
+            <button
+              onClick={() => setFontSize('medium')}
+              className="px-3 py-2 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: fontSize === 'medium' ? 'var(--admin-primary)' : 'transparent',
+                color: fontSize === 'medium' ? '#041220' : 'var(--admin-text)',
+                fontSize: fs.base
+              }}
+              title={t('adminFeedback.fontSizeMedium')}
+            >
+              A
+            </button>
+            <button
+              onClick={() => setFontSize('large')}
+              className="px-3 py-2 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: fontSize === 'large' ? 'var(--admin-primary)' : 'transparent',
+                color: fontSize === 'large' ? '#041220' : 'var(--admin-text)',
+                fontSize: fs.base
+              }}
+              title={t('adminFeedback.fontSizeLarge')}
+            >
+              A
+            </button>
+          </div>
+        </div>
+
         {/* View Mode Toggle */}
         <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
           <button
@@ -360,7 +462,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
-          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Sort by:</span>
+          <span className="text-sm" style={{ color: 'var(--admin-text)', fontSize: fs.sm }}>{t('adminFeedback.sortBy')}</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -368,28 +470,30 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
             style={{
               backgroundColor: 'rgba(9, 14, 34, 0.6)',
               color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
+              border: '1px solid var(--admin-border)',
+              fontSize: fs.sm
             }}
           >
-            <option value="date-desc">Date/Time (Newest)</option>
-            <option value="date-asc">Date/Time (Oldest)</option>
-            <option value="user">User ID</option>
+            <option value="date-desc">{t('adminFeedback.sortDateNewest')}</option>
+            <option value="date-asc">{t('adminFeedback.sortDateOldest')}</option>
+            <option value="user">{t('admin.user')} ID</option>
           </select>
         </div>
 
         {/* Search */}
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>Search:</span>
+          <span className="text-sm" style={{ color: 'var(--admin-text)', fontSize: fs.sm }}>{t('adminFeedback.search')}</span>
           <input
             type="text"
-            placeholder="Search feedback..."
+            placeholder={t('adminFeedback.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1 px-3 py-2 rounded-md text-sm"
             style={{
               backgroundColor: 'rgba(9, 14, 34, 0.6)',
               color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
+              border: '1px solid var(--admin-border)',
+              fontSize: fs.sm
             }}
           />
         </div>
@@ -397,21 +501,21 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
         {/* Filter Indicators */}
         {(filterUserId || filterDate) && (
           <div className="flex items-center gap-2">
-            <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>Filters:</span>
+            <span className="text-xs" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>{t('admin.filters')}:</span>
             {filterUserId && (
-              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: 'var(--admin-primary)' }}>
-                User: {filterUserId}
+              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: 'var(--admin-primary)', fontSize: fs.sm }}>
+                {t('admin.user')}: {filterUserId}
               </span>
             )}
             {filterDate && (
-              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(168, 85, 247, 0.2)', color: 'var(--admin-accent)' }}>
-                Date: {new Date(filterDate).toLocaleDateString()}
+              <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(168, 85, 247, 0.2)', color: 'var(--admin-accent)', fontSize: fs.sm }}>
+                {t('adminFeedback.tableHeader.date')}: {new Date(filterDate).toLocaleDateString()}
               </span>
             )}
             <button
               onClick={clearAllFilters}
               className="px-2 py-1 rounded text-xs hover:bg-gray-500/20"
-              style={{ color: 'var(--admin-text-muted)' }}
+              style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}
               title="Clear all filters"
             >
               ✕ Clear
@@ -426,7 +530,8 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
             style={{
               backgroundColor: 'rgba(9, 14, 34, 0.6)',
               color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
+              border: '1px solid var(--admin-border)',
+              fontSize: fs.sm
             }}
             value={exportFormat}
             onChange={(e) => setExportFormat(e.target.value as 'CSV' | 'JSON')}
@@ -440,10 +545,11 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
             style={{
               backgroundColor: 'rgba(59, 230, 255, 0.1)',
               color: 'var(--admin-primary)',
-              border: '1px solid var(--admin-primary)'
+              border: '1px solid var(--admin-primary)',
+              fontSize: fs.sm
             }}
           >
-            Export
+            {t('adminFeedback.export')}
           </button>
         </div>
       </div>
@@ -458,10 +564,11 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
           style={{
             backgroundColor: filterReaction === 'all' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
             color: filterReaction === 'all' ? '#041220' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)'
+            border: '1px solid var(--admin-border)',
+            fontSize: fs.sm
           }}
         >
-          All ({feedbacks.length})
+          {t('adminFeedback.all')} ({feedbacks.length})
         </button>
         <button
           onClick={() => setFilterReaction('good')}
@@ -471,10 +578,11 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
           style={{
             backgroundColor: filterReaction === 'good' ? 'var(--admin-success)' : 'rgba(9, 14, 34, 0.4)',
             color: filterReaction === 'good' ? '#ffffff' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)'
+            border: '1px solid var(--admin-border)',
+            fontSize: fs.sm
           }}
         >
-          <IconThumbsUp size={14} /> Good ({feedbacks.filter(f => f.reaction === 'good').length})
+          <IconThumbsUp size={14} /> {t('adminFeedback.good')} ({feedbacks.filter(f => f.reaction === 'good').length})
         </button>
         <button
           onClick={() => setFilterReaction('bad')}
@@ -484,98 +592,113 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
           style={{
             backgroundColor: filterReaction === 'bad' ? 'var(--admin-danger)' : 'rgba(9, 14, 34, 0.4)',
             color: filterReaction === 'bad' ? '#ffffff' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)'
+            border: '1px solid var(--admin-border)',
+            fontSize: fs.sm
           }}
         >
-          <IconThumbsDown size={14} /> Bad ({feedbacks.filter(f => f.reaction === 'bad').length})
+          <IconThumbsDown size={14} /> {t('adminFeedback.bad')} ({feedbacks.filter(f => f.reaction === 'bad').length})
         </button>
       </div>
 
       {/* Feedback List */}
       {displayedFeedbacks.length === 0 ? (
         <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
-          <p>{searchTerm || filterReaction !== 'all' ? 'No feedback matches your filters' : 'No user feedback found'}</p>
+          <p style={{ fontSize: fs.cell }}>{searchTerm || filterReaction !== 'all' ? t('adminFeedback.noMatches') : t('adminFeedback.noFeedback')}</p>
         </div>
       ) : viewMode === 'table' ? (
         /* Table View */
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+          <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0, fontSize: fs.cell }}>
             <thead>
               <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Date</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>User ID</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Chat ID</th>
-                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px' }}>Reaction</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>Comment</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>User Message</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>AI Response</th>
-                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px' }}>Delete</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '90px', maxWidth: '90px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.date')}</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '65px', maxWidth: '65px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.userId')}</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '75px', maxWidth: '75px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.chatId')}</th>
+                <th className="px-2 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '55px', maxWidth: '55px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.reaction')}</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '120px', maxWidth: '180px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.comment')}</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', maxWidth: '200px', fontSize: fs.header }}>{t('admin.userMessage')}</th>
+                <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', maxWidth: '220px', fontSize: fs.header }}>{t('admin.aiResponse')}</th>
+                <th className="px-2 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '55px', maxWidth: '55px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.delete')}</th>
               </tr>
             </thead>
             <tbody>
               {displayedFeedbacks.map((feedback, index) => (
                 <tr 
                   key={feedback.id}
+                  data-feedback-id={feedback.id}
                   className="border-b transition-colors hover:bg-gray-100/5"
                   style={{
                     backgroundColor: index % 2 === 0 ? 'rgba(9, 14, 34, 0.3)' : 'rgba(9, 14, 34, 0.2)',
                     borderColor: 'var(--admin-border)'
                   }}
                 >
-                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                  <td className="px-2 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '90px', overflow: 'hidden' }}>
                     <button
                       onClick={() => handleFilterByDate(feedback.created_at || '')}
-                      className="hover:underline cursor-pointer"
-                      title="Click to filter by date"
+                      className="hover:underline cursor-pointer truncate block w-full text-left"
+                      title={formatDate(feedback.created_at)}
                     >
                       {formatDate(feedback.created_at)}
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text)' }}>
+                  <td className="px-2 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '65px', overflow: 'hidden' }}>
                     <button
                       onClick={() => handleFilterByUser(feedback.user_id)}
-                      className="hover:underline cursor-pointer text-blue-300"
-                      title="Click to filter by user"
+                      className="hover:underline cursor-pointer text-blue-300 truncate block w-full text-left"
+                      title={feedback.user_id}
                     >
                       {feedback.user_id}
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-xs">
+                  <td className="px-2 py-2" style={{ fontSize: fs.cell, maxWidth: '75px', overflow: 'hidden' }}>
                     <button
-                      onClick={() => onScrollToChat?.(feedback.chat_id)}
-                      className="text-blue-400 hover:text-blue-300 underline cursor-pointer truncate max-w-[120px] block"
-                      title={`Click to scroll to ${feedback.chat_id}`}
+                      onClick={() => {
+                        // First scroll to the chat in Recent Conversations
+                        onScrollToChat?.(feedback.chat_id)
+                        // Then highlight this row
+                        const rowElement = document.querySelector(`[data-feedback-id="${feedback.id}"]`)
+                        if (rowElement) {
+                          rowElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                          // Add highlight effect
+                          rowElement.classList.add('highlight-row')
+                          setTimeout(() => {
+                            rowElement.classList.remove('highlight-row')
+                          }, 2000)
+                        }
+                      }}
+                      className="text-blue-400 hover:text-blue-300 underline cursor-pointer truncate block w-full text-left"
+                      title={feedback.chat_id}
                     >
-                      {feedback.chat_id.length > 15 ? feedback.chat_id.substring(0, 15) + '...' : feedback.chat_id}
+                      {feedback.chat_id}
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-2 py-2 text-center" style={{ fontSize: fs.cell, maxWidth: '55px' }}>
                     {feedback.reaction === 'good' ? (
-                      <IconThumbsUp size={16} style={{ color: 'var(--admin-success)', display: 'inline' }} />
+                      <IconThumbsUp size={fontSize === 'small' ? 14 : fontSize === 'medium' ? 16 : 18} style={{ color: 'var(--admin-success)', display: 'inline' }} />
                     ) : (
-                      <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)', display: 'inline' }} />
+                      <IconThumbsDown size={fontSize === 'small' ? 14 : fontSize === 'medium' ? 16 : 18} style={{ color: 'var(--admin-danger)', display: 'inline' }} />
                     )}
                   </td>
-                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text)' }}>
+                  <td className="px-2 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, minWidth: '120px', maxWidth: '180px', overflow: 'hidden' }}>
                     <div className="truncate" title={feedback.feedback_text || ''}>
                       {feedback.feedback_text || '-'}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)' }}>
+                  <td className="px-2 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '200px', overflow: 'hidden' }}>
                     <div className="truncate" title={feedback.chatData?.chat_message || ''}>
-                      {feedback.chatData?.chat_message || 'N/A'}
+                      {feedback.chatData?.chat_message || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-xs max-w-[220px]" style={{ color: 'var(--admin-text-muted)' }}>
+                  <td className="px-2 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '220px', overflow: 'hidden' }}>
                     <div className="truncate" title={feedback.chatData?.response || ''}>
-                      {feedback.chatData?.response || 'N/A'}
+                      {feedback.chatData?.response || (feedback.chatData === null ? 'Chat not found' : 'Loading...')}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-2 py-2 text-center">
                     <button
                       onClick={() => handleDelete(feedback.id!)}
                       className="icon-btn hover:bg-red-500/20 transition-colors"
-                      title="Delete feedback"
+                      title={t('adminFeedback.deleteFeedback')}
                     >
                       <IconTrash size={16} style={{ color: 'var(--admin-danger)' }} />
                     </button>
@@ -605,8 +728,8 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     {getReactionIcon(feedback.reaction)}
-                    <span className="text-sm font-medium" style={{ color: 'var(--admin-text)' }}>
-                      User: 
+                    <span className="text-sm font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.sm }}>
+                      {t('admin.user')}: 
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -644,7 +767,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                         handleDelete(feedback.id!)
                       }}
                       className="icon-btn hover:bg-red-500/20 transition-colors"
-                      title="Delete feedback"
+                      title={t('adminFeedback.deleteFeedback')}
                     >
                       <IconTrash size={16} style={{ color: 'var(--admin-danger)' }} />
                     </button>
@@ -693,22 +816,22 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
                   {feedback.chatData ? (
                     <div className="space-y-3">
                       <div>
-                        <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-primary)' }}>
-                          User Message:
+                        <p className="font-medium mb-1" style={{ color: 'var(--admin-primary)', fontSize: fs.sm }}>
+                          {t('admin.userMessage')}:
                         </p>
-                        <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
+                        <p style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
                           {feedback.chatData.chat_message}
                         </p>
                       </div>
                       
                       <div>
-                        <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-accent)' }}>
-                          AI Response:
+                        <p className="font-medium mb-1" style={{ color: 'var(--admin-accent)', fontSize: fs.sm }}>
+                          {t('admin.aiResponse')}:
                         </p>
                         <button
                           onClick={() => onScrollToChat?.(feedback.chat_id)}
-                          className="text-sm text-left w-full p-2 rounded hover:bg-blue-500/10 transition-colors cursor-pointer"
-                          style={{ color: 'var(--admin-text)' }}
+                          className="text-left w-full p-2 rounded hover:bg-blue-500/10 transition-colors cursor-pointer"
+                          style={{ color: 'var(--admin-text)', fontSize: fs.cell }}
                           title="Click to scroll to this chat in Recent Conversations"
                         >
                           {feedback.chatData.response}
@@ -747,10 +870,11 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
             className="px-6 py-2 rounded-md text-sm font-medium"
             style={{
               background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
-              color: '#041220'
+              color: '#041220',
+              fontSize: fs.base
             }}
           >
-            Load More ({filteredFeedbacks.length - displayLimit} remaining)
+            {t('adminFeedback.loadMore')} ({filteredFeedbacks.length - displayLimit} {t('adminFeedback.remaining')})
           </button>
         </div>
       )}

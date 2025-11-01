@@ -91,6 +91,9 @@ export default function AdminDashboard() {
   const [hoveredField, setHoveredField] = useState<string | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
   
+  // Get user email from session
+  const userEmail = getSession()?.email || ''
+  
   // Sample chatbot history data
   const fieldHistory: Record<string, { title: string; chats: Array<{ question: string; answer: string }> }> = {
     'Machine Learning': {
@@ -310,13 +313,22 @@ export default function AdminDashboard() {
   }
 
   const handleScrollToChat = (chatId: string) => {
-    setScrollToChatId(chatId)
+    // Reset scrollToChatId first to trigger useEffect even if it's the same chatId
+    setScrollToChatId(null)
     setHighlightedChatId(chatId)
     
     // Scroll to Recent Conversations section first
     const section = document.getElementById('recent-conversations')
     if (section) {
       section.scrollIntoView({ behavior: 'smooth' })
+      
+      // Wait for section scroll, then set scrollToChatId
+      setTimeout(() => {
+        setScrollToChatId(chatId)
+      }, 300)
+    } else {
+      // If section not found, set immediately
+      setScrollToChatId(chatId)
     }
     
     // Clear highlight after 3 seconds
@@ -332,7 +344,8 @@ export default function AdminDashboard() {
         <AdminHeader 
           performanceScore={overallScore} 
           performanceDate={formatDate(new Date())}
-          currentTime={currentTime} 
+          currentTime={currentTime}
+          userEmail={userEmail} 
           onSignOut={signOut}
         />
         
@@ -396,7 +409,6 @@ export default function AdminDashboard() {
                 </div>
                 
                 <div id="admin-feedback" className="content-section" style={{ marginTop: '32px' }}>
-                  <h2 className="section-title">Admin Feedback</h2>
                   <AdminFeedbackList onScrollToChat={() => {}} useMock={isProfessor} />
                 </div>
               </div>
@@ -493,7 +505,7 @@ export default function AdminDashboard() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="6,9 12,15 18,9"/>
                       </svg>
-                      Show Research Analysis
+                      {t('dashboard.showResearchAnalysis')}
                     </button>
                   </div>
                 )}
@@ -502,12 +514,12 @@ export default function AdminDashboard() {
                 <div className="ai-research-stats-section" style={{ display: newSectionsExpanded ? 'block' : 'none' }}>
                   {/* Header Row - Title, View Mode, Toggle Button */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', gap: '12px' }}>
-                    <h2 className="section-title" style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>{t('Research Field Analysis')}</h2>
+                    <h2 className="section-title" style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>{t('dashboard.researchFieldAnalysis')}</h2>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       {/* View Mode Selector */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>View:</span>
+                        <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)', fontWeight: 500 }}>{t('dashboard.view')}</span>
                         <button
                           onClick={() => setViewMode('overview')}
                           style={{
@@ -522,7 +534,7 @@ export default function AdminDashboard() {
                             transition: 'all 0.2s'
                           }}
                         >
-                          Overview
+                          {t('dashboard.overview')}
                         </button>
                         <button
                           onClick={() => setViewMode('detailed')}
@@ -538,7 +550,7 @@ export default function AdminDashboard() {
                             transition: 'all 0.2s'
                           }}
                         >
-                          Details
+                          {t('dashboard.details')}
                         </button>
                       </div>
                       
@@ -567,7 +579,7 @@ export default function AdminDashboard() {
                             <polyline points="6,9 12,15 18,9"/>
                           )}
                         </svg>
-                        {newSectionsExpanded ? 'Hide' : 'Show'}
+                        {newSectionsExpanded ? t('dashboard.hide') : t('dashboard.show')}
                       </button>
                     </div>
                   </div>
@@ -594,7 +606,7 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Total Sessions')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('dashboard.totalSessions')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalConversations}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
@@ -611,11 +623,11 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Total Questions')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('dashboard.totalQuestions')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalQuestions}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
-                            Avg 4.2 per session
+                            {t('dashboard.avgPerSession')}: 4.2
                           </div>
                         )}
                       </div>
@@ -630,11 +642,11 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Avg Q/Session')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('dashboard.avgQSession')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{avgQuestionsPerSession}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
-                            Peak: 8 on 10/15
+                            {t('dashboard.peak')}: 8 (10/15)
                           </div>
                         )}
                       </div>
@@ -648,7 +660,7 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Satisfaction')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('dashboard.satisfaction')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{satisfactionRate}%</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
@@ -668,7 +680,7 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Active Users')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('dashboard.activeUsers')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{activeStudents}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
@@ -686,7 +698,7 @@ export default function AdminDashboard() {
                         </svg>
                       </div>
                       <div className="prof-overview-content">
-                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('Documents')}</div>
+                        <div className="prof-overview-label" style={{ fontSize: viewMode === 'overview' ? '10px' : '12px' }}>{t('admin.documents')}</div>
                         <div className="prof-overview-value" style={{ fontSize: viewMode === 'overview' ? '18px' : '20px' }}>{totalDocuments}</div>
                         {viewMode === 'detailed' && (
                           <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '4px', opacity: 0.8 }}>
@@ -704,7 +716,7 @@ export default function AdminDashboard() {
                   }}>
                     {/* Field Distribution */}
                     <div className="research-stat-card">
-                      <h3 className="stat-card-title">{t('Research Fields')}</h3>
+                      <h3 className="stat-card-title">{t('dashboard.researchFields')}</h3>
                       <div className="field-stats">
                         <div 
                           className="field-item"
@@ -716,11 +728,11 @@ export default function AdminDashboard() {
                           onMouseLeave={() => setHoveredField(null)}
                           style={{ cursor: 'pointer', position: 'relative' }}
                         >
-                          <div className="field-name">Machine Learning</div>
+                          <div className="field-name">{t('dashboard.machineLearning')}</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '85%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">42 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 12%</span>}</div>
+                          <div className="field-count">42 {t('dashboard.questions')}{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 12%</span>}</div>
                         </div>
                         <div 
                           className="field-item"
@@ -732,11 +744,11 @@ export default function AdminDashboard() {
                           onMouseLeave={() => setHoveredField(null)}
                           style={{ cursor: 'pointer' }}
                         >
-                          <div className="field-name">Deep Learning</div>
+                          <div className="field-name">{t('dashboard.deepLearning')}</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '72%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">36 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 8%</span>}</div>
+                          <div className="field-count">36 {t('dashboard.questions')}{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 8%</span>}</div>
                         </div>
                         <div 
                           className="field-item"
@@ -748,11 +760,11 @@ export default function AdminDashboard() {
                           onMouseLeave={() => setHoveredField(null)}
                           style={{ cursor: 'pointer' }}
                         >
-                          <div className="field-name">NLP</div>
+                          <div className="field-name">{t('dashboard.nlp')}</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '68%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">34 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 15%</span>}</div>
+                          <div className="field-count">34 {t('dashboard.questions')}{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 15%</span>}</div>
                         </div>
                         <div 
                           className="field-item"
@@ -764,11 +776,11 @@ export default function AdminDashboard() {
                           onMouseLeave={() => setHoveredField(null)}
                           style={{ cursor: 'pointer' }}
                         >
-                          <div className="field-name">Computer Vision</div>
+                          <div className="field-name">{t('dashboard.computerVision')}</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '55%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">28 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 5%</span>}</div>
+                          <div className="field-count">28 {t('dashboard.questions')}{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 5%</span>}</div>
                         </div>
                         <div 
                           className="field-item"
@@ -780,27 +792,27 @@ export default function AdminDashboard() {
                           onMouseLeave={() => setHoveredField(null)}
                           style={{ cursor: 'pointer' }}
                         >
-                          <div className="field-name">Reinforcement Learning</div>
+                          <div className="field-name">{t('dashboard.reinforcement')}</div>
                           <div className="field-bar">
                             <div className="field-progress" style={{ width: '45%', backgroundColor: 'var(--admin-primary)', transition: 'none' }}></div>
                           </div>
-                          <div className="field-count">23 questions{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 3%</span>}</div>
+                          <div className="field-count">23 {t('dashboard.questions')}{viewMode === 'detailed' && <span style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginLeft: '6px' }}>↑ 3%</span>}</div>
                         </div>
                         {viewMode === 'detailed' && (
                           <>
                             <div className="field-item">
-                              <div className="field-name">Transfer Learning</div>
+                              <div className="field-name">{t('dashboard.topic.transferLearning')}</div>
                               <div className="field-bar">
                                 <div className="field-progress" style={{ width: '38%', backgroundColor: 'var(--admin-primary)' }}></div>
                               </div>
-                              <div className="field-count">19 questions</div>
+                              <div className="field-count">19 {t('dashboard.questions')}</div>
                             </div>
                             <div className="field-item">
-                              <div className="field-name">AutoML</div>
+                              <div className="field-name">{t('dashboard.topic.automl')}</div>
                               <div className="field-bar">
                                 <div className="field-progress" style={{ width: '32%', backgroundColor: 'var(--admin-primary)' }}></div>
                               </div>
-                              <div className="field-count">16 questions</div>
+                              <div className="field-count">16 {t('dashboard.questions')}</div>
                             </div>
                           </>
                         )}
@@ -809,69 +821,69 @@ export default function AdminDashboard() {
 
                     {/* Topic Engagement */}
                     <div className="research-stat-card">
-                      <h3 className="stat-card-title">{t('Topic Engagement')}</h3>
+                      <h3 className="stat-card-title">{t('dashboard.topicEngagement')}</h3>
                       <div className="topic-stats">
                         <div className="topic-item">
-                          <div className="topic-name">Neural Networks</div>
+                          <div className="topic-name">{t('dashboard.topic.neuralNetworks')}</div>
                           <div className="topic-metrics">
-                            <span className="topic-sessions">8 sessions</span>
-                            <span className="topic-avg">3.2 Q/session</span>
-                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 26 questions</div>}
+                            <span className="topic-sessions">8 {t('dashboard.sessions')}</span>
+                            <span className="topic-avg">3.2 {t('dashboard.qSession')}</span>
+                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 26 {t('dashboard.questions')}</div>}
                           </div>
                         </div>
                         <div className="topic-item">
-                          <div className="topic-name">Transformer Architecture</div>
+                          <div className="topic-name">{t('dashboard.topic.transformerArchitecture')}</div>
                           <div className="topic-metrics">
-                            <span className="topic-sessions">6 sessions</span>
-                            <span className="topic-avg">4.1 Q/session</span>
-                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 24 questions</div>}
+                            <span className="topic-sessions">6 {t('dashboard.sessions')}</span>
+                            <span className="topic-avg">4.1 {t('dashboard.qSession')}</span>
+                            {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>{t('dashboard.total')}: 24 {t('dashboard.questions')}</div>}
                           </div>
                         </div>
                         <div className="topic-item">
-                          <div className="topic-name">GANs</div>
+                          <div className="topic-name">{t('dashboard.topic.gans')}</div>
                           <div className="topic-metrics">
-                            <span className="topic-sessions">5 sessions</span>
-                            <span className="topic-avg">2.8 Q/session</span>
+                            <span className="topic-sessions">5 {t('dashboard.sessions')}</span>
+                            <span className="topic-avg">2.8 {t('dashboard.qSession')}</span>
                             {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 14 questions</div>}
                           </div>
                         </div>
                         <div className="topic-item">
-                          <div className="topic-name">CNN Architectures</div>
+                          <div className="topic-name">{t('dashboard.topic.cnnArchitectures')}</div>
                           <div className="topic-metrics">
-                            <span className="topic-sessions">7 sessions</span>
-                            <span className="topic-avg">3.5 Q/session</span>
+                            <span className="topic-sessions">7 {t('dashboard.sessions')}</span>
+                            <span className="topic-avg">3.5 {t('dashboard.qSession')}</span>
                             {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 25 questions</div>}
                           </div>
                         </div>
                         <div className="topic-item">
-                          <div className="topic-name">Optimization</div>
+                          <div className="topic-name">{t('dashboard.topic.optimization')}</div>
                           <div className="topic-metrics">
-                            <span className="topic-sessions">4 sessions</span>
-                            <span className="topic-avg">2.2 Q/session</span>
+                            <span className="topic-sessions">4 {t('dashboard.sessions')}</span>
+                            <span className="topic-avg">2.2 {t('dashboard.qSession')}</span>
                             {viewMode === 'detailed' && <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)', marginTop: '2px', opacity: 0.7 }}>Total: 9 questions</div>}
                           </div>
                         </div>
                         {viewMode === 'detailed' && (
                           <>
                             <div className="topic-item">
-                              <div className="topic-name">Attention Mechanisms</div>
+                              <div className="topic-name">{t('dashboard.topic.attentionMechanisms')}</div>
                               <div className="topic-metrics">
-                                <span className="topic-sessions">5 sessions</span>
-                                <span className="topic-avg">3.6 Q/session</span>
+                                <span className="topic-sessions">5 {t('dashboard.sessions')}</span>
+                                <span className="topic-avg">3.6 {t('dashboard.qSession')}</span>
                               </div>
                             </div>
                             <div className="topic-item">
-                              <div className="topic-name">Object Detection</div>
+                              <div className="topic-name">{t('dashboard.topic.objectDetection')}</div>
                               <div className="topic-metrics">
-                                <span className="topic-sessions">3 sessions</span>
-                                <span className="topic-avg">2.7 Q/session</span>
+                                <span className="topic-sessions">3 {t('dashboard.sessions')}</span>
+                                <span className="topic-avg">2.7 {t('dashboard.qSession')}</span>
                               </div>
                             </div>
                             <div className="topic-item">
-                              <div className="topic-name">Model Compression</div>
+                              <div className="topic-name">{t('dashboard.topic.modelCompression')}</div>
                               <div className="topic-metrics">
-                                <span className="topic-sessions">3 sessions</span>
-                                <span className="topic-avg">2.3 Q/session</span>
+                                <span className="topic-sessions">3 {t('dashboard.sessions')}</span>
+                                <span className="topic-avg">2.3 {t('dashboard.qSession')}</span>
                               </div>
                             </div>
                           </>
@@ -879,226 +891,105 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    {/* Student Engagement - Enhanced with Mixed Visualizations */}
+                    {/* Response Time by Field */}
                     <div className="research-stat-card">
-                      <h3 className="stat-card-title">{t('Student Engagement')}</h3>
-                      <div className="engagement-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-{/* Large Metric - Active Students */}
-                        {viewMode === 'overview' ? (
-                          <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ width: '60px', height: '60px', position: 'relative' }}>
-                              <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="#3b82f6" strokeWidth="8" strokeLinecap="round" 
-                                  strokeDasharray={`${280} 282`} strokeDashoffset="70" transform="rotate(-90 50 50)"/>
-                                <text x="50" y="55" textAnchor="middle" fontSize="18" fontWeight="700" fill="var(--admin-text)">32</text>
-                              </svg>
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '2px' }}>Active Students</div>
-                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>85% of enrolled</div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ gridColumn: 'span 2', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Active Students Distribution</span>
-                              <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-text)' }}>32 Total</span>
-                            </div>
-                            {/* Pie Chart */}
-                            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '80px' }}>
-                              <circle cx="50" cy="50" r="35" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
-                              <path d="M 50 15 A 35 35 0 0 1 76.8 29.2" fill="#3b82f6" stroke="#3b82f6" strokeWidth="8"/>
-                              <path d="M 76.8 29.2 A 35 35 0 0 1 76.8 70.8" fill="#10b981" stroke="#10b981" strokeWidth="8"/>
-                              <path d="M 76.8 70.8 A 35 35 0 0 1 50 85" fill="#f59e0b" stroke="#f59e0b" strokeWidth="8"/>
-                              <path d="M 50 85 A 35 35 0 0 1 23.2 70.8" fill="#8b5cf6" stroke="#8b5cf6" strokeWidth="8"/>
-                              <text x="50" y="48" textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--admin-text)">32</text>
-                            </svg>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', marginTop: '4px', fontSize: '8px' }}>
-                              <div style={{ color: '#3b82f6' }}>ML: 8</div>
-                              <div style={{ color: '#10b981' }}>DL: 7</div>
-                              <div style={{ color: '#f59e0b' }}>CV: 6</div>
-                              <div style={{ color: '#8b5cf6' }}>NLP: 5</div>
-                              <div style={{ color: 'var(--admin-text-muted)' }}>Other: 6</div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Questions Bar Chart */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Questions Asked</span>
-                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#10b981' }}>247</span>
-                          </div>
-                          <div style={{ height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: '85%', height: '100%', background: '#10b981', borderRadius: '4px' }}></div>
-                          </div>
-                        </div>
-
-                        {/* Topics Covered */}
-                        {viewMode === 'overview' ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Topics Covered</span>
-                              <span style={{ fontSize: '20px', fontWeight: 700, color: '#f59e0b' }}>8</span>
-                            </div>
-                            <div style={{ position: 'relative', width: '100%', height: '60px' }}>
-                              <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--admin-border)" strokeWidth="8"/>
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="8" 
-                                  strokeDasharray="200" strokeDashoffset="40" transform="rotate(-90 50 50)" strokeLinecap="round"/>
-                              </svg>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '6px' }}>Weekly Activity Trend</div>
-                            {/* Mini Line Chart */}
-                            <svg viewBox="0 0 100 60" style={{ width: '100%', height: '50px' }}>
-                              <polyline points="5,40 15,35 25,30 35,38 45,32 55,28 65,25 75,22 85,20 95,18"
-                                fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <circle cx="5" cy="40" r="1.5" fill="#f59e0b"/>
-                              <circle cx="15" cy="35" r="1.5" fill="#f59e0b"/>
-                              <circle cx="25" cy="30" r="1.5" fill="#f59e0b"/>
-                              <circle cx="35" cy="38" r="1.5" fill="#f59e0b"/>
-                              <circle cx="45" cy="32" r="1.5" fill="#f59e0b"/>
-                              <circle cx="55" cy="28" r="1.5" fill="#f59e0b"/>
-                              <circle cx="65" cy="25" r="1.5" fill="#f59e0b"/>
-                              <circle cx="75" cy="22" r="1.5" fill="#f59e0b"/>
-                              <circle cx="85" cy="20" r="1.5" fill="#f59e0b"/>
-                              <circle cx="95" cy="18" r="1.5" fill="#f59e0b"/>
-                            </svg>
-                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>↑ 42% this week</div>
-                          </div>
-                        )}
-
-                        {/* Engagement Rate with Gauge */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Engagement Rate</span>
-                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#8b5cf6' }}>68%</span>
-                          </div>
-                          <div style={{ height: '6px', background: 'var(--admin-border)', borderRadius: '3px', overflow: 'hidden' }}>
-                            <div style={{ width: '68%', height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #7c3aed)' }}></div>
-                          </div>
-                        </div>
-
-                        {/* Avg per Session */}
-                        {viewMode === 'overview' ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg/Session</span>
-                              <span style={{ fontSize: '20px', fontWeight: 700, color: '#ec4899' }}>3.2</span>
-                            </div>
-                            <div style={{ width: '60px', height: '60px', position: 'relative', margin: '0 auto' }}>
-                              <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--admin-border)" strokeWidth="10"/>
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="#ec4899" strokeWidth="10" 
-                                  strokeDasharray="240" strokeDashoffset="70" transform="rotate(-90 50 50)" strokeLinecap="round"/>
-                                <text x="50" y="58" textAnchor="middle" fontSize="16" fontWeight="700" fill="#ec4899">Q</text>
-                              </svg>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '12px', color: 'var(--admin-text-muted)', marginBottom: '6px' }}>Engagement Radar</div>
-                            {/* Mini Radar Chart */}
-                            <svg viewBox="0 0 100 60" style={{ width: '100%', height: '50px' }}>
-                              <polygon points="50,5 70,15 75,30 60,40 50,35 40,40 25,30 30,15" 
-                                fill="#ec4899" fillOpacity="0.2" stroke="#ec4899" strokeWidth="1"/>
-                              <line x1="50" y1="5" x2="70" y2="15" stroke="#ec4899" strokeWidth="1"/>
-                              <line x1="50" y1="5" x2="30" y2="15" stroke="#ec4899" strokeWidth="1"/>
-                              <line x1="50" y1="5" x2="50" y2="35" stroke="#ec4899" strokeWidth="1"/>
-                              <circle cx="50" cy="35" r="2" fill="#ec4899"/>
-                            </svg>
-                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '4px' }}>High engagement</div>
-                          </div>
-                        )}
-                        {viewMode === 'detailed' && (
-                          <>
-                            {/* Avg Response Time */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Avg Response Time</span>
-                                <span style={{ fontSize: '20px', fontWeight: 700, color: '#06b6d4' }}>1.2s</span>
-                              </div>
-                              <div style={{ height: '6px', background: 'var(--admin-border)', borderRadius: '3px', overflow: 'hidden' }}>
-                                <div style={{ width: '75%', height: '100%', background: 'linear-gradient(90deg, #06b6d4, #0891b2)' }}></div>
-                              </div>
-                            </div>
-
-                            {/* Total Downloads */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>Total Downloads</span>
-                                <span style={{ fontSize: '20px', fontWeight: 700, color: '#84cc16' }}>94</span>
-                              </div>
-                              <div style={{ height: '6px', background: 'var(--admin-border)', borderRadius: '3px', overflow: 'hidden' }}>
-                                <div style={{ width: '62%', height: '100%', background: 'linear-gradient(90deg, #84cc16, #65a30d)' }}></div>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Satisfaction by Field */}
-                    <div className="research-stat-card">
-                      <h3 className="stat-card-title">{t('Satisfaction by Field')}</h3>
+                      <h3 className="stat-card-title">{t('dashboard.responseTimeByField')}</h3>
                       <div className="satisfaction-stats">
                         <div className="satisfaction-item">
-                          <div className="satisfaction-field">Machine Learning</div>
+                          <div className="satisfaction-field">{t('dashboard.machineLearning')}</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '88%', backgroundColor: 'var(--admin-primary)' }}></div>
-                            <span className="gauge-text">88%</span>
+                            <div className="gauge-fill" style={{ width: '78%', backgroundColor: '#06b6d4' }}></div>
+                            <span className="gauge-text">0.8s</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
-                          <div className="satisfaction-field">Deep Learning</div>
+                          <div className="satisfaction-field">{t('dashboard.deepLearning')}</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '82%', backgroundColor: 'var(--admin-primary)' }}></div>
-                            <span className="gauge-text">82%</span>
+                            <div className="gauge-fill" style={{ width: '85%', backgroundColor: '#06b6d4' }}></div>
+                            <span className="gauge-text">0.9s</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
-                          <div className="satisfaction-field">NLP</div>
+                          <div className="satisfaction-field">{t('dashboard.nlp')}</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '79%', backgroundColor: 'var(--admin-primary)' }}></div>
-                            <span className="gauge-text">79%</span>
+                            <div className="gauge-fill" style={{ width: '92%', backgroundColor: '#06b6d4' }}></div>
+                            <span className="gauge-text">1.1s</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
-                          <div className="satisfaction-field">Computer Vision</div>
+                          <div className="satisfaction-field">{t('dashboard.computerVision')}</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '75%', backgroundColor: 'var(--admin-primary)' }}></div>
-                            <span className="gauge-text">75%</span>
+                            <div className="gauge-fill" style={{ width: '88%', backgroundColor: '#06b6d4' }}></div>
+                            <span className="gauge-text">1.0s</span>
                           </div>
                         </div>
                         <div className="satisfaction-item">
-                          <div className="satisfaction-field">Reinforcement Learning</div>
+                          <div className="satisfaction-field">{t('dashboard.reinforcement')}</div>
                           <div className="satisfaction-gauge">
-                            <div className="gauge-fill" style={{ width: '71%', backgroundColor: 'var(--admin-primary)' }}></div>
-                            <span className="gauge-text">71%</span>
+                            <div className="gauge-fill" style={{ width: '75%', backgroundColor: '#06b6d4' }}></div>
+                            <span className="gauge-text">0.7s</span>
                           </div>
                         </div>
                         {viewMode === 'detailed' && (
                           <>
                             <div className="satisfaction-item">
-                              <div className="satisfaction-field">Transfer Learning</div>
+                              <div className="satisfaction-field">{t('dashboard.topic.transferLearning')}</div>
                               <div className="satisfaction-gauge">
-                                <div className="gauge-fill" style={{ width: '68%', backgroundColor: 'var(--admin-primary)' }}></div>
-                                <span className="gauge-text">68%</span>
+                                <div className="gauge-fill" style={{ width: '82%', backgroundColor: '#06b6d4' }}></div>
+                                <span className="gauge-text">0.9s</span>
                               </div>
                             </div>
                             <div className="satisfaction-item">
-                              <div className="satisfaction-field">AutoML</div>
+                              <div className="satisfaction-field">{t('dashboard.topic.automl')}</div>
                               <div className="satisfaction-gauge">
-                                <div className="gauge-fill" style={{ width: '65%', backgroundColor: 'var(--admin-primary)' }}></div>
-                                <span className="gauge-text">65%</span>
+                                <div className="gauge-fill" style={{ width: '80%', backgroundColor: '#06b6d4' }}></div>
+                                <span className="gauge-text">0.8s</span>
                               </div>
                             </div>
                           </>
                         )}
+                      </div>
+                    </div>
+
+                    {/* Question Complexity Distribution */}
+                    <div className="research-stat-card">
+                      <h3 className="stat-card-title">{t('dashboard.questionComplexity')}</h3>
+                      <div className="engagement-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        {/* Basic Questions */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.complexity.basic')}</span>
+                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#10b981' }}>42%</span>
+                          </div>
+                          <div style={{ height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '42%', height: '100%', background: '#10b981', borderRadius: '4px' }}></div>
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>115 {t('dashboard.questions')}</div>
+                        </div>
+
+                        {/* Intermediate Questions */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.complexity.intermediate')}</span>
+                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#f59e0b' }}>38%</span>
+                          </div>
+                          <div style={{ height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '38%', height: '100%', background: '#f59e0b', borderRadius: '4px' }}></div>
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>104 {t('dashboard.questions')}</div>
+                        </div>
+
+                        {/* Advanced Questions */}
+                        <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>{t('dashboard.complexity.advanced')}</span>
+                            <span style={{ fontSize: '20px', fontWeight: 700, color: '#ef4444' }}>20%</span>
+                          </div>
+                          <div style={{ height: '8px', background: 'var(--admin-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '20%', height: '100%', background: '#ef4444', borderRadius: '4px' }}></div>
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>56 {t('dashboard.questions')}</div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1106,33 +997,97 @@ export default function AdminDashboard() {
                   {/* 24-Hour Activity Pattern - Detailed Mode Only */}
                   {viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
-                      <h3 className="stat-card-title">24-Hour Activity Pattern</h3>
-                      <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
-                        <svg viewBox="0 0 100 50" style={{ width: '100%', height: '80px' }}>
+                      <h3 className="stat-card-title">{t('dashboard.hourlyActivityPattern')}</h3>
+                      <div style={{ padding: '20px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
+                        <svg viewBox="0 0 800 300" style={{ width: '100%', height: '240px' }} preserveAspectRatio="xMidYMid meet">
+                          <defs>
+                            <linearGradient id="activityGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor="var(--admin-primary)" stopOpacity="0.3"/>
+                              <stop offset="100%" stopColor="var(--admin-primary)" stopOpacity="0.05"/>
+                            </linearGradient>
+                          </defs>
+                          
                           {/* Y-axis grid lines */}
-                          <line x1="5" y1="45" x2="95" y2="45" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="2,2"/>
-                          <line x1="5" y1="30" x2="95" y2="30" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="2,2"/>
-                          <line x1="5" y1="15" x2="95" y2="15" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="2,2"/>
+                          <line x1="80" y1="40" x2="80" y2="220" stroke="var(--admin-border)" strokeWidth="1.5"/>
+                          <line x1="80" y1="220" x2="720" y2="220" stroke="var(--admin-border)" strokeWidth="1.5"/>
+                          
+                          {/* Horizontal grid lines */}
+                          <line x1="80" y1="180" x2="720" y2="180" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="4,4" opacity="0.5"/>
+                          <line x1="80" y1="140" x2="720" y2="140" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="4,4" opacity="0.5"/>
+                          <line x1="80" y1="100" x2="720" y2="100" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="4,4" opacity="0.5"/>
+                          <line x1="80" y1="60" x2="720" y2="60" stroke="var(--admin-border)" strokeWidth="1" strokeDasharray="4,4" opacity="0.5"/>
+                          
+                          {/* Y-axis labels */}
+                          <text x="75" y="225" textAnchor="end" fontSize="12" fill="var(--admin-text-muted)" fontWeight="500">0</text>
+                          <text x="75" y="185" textAnchor="end" fontSize="12" fill="var(--admin-text-muted)" fontWeight="500">20</text>
+                          <text x="75" y="145" textAnchor="end" fontSize="12" fill="var(--admin-text-muted)" fontWeight="500">40</text>
+                          <text x="75" y="105" textAnchor="end" fontSize="12" fill="var(--admin-text-muted)" fontWeight="500">60</text>
+                          <text x="75" y="65" textAnchor="end" fontSize="12" fill="var(--admin-text-muted)" fontWeight="500">80</text>
+                          
+                          {/* Area fill under the line */}
+                          <path d="M 80,220 L 100,200 L 120,190 L 140,170 L 160,150 L 180,130 L 200,110 L 220,90 L 240,70 L 260,110 L 280,140 L 300,190 L 320,210 L 340,200 L 360,180 L 380,160 L 400,150 L 420,140 L 440,135 L 460,130 L 480,128 L 500,125 L 520,128 L 540,132 L 560,138 L 580,145 L 600,150 L 620,148 L 640,145 L 660,142 L 680,138 L 700,135 L 720,125 L 720,220 Z" 
+                            fill="url(#activityGradient)"/>
                           
                           {/* Activity line - peaks at 10am, 2pm, 6pm */}
-                          <polyline points="5,45 10,40 15,38 20,35 25,32 30,28 35,25 40,22 45,28 50,38 55,42 60,48 65,45 70,40 75,35 80,32 85,30 90,28 95,25"
-                            fill="none" stroke="var(--admin-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <circle cx="5" cy="45" r="1.5" fill="var(--admin-primary)"/>
-                          <circle cx="50" cy="38" r="2" fill="var(--admin-primary)"/>
-                          <circle cx="60" cy="48" r="2" fill="var(--admin-primary)"/>
-                          <circle cx="95" cy="25" r="1.5" fill="var(--admin-primary)"/>
+                          <polyline points="80,220 100,200 120,190 140,170 160,150 180,130 200,110 220,90 240,70 260,110 280,140 300,190 320,210 340,200 360,180 380,160 400,150 420,140 440,135 460,130 480,128 500,125 520,128 540,132 560,138 580,145 600,150 620,148 640,145 660,142 680,138 700,135 720,125"
+                            fill="none" stroke="var(--admin-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
                           
-                          {/* X-axis labels */}
-                          <text x="5" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">0</text>
-                          <text x="25" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">6</text>
-                          <text x="50" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">12</text>
-                          <text x="75" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">18</text>
-                          <text x="95" y="52" textAnchor="middle" fontSize="7" fill="var(--admin-text-muted)">24</text>
+                          {/* Data points - regular */}
+                          <circle cx="80" cy="220" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="140" cy="170" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="200" cy="110" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="260" cy="110" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="340" cy="200" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="400" cy="150" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="480" cy="128" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="560" cy="138" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="640" cy="145" r="3" fill="var(--admin-primary)"/>
+                          <circle cx="720" cy="125" r="3" fill="var(--admin-primary)"/>
+                          
+                          {/* Peak points - larger and highlighted */}
+                          <circle cx="300" cy="190" r="5" fill="var(--admin-primary)"/>
+                          <circle cx="300" cy="190" r="8" fill="var(--admin-primary)" opacity="0.2"/>
+                          <circle cx="320" cy="210" r="6" fill="#10b981"/>
+                          <circle cx="320" cy="210" r="10" fill="#10b981" opacity="0.2"/>
+                          <circle cx="600" cy="150" r="5" fill="#f59e0b"/>
+                          <circle cx="600" cy="150" r="8" fill="#f59e0b" opacity="0.2"/>
+                          
+                          {/* Peak labels */}
+                          <text x="300" y="175" textAnchor="middle" fontSize="11" fill="var(--admin-text)" fontWeight="600">10AM</text>
+                          <text x="320" y="195" textAnchor="middle" fontSize="11" fill="#10b981" fontWeight="600">2PM</text>
+                          <text x="600" y="135" textAnchor="middle" fontSize="11" fill="#f59e0b" fontWeight="600">6PM</text>
+                          
+                          {/* X-axis labels - with proper spacing */}
+                          <text x="80" y="245" textAnchor="middle" fontSize="13" fill="var(--admin-text-muted)" fontWeight="500">0</text>
+                          <text x="200" y="245" textAnchor="middle" fontSize="13" fill="var(--admin-text-muted)" fontWeight="500">6</text>
+                          <text x="320" y="245" textAnchor="middle" fontSize="13" fill="var(--admin-text-muted)" fontWeight="500">12</text>
+                          <text x="440" y="245" textAnchor="middle" fontSize="13" fill="var(--admin-text-muted)" fontWeight="500">18</text>
+                          <text x="560" y="245" textAnchor="middle" fontSize="13" fill="var(--admin-text-muted)" fontWeight="500">24</text>
+                          
+                          {/* Additional time labels for better readability */}
+                          <text x="140" y="260" textAnchor="middle" fontSize="11" fill="var(--admin-text-muted)" opacity="0.7">3</text>
+                          <text x="260" y="260" textAnchor="middle" fontSize="11" fill="var(--admin-text-muted)" opacity="0.7">9</text>
+                          <text x="380" y="260" textAnchor="middle" fontSize="11" fill="var(--admin-text-muted)" opacity="0.7">15</text>
+                          <text x="500" y="260" textAnchor="middle" fontSize="11" fill="var(--admin-text-muted)" opacity="0.7">21</text>
                         </svg>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px', fontSize: '9px', color: 'var(--admin-text-muted)' }}>
-                          <div>Peak: 10AM - 42 sessions</div>
-                          <div>Peak: 2PM - 48 sessions</div>
-                          <div>Peak: 6PM - 45 sessions</div>
+                        
+                        {/* Peak information cards */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '20px' }}>
+                          <div style={{ padding: '12px', background: 'var(--admin-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>{t('dashboard.peak')}: 10AM</div>
+                            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-primary)' }}>42</div>
+                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>{t('dashboard.sessions')}</div>
+                          </div>
+                          <div style={{ padding: '12px', background: 'var(--admin-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>{t('dashboard.peak')}: 2PM</div>
+                            <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>48</div>
+                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>{t('dashboard.sessions')}</div>
+                          </div>
+                          <div style={{ padding: '12px', background: 'var(--admin-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)', marginBottom: '4px' }}>{t('dashboard.peak')}: 6PM</div>
+                            <div style={{ fontSize: '18px', fontWeight: 700, color: '#f59e0b' }}>45</div>
+                            <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)' }}>{t('dashboard.sessions')}</div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1141,14 +1096,14 @@ export default function AdminDashboard() {
                   {/* Subject-Based Statistics - Detailed Mode Only */}
                   {viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
-                      <h3 className="stat-card-title">Session and Satisfaction by Subject</h3>
+                      <h3 className="stat-card-title">{t('dashboard.sessionAndSatisfaction')}</h3>
                       <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                         <div style={{ display: 'grid', gap: '8px' }}>
                           {/* Subject 1 */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text)' }}>Anesthesia (Year 4)</div>
-                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>24 sessions • 3.2 avg questions</div>
+                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>24 {t('dashboard.sessions')} • 3.2 {t('dashboard.avgPerSession')}</div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981' }}>4.6★</div>
@@ -1160,7 +1115,7 @@ export default function AdminDashboard() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text)' }}>Small Animal Internal Medicine (Year 3)</div>
-                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>31 sessions • 2.8 avg questions</div>
+                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted)', marginTop: '2px' }}>31 {t('dashboard.sessions')} • 2.8 {t('dashboard.avgPerSession')}</div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <div style={{ fontSize: '12px', fontWeight: 700, color: '#10b981' }}>4.3★</div>
@@ -1211,7 +1166,7 @@ export default function AdminDashboard() {
                   {/* Real-time Activity Log - Detailed Mode Only */}
                   {viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
-                      <h3 className="stat-card-title">Real-time Activity Log</h3>
+                      <h3 className="stat-card-title">{t('dashboard.realtimeActivityLog')}</h3>
                       <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                         <div style={{ display: 'grid', gap: '6px' }}>
                           {/* Activity 1 */}
@@ -1287,7 +1242,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         <div style={{ marginTop: '12px', textAlign: 'center' }}>
-                          <button style={{ fontSize: '10px', padding: '6px 12px', background: 'var(--admin-card-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)', borderRadius: '6px', cursor: 'pointer' }}>View All Activity</button>
+                          <button style={{ fontSize: '10px', padding: '6px 12px', background: 'var(--admin-card-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)', borderRadius: '6px', cursor: 'pointer' }}>{t('dashboard.viewAllActivity')}</button>
                         </div>
                       </div>
                     </div>
@@ -1296,38 +1251,38 @@ export default function AdminDashboard() {
                   {/* System Status - Detailed Mode Only */}
                   {viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
-                      <h3 className="stat-card-title">System Status</h3>
+                      <h3 className="stat-card-title">{t('dashboard.systemPerformance')}</h3>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
                         {/* API Response Time */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>API Response Time</div>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>245ms</div>
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>Average latency</div>
-                          <div style={{ fontSize: '9px', color: '#10b981' }}>✓ Excellent</div>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>{t('dashboard.apiResponseTime')}</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>245{t('dashboard.ms')}</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>{t('dashboard.averageLatency')}</div>
+                          <div style={{ fontSize: '9px', color: '#10b981' }}>✓ {t('dashboard.excellent')}</div>
                         </div>
                         
                         {/* Model Uptime */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>Model Uptime</div>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>{t('dashboard.modelUptime')}</div>
                           <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>99.8%</div>
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>24-hour availability</div>
-                          <div style={{ fontSize: '9px', color: '#10b981' }}>✓ Normal</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>{t('dashboard.hourAvailability')}</div>
+                          <div style={{ fontSize: '9px', color: '#10b981' }}>✓ {t('dashboard.normal')}</div>
                         </div>
                         
                         {/* Response Success Rate */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>Response Rate (30d)</div>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>{t('dashboard.responseRate30d')}</div>
                           <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>94.2%</div>
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>Answered queries</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>{t('dashboard.answeredQueries')}</div>
                           <div style={{ fontSize: '9px', color: '#10b981' }}>↑ +2.1%</div>
                         </div>
                         
                         {/* Avg Session Length */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px', background: 'var(--admin-bg)', borderRadius: '6px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>Avg Session Length</div>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-text)' }}>8.5 min</div>
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>Per student average</div>
-                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>→ Stable</div>
+                          <div style={{ fontSize: '11px', color: 'var(--admin-text-muted)' }}>{t('dashboard.avgSessionLength')}</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-text)' }}>8.5 {t('dashboard.min')}</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>{t('dashboard.perStudentAverage')}</div>
+                          <div style={{ fontSize: '9px', color: 'var(--admin-text-muted)' }}>→ {t('dashboard.stable')}</div>
                         </div>
                       </div>
                     </div>
@@ -1360,7 +1315,7 @@ export default function AdminDashboard() {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="6,9 12,15 18,9"/>
                         </svg>
-                        Show Daily Message Activity
+                        {t('dashboard.showDailyMessageActivity')}
                       </button>
                     </div>
                   )}
@@ -1368,56 +1323,30 @@ export default function AdminDashboard() {
                   {/* Daily Message Activity */}
                   {dailyActivityExpanded && (
                     <div id="daily-message-activity" className="content-section">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h2 className="section-title" style={{ margin: 0 }}>일일 메시지 활동</h2>
-                        <button
-                          onClick={() => setDailyActivityExpanded(false)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '8px 16px',
-                            background: 'var(--admin-card-bg)',
-                            color: 'var(--admin-text)',
-                            border: '1px solid var(--admin-border)',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            fontSize: '14px',
-                            fontWeight: 500
-                          }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="18,15 12,9 6,15"/>
-                          </svg>
-                          Hide
-                        </button>
-                      </div>
                       <DailyMessageActivity />
                     </div>
                   )}
 
                   <div id="recent-conversations" className="content-section">
-                    <h2 className="section-title">{t('admin.recentConversations')}</h2>
                     <RecentConversations 
                       scrollToChatId={scrollToChatId}
                       highlightedChatId={highlightedChatId}
-                      onScrollComplete={() => setScrollToChatId(null)}
+                      onScrollComplete={() => {
+                        console.log('✅ Scroll complete, clearing scrollToChatId')
+                        setScrollToChatId(null)
+                      }}
                     />
                   </div>
 
                   <div id="admin-feedback" className="content-section">
-                    <h2 className="section-title">Admin Feedback</h2>
                   <AdminFeedbackList onScrollToChat={handleScrollToChat} useMock={isProfessor} />
                   </div>
 
                   <div id="user-feedback" className="content-section">
-                    <h2 className="section-title">{t('admin.userFeedback')}</h2>
                     <UserFeedbackList onScrollToChat={handleScrollToChat} />
                   </div>
 
                   <div id="prompt-control" className="content-section">
-                    <h2 className="section-title">{t('admin.promptControl')}</h2>
                     <PromptControl />
                   </div>
                 </div>
