@@ -154,7 +154,7 @@ export const chatService = {
               lastError = error as Error;
               console.warn(`n8n request attempt ${attempt} failed:`, error);
               
-              // Check if error is related to chat ID duplication (based on real server testing)
+              // Check if error is related to chat ID duplication or timeout
               const errorMessage = error instanceof Error ? error.message : String(error);
               const isChatIdError = errorMessage.includes('chat') && 
                 (errorMessage.includes('duplicate') || 
@@ -162,10 +162,20 @@ export const chatService = {
                  errorMessage.includes('not unique') ||
                  errorMessage.includes('unique constraint'));
               
-              // Note: Real server testing shows the server doesn't actually enforce unique chat IDs
-              // But we'll keep this logic for other potential servers
-              if (isChatIdError && attempt < 3) {
-                console.log('Chat ID duplication detected, generating new chatId...');
+              const isTimeoutError = errorMessage.includes('timeout') || 
+                                     errorMessage.includes('timed out') ||
+                                     errorMessage.includes('aborted');
+              
+              // Generate new chatId for retry if:
+              // 1. Chat ID duplication error detected
+              // 2. Timeout error (server may have received the request but not responded)
+              // This ensures each retry uses a unique chatId
+              if (attempt < 3 && (isChatIdError || isTimeoutError)) {
+                if (isTimeoutError) {
+                  console.log('Timeout detected, generating new chatId for retry (previous request may have been received)...');
+                } else {
+                  console.log('Chat ID duplication detected, generating new chatId...');
+                }
                 // Generate new chatId for retry
                 const newChatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 currentRequest = {
