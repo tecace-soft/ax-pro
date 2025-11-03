@@ -1,5 +1,6 @@
 // API service for chat functionality
-const API_BASE = 'http://localhost:3000/api';
+// Use environment variable for API base URL, fallback to empty string (relative path) for production
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 interface ApiResponse<T> {
   data?: T;
