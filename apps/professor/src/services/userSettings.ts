@@ -28,13 +28,20 @@ export interface UserSupabaseConfig {
   anonKey: string;
 }
 
-// Default settings for new users
+// Default settings for new users - use Admin's backend by default
 const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
-  n8nConfigs: [],
-  activeN8nConfigId: '',
+  n8nConfigs: [{
+    id: 'default_webhook',
+    name: 'Default Webhook',
+    webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/328757ba-62e6-465e-be1b-2fff0fd1d353',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }],
+  activeN8nConfigId: 'default_webhook',
   supabaseConfig: {
-    url: '',
-    anonKey: ''
+    url: 'https://qpyteahuynkgkbmdasbv.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFweXRlYWh1eW5rZ2tibWRhc2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5NDk2NTcsImV4cCI6MjA3NTUyNTY1N30.qvp5ox6Xm0wYcZK89S2MYVu18fqyfYmT8nercIFMKOY'
   },
   apiConfigs: [],
   uiCustomization: {}
@@ -92,7 +99,15 @@ export const getUserSettings = (): UserSettings | null => {
     
     if (!userSettings) {
       // Create default settings for new user
-      return createDefaultUserSettings(session.userId, session.email);
+      const newSettings = createDefaultUserSettings(session.userId, session.email);
+      
+      // Save the new settings to localStorage
+      allUserSettings[session.userId] = newSettings;
+      localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(allUserSettings));
+      
+      console.log('✅ Created and saved default settings for:', session.email);
+      
+      return newSettings;
     }
     
     return userSettings;

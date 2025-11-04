@@ -40,6 +40,15 @@ export default function PromptControl() {
     message: '',
     isSuccess: false
   })
+  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium')
+  
+  // Font size mapping
+  const fontSizeMap = {
+    small: { base: '11px', sm: '10px', header: '10px', cell: '11px' },
+    medium: { base: '14px', sm: '12px', header: '12px', cell: '14px' },
+    large: { base: '16px', sm: '14px', header: '14px', cell: '16px' }
+  }
+  const fs = fontSizeMap[fontSize]
 
   useEffect(() => {
     loadSystemPrompt()
@@ -205,6 +214,49 @@ export default function PromptControl() {
           {t('admin.systemPrompt')}
         </h3>
         <div className="flex items-center gap-3">
+          {/* Font Size Control */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>{t('adminFeedback.fontSize')}:</span>
+            <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
+              <button
+                onClick={() => setFontSize('small')}
+                className="px-3 py-2 text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: fontSize === 'small' ? 'var(--admin-primary)' : 'transparent',
+                  color: fontSize === 'small' ? '#041220' : 'var(--admin-text)',
+                  fontSize: fs.sm
+                }}
+                title={t('adminFeedback.fontSizeSmall')}
+              >
+                A
+              </button>
+              <button
+                onClick={() => setFontSize('medium')}
+                className="px-3 py-2 text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: fontSize === 'medium' ? 'var(--admin-primary)' : 'transparent',
+                  color: fontSize === 'medium' ? '#041220' : 'var(--admin-text)',
+                  fontSize: fs.base
+                }}
+                title={t('adminFeedback.fontSizeMedium')}
+              >
+                A
+              </button>
+              <button
+                onClick={() => setFontSize('large')}
+                className="px-3 py-2 text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: fontSize === 'large' ? 'var(--admin-primary)' : 'transparent',
+                  color: fontSize === 'large' ? '#041220' : 'var(--admin-text)',
+                  fontSize: fs.base
+                }}
+                title={t('adminFeedback.fontSizeLarge')}
+              >
+                A
+              </button>
+            </div>
+          </div>
+
           <button
             onClick={() => {
               setShowHistory(!showHistory)
@@ -215,7 +267,8 @@ export default function PromptControl() {
             className="px-3 py-1 text-xs rounded transition-colors hover:bg-blue-500/20"
             style={{ 
               color: 'var(--admin-primary)',
-              border: '1px solid rgba(59, 230, 255, 0.3)'
+              border: '1px solid rgba(59, 230, 255, 0.3)',
+              fontSize: fs.sm
             }}
           >
             📚 History
@@ -225,13 +278,14 @@ export default function PromptControl() {
             className="px-3 py-1 text-xs rounded transition-colors hover:bg-blue-500/20"
             style={{ 
               color: 'var(--admin-primary)',
-              border: '1px solid rgba(59, 230, 255, 0.3)'
+              border: '1px solid rgba(59, 230, 255, 0.3)',
+              fontSize: fs.sm
             }}
           >
             {isExpanded ? '📉 Collapse' : '📈 Expand'}
           </button>
           {lastRefreshed && (
-            <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+            <span className="text-xs" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>
               {t('admin.lastRefreshed')}: {lastRefreshed.toLocaleString()}
             </span>
           )}
@@ -249,11 +303,12 @@ export default function PromptControl() {
       <div className="space-y-4">
         <textarea
           ref={textareaRef}
-          className="w-full p-3 rounded-md font-mono text-sm"
+          className="w-full p-3 rounded-md font-mono"
           style={{
             backgroundColor: 'rgba(9, 14, 34, 0.6)',
             border: '1px solid rgba(59, 230, 255, 0.15)',
             color: 'var(--admin-text)',
+            fontSize: fs.cell,
             minHeight: isExpanded ? '80vh' : '300px',
             maxHeight: isExpanded ? 'none' : '400px',
             resize: isExpanded ? 'none' : 'vertical'
@@ -268,16 +323,17 @@ export default function PromptControl() {
         {showHistory && (
           <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--admin-bg-secondary)' }}>
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold" style={{ color: 'var(--admin-text)' }}>
+              <h4 className="font-semibold" style={{ color: 'var(--admin-text)', fontSize: fs.header }}>
                 📚 Prompt History
               </h4>
               <button
                 onClick={loadPromptHistory}
                 disabled={isLoadingHistory}
-                className="text-xs px-2 py-1 rounded transition-colors hover:bg-blue-500/20 disabled:opacity-50"
+                className="px-2 py-1 rounded transition-colors hover:bg-blue-500/20 disabled:opacity-50"
                 style={{ 
                   color: 'var(--admin-primary)',
-                  border: '1px solid rgba(59, 230, 255, 0.3)'
+                  border: '1px solid rgba(59, 230, 255, 0.3)',
+                  fontSize: fs.sm
                 }}
               >
                 {isLoadingHistory ? '⏳ Loading...' : '🔄 Refresh'}
@@ -285,11 +341,11 @@ export default function PromptControl() {
             </div>
             
             {isLoadingHistory ? (
-              <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
+              <p style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
                 🔄 Loading history...
               </p>
             ) : promptHistory.length === 0 ? (
-              <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
+              <p style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
                 No history available. Click "Refresh" to load.
               </p>
             ) : (
@@ -305,7 +361,7 @@ export default function PromptControl() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium" style={{ color: 'var(--admin-text)' }}>
+                        <span className="font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.sm }}>
                           {index === 0 ? '🟢 Current' : `#${index + 1}`}
                         </span>
                         <button
@@ -313,10 +369,11 @@ export default function PromptControl() {
                             e.stopPropagation()
                             setPromptText(prompt.prompt_text)
                           }}
-                          className="text-xs px-2 py-1 rounded transition-colors hover:bg-blue-500/20"
+                          className="px-2 py-1 rounded transition-colors hover:bg-blue-500/20"
                           style={{ 
                             color: 'var(--admin-primary)',
-                            border: '1px solid rgba(59, 230, 255, 0.3)'
+                            border: '1px solid rgba(59, 230, 255, 0.3)',
+                            fontSize: fs.sm
                           }}
                           title="Load this prompt"
                         >
@@ -324,7 +381,7 @@ export default function PromptControl() {
                         </button>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                        <span style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>
                           {new Date(prompt.created_at).toLocaleString()}
                         </span>
                         {index > 0 && (
@@ -333,10 +390,11 @@ export default function PromptControl() {
                               e.stopPropagation()
                               handleDeletePrompt(prompt.id, prompt.prompt_text)
                             }}
-                            className="text-xs px-2 py-1 rounded transition-colors hover:bg-red-500/20"
+                            className="px-2 py-1 rounded transition-colors hover:bg-red-500/20"
                             style={{ 
                               color: 'var(--admin-danger)',
-                              border: '1px solid rgba(239, 68, 68, 0.3)'
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              fontSize: fs.sm
                             }}
                             title="Delete this prompt"
                           >
@@ -346,9 +404,10 @@ export default function PromptControl() {
                       </div>
                     </div>
                     <p 
-                      className="text-xs font-mono whitespace-pre-wrap overflow-hidden"
+                      className="font-mono whitespace-pre-wrap overflow-hidden"
                       style={{ 
                         color: 'var(--admin-text-muted)',
+                        fontSize: fs.cell,
                         maxHeight: '60px',
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
@@ -370,6 +429,7 @@ export default function PromptControl() {
             style={{
               background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
               color: '#041220',
+              fontSize: fs.base,
               opacity: isLoading || isUpdating ? 0.5 : 1,
               cursor: isLoading || isUpdating ? 'not-allowed' : 'pointer'
             }}

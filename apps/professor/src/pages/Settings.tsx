@@ -215,15 +215,40 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div className="flex justify-between items-center p-4 border-b" style={{ borderColor: 'var(--border)' }}>
+      <div className="flex justify-between items-center p-4 border-b" style={{ borderColor: 'var(--border)', flexShrink: 0 }}>
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigate(withGroupParam('/chat'))}
-            className="text-sm link"
+            className="text-sm px-3 py-1 rounded border transition-colors hover:bg-gray-100"
+            style={{ 
+              backgroundColor: 'var(--card)', 
+              borderColor: 'var(--border)',
+              color: 'var(--text)'
+            }}
           >
-            ← Back to Chat
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline-block', marginRight: '6px', verticalAlign: 'middle' }}>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Chat
+          </button>
+          <button
+            onClick={() => navigate('/admin/dashboard')}
+            className="text-sm px-3 py-1 rounded border transition-colors hover:bg-gray-100"
+            style={{ 
+              backgroundColor: 'var(--card)', 
+              borderColor: 'var(--border)',
+              color: 'var(--text)'
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline-block', marginRight: '6px', verticalAlign: 'middle' }}>
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Dashboard
           </button>
           <h1 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>
             Settings
@@ -234,24 +259,41 @@ const Settings: React.FC = () => {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="text-sm px-3 py-1 rounded border"
+            className="text-sm px-3 py-1 rounded border transition-colors hover:bg-gray-100"
             style={{ 
               backgroundColor: 'var(--card)', 
               borderColor: 'var(--border)',
               color: 'var(--text)'
             }}
           >
-            {theme === 'light' ? '🌙' : '☀️'}
+            {theme === 'light' ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+            )}
           </button>
           
           {/* Language Toggle */}
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
-            className="text-sm px-3 py-1 rounded border bg-transparent"
+            className="text-sm px-3 py-1 rounded border"
             style={{ 
               borderColor: 'var(--border)',
-              color: 'var(--text)'
+              color: 'var(--text)',
+              backgroundColor: 'var(--card)'
             }}
           >
             <option value="en">EN</option>
@@ -260,7 +302,7 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-6" style={{ flex: 1, overflowY: 'auto' }}>
         {/* Tab Navigation */}
         <div className="border-b mb-6" style={{ borderColor: 'var(--border)' }}>
           <nav className="-mb-px flex space-x-8">
@@ -276,7 +318,7 @@ const Settings: React.FC = () => {
                 borderBottomColor: activeTab === 'ui' ? 'var(--primary)' : 'transparent'
               }}
             >
-              UI Customization
+              {language === 'ko' ? 'UI 커스터마이징' : 'UI Customization'}
             </button>
             <button
               onClick={() => setActiveTab('api')}
@@ -290,7 +332,7 @@ const Settings: React.FC = () => {
                 borderBottomColor: activeTab === 'api' ? 'var(--primary)' : 'transparent'
               }}
             >
-              API Configurations
+              {language === 'ko' ? 'API 설정' : 'API Configurations'}
             </button>
             <button
               onClick={() => setActiveTab('webhook')}
@@ -304,7 +346,7 @@ const Settings: React.FC = () => {
                 borderBottomColor: activeTab === 'webhook' ? 'var(--primary)' : 'transparent'
               }}
             >
-              Webhooks
+              {language === 'ko' ? '웹훅' : 'Webhooks'}
             </button>
             <button
               onClick={() => setActiveTab('database')}
@@ -318,7 +360,7 @@ const Settings: React.FC = () => {
                 borderBottomColor: activeTab === 'database' ? 'var(--primary)' : 'transparent'
               }}
             >
-              Database
+              {language === 'ko' ? '데이터베이스' : 'Database'}
             </button>
           </nav>
         </div>
@@ -530,7 +572,11 @@ const Settings: React.FC = () => {
             {/* Simulation Info */}
             <div className="mt-8 card p-4 rounded-lg" style={{ backgroundColor: 'var(--warning-light)' }}>
               <div className="flex items-start space-x-2">
-                <span>ℹ️</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
                 <div>
                   <h3 className="text-sm font-medium" style={{ color: 'var(--warning)' }}>
                     Development Mode
@@ -719,7 +765,10 @@ const Settings: React.FC = () => {
             {/* Webhook Info */}
             <div className="mt-8 card p-4 rounded-lg" style={{ backgroundColor: 'var(--primary-light)' }}>
               <div className="flex items-start space-x-2">
-                <span>🔗</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
                 <div>
                   <h3 className="text-sm font-medium" style={{ color: 'var(--primary)' }}>
                     Webhook Integration
@@ -739,41 +788,41 @@ const Settings: React.FC = () => {
           <div className="space-y-6">
             <div className="card p-6 rounded-lg">
               <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
-                Chat Interface Customization
+                {language === 'ko' ? '채팅 인터페이스 커스터마이징' : 'Chat Interface Customization'}
               </h2>
               
               <div className="space-y-6">
                 {/* Chat Title */}
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                    Chat Interface Title
+                    {language === 'ko' ? '채팅 인터페이스 제목' : 'Chat Interface Title'}
                   </label>
                   <input
                     type="text"
                     value={customization.chatTitle}
                     onChange={(e) => updateCustomization({ chatTitle: e.target.value })}
                     className="input w-full px-3 py-2 rounded-md"
-                    placeholder="e.g., Chat Interface, AI Assistant, etc."
+                    placeholder={language === 'ko' ? '예: 채팅 인터페이스, AI 어시스턴트 등' : 'e.g., Chat Interface, AI Assistant, etc.'}
                   />
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                    This title appears at the top of the empty chat screen
+                    {language === 'ko' ? '이 제목은 빈 채팅 화면 상단에 표시됩니다' : 'This title appears at the top of the empty chat screen'}
                   </p>
                 </div>
 
                 {/* Chat Subtitle */}
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                    Chat Interface Subtitle
+                    {language === 'ko' ? '채팅 인터페이스 부제목' : 'Chat Interface Subtitle'}
                   </label>
                   <input
                     type="text"
                     value={customization.chatSubtitle}
                     onChange={(e) => updateCustomization({ chatSubtitle: e.target.value })}
                     className="input w-full px-3 py-2 rounded-md"
-                    placeholder="e.g., Select a conversation from the sidebar or start a new chat"
+                    placeholder={language === 'ko' ? '예: 사이드바에서 대화를 선택하거나 새 채팅을 시작하세요' : 'e.g., Select a conversation from the sidebar or start a new chat'}
                   />
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                    This subtitle appears below the title on the empty chat screen
+                    {language === 'ko' ? '이 부제목은 빈 채팅 화면의 제목 아래에 표시됩니다' : 'This subtitle appears below the title on the empty chat screen'}
                   </p>
                 </div>
 
@@ -833,13 +882,14 @@ const Settings: React.FC = () => {
                   {/* Upload and Action Buttons */}
                   <div className="flex gap-2 mb-2">
                     <label 
-                      className="px-4 py-2 rounded-md cursor-pointer transition-colors"
+                      className="px-4 py-2 rounded-md cursor-pointer transition-all hover:opacity-90"
                       style={{ 
-                        backgroundColor: 'var(--primary)',
-                        color: 'white',
+                        backgroundColor: '#3b82f6',
+                        color: '#ffffff',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: '8px',
+                        border: '1px solid rgba(59, 130, 246, 0.5)'
                       }}
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -877,20 +927,22 @@ const Settings: React.FC = () => {
                             link.download = 'chatbot-avatar.png';
                             link.click();
                           }}
-                          className="px-4 py-2 rounded-md transition-colors"
+                          className="px-4 py-2 rounded-md transition-all hover:opacity-90"
                           style={{ 
-                            backgroundColor: 'var(--primary)',
-                            color: 'white'
+                            backgroundColor: '#10b981',
+                            color: '#ffffff',
+                            border: '1px solid rgba(16, 185, 129, 0.5)'
                           }}
                         >
                           {language === 'ko' ? '다운로드' : 'Download'}
                         </button>
                         <button 
                           onClick={() => updateCustomization({ avatarUrl: '/default-profile-avatar.png' })}
-                          className="px-4 py-2 rounded-md transition-colors"
+                          className="px-4 py-2 rounded-md transition-all hover:opacity-90"
                           style={{ 
-                            backgroundColor: 'var(--danger)',
-                            color: 'white'
+                            backgroundColor: '#ef4444',
+                            color: '#ffffff',
+                            border: '1px solid rgba(239, 68, 68, 0.5)'
                           }}
                         >
                           {language === 'ko' ? '리셋' : 'Reset'}
@@ -908,62 +960,62 @@ const Settings: React.FC = () => {
                 {/* Suggested Questions */}
                 <div>
                   <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
-                    Suggested Questions
+                    {language === 'ko' ? '추천 질문' : 'Suggested Questions'}
                   </h3>
                   <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    Customize the suggested questions that appear on the empty chat screen
+                    {language === 'ko' ? '빈 채팅 화면에 표시될 추천 질문을 커스터마이징하세요' : 'Customize the suggested questions that appear on the empty chat screen'}
                   </p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                        Question 1
+                        {language === 'ko' ? '질문 1' : 'Question 1'}
                       </label>
                       <input
                         type="text"
                         value={customization.suggestedQuestions.question1}
                         onChange={(e) => updateQuestion('question1', e.target.value)}
                         className="input w-full px-3 py-2 rounded-md"
-                        placeholder="What is artificial intelligence?"
+                        placeholder={language === 'ko' ? '인공지능이란 무엇인가요?' : 'What is artificial intelligence?'}
                       />
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                        Question 2
+                        {language === 'ko' ? '질문 2' : 'Question 2'}
                       </label>
                       <input
                         type="text"
                         value={customization.suggestedQuestions.question2}
                         onChange={(e) => updateQuestion('question2', e.target.value)}
                         className="input w-full px-3 py-2 rounded-md"
-                        placeholder="How does machine learning work?"
+                        placeholder={language === 'ko' ? '머신러닝은 어떻게 작동하나요?' : 'How does machine learning work?'}
                       />
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                        Question 3
+                        {language === 'ko' ? '질문 3' : 'Question 3'}
                       </label>
                       <input
                         type="text"
                         value={customization.suggestedQuestions.question3}
                         onChange={(e) => updateQuestion('question3', e.target.value)}
                         className="input w-full px-3 py-2 rounded-md"
-                        placeholder="Explain quantum computing"
+                        placeholder={language === 'ko' ? '양자 컴퓨팅을 설명해주세요' : 'Explain quantum computing'}
                       />
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                        Question 4
+                        {language === 'ko' ? '질문 4' : 'Question 4'}
                       </label>
                       <input
                         type="text"
                         value={customization.suggestedQuestions.question4}
                         onChange={(e) => updateQuestion('question4', e.target.value)}
                         className="input w-full px-3 py-2 rounded-md"
-                        placeholder="What are the benefits of cloud computing?"
+                        placeholder={language === 'ko' ? '클라우드 컴퓨팅의 장점은 무엇인가요?' : 'What are the benefits of cloud computing?'}
                       />
                     </div>
                   </div>
@@ -973,7 +1025,10 @@ const Settings: React.FC = () => {
                 <div className="flex justify-end">
                   <button
                     onClick={() => {
-                      if (window.confirm('Are you sure you want to reset all UI customizations to default values?')) {
+                      const message = language === 'ko' 
+                        ? '모든 UI 커스터마이징을 기본값으로 초기화하시겠습니까?' 
+                        : 'Are you sure you want to reset all UI customizations to default values?';
+                      if (window.confirm(message)) {
                         resetCustomization();
                       }
                     }}
@@ -983,7 +1038,7 @@ const Settings: React.FC = () => {
                       color: 'var(--error)'
                     }}
                   >
-                    Reset to Defaults
+                    {language === 'ko' ? '기본값으로 초기화' : 'Reset to Defaults'}
                   </button>
                 </div>
               </div>
@@ -992,7 +1047,7 @@ const Settings: React.FC = () => {
             {/* Preview */}
             <div className="card p-6 rounded-lg">
               <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
-                Preview
+                {language === 'ko' ? '미리보기' : 'Preview'}
               </h3>
               <div className="border rounded-lg p-6" style={{ 
                 borderColor: 'var(--border)',
@@ -1229,6 +1284,48 @@ const Settings: React.FC = () => {
                 </div>
               </div>
 
+              {/* Reset All Data Section */}
+              <div className="border-t pt-4 mt-6" style={{ borderColor: 'var(--border)' }}>
+                <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
+                  Advanced
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                      Reset All Data
+                    </label>
+                    <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+                      Clear all stored settings, configurations, and cached data. This will reset the app to its default state.
+                      You will need to log in again after reset.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to reset all data? This action cannot be undone. You will be logged out.')) {
+                          // Clear all storage
+                          localStorage.clear();
+                          sessionStorage.clear();
+                          
+                          // Show confirmation
+                          alert('All data has been cleared. The page will now reload.');
+                          
+                          // Reload to login page
+                          window.location.href = '/';
+                        }
+                      }}
+                      className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        color: '#ef4444',
+                        border: '1px solid rgba(239, 68, 68, 0.3)'
+                      }}
+                    >
+                      Reset All Data
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {databaseType === 'other' && (
                 <div className="p-4 rounded-md" style={{ backgroundColor: 'var(--warning-light)' }}>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -1365,9 +1462,9 @@ const Settings: React.FC = () => {
                   updateCustomization({ avatarUrl: uploadedAvatarUrl });
                   setShowImageEditor(false);
                 }}
-                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors hover:opacity-90"
                 style={{ 
-                  backgroundColor: 'var(--primary)',
+                  backgroundColor: '#3b82f6',
                   color: '#ffffff'
                 }}
               >
@@ -1416,9 +1513,9 @@ const Settings: React.FC = () => {
                   
                   img.src = uploadedAvatarUrl;
                 }}
-                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors hover:opacity-90"
                 style={{ 
-                  backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                  backgroundColor: '#10b981',
                   color: '#ffffff'
                 }}
               >
@@ -1427,11 +1524,11 @@ const Settings: React.FC = () => {
               
               <button
                 onClick={() => setShowImageEditor(false)}
-                className="w-full px-4 py-2 rounded-md font-medium transition-colors"
+                className="w-full px-4 py-2 rounded-md font-medium transition-colors hover:bg-gray-700"
                 style={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                  backgroundColor: 'var(--card)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--border)'
                 }}
               >
                 {language === 'ko' ? '취소' : 'Cancel'}

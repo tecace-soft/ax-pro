@@ -9,9 +9,12 @@ interface HeaderProps {
   performanceDate?: string
   currentTime: string
   onSignOut: () => void
+  customTitle?: string
+  customWelcome?: string
+  userEmail?: string
 }
 
-export default function AdminHeader({ performanceScore, performanceDate, currentTime, onSignOut }: HeaderProps) {
+export default function AdminHeader({ performanceScore, performanceDate, currentTime, onSignOut, customTitle, customWelcome, userEmail }: HeaderProps) {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
   const { language, setLanguage, t } = useTranslation()
@@ -27,6 +30,9 @@ export default function AdminHeader({ performanceScore, performanceDate, current
     navigate(withGroupParam('/admin/dashboard'))
   }
 
+  const displayTitle = customTitle || 'TecAce Ax Pro'
+  const displayWelcome = customWelcome || 'TecAce Ax Pro'
+
   return (
     <header className="dashboard-header">
       <div className="header-left">
@@ -37,16 +43,19 @@ export default function AdminHeader({ performanceScore, performanceDate, current
               </div>
             </div>
           </div>
-          <span className="logo-text">TecAce Ax Pro</span>
+          <span className="logo-text">{displayTitle}</span>
         </div>
       </div>
       
       <div className="header-right">
         <div className="performance-indicator">
           <span className="performance-text">
-            TecAce Ax Pro: {performanceScore}% ({getPerformanceLabel(performanceScore)}{performanceDate ? `, ${performanceDate}` : ''})
+            {displayWelcome}: {performanceScore}% ({getPerformanceLabel(performanceScore)}{performanceDate ? `, ${performanceDate}` : ''})
           </span>
-          <span className="current-time">{currentTime}</span>
+          <span className="current-time" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {userEmail && <span style={{ color: 'var(--admin-text-muted)', fontSize: '13px' }}>{userEmail}</span>}
+            <span>{currentTime}</span>
+          </span>
         </div>
         
         <div className="header-actions">

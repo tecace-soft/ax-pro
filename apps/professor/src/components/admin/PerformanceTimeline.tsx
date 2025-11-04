@@ -41,7 +41,7 @@ export default function PerformanceTimeline({
   const [playSpeed, setPlaySpeed] = useState(800);
   const [showDataControls, setShowDataControls] = useState(false);
   const [hoveredBar, setHoveredBar] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>('21d');
+  const [dateRange, setDateRange] = useState<DateRange>('90d');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [showCustomRange, setShowCustomRange] = useState(false);
@@ -116,7 +116,7 @@ export default function PerformanceTimeline({
             endDate: customEndDate
           }
         }
-        start.setDate(end.getDate() - 21)
+        start.setDate(end.getDate() - 90)
         break
     }
 
@@ -270,20 +270,20 @@ export default function PerformanceTimeline({
                       checked={includeSimulatedData}
                       onChange={(e) => onIncludeSimulatedDataChange(e.target.checked)}
                     />
-                    {t('admin.estimated')} 데이터 포함
+                    {t('admin.estimated')} {t('admin.dataIncluded') || 'data included'}
                   </label>
                 </div>
 
                 <div className="setting-item">
-                  <label className="select-label">추정 모드:</label>
+                  <label className="select-label">{t('admin.estimationMode') || 'Estimation mode'}:</label>
                   <select
                     className="mode-select"
                     value={estimationMode}
                     onChange={(e) => onEstimationModeChange(e.target.value as EstimationMode)}
                   >
-                    <option value="simple">간단 (±5%)</option>
-                    <option value="improved">개선 (±4% + 패턴)</option>
-                    <option value="realistic">현실적 (트렌드 + 주간)</option>
+                    <option value="simple">{t('admin.mode.simple') || 'Simple (±5%)'}</option>
+                    <option value="improved">{t('admin.mode.improved') || 'Improved (±4% + pattern)'}</option>
+                    <option value="realistic">{t('admin.mode.realistic') || 'Realistic (trend + weekly)'}</option>
                   </select>
                 </div>
               </div>

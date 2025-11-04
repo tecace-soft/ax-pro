@@ -5,7 +5,7 @@
   border-radius: 12px;
   backdrop-filter: blur(20px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  margin: 20px 0;
+  margin: 20px 0 0 0;
 }
 
 /* 한 줄 레이아웃 */
@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 15px 20px;
+  padding: 8px 12px;
   border-bottom: 1px solid rgba(59, 230, 255, 0.2);
   flex-wrap: wrap;
   gap: 15px;
@@ -188,6 +188,10 @@
   min-height: 20px;
   animation: barGrowUp 0.8s ease-out forwards;
   transform-origin: bottom;
+  /* 최대 너비 제한 - 짧은 날짜 범위에서도 얇게 유지 */
+  max-width: none;
+  min-width: 8px;
+  flex: 1;
 }
 
 /* 기본 Actual 데이터 - 파란색 */
@@ -280,9 +284,10 @@
 .date-labels {
   display: flex;
   justify-content: space-between;
-  padding: 0 10px;
+  padding: 4px 0 8px 0;
   font-size: 11px;
   color: rgba(255, 255, 255, 0.6);
+  margin-top: 0;
 }
 
 /* 로딩 상태 */
@@ -394,7 +399,7 @@
 
 /* 차트 영역 */
 .timeline-chart {
-  padding: 20px;
+  padding: 0;
   width: 100%;
   box-sizing: border-box;
 }
@@ -403,10 +408,12 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  height: 120px;
-  padding: 0 10px;
-  gap: 2px;
-  margin-bottom: 10px;
+  height: 90px;
+  padding: 0;
+  gap: 1px;
+  margin-bottom: 0;
+  width: 100%;
+  min-height: 80px;
 }
 
 /* 바 값 표시 - 원래 위치 */

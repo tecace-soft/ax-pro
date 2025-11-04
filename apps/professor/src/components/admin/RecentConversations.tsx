@@ -47,6 +47,15 @@ export default function RecentConversations({
   const [expandedChats, setExpandedChats] = useState<Set<string>>(new Set())
   const [userFeedbackModal, setUserFeedbackModal] = useState<{ chatId: string; feedback: any } | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('table')
+  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium')
+  
+  // Font size mapping
+  const fontSizeMap = {
+    small: { base: '11px', sm: '10px', header: '10px', cell: '11px' },
+    medium: { base: '14px', sm: '12px', header: '12px', cell: '14px' },
+    large: { base: '16px', sm: '14px', header: '14px', cell: '16px' }
+  }
+  const fs = fontSizeMap[fontSize]
 
   useEffect(() => {
     loadConversations()
@@ -59,16 +68,64 @@ export default function RecentConversations({
   // Handle scroll to specific chat
   useEffect(() => {
     if (scrollToChatId) {
-      const chatElement = document.getElementById(`chat-${scrollToChatId}`)
-      if (chatElement) {
-        chatElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        })
-        onScrollComplete?.()
+      console.log('🔍 ScrollToChat triggered for:', scrollToChatId)
+      
+      // Expand the chat if it's not already expanded (for card view)
+      setExpandedChats(prev => {
+        const newSet = new Set(prev)
+        newSet.add(scrollToChatId)
+        return newSet
+      })
+
+      // Ensure the chat is displayed (increase limit if needed)
+      const chatIndex = filteredConversations.findIndex(c => c.chat_id === scrollToChatId)
+      console.log('📊 Chat index:', chatIndex, 'Display limit:', displayLimit, 'Filtered count:', filteredConversations.length)
+      
+      if (chatIndex !== -1 && chatIndex >= displayLimit) {
+        // Increase limit to show the chat (but cap at 20 if possible)
+        const newLimit = Math.min(chatIndex + 1, filteredConversations.length, Math.max(chatIndex + 1, 20))
+        console.log('📈 Increasing display limit to:', newLimit)
+        setDisplayLimit(newLimit)
       }
+
+      // Wait for DOM update, then scroll
+      const attemptScroll = (attempt = 0) => {
+        setTimeout(() => {
+          const chatElement = document.getElementById(`chat-${scrollToChatId}`)
+          console.log('🔎 Looking for element:', `chat-${scrollToChatId}`, 'Found:', !!chatElement)
+          
+          if (chatElement) {
+            console.log('✅ Scrolling to chat element')
+            chatElement.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' 
+            })
+            // Add highlight effect
+            chatElement.style.transition = 'all 0.3s ease'
+            chatElement.style.backgroundColor = 'rgba(59, 230, 255, 0.2)'
+            chatElement.style.borderColor = 'var(--admin-primary)'
+            chatElement.style.boxShadow = '0 0 20px rgba(59, 230, 255, 0.4)'
+            
+            setTimeout(() => {
+              chatElement.style.backgroundColor = ''
+              chatElement.style.borderColor = ''
+              chatElement.style.boxShadow = ''
+            }, 3000)
+            
+            onScrollComplete?.()
+          } else if (attempt < 3) {
+            // Retry up to 3 times with increasing delays
+            console.log(`⏳ Retry attempt ${attempt + 1}/3`)
+            attemptScroll(attempt + 1)
+          } else {
+            console.error('❌ Chat element not found after retries:', scrollToChatId)
+          }
+        }, attempt === 0 ? 200 : 300 * (attempt + 1))
+      }
+      
+      attemptScroll()
     }
-  }, [scrollToChatId, onScrollComplete])
+  }, [scrollToChatId, onScrollComplete, filteredConversations, displayLimit])
 
   const loadConversations = async () => {
     setIsLoading(true)
@@ -559,10 +616,53 @@ export default function RecentConversations({
           />
         </div>
 
+        {/* Font Size Control */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>Font Size:</span>
+          <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
+            <button
+              onClick={() => setFontSize('small')}
+              className="px-3 py-2 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: fontSize === 'small' ? 'var(--admin-primary)' : 'transparent',
+                color: fontSize === 'small' ? '#041220' : 'var(--admin-text)',
+                fontSize: fs.sm
+              }}
+              title="Small"
+            >
+              A
+            </button>
+            <button
+              onClick={() => setFontSize('medium')}
+              className="px-3 py-2 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: fontSize === 'medium' ? 'var(--admin-primary)' : 'transparent',
+                color: fontSize === 'medium' ? '#041220' : 'var(--admin-text)',
+                fontSize: fs.base
+              }}
+              title="Medium"
+            >
+              A
+            </button>
+            <button
+              onClick={() => setFontSize('large')}
+              className="px-3 py-2 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: fontSize === 'large' ? 'var(--admin-primary)' : 'transparent',
+                color: fontSize === 'large' ? '#041220' : 'var(--admin-text)',
+                fontSize: fs.base
+              }}
+              title="Large"
+            >
+              A
+            </button>
+          </div>
+        </div>
+
         {/* Filter Indicators */}
         {(filterSessionId || filterUserId || filterDate) && (
           <div className="flex items-center gap-2">
-            <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>Filters:</span>
+            <span className="text-xs" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>Filters:</span>
             {filterSessionId && (
               <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: 'var(--admin-success)' }}>
                 Session: {filterSessionId}
@@ -596,7 +696,8 @@ export default function RecentConversations({
             style={{
               backgroundColor: 'rgba(9, 14, 34, 0.6)',
               color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
+              border: '1px solid var(--admin-border)',
+              fontSize: fs.sm
             }}
             value={exportFormat}
             onChange={(e) => setExportFormat(e.target.value as 'CSV' | 'JSON')}
@@ -610,7 +711,8 @@ export default function RecentConversations({
             style={{
               backgroundColor: 'rgba(59, 230, 255, 0.1)',
               color: 'var(--admin-primary)',
-              border: '1px solid var(--admin-primary)'
+              border: '1px solid var(--admin-primary)',
+              fontSize: fs.sm
             }}
           >
             Export
@@ -625,16 +727,16 @@ export default function RecentConversations({
       ) : viewMode === 'table' ? (
         /* Table View */
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+          <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0, fontSize: fs.cell }}>
             <thead>
               <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Date</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>User ID</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '120px' }}>Session ID</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>User Message</th>
-                <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px' }}>AI Response</th>
-                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px' }}>User FB</th>
-                <th className="px-3 py-2 text-center text-xs font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px' }}>Admin</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', maxWidth: '100px', fontSize: fs.header }}>Date</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>User ID</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '90px', maxWidth: '90px', fontSize: fs.header }}>Session ID</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.header }}>User Message</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.header }}>AI Response</th>
+                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>User FB</th>
+                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px', maxWidth: '80px', fontSize: fs.header }}>Admin</th>
               </tr>
             </thead>
             <tbody>
@@ -650,7 +752,7 @@ export default function RecentConversations({
                     borderColor: 'var(--admin-border)'
                   }}
                 >
-                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
                     <button
                       onClick={() => handleFilterByDate(conversation.created_at || '')}
                       className="hover:underline cursor-pointer"
@@ -659,27 +761,27 @@ export default function RecentConversations({
                       {formatDate(conversation.created_at)}
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text)' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '70px', overflow: 'hidden' }}>
                     <button
                       onClick={() => handleFilterByUser(conversation.user_id)}
-                      className="hover:underline cursor-pointer text-blue-300"
-                      title="Click to filter by user"
+                      className="hover:underline cursor-pointer text-blue-300 truncate block w-full text-left"
+                      title={conversation.user_id}
                     >
                       {conversation.user_id}
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--admin-text-muted)' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '90px', overflow: 'hidden' }}>
                     {conversation.session_id && (
                       <button
                         onClick={() => handleFilterBySession(conversation.session_id!)}
-                        className="hover:underline cursor-pointer text-green-300"
-                        title="Click to filter by session"
+                        className="hover:underline cursor-pointer text-green-300 truncate block w-full text-left"
+                        title={conversation.session_id}
                       >
-                        {conversation.session_id.substring(0, 12)}...
+                        {conversation.session_id}
                       </button>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-xs max-w-[250px]" style={{ color: 'var(--admin-text)' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '280px', overflow: 'hidden' }}>
                     <div 
                       className="truncate cursor-pointer hover:text-blue-400"
                       onClick={() => handleFeedbackClick(conversation, 'good')}
@@ -688,7 +790,7 @@ export default function RecentConversations({
                       {conversation.chat_message}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-xs max-w-[250px]" style={{ color: 'var(--admin-text-muted)' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '300px', overflow: 'hidden' }}>
                     <div className="truncate" title={conversation.response}>
                       {conversation.response}
                     </div>
@@ -823,12 +925,12 @@ export default function RecentConversations({
               
               <div className="space-y-2">
                 <div>
-                  <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-primary)' }}>
+                  <p className="font-medium mb-1" style={{ color: 'var(--admin-primary)', fontSize: fs.sm }}>
                     {t('admin.userMessage')}:
                   </p>
                   <p 
-                    className="text-sm cursor-pointer hover:bg-gray-100/10 p-2 rounded transition-colors" 
-                    style={{ color: 'var(--admin-text)' }}
+                    className="cursor-pointer hover:bg-gray-100/10 p-2 rounded transition-colors" 
+                    style={{ color: 'var(--admin-text)', fontSize: fs.cell }}
                     onClick={() => toggleExpanded(conversation.chat_id)}
                     title="Click to expand/collapse"
                   >
@@ -843,12 +945,12 @@ export default function RecentConversations({
                 </div>
                 
                 <div>
-                  <p className="text-xs font-medium mb-1" style={{ color: 'var(--admin-accent)' }}>
+                  <p className="font-medium mb-1" style={{ color: 'var(--admin-accent)', fontSize: fs.sm }}>
                     {t('admin.aiResponse')}:
                   </p>
                   <p 
-                    className="text-sm cursor-pointer hover:bg-gray-100/10 p-2 rounded transition-colors" 
-                    style={{ color: 'var(--admin-text)' }}
+                    className="cursor-pointer hover:bg-gray-100/10 p-2 rounded transition-colors" 
+                    style={{ color: 'var(--admin-text)', fontSize: fs.cell }}
                     onClick={() => toggleExpanded(conversation.chat_id)}
                     title="Click to expand/collapse"
                   >
@@ -953,10 +1055,11 @@ export default function RecentConversations({
             className="px-6 py-2 rounded-md text-sm font-medium"
             style={{
               background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
-              color: '#041220'
+              color: '#041220',
+              fontSize: fs.base
             }}
           >
-            Load More ({filteredConversations.length - displayLimit} remaining)
+            {t('adminFeedback.loadMore')} ({filteredConversations.length - displayLimit} {t('adminFeedback.remaining')})
           </button>
         </div>
       )}

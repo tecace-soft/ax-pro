@@ -173,9 +173,9 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     console.log('Request payload:', JSON.stringify(request));
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('n8n webhook request timed out after 30 seconds');
+      console.log('n8n webhook request timed out after 60 seconds');
       controller.abort();
-    }, 30000); // 30 second timeout
+    }, 60000); // Increased to 60 seconds
     
     const response = await fetch(activeConfig.webhookUrl, {
       method: 'POST',
@@ -237,10 +237,29 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
       throw new Error('Unexpected response format from n8n webhook');
     }
     
-    // Check if the response contains the error message
-    if (responseData && responseData.answer && responseData.answer.includes('No response from webhook')) {
-      console.error('Webhook returned error message:', responseData.answer);
-      throw new Error('Webhook returned error: ' + responseData.answer);
+    // Check if the response contains error messages (based on real server testing)
+    if (responseData && responseData.answer) {
+      // Check for various error patterns found in real server testing
+      if (responseData.answer.includes('No response from webhook')) {
+        console.error('Webhook returned error message:', responseData.answer);
+        throw new Error('Webhook returned error: ' + responseData.answer);
+      }
+      
+      // Check for null or empty answers (real server pattern)
+      if (responseData.answer === null || responseData.answer === '') {
+        console.error('Webhook returned null or empty answer');
+        throw new Error('Empty response from webhook. Please check your workflow configuration.');
+      }
+      
+      // Check for error messages in the answer field
+      if (typeof responseData.answer === 'string' && 
+          (responseData.answer.includes('error') || 
+           responseData.answer.includes('Error') ||
+           responseData.answer.includes('not valid') ||
+           responseData.answer.includes('invalid'))) {
+        console.warn('Webhook answer contains error indicators:', responseData.answer);
+        // Don't throw error here, just log - let the calling code decide
+      }
     }
     
     return responseData;
@@ -248,7 +267,7 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     console.error('Failed to send to n8n:', error);
     
     if (error.name === 'AbortError') {
-      throw new Error('Webhook request timed out after 30 seconds');
+      throw new Error('Webhook request timed out after 60 seconds');
     } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
       throw new Error('Network error: Unable to reach webhook');
     } else {

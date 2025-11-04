@@ -1,0 +1,264 @@
+/* AI Research Field Statistics */
+/* Detailed analysis of research fields, topics, and student participation */
+
+.ai-research-stats-section {
+  margin-bottom: 12px;
+}
+
+.ai-research-stats-section .section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--admin-text);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.research-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.research-stat-card {
+  background: var(--admin-card-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 12px;
+  transition: all 0.2s;
+}
+
+.research-stat-card:hover {
+  border-color: var(--admin-primary);
+  box-shadow: 0 4px 12px rgba(59, 230, 255, 0.1);
+}
+
+.stat-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-text);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+/* Field Distribution */
+.field-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-name {
+  font-size: 12px;
+  color: var(--admin-text);
+  min-width: 120px;
+  font-weight: 500;
+}
+
+.field-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--admin-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.field-progress {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.field-count {
+  font-size: 11px;
+  color: var(--admin-text-muted);
+  min-width: 60px;
+  text-align: right;
+}
+
+/* Topic Engagement */
+.topic-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.topic-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.topic-item:last-child {
+  border-bottom: none;
+}
+
+.topic-name {
+  font-size: 12px;
+  color: var(--admin-text);
+  font-weight: 500;
+}
+
+.topic-metrics {
+  display: flex;
+  gap: 8px;
+}
+
+.topic-sessions,
+.topic-avg {
+  font-size: 11px;
+  color: var(--admin-text-muted);
+  background: var(--admin-bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Student Participation */
+.student-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.student-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.student-item:last-child {
+  border-bottom: none;
+}
+
+.student-name {
+  font-size: 12px;
+  color: var(--admin-text);
+  font-weight: 500;
+}
+
+.student-activity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.activity-count {
+  font-size: 11px;
+  color: var(--admin-text);
+  font-weight: 600;
+}
+
+.activity-fields {
+  font-size: 10px;
+  color: var(--admin-text-muted);
+}
+
+/* Satisfaction by Field */
+.satisfaction-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.satisfaction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.satisfaction-field {
+  font-size: 12px;
+  color: var(--admin-text);
+  min-width: 120px;
+  font-weight: 500;
+}
+
+.satisfaction-gauge {
+  flex: 1;
+  height: 8px;
+  background: var(--admin-border);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.gauge-text {
+  position: absolute;
+  right: 4px;
+  font-size: 10px;
+  color: var(--admin-text);
+  font-weight: 600;
+  z-index: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .research-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .research-stat-card {
+    padding: 12px;
+  }
+  
+  .field-name,
+  .topic-name,
+  .student-name,
+  .satisfaction-field {
+    font-size: 11px;
+  }
+  
+  .field-count,
+  .topic-sessions,
+  .topic-avg,
+  .activity-count {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .research-stats-grid {
+    gap: 12px;
+  }
+  
+  .field-item,
+  .topic-item,
+  .student-item,
+  .satisfaction-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .field-bar,
+  .satisfaction-gauge {
+    width: 100%;
+  }
+  
+  .topic-metrics,
+  .student-activity {
+    align-items: flex-start;
+  }
+}

@@ -27,30 +27,35 @@ const ChatShell: React.FC = () => {
   // Check auth on mount
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        // Try backend API first
-        const userData = await authApi.getMe();
-        setUser({
-          ...userData,
-          userId: (userData as any).email
-        });
-        setBackendAvailable(true);
-      } catch (error) {
-        console.log('Backend auth failed, trying local auth:', error);
-        setBackendAvailable(false);
-        
-        // Fallback to local session storage
-        const localSession = getSession();
-        if (localSession) {
+      // Check if backend is available before trying API call
+      const backendAvailable = await isBackendAvailable();
+      setBackendAvailable(backendAvailable);
+      
+      if (backendAvailable) {
+        try {
+          // Try backend API only if backend is available
+          const userData = await authApi.getMe();
           setUser({
-            email: localSession.email,
-            userId: localSession.email,
-            role: localSession.role
+            ...userData,
+            userId: (userData as any).email
           });
-        } else {
-          console.log('No local session found, redirecting to login');
-          navigate('/');
+        } catch (error) {
+          console.log('Backend auth failed, trying local auth:', error);
+          // Fall through to local session
         }
+      }
+      
+      // Use local session storage (fallback or primary if no backend)
+      const localSession = getSession();
+      if (localSession) {
+        setUser({
+          email: localSession.email,
+          userId: localSession.email,
+          role: localSession.role
+        });
+      } else {
+        console.log('No local session found, redirecting to login');
+        navigate('/');
       }
     };
     checkAuth();
