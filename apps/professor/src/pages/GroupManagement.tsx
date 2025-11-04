@@ -7,6 +7,7 @@ import { getUserByEmail } from '../services/authService';
 import { getUserGroups, Group } from '../services/groupService';
 import GroupCreationModal from '../components/GroupCreationModal';
 import { checkAndMigrateSettings } from '../services/migrateToUserSettings';
+import { IconUser, IconMoon, IconSun } from '../ui/icons';
 
 const GroupManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -135,8 +136,18 @@ const GroupManagement: React.FC = () => {
                 onClick={toggleTheme}
                 className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 title="Toggle theme"
+                style={{ color: 'var(--text)' }}
               >
-                {theme === 'light' ? '🌙' : '☀️'}
+                {theme === 'light' ? <IconMoon size={20} /> : <IconSun size={20} />}
+              </button>
+              
+              <button
+                onClick={() => navigate('/user-settings')}
+                className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title="User Settings"
+                style={{ color: 'var(--text)' }}
+              >
+                <IconUser size={20} />
               </button>
               
               <button
@@ -191,20 +202,6 @@ const GroupManagement: React.FC = () => {
 
             {/* Filter and View Controls */}
             <div className="flex items-center space-x-4">
-              {/* Filter Button */}
-              <button
-                className="p-2 rounded-md border hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                style={{
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)'
-                }}
-                title="Filter groups"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
-                </svg>
-              </button>
-
               {/* View Toggle */}
               <div className="flex rounded-md border" style={{ borderColor: 'var(--border)' }}>
                 <button

@@ -8,6 +8,7 @@ import GroupManagement from './pages/GroupManagement';
 import ChatShell from './pages/ChatShell';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
+import UserSettings from './pages/UserSettings';
 import AdminShell from './pages/AdminShell';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ScrollToTop from './components/ui/ScrollToTop';
@@ -82,6 +83,14 @@ const App: React.FC = () => {
                 element={
                   <ProtectedRoute requiredRole="user">
                     <Settings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/user-settings" 
+                element={
+                  <ProtectedRoute requiredRole="user">
+                    <UserSettings />
                   </ProtectedRoute>
                 } 
               />

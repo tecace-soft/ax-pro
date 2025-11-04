@@ -214,3 +214,41 @@ export async function authenticateUser(email: string, password: string): Promise
     throw error;
   }
 }
+
+/**
+ * Update user data (using default Supabase)
+ */
+export async function updateUser(userId: string, updates: { first_name?: string; last_name?: string; password?: string }): Promise<User> {
+  try {
+    console.log('Updating user in default Supabase...', { userId, updates: { ...updates, password: updates.password ? '[HIDDEN]' : undefined } });
+    
+    const updateData: any = {};
+    if (updates.first_name !== undefined) {
+      updateData.first_name = updates.first_name;
+    }
+    if (updates.last_name !== undefined) {
+      updateData.last_name = updates.last_name;
+    }
+    if (updates.password !== undefined) {
+      updateData.password = updates.password; // In production, this should be hashed
+    }
+    
+    const { data, error } = await defaultSupabase
+      .from('user')
+      .update(updateData)
+      .eq('user_id', userId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to update user: ${error.message}`);
+    }
+    
+    console.log('✅ User updated successfully:', { ...data, password: '[HIDDEN]' });
+    return data as User;
+  } catch (error) {
+    console.error('Failed to update user:', error);
+    throw error;
+  }
+}
