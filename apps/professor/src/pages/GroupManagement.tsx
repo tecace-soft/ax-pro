@@ -69,8 +69,32 @@ const GroupManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleGroupCreated = () => {
-    loadGroups(); // Reload groups after creation
+  const handleGroupCreated = async (groupId: string) => {
+    console.log('Group created, setting selectedGroupId:', groupId);
+    
+    // Set the selectedGroupId in session immediately after group creation
+    const session = getSession();
+    if (session) {
+      const updatedSession = {
+        ...session,
+        selectedGroupId: groupId,
+        role: 'admin' as const // Creator is always admin
+      };
+      try {
+        sessionStorage.setItem('axpro_session', JSON.stringify(updatedSession));
+        console.log('✅ Session updated with selectedGroupId:', groupId);
+        // Re-apply universal settings for the new session
+        checkAndMigrateSettings();
+      } catch (e) {
+        console.error('Failed to update session with group_id:', e);
+      }
+    }
+    
+    // Reload groups after creation
+    await loadGroups();
+    
+    // Automatically navigate to admin dashboard for the new group
+    navigate(`/admin/dashboard?group=${groupId}`);
   };
 
   // Impersonate admin or regular user based on group role, then navigate

@@ -14,7 +14,7 @@ interface User {
 interface GroupCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGroupCreated: () => void;
+  onGroupCreated: (groupId: string) => void;
 }
 
 const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
@@ -106,24 +106,42 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
       const groupId = generateGroupId();
       const administratorId = session.userId;
 
-      // Create the group
-      await createGroup({
+      console.log('Creating group with data:', {
         group_id: groupId,
         name: groupName.trim(),
         administrator: administratorId,
         users: selectedUsers.map(u => u.user_id)
       });
 
+      // Create the group
+      const createdGroup = await createGroup({
+        group_id: groupId,
+        name: groupName.trim(),
+        administrator: administratorId,
+        users: selectedUsers.map(u => u.user_id)
+      });
+
+      console.log('✅ Group created in database:', createdGroup);
+
       // Update user groups for all selected users and admin
       const allUserIds = [administratorId, ...selectedUsers.map(u => u.user_id)];
+      console.log('Updating user groups for:', allUserIds);
       await updateUserGroups(allUserIds, groupId);
+      console.log('✅ User groups updated successfully');
 
-      // Close modal and refresh groups
-      onGroupCreated();
+      console.log('✅ Group created successfully:', groupId);
+      
+      // Close modal and notify parent with groupId
+      onGroupCreated(groupId);
       onClose();
     } catch (error) {
-      console.error('Failed to create group:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create group');
+      console.error('❌ Failed to create group:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create group';
+      console.error('Error details:', {
+        message: errorMessage,
+        error: error
+      });
+      setError(`Failed to create group: ${errorMessage}. Please check the console for details.`);
     } finally {
       setIsCreating(false);
     }

@@ -60,6 +60,13 @@ export async function searchUsers(searchTerm: string): Promise<User[]> {
  */
 export async function createGroup(groupData: CreateGroupData): Promise<Group> {
   try {
+    console.log('Creating group in database:', {
+      group_id: groupData.group_id,
+      name: groupData.name,
+      administrator: groupData.administrator,
+      users: groupData.users
+    });
+
     const { data, error } = await defaultSupabase
       .from('group')
       .insert({
@@ -73,13 +80,22 @@ export async function createGroup(groupData: CreateGroupData): Promise<Group> {
       .single();
 
     if (error) {
-      console.error('Error creating group:', error);
-      throw new Error(`Failed to create group: ${error.message}`);
+      console.error('❌ Supabase error creating group:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error.details);
+      throw new Error(`Failed to create group: ${error.message} (Code: ${error.code})`);
     }
 
+    if (!data) {
+      console.error('❌ No data returned from group creation');
+      throw new Error('Group creation succeeded but no data was returned');
+    }
+
+    console.log('✅ Group created successfully in database:', data);
     return data as Group;
   } catch (error) {
-    console.error('Failed to create group:', error);
+    console.error('❌ Failed to create group:', error);
     throw error;
   }
 }
