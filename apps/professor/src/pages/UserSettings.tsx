@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../theme/ThemeProvider';
-import { getSession } from '../services/auth';
+import { getSession, logout } from '../services/auth';
 import { getUserByEmail, updateUser, validatePassword } from '../services/authService';
-import { useGroupAuth } from '../hooks/useGroupAuth';
-import { withGroupParam } from '../utils/navigation';
 
 const UserSettings: React.FC = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
-  useGroupAuth(); // Require auth and group (also syncs URL)
+  
+  // Check authentication only (no group required for user settings)
+  useEffect(() => {
+    const session = getSession();
+    if (!session) {
+      logout();
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -183,7 +189,7 @@ const UserSettings: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <button
-              onClick={() => navigate(withGroupParam('/group-management'))}
+              onClick={() => navigate('/group-management')}
               className="text-sm link"
             >
               ← Back to Groups
