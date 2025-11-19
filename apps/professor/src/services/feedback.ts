@@ -222,9 +222,10 @@ export async function getAdminFeedbackByChat(chatId: string): Promise<AdminFeedb
  * Includes group_id from session
  */
 export async function submitAdminFeedback(
-  chatId: string,
+  chatId: string | null,
   verdict: 'good' | 'bad',
   feedbackText: string,
+  correctedMessage: string,
   correctedResponse: string
 ): Promise<AdminFeedbackData> {
   try {
@@ -236,18 +237,22 @@ export async function submitAdminFeedback(
       throw new Error('No group_id in session. Please select a group first.');
     }
     
-    console.log('Submitting admin feedback:', { chatId, verdict, feedbackText, correctedResponse, groupId });
+    console.log('Submitting admin feedback:', { chatId, verdict, feedbackText, correctedMessage, correctedResponse, groupId });
     
-    // Check if feedback already exists for this chat and group
-    const existingFeedback = await getAdminFeedbackByChat(chatId);
+    // If chatId is provided, check if feedback already exists
+    let existingFeedback = null;
+    if (chatId) {
+      existingFeedback = await getAdminFeedbackByChat(chatId);
+    }
     
     let data, error;
     
-    if (existingFeedback) {
+    if (existingFeedback && chatId) {
       // Update existing feedback (don't include created_at or id)
       const updateData = {
         feedback_verdict: verdict,
         feedback_text: feedbackText || null,
+        corrected_message: correctedMessage || null,
         corrected_response: correctedResponse || null,
         updated_at: new Date().toISOString()
       };
@@ -262,14 +267,19 @@ export async function submitAdminFeedback(
       data = result.data;
       error = result.error;
     } else {
-      // Insert new feedback with group_id
-      const insertData = {
-        chat_id: chatId,
+      // Insert new feedback with group_id (chat_id is optional)
+      const insertData: any = {
         group_id: groupId,
         feedback_verdict: verdict,
         feedback_text: feedbackText || null,
+        corrected_message: correctedMessage || null,
         corrected_response: correctedResponse || null
       };
+      
+      // Only include chat_id if provided
+      if (chatId) {
+        insertData.chat_id = chatId;
+      }
       
       const result = await supabase
         .from('admin_feedback')
