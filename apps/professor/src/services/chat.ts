@@ -119,7 +119,7 @@ export const chatService = {
       
       // Proceed if we have a usable webhook URL from active config OR availability flag
       if ((n8nConfig && n8nConfig.webhookUrl) || n8nAvailable) {
-        console.log('Using n8n webhook:', n8nConfig.webhookUrl);
+        console.log('Using n8n webhook:', n8nConfig?.webhookUrl);
         try {
           const session = getSession();
           // Generate unique chatId for this message (for future feedback API)

@@ -17,6 +17,7 @@ import {
   SyncRow 
 } from '../../services/management';
 import { useGroupAuth } from '../../hooks/useGroupAuth';
+import { getSession } from '../../services/auth';
 
 const KnowledgeManagement: React.FC = () => {
   const navigate = useNavigate();
