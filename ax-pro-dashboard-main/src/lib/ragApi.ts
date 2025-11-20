@@ -292,7 +292,10 @@ export function isTextFile(file: File): boolean {
     'text/javascript',
     'application/javascript',
     'text/typescript',
-    'application/typescript'
+    'application/typescript',
+    'application/x-yaml',
+    'text/yaml',
+    'text/x-yaml'
   ]
   
   return textTypes.includes(file.type) || 
@@ -304,7 +307,9 @@ export function isTextFile(file: File): boolean {
          file.name.endsWith('.html') ||
          file.name.endsWith('.css') ||
          file.name.endsWith('.js') ||
-         file.name.endsWith('.ts')
+         file.name.endsWith('.ts') ||
+         file.name.endsWith('.yml') ||
+         file.name.endsWith('.yaml')
 }
 
 // Index Operations
@@ -477,11 +482,22 @@ export async function listIndexDocsUnified({
 export async function uploadAnyFile(file: File): Promise<{ success: boolean; error?: string }> {
   try {
     const rawType = (file.type || '').toLowerCase()
-    const isText = rawType.startsWith('text/') || rawType.includes('json') || rawType.includes('csv') || rawType.includes('xml')
+    // Use isTextFile to properly detect .md and other text files
+    const isText = isTextFile(file) || rawType.startsWith('text/') || rawType.includes('json') || rawType.includes('csv') || rawType.includes('xml') || rawType.includes('markdown')
 
     if (isText) {
       const content = await file.text()
-      const baseType = rawType || 'text/plain'
+      // Default content type based on file extension if type is empty
+      let baseType = rawType
+      if (!baseType) {
+        if (file.name.endsWith('.md')) {
+          baseType = 'text/markdown'
+        } else if (file.name.endsWith('.yml') || file.name.endsWith('.yaml')) {
+          baseType = 'text/yaml'
+        } else {
+          baseType = 'text/plain'
+        }
+      }
       const typeWithCharset = baseType.includes('charset=') ? baseType : `${baseType}; charset=utf-8`
       await uploadBlob({ name: file.name, content, contentType: typeWithCharset })
       return { success: true }
@@ -517,7 +533,8 @@ export async function uploadAnyFile(file: File): Promise<{ success: boolean; err
 export async function replaceBlobFile(file: File, etag?: string): Promise<any> {
   console.debug('🔄 replaceBlobFile()', { name: file.name, type: file.type, size: file.size, etag })
   const type = file.type || ''
-  const isText = type.startsWith('text/') || ['application/json', 'application/xml', 'text/markdown'].includes(type)
+  // Use isTextFile to properly detect .md and other text files, especially when file.type is empty
+  const isText = isTextFile(file) || type.startsWith('text/') || ['application/json', 'application/xml', 'text/markdown'].includes(type)
 
   if (!isText) {
     // Binary files: use Data URL (backend auto-detects)
@@ -545,11 +562,23 @@ export async function replaceBlobFile(file: File, etag?: string): Promise<any> {
   const text = await file.text()
   console.debug('📝 Text file - content length:', text.length, 'preview:', text.slice(0, 100))
   
+  // Default content type based on file extension if type is empty
+  let contentType = type
+  if (!contentType) {
+    if (file.name.endsWith('.md')) {
+      contentType = 'text/markdown'
+    } else if (file.name.endsWith('.yml') || file.name.endsWith('.yaml')) {
+      contentType = 'text/yaml'
+    } else {
+      contentType = 'text/plain'
+    }
+  }
+  
   const payload: any = {
     op: 'blob_replace',
     name: file.name,
     content: text,
-    content_type: type || 'text/plain'
+    content_type: contentType
   }
   if (etag) payload.etag = etag
   
@@ -560,7 +589,8 @@ export async function replaceBlobFile(file: File, etag?: string): Promise<any> {
 export async function uploadBlobFile(file: File): Promise<any> {
   console.debug('⬆️ uploadBlobFile()', { name: file.name, type: file.type, size: file.size })
   const type = file.type || ''
-  const isText = type.startsWith('text/') || ['application/json', 'application/xml', 'text/markdown'].includes(type)
+  // Use isTextFile to properly detect .md and other text files, especially when file.type is empty
+  const isText = isTextFile(file) || type.startsWith('text/') || ['application/json', 'application/xml', 'text/markdown'].includes(type)
 
   if (!isText) {
     // Binary files: use Data URL (backend auto-detects)
@@ -585,11 +615,23 @@ export async function uploadBlobFile(file: File): Promise<any> {
   const text = await file.text()
   console.debug('📝 Text file - content length:', text.length, 'preview:', text.slice(0, 100))
   
+  // Default content type based on file extension if type is empty
+  let contentType = type
+  if (!contentType) {
+    if (file.name.endsWith('.md')) {
+      contentType = 'text/markdown'
+    } else if (file.name.endsWith('.yml') || file.name.endsWith('.yaml')) {
+      contentType = 'text/yaml'
+    } else {
+      contentType = 'text/plain'
+    }
+  }
+  
   return callRAGAPI({
     op: 'blob_upload',
     name: file.name,
     content: text,
-    content_type: type || 'text/plain'
+    content_type: contentType
   })
 }
 
