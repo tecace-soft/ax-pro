@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { chatService, ChatMessage } from '../../services/chat';
 import { isBackendAvailable } from '../../services/devMode';
 import { submitUserFeedback } from '../../services/feedback';
 import { getSession } from '../../services/auth';
+import { fetchChatMessagesForSession } from '../../services/chatData';
 
 export const useThread = (sessionId: string) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -11,37 +13,81 @@ export const useThread = (sessionId: string) => {
   const [error, setError] = useState<string | null>(null);
   const [lastSentMessage, setLastSentMessage] = useState<string | null>(null);
   const [lastSentTime, setLastSentTime] = useState<number>(0);
-
-  // Get user-specific localStorage key for messages
-  const getUserMessageStorageKey = (sessionId: string) => {
-    const session = getSession();
-    const userId = session?.userId || 'anonymous';
-    return `axpro_sim_messages_${userId}_${sessionId}`;
-  };
+  const [searchParams] = useSearchParams();
 
   const fetchMessages = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const backendAvailable = await isBackendAvailable();
+      // Get group_id from URL or session
+      const groupId = searchParams.get('group') || (getSession() as any)?.selectedGroupId;
       
-      if (backendAvailable) {
-        const data = await chatService.getMessages(sessionId);
-        setMessages(data);
-      } else {
-        // Use local messages for simulation mode - user-specific
-        const userMessageStorageKey = getUserMessageStorageKey(sessionId);
-        const localMessages = JSON.parse(localStorage.getItem(userMessageStorageKey) || '[]');
-        console.log(`Loading messages for user: ${getSession()?.userId || 'anonymous'}, session: ${sessionId}, key: ${userMessageStorageKey}`);
-        setMessages(localMessages);
+      if (!groupId) {
+        console.warn('No group_id available, cannot fetch messages');
+        setMessages([]);
+        setLoading(false);
+        return;
       }
+      
+      // Fetch messages from Supabase filtered by session_id and group_id
+      const chatMessages = await fetchChatMessagesForSession(sessionId, groupId);
+      
+      // Preserve citations from current messages (they're not stored in database)
+      setMessages(prev => {
+        // Create a map of citations by message ID
+        // Message IDs from Supabase are in format: assistant_${chat_id}
+        const citationsMap = new Map<string, ChatMessage['citations']>();
+        prev.forEach(msg => {
+          if (msg.citations && msg.citations.length > 0) {
+            // Store by message ID
+            citationsMap.set(msg.id, msg.citations);
+            
+            // Also store by chat_id if we can extract it from assistant_${chat_id} format
+            if (msg.id.startsWith('assistant_')) {
+              const chatId = msg.id.replace('assistant_', '');
+              citationsMap.set(chatId, msg.citations);
+            }
+            
+            // Also store by citation messageId (which is the chatId)
+            msg.citations.forEach(citation => {
+              if (citation.messageId) {
+                citationsMap.set(`assistant_${citation.messageId}`, msg.citations);
+              }
+            });
+          }
+        });
+        
+        // Merge citations into fetched messages
+        const mergedMessages = chatMessages.map(msg => {
+          // Try to find citations by exact message ID match
+          let existingCitations = citationsMap.get(msg.id);
+          
+          // If not found and message ID is assistant_${chat_id}, try matching by chat_id
+          if (!existingCitations && msg.id.startsWith('assistant_')) {
+            const chatId = msg.id.replace('assistant_', '');
+            existingCitations = citationsMap.get(chatId);
+          }
+          
+          if (existingCitations) {
+            console.log(`✅ Preserved citations for message ${msg.id}:`, existingCitations);
+            return { ...msg, citations: existingCitations };
+          }
+          return msg;
+        });
+        
+        return mergedMessages;
+      });
+      
+      console.log(`✅ Loaded ${chatMessages.length} messages from Supabase for session: ${sessionId}, group: ${groupId}`);
     } catch (err) {
+      console.error('Failed to fetch messages from Supabase:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch messages');
+      setMessages([]);
     } finally {
       setLoading(false);
     }
-  }, [sessionId]);
+  }, [sessionId, searchParams.get('group')]);
 
   useEffect(() => {
     fetchMessages();
@@ -138,55 +184,30 @@ export const useThread = (sessionId: string) => {
       console.log('Chat service result:', result);
 
       // After streaming, update the temporary assistant message with final content and ID
+      // Use assistant_${chatId} format to match what we get from Supabase
       setMessages(prev => prev.map(msg => {
         if (msg.id === assistantMessageId) {
           const finalContent = accumulatedContent || 'No response received';
+          // Format the message ID to match Supabase format: assistant_${chatId}
+          const finalId = finalMessageId 
+            ? `assistant_${finalMessageId}` 
+            : assistantMessageId;
           const updatedMessage = {
             ...msg,
-            id: finalMessageId || assistantMessageId, // Use final ID if available
+            id: finalId,
             content: finalContent, // Use accumulated content
             citations: finalCitations,
             meta: { isStreaming: false }
           };
           console.log('Final assistant message:', updatedMessage);
+          console.log('Citations preserved:', finalCitations);
           return updatedMessage;
         }
         return msg;
       }));
 
-      // Save to localStorage for simulation mode
-      const backendAvailable = await isBackendAvailable();
-      if (!backendAvailable) {
-        const allMessages = [...messages.filter(msg => !msg.id.startsWith('temp-')), userMessage, {
-          id: finalMessageId || assistantMessageId,
-          sessionId,
-          role: 'assistant' as const,
-          content: accumulatedContent || 'No response received',
-          meta: { isStreaming: false },
-          createdAt: new Date().toISOString(),
-          citations: finalCitations
-        }];
-        console.log('Saving to localStorage:', allMessages);
-        const userMessageStorageKey = getUserMessageStorageKey(sessionId);
-        localStorage.setItem(userMessageStorageKey, JSON.stringify(allMessages));
-        
-        // Auto-generate title from first message if session title is "New Chat" - user-specific
-        const session = getSession();
-        const userId = session?.userId || 'anonymous';
-        const userSessionsKey = `axpro_sim_sessions_${userId}`;
-        const sessions = JSON.parse(localStorage.getItem(userSessionsKey) || '[]');
-        const currentSession = sessions.find((s: any) => s.id === sessionId);
-        if (currentSession && currentSession.title === 'New Chat' && messages.length === 0) {
-          const newTitle = generateTitle(content);
-          currentSession.title = newTitle;
-          currentSession.updatedAt = new Date().toISOString();
-          localStorage.setItem(userSessionsKey, JSON.stringify(sessions));
-          console.log('Auto-generated title:', newTitle);
-          
-          // Trigger session update event to refresh the session list
-          window.dispatchEvent(new Event('sessionUpdated'));
-        }
-      }
+      // Messages are automatically saved to Supabase by the chatbot backend
+      // No need to refetch - messages are already in state from streaming
 
     } catch (err) {
       console.error('Error in sendMessage:', err);

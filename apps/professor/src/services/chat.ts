@@ -219,11 +219,13 @@ export const chatService = {
         console.log('Using universal chatbot webhook:', CHATBOT_WEBHOOK_URL);
         try {
           const session = getSession();
-          const groupId = (session as any)?.selectedGroupId;
+          // Get groupId from session or URL (for non-logged-in users, get from URL)
+          const urlParams = new URLSearchParams(window.location.search);
+          const groupId = (session as any)?.selectedGroupId || urlParams.get('group');
           
           // Validate that groupId exists
           if (!groupId) {
-            console.error('❌ No group_id in session. Session:', session);
+            console.error('❌ No group_id in session or URL. Session:', session);
             throw new Error('No group selected. Please select a group first.');
           }
           
@@ -233,7 +235,8 @@ export const chatService = {
           const request: N8nRequest = {
             sessionId,
             chatId,
-            userId: session?.userId || 'unknown',
+            // Only include userId if user is logged in
+            ...(session?.userId ? { userId: session.userId } : {}),
             action: 'sendMessage',
             chatInput: content,
             groupId: groupId, // Always include groupId (validated above)

@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useSessions, Session } from './useSessions';
+import { useSessions } from './useSessions';
 import { useT } from '../../i18n/I18nProvider';
 import SessionListItem from './SessionListItem';
 
-const SessionList: React.FC = () => {
-  const navigate = useNavigate();
-  const { sessionId } = useParams<{ sessionId: string }>();
-  const { sessions, loading, createSession, refresh, updateSession, deleteSession, closeSession, reopenSession } = useSessions();
+interface SessionListProps {
+  currentSessionId?: string | null;
+  onSessionSelect: (sessionId: string) => void;
+  onNewSession: (sessionId: string) => void;
+}
+
+const SessionList: React.FC<SessionListProps> = ({ currentSessionId, onSessionSelect, onNewSession }) => {
+  const { sessions, loading, createSession, refresh, updateSession, deleteSession, closeSession, reopenSession, error } = useSessions();
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('all');
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const filteredSessions = sessions.filter(session => {
     const matchesSearch = !searchQuery || 
@@ -24,9 +28,17 @@ const SessionList: React.FC = () => {
 
   const handleNewChat = async () => {
     try {
-      await createSession();
+      setCreateError(null);
+      const newSessionId = await createSession();
+      if (newSessionId) {
+        onNewSession(newSessionId);
+      }
     } catch (error) {
       console.error('Failed to create new chat:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create new chat';
+      setCreateError(errorMessage);
+      // Show error for 5 seconds
+      setTimeout(() => setCreateError(null), 5000);
     }
   };
 
@@ -53,22 +65,36 @@ const SessionList: React.FC = () => {
     return () => window.removeEventListener('sessionUpdated', handleSessionUpdate);
   }, [refresh]);
 
-  if (loading) {
-    return (
-      <div className="p-4">
-        <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Search and New Chat */}
-      <div className="p-4 space-y-3 flex-shrink-0">
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100%', 
+      width: '100%',
+      overflow: 'hidden',
+      position: 'relative'
+    }}>
+      {/* Search and New Chat - Fixed at top, never scrolls */}
+      <div style={{ 
+        padding: '1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.75rem',
+        backgroundColor: 'var(--bg)', 
+        flexShrink: 0,
+        position: 'relative',
+        zIndex: 5
+      }}>
+        {createError && (
+          <div className="p-2 rounded-md text-sm" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
+            {createError}
+          </div>
+        )}
+        {error && !createError && (
+          <div className="p-2 rounded-md text-sm" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
+            {error}
+          </div>
+        )}
         <button
           onClick={handleNewChat}
           className="w-full btn-primary py-2 px-4 rounded-md text-sm font-medium"
@@ -86,8 +112,16 @@ const SessionList: React.FC = () => {
         />
       </div>
 
-      {/* Status Filter */}
-      <div className="px-4 pb-2 flex-shrink-0">
+      {/* Status Filter - Fixed below New Chat, never scrolls */}
+      <div style={{ 
+        paddingLeft: '1rem',
+        paddingRight: '1rem',
+        paddingBottom: '0.5rem',
+        backgroundColor: 'var(--bg)', 
+        flexShrink: 0,
+        position: 'relative',
+        zIndex: 5
+      }}>
         <div className="flex space-x-1">
           {(['all', 'open', 'closed'] as const).map((status) => (
             <button
@@ -109,9 +143,25 @@ const SessionList: React.FC = () => {
         </div>
       </div>
 
-      {/* Session List */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {filteredSessions.length === 0 ? (
+      {/* Session List - ONLY this section scrolls when content overflows */}
+      <div style={{ 
+        flex: '1 1 0%',
+        overflowY: 'auto', 
+        overflowX: 'hidden',
+        minHeight: 0,
+        maxHeight: '100%',
+        position: 'relative',
+        WebkitOverflowScrolling: 'touch'
+      }}>
+        {loading ? (
+          <div className="p-4">
+            <div className="animate-pulse space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            </div>
+          </div>
+        ) : filteredSessions.length === 0 ? (
           <div className="p-4 text-center">
             {searchQuery ? (
               <div>
@@ -149,8 +199,10 @@ const SessionList: React.FC = () => {
               <SessionListItem
                 key={session.id}
                 session={session}
-                isActive={sessionId === session.id}
-                onClick={() => navigate(`/chat/${session.id}`)}
+                isActive={currentSessionId === session.id}
+                onClick={() => {
+                  onSessionSelect(session.id);
+                }}
                 updateSession={updateSession}
                 deleteSession={deleteSession}
                 closeSession={closeSession}

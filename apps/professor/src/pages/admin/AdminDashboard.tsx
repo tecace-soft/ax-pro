@@ -71,6 +71,43 @@ export default function AdminDashboard() {
   const [avgQuestionsPerSession, setAvgQuestionsPerSession] = useState(0)
   const [activeStudents, setActiveStudents] = useState(0)
 
+  // Group-based role checking
+  const [isGroupAdmin, setIsGroupAdmin] = useState(false)
+  const [roleLoading, setRoleLoading] = useState(true)
+
+  // Check group role on mount and when group changes
+  useEffect(() => {
+    const checkGroupRole = async () => {
+      setRoleLoading(true)
+      const session = getSession()
+      if (!session) {
+        setIsGroupAdmin(false)
+        setRoleLoading(false)
+        return
+      }
+
+      const groupId = searchParams.get('group') || (session as any)?.selectedGroupId
+      if (!groupId) {
+        setIsGroupAdmin(false)
+        setRoleLoading(false)
+        return
+      }
+
+      try {
+        const { getUserRoleForGroup } = await import('../../services/auth')
+        const role = await getUserRoleForGroup(groupId)
+        setIsGroupAdmin(role === 'admin')
+      } catch (error) {
+        console.error('Failed to check group role:', error)
+        setIsGroupAdmin(false)
+      } finally {
+        setRoleLoading(false)
+      }
+    }
+
+    checkGroupRole()
+  }, [searchParams])
+
   // Collapsible section states - default based on user type
   const [isProfessor] = useState(() => {
     const session = getSession()

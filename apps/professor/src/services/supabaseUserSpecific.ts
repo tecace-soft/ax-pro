@@ -11,6 +11,7 @@ export interface ChatData {
   id: number;  // Numeric primary key
   chat_id: string;  // String identifier (chat_1760402027275_ekb47d6kd format)
   session_id?: string;  // Session identifier
+  group_id?: string;  // Group identifier
   chat_message: string;  // User's input message
   response: string;      // Bot's response
   // Optional bilingual fields for translation demo (professor mock only)
@@ -20,6 +21,16 @@ export interface ChatData {
   admin_feedback?: AdminFeedbackData | null;
   user_feedback?: any | null;
   created_at?: string;
+}
+
+export interface SessionData {
+  session_id: string;  // Primary key - session identifier
+  group_id: string;   // Group identifier
+  created_at?: string;  // Creation timestamp
+  // Note: title and status may not exist in the session table - backend handles session creation
+  title?: string | null;  // Optional session title (if column exists)
+  status?: 'open' | 'closed' | 'archived' | null;  // Session status (if column exists)
+  updated_at?: string;  // Last update timestamp (if column exists)
 }
 
 export interface AdminFeedbackData {

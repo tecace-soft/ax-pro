@@ -15,7 +15,7 @@ const UNIVERSAL_N8N_WEBHOOK = 'https://n8n.srv978041.hstgr.cloud/webhook/db3d9fb
 export interface N8nRequest {
   sessionId: string;
   chatId: string;
-  userId: string;
+  userId?: string; // Optional - not sent for non-logged-in users
   action: 'sendMessage';
   chatInput: string;
   groupId?: string;

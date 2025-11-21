@@ -1,5 +1,5 @@
 import { getSupabaseClient } from './supabaseUserSpecific';
-import type { ChatData } from './supabaseUserSpecific';
+import type { ChatData, SessionData } from './supabaseUserSpecific';
 import { getSession } from './auth';
 
 /**
@@ -161,6 +161,127 @@ export async function fetchChatById(chatId: string): Promise<ChatData | null> {
   } catch (error) {
     console.error('Error fetching chat by ID:', error);
     return null;
+  }
+}
+
+/**
+ * Fetch all sessions for a group, ordered by most recent first
+ * Returns empty array if session table doesn't exist (sessions are created by backend)
+ */
+export async function fetchSessionsByGroup(groupId: string, limit: number = 100): Promise<SessionData[]> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log('Fetching sessions from Supabase for group_id:', groupId);
+    
+    // Only select columns that definitely exist (session_id, group_id, created_at)
+    // Don't select status or title as they may not exist
+    const { data, error } = await supabase
+      .from('session')
+      .select('session_id, group_id, created_at')
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      // If table doesn't exist or has issues, return empty array
+      if (error.code === 'PGRST116' || error.message.includes('does not exist') || error.message.includes('schema cache')) {
+        console.warn('Session table may not exist or have different schema - sessions are created by backend');
+        return [];
+      }
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to fetch sessions: ${error.message}`);
+    }
+
+    console.log(`✅ Fetched ${data?.length || 0} sessions for group_id: ${groupId}`);
+    return data || [];
+  } catch (error) {
+    console.error('Failed to fetch sessions:', error);
+    // Return empty array instead of throwing - sessions are created by backend
+    return [];
+  }
+}
+
+/**
+ * Fetch a single session by session_id and group_id
+ * Returns null if session table doesn't exist (sessions are created by backend)
+ */
+export async function fetchSessionById(sessionId: string, groupId: string): Promise<SessionData | null> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    // Only select columns that definitely exist
+    const { data, error } = await supabase
+      .from('session')
+      .select('session_id, group_id, created_at')
+      .eq('session_id', sessionId)
+      .eq('group_id', groupId)
+      .maybeSingle();
+
+    if (error) {
+      // If table doesn't exist, return null (sessions are created by backend)
+      if (error.code === 'PGRST116' || error.message.includes('does not exist') || error.message.includes('schema cache')) {
+        return null;
+      }
+      console.error('Supabase error:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error fetching session:', error);
+    return null;
+  }
+}
+
+/**
+ * Fetch chat messages for a session, converted to ChatMessage format
+ */
+export async function fetchChatMessagesForSession(sessionId: string, groupId: string): Promise<any[]> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    const { data, error } = await supabase
+      .from('chat')
+      .select('*')
+      .eq('session_id', sessionId)
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to fetch chat messages: ${error.message}`);
+    }
+
+    // Convert ChatData to ChatMessage format
+    const messages: any[] = [];
+    if (data) {
+      for (const chat of data) {
+        // Add user message
+        messages.push({
+          id: `user_${chat.chat_id}`,
+          sessionId: chat.session_id || sessionId,
+          role: 'user' as const,
+          content: chat.chat_message,
+          createdAt: chat.created_at || new Date().toISOString()
+        });
+        
+        // Add assistant message
+        messages.push({
+          id: `assistant_${chat.chat_id}`,
+          sessionId: chat.session_id || sessionId,
+          role: 'assistant' as const,
+          content: chat.response,
+          createdAt: chat.created_at || new Date().toISOString()
+        });
+      }
+    }
+
+    console.log(`✅ Fetched ${messages.length} messages for session: ${sessionId}`);
+    return messages;
+  } catch (error) {
+    console.error('Failed to fetch chat messages:', error);
+    throw error;
   }
 }
 

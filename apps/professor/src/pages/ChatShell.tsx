@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
@@ -9,22 +9,34 @@ import SessionList from '../features/sessions/SessionList';
 import ThreadView from '../features/thread/ThreadView';
 import { useUICustomization } from '../hooks/useUICustomization';
 import { useGroupAuth } from '../hooks/useGroupAuth';
+import { getUserRoleForGroup } from '../services/auth';
 import { withGroupParam } from '../utils/navigation';
+import { fetchSessionById } from '../services/chatData';
+import { useSearchParams } from 'react-router-dom';
+import { useSessions } from '../features/sessions/useSessions';
 
 const ChatShell: React.FC = () => {
-  const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
   const { customization } = useUICustomization();
   const [user, setUser] = useState<{ email: string; userId: string; role: string } | null>(null);
+  const [groupRole, setGroupRole] = useState<'admin' | 'user' | null>(null);
   const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [currentSession, setCurrentSession] = useState<any>(null);
+  const [searchParams] = useSearchParams();
+  const { createSession } = useSessions();
+  const hasAutoCreatedSession = useRef(false);
 
-  // Check auth and group on mount (also syncs URL)
-  useGroupAuth();
+  // Check auth and group on mount (also syncs URL) - only if user is logged in
+  // For non-logged-in users, we skip this to allow access
+  const session = getSession();
+  if (session) {
+    useGroupAuth();
+  }
 
-  // Check auth on mount
+  // Check auth on mount - allow non-logged-in users to access chat
   useEffect(() => {
     const checkAuth = async () => {
       // Check if backend is available before trying API call
@@ -50,25 +62,143 @@ const ChatShell: React.FC = () => {
       if (localSession) {
         setUser({
           email: localSession.email,
-          userId: localSession.email,
+          userId: localSession.userId,
           role: localSession.role
         });
-      } else {
-        console.log('No local session found, redirecting to login');
-        navigate('/');
+
+        // Check group-based role
+        const groupId = searchParams.get('group') || (localSession as any)?.selectedGroupId;
+        if (groupId) {
+          try {
+            const role = await getUserRoleForGroup(groupId);
+            setGroupRole(role);
+            // Update user role based on group membership
+            if (role) {
+              setUser(prev => prev ? { ...prev, role } : null);
+            }
+          } catch (error) {
+            console.error('Failed to get group role:', error);
+          }
+        }
       }
+      // No else clause - allow non-logged-in users to continue
     };
     checkAuth();
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
-  // Check current session status
+  // Update group role when group changes
   useEffect(() => {
-    if (sessionId) {
-      const sessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
-      const session = sessions.find((s: any) => s.id === sessionId);
-      setCurrentSession(session);
+    const updateGroupRole = async () => {
+      const session = getSession();
+      if (!session) return;
+
+      const groupId = searchParams.get('group') || (session as any)?.selectedGroupId;
+      if (!groupId) {
+        setGroupRole(null);
+        return;
+      }
+
+      try {
+        const role = await getUserRoleForGroup(groupId);
+        setGroupRole(role);
+        // Update user role based on group membership
+        if (role) {
+          setUser(prev => prev ? { ...prev, role } : null);
+        }
+      } catch (error) {
+        console.error('Failed to get group role:', error);
+        setGroupRole(null);
+      }
+    };
+
+    if (user) {
+      updateGroupRole();
     }
-  }, [sessionId]);
+  }, [searchParams.get('group'), user]);
+
+  // Check current session status from Supabase
+  useEffect(() => {
+    const loadCurrentSession = async () => {
+      if (currentSessionId) {
+        const groupId = searchParams.get('group') || (getSession() as any)?.selectedGroupId;
+        if (groupId) {
+          try {
+            const sessionData = await fetchSessionById(currentSessionId, groupId);
+            if (sessionData) {
+              setCurrentSession({
+                id: sessionData.session_id,
+                title: sessionData.title,
+                status: sessionData.status || 'open'
+              });
+            } else {
+              setCurrentSession(null);
+            }
+          } catch (error) {
+            console.error('Failed to load session:', error);
+            setCurrentSession(null);
+          }
+        }
+      } else {
+        setCurrentSession(null);
+      }
+    };
+    loadCurrentSession();
+  }, [currentSessionId, searchParams.get('group')]);
+
+  // Reset auto-create flag when navigating to a session
+  useEffect(() => {
+    if (currentSessionId) {
+      hasAutoCreatedSession.current = false;
+    }
+  }, [currentSessionId]);
+
+  // Automatically create a new chat session when accessing /chat with group ID but no sessionId
+  // Works for both logged-in and non-logged-in users
+  useEffect(() => {
+    // Only proceed if we don't have a sessionId
+    if (currentSessionId) {
+      return;
+    }
+
+    // Check if we should auto-create (no sessionId in state)
+    // Get groupId from URL (works for both logged-in and non-logged-in users)
+    const groupId = searchParams.get('group') || (getSession() as any)?.selectedGroupId;
+    if (!groupId) {
+      return;
+    }
+
+    // Only create if we're on /chat
+    const currentPath = window.location.pathname;
+    const isChatPage = currentPath === '/chat' || currentPath === '/chat/';
+    
+    if (isChatPage && !hasAutoCreatedSession.current) {
+      console.log('Auto-creating new chat session for group:', groupId);
+      hasAutoCreatedSession.current = true;
+      createSession().then(sessionId => {
+        if (sessionId) {
+          setCurrentSessionId(sessionId);
+        }
+      }).catch(error => {
+        console.error('Failed to auto-create new chat:', error);
+        hasAutoCreatedSession.current = false; // Reset on error so it can retry
+      });
+    }
+  }, [currentSessionId, searchParams, createSession]);
+
+  // Keyboard shortcut for new chat (⌘N or Ctrl+N)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        createSession().catch(error => {
+          console.error('Failed to create new chat:', error);
+        });
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [createSession]);
 
   const handleLogout = async () => {
     try {
@@ -83,25 +213,27 @@ const ChatShell: React.FC = () => {
     navigate('/');
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--primary)' }}></div>
-          <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
-      {/* Left Rail - Session List */}
-      <div className="w-80 border-r flex flex-col h-full" style={{ borderColor: 'var(--border)' }}>
-        {/* Header */}
-        <div className="p-4 border-b flex-shrink-0 sticky top-0 z-10" style={{ 
-          borderColor: 'var(--border)',
-          backgroundColor: 'var(--bg)'
+    <div style={{ height: '100vh', display: 'flex', overflow: 'hidden', backgroundColor: 'var(--bg)' }}>
+      {/* Left Rail - Session List - Only show if user is logged in */}
+      {user && (
+      <div style={{ 
+        width: '320px', 
+        borderRight: '1px solid var(--border)', 
+        display: 'flex', 
+        flexDirection: 'column',
+        height: '100vh', 
+        overflow: 'hidden',
+        position: 'relative'
+      }}>
+        {/* Header - Fixed at top, never scrolls */}
+        <div style={{ 
+          padding: '1rem',
+          borderBottom: '1px solid var(--border)',
+          backgroundColor: 'var(--bg)',
+          flexShrink: 0,
+          position: 'relative',
+          zIndex: 10
         }}>
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>
@@ -161,11 +293,11 @@ const ChatShell: React.FC = () => {
                 {user.email}
               </p>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {user.role === 'admin' ? 'Administrator' : t('ui.user')}
+                {groupRole === 'admin' ? 'Administrator' : t('ui.user')}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {user.role === 'admin' && (
+              {groupRole === 'admin' && (
                 <>
                   <button
                     onClick={() => navigate(withGroupParam('/admin/dashboard'))}
@@ -209,15 +341,31 @@ const ChatShell: React.FC = () => {
           </div>
         </div>
 
-        {/* Session List */}
-        <div className="flex-1 overflow-y-auto">
-          <SessionList />
+        {/* Session List - Takes remaining space after header, handles its own scrolling */}
+        <div style={{ 
+          flex: '1 1 0%', 
+          minHeight: 0, 
+          maxHeight: '100%',
+          overflow: 'hidden', 
+          display: 'flex', 
+          flexDirection: 'column',
+          position: 'relative'
+        }}>
+          <SessionList 
+            currentSessionId={currentSessionId}
+            onSessionSelect={setCurrentSessionId}
+            onNewSession={(sessionId) => {
+              setCurrentSessionId(sessionId);
+              hasAutoCreatedSession.current = false;
+            }}
+          />
         </div>
       </div>
+      )}
 
       {/* Main Content - Thread View */}
-      <div className="flex-1 flex flex-col h-full">
-        {sessionId ? (
+      <div className="flex-1 flex flex-col h-full" style={{ width: user ? 'auto' : '100%' }}>
+        {currentSessionId ? (
           <div className="flex-1 flex flex-col h-full">
             {/* Chat Header */}
             <div className="flex items-center justify-between p-4 border-b flex-shrink-0 sticky top-0 z-10" style={{ 
@@ -244,27 +392,15 @@ const ChatShell: React.FC = () => {
                 )}
                 <button
                   onClick={() => {
+                    // Session status updates are handled by backend
+                    // Just update local state for UI
                     if (currentSession?.status === 'closed') {
-                      // Reopen session
-                      const sessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
-                      const updatedSessions = sessions.map((s: any) => 
-                        s.id === sessionId ? { ...s, status: 'open' } : s
-                      );
-                      localStorage.setItem('axpro_sim_sessions', JSON.stringify(updatedSessions));
                       setCurrentSession({ ...currentSession, status: 'open' });
-                      // Trigger a refresh of the session list
-                      window.dispatchEvent(new CustomEvent('sessionUpdated'));
                     } else {
-                      // Close current session
-                      const sessions = JSON.parse(localStorage.getItem('axpro_sim_sessions') || '[]');
-                      const updatedSessions = sessions.map((s: any) => 
-                        s.id === sessionId ? { ...s, status: 'closed' } : s
-                      );
-                      localStorage.setItem('axpro_sim_sessions', JSON.stringify(updatedSessions));
                       setCurrentSession({ ...currentSession, status: 'closed' });
-                      // Trigger a refresh of the session list
-                      window.dispatchEvent(new CustomEvent('sessionUpdated'));
                     }
+                    // Trigger a refresh of the session list
+                    window.dispatchEvent(new CustomEvent('sessionUpdated'));
                   }}
                   className="text-sm px-3 py-1 rounded border hover:bg-gray-50"
                   style={{ 
@@ -293,8 +429,36 @@ const ChatShell: React.FC = () => {
                   )}
                 </button>
               </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      const newSessionId = await createSession();
+                      if (newSessionId) {
+                        setCurrentSessionId(newSessionId);
+                        hasAutoCreatedSession.current = false;
+                      }
+                    } catch (error) {
+                      console.error('Failed to create new chat:', error);
+                    }
+                  }}
+                  className="text-sm px-3 py-1.5 rounded-md border hover:bg-gray-50 flex items-center space-x-2"
+                  style={{ 
+                    borderColor: 'var(--border)',
+                    color: 'var(--text)',
+                    backgroundColor: 'var(--card)'
+                  }}
+                  title="Start a new chat (⌘N or Ctrl+N)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>{t('ui.newChat')}</span>
+                </button>
+              </div>
             </div>
-            <ThreadView sessionId={sessionId} isClosed={currentSession?.status === 'closed'} />
+            <ThreadView sessionId={currentSessionId} isClosed={currentSession?.status === 'closed'} />
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center">

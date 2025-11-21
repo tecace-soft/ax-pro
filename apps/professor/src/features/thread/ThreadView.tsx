@@ -13,6 +13,7 @@ interface ThreadViewProps {
 const ThreadView: React.FC<ThreadViewProps> = ({ sessionId, isClosed = false }) => {
   const { messages, loading, sending, error, sendMessage } = useThread(sessionId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const t = useT();
   const { customization } = useUICustomization();
 
@@ -22,11 +23,18 @@ const ThreadView: React.FC<ThreadViewProps> = ({ sessionId, isClosed = false }) 
   }, [messages, sessionId]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll the messages container, NOT the entire page
+    if (messagesContainerRef.current && messagesEndRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    // Use setTimeout to ensure DOM is updated before scrolling
+    const timeoutId = setTimeout(() => {
+      scrollToBottom();
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [messages]);
 
   if (loading) {
@@ -41,9 +49,13 @@ const ThreadView: React.FC<ThreadViewProps> = ({ sessionId, isClosed = false }) 
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full">
+    <div className="flex-1 flex flex-col h-full" style={{ overflow: 'hidden' }}>
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto min-h-0"
+        style={{ overflowY: 'auto', overflowX: 'hidden' }}
+      >
         {messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8">
             <div className="max-w-2xl w-full text-center">
