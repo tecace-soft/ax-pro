@@ -30,6 +30,10 @@ export interface CreateGroupData {
   name: string;
   administrator: string;
   users: string[];
+  chat_title?: string;
+  chat_subtitle?: string;
+  suggested_questions?: string[];
+  avatar_url?: string;
 }
 
 /**
@@ -74,6 +78,10 @@ export async function createGroup(groupData: CreateGroupData): Promise<Group> {
         name: groupData.name,
         administrator: groupData.administrator,
         users: groupData.users,
+        chat_title: groupData.chat_title,
+        chat_subtitle: groupData.chat_subtitle,
+        suggested_questions: groupData.suggested_questions,
+        avatar_url: groupData.avatar_url,
         created_at: new Date().toISOString()
       })
       .select()

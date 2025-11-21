@@ -28,6 +28,7 @@ const ChatShell: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { createSession } = useSessions();
   const hasAutoCreatedSession = useRef(false);
+  const [urlCopied, setUrlCopied] = useState(false);
 
   // Check auth and group on mount (also syncs URL) - only if user is logged in
   // For non-logged-in users, we skip this to allow access
@@ -430,6 +431,36 @@ const ChatShell: React.FC = () => {
                 </button>
               </div>
               <div className="flex items-center space-x-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      const currentUrl = window.location.href;
+                      await navigator.clipboard.writeText(currentUrl);
+                      setUrlCopied(true);
+                      setTimeout(() => {
+                        setUrlCopied(false);
+                      }, 2000);
+                    } catch (error) {
+                      console.error('Failed to copy URL:', error);
+                    }
+                  }}
+                  className="text-sm px-3 py-1.5 rounded-md border hover:bg-gray-50 flex items-center space-x-2"
+                  style={{ 
+                    borderColor: 'var(--border)',
+                    color: 'var(--text)',
+                    backgroundColor: 'var(--card)'
+                  }}
+                  title="Copy chat URL to clipboard"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                  </svg>
+                  <span>{urlCopied ? 'URL Copied!' : 'Share URL'}</span>
+                </button>
                 <button
                   onClick={async () => {
                     try {

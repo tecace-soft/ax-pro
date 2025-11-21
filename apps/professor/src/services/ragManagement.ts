@@ -7,7 +7,7 @@ const UPLOAD_WEBHOOK_ID = (import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID |
 
 // n8n webhook endpoints for different operations
 const ENDPOINTS = {
-  UPLOAD: `${N8N_BASE_URL}/webhook-test/${UPLOAD_WEBHOOK_ID}`,
+  UPLOAD: `${N8N_BASE_URL}/webhook/${UPLOAD_WEBHOOK_ID}`,
   LIST_FILES: `${N8N_BASE_URL}/webhook/${(import.meta as any).env?.VITE_N8N_LIST_FILES_WEBHOOK_ID || 'list-files'}`,
   DELETE_FILE: `${N8N_BASE_URL}/webhook/${(import.meta as any).env?.VITE_N8N_DELETE_FILE_WEBHOOK_ID || 'delete-file'}`,
   REINDEX_FILE: `${N8N_BASE_URL}/webhook/${(import.meta as any).env?.VITE_N8N_REINDEX_FILE_WEBHOOK_ID || 'reindex-file'}`,
@@ -1098,25 +1098,14 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     const userSpecificWebhookId = UPLOAD_WEBHOOK_ID;
     console.log(`👤 Using default FILE INDEXING webhook`);
     
-    // DEV/PRODUCTION SELECTOR
-    // Default to PRODUCTION mode, only use DEV if explicitly enabled
-    const isDevMode = ((import.meta as any).env?.VITE_N8N_DEV_MODE === 'true') || 
-                     localStorage.getItem('n8n-dev-mode') === 'true';
+    // Always use production webhook for file indexing
+    const n8nWebhookUrl = (import.meta as any).env?.VITE_N8N_BASE_URL 
+      ? `${(import.meta as any).env?.VITE_N8N_BASE_URL}/webhook/${userSpecificWebhookId}`
+      : `${N8N_BASE_URL}/webhook/${userSpecificWebhookId}`;
     
-    const n8nWebhookUrl = isDevMode 
-      ? `https://n8n.srv978041.hstgr.cloud/webhook-test/${userSpecificWebhookId}`
-      : ((import.meta as any).env?.VITE_N8N_BASE_URL 
-          ? `${(import.meta as any).env?.VITE_N8N_BASE_URL}/webhook/${userSpecificWebhookId}`
-          : `${N8N_BASE_URL}/webhook/${userSpecificWebhookId}`);
-    
-    console.log(`🔧 Webhook mode: ${isDevMode ? 'DEV (test)' : 'PRODUCTION'}`);
+    console.log(`🔧 Webhook mode: PRODUCTION`);
     console.log(`🌐 Using webhook: ${n8nWebhookUrl}`);
     console.log(`👤 User: ${session?.email || 'Unknown'} (${session?.userId || 'Unknown'})`);
-    
-    // Warn if using test webhook
-    if (isDevMode) {
-      console.warn(`⚠️ Using TEST webhook - this may not be active!`);
-    }
 
     console.log(`🌐 n8n Webhook URL: ${n8nWebhookUrl}`);
 

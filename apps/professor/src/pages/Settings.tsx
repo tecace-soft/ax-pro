@@ -3,19 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { settingsService, ApiConfig } from '../services/settings';
 import { useGroupAuth } from '../hooks/useGroupAuth';
 import { withGroupParam } from '../utils/navigation';
-import { 
-  getN8nConfigs, 
-  addN8nConfig, 
-  updateN8nConfig, 
-  deleteN8nConfig, 
-  setActiveN8nConfig,
-  testN8nConnection,
-  N8nConfig 
-} from '../services/n8nUserSpecific';
 import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
 import { useUICustomization } from '../hooks/useUICustomization';
-import { getSupabaseConfig, saveSupabaseConfig, testSupabaseConnection, SupabaseConfig } from '../services/supabaseUserSpecific';
 import { isSimulationModeEnabled, setSimulationModeEnabled } from '../services/devMode';
 
 const Settings: React.FC = () => {
@@ -24,14 +14,22 @@ const Settings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage } = useTranslation();
   const [configs, setConfigs] = useState<ApiConfig[]>([]);
-  const [n8nConfigs, setN8nConfigs] = useState<N8nConfig[]>([]);
-  const [activeTab, setActiveTab] = useState<'api' | 'webhook' | 'ui' | 'database'>('ui');
-  const [databaseType, setDatabaseType] = useState<'supabase' | 'other'>('supabase');
+  const [activeTab, setActiveTab] = useState<'api' | 'ui'>('ui');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState<ApiConfig | null>(null);
-  const [editingN8nConfig, setEditingN8nConfig] = useState<N8nConfig | null>(null);
-  const [testingConnection, setTestingConnection] = useState(false);
   const { customization, updateCustomization, updateQuestion, resetCustomization } = useUICustomization();
+  
+  // Local state for inputs to prevent saving on every keystroke
+  const [localChatTitle, setLocalChatTitle] = useState(customization.chatTitle);
+  const [localChatSubtitle, setLocalChatSubtitle] = useState(customization.chatSubtitle);
+  const [localQuestions, setLocalQuestions] = useState(customization.suggestedQuestions);
+  
+  // Sync local state when customization changes (e.g., from database load)
+  useEffect(() => {
+    setLocalChatTitle(customization.chatTitle);
+    setLocalChatSubtitle(customization.chatSubtitle);
+    setLocalQuestions(customization.suggestedQuestions);
+  }, [customization.chatTitle, customization.chatSubtitle, customization.suggestedQuestions]);
 
   // Check URL parameters for tab navigation
   useEffect(() => {
@@ -51,18 +49,6 @@ const Settings: React.FC = () => {
     maxTokens: 1000
   });
 
-  const [n8nFormData, setN8nFormData] = useState({
-    name: '',
-    webhookUrl: ''
-  });
-
-  const [supabaseConfig, setSupabaseConfig] = useState<SupabaseConfig>({
-    url: '',
-    anonKey: ''
-  });
-
-  const [testingSupabase, setTestingSupabase] = useState(false);
-  const [supabaseTestResult, setSupabaseTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [simulationModeEnabled, setSimulationModeEnabledState] = useState(false);
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState('');
@@ -72,15 +58,8 @@ const Settings: React.FC = () => {
 
   useEffect(() => {
     loadConfigs();
-    loadN8nConfigs();
-    loadSupabaseConfig();
     loadSimulationMode();
   }, []);
-
-  const loadSupabaseConfig = () => {
-    const config = getSupabaseConfig();
-    setSupabaseConfig(config);
-  };
 
   const loadSimulationMode = () => {
     const enabled = isSimulationModeEnabled();
@@ -90,11 +69,6 @@ const Settings: React.FC = () => {
   const loadConfigs = () => {
     const loadedConfigs = settingsService.getConfigs();
     setConfigs(loadedConfigs);
-  };
-
-  const loadN8nConfigs = () => {
-    const loadedN8nConfigs = getN8nConfigs();
-    setN8nConfigs(loadedN8nConfigs);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -149,69 +123,6 @@ const Settings: React.FC = () => {
   const handleSetActive = (id: string) => {
     settingsService.setActiveConfig(id);
     loadConfigs();
-  };
-
-  // N8n form handlers
-  const handleN8nSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (editingN8nConfig) {
-      updateN8nConfig(editingN8nConfig.id, n8nFormData);
-    } else {
-      addN8nConfig({
-        ...n8nFormData,
-        isActive: n8nConfigs.length === 0
-      });
-    }
-    
-    loadN8nConfigs();
-    resetN8nForm();
-  };
-
-  const resetN8nForm = () => {
-    setN8nFormData({
-      name: '',
-      webhookUrl: ''
-    });
-    setShowAddForm(false);
-    setEditingN8nConfig(null);
-  };
-
-  const handleN8nEdit = (config: N8nConfig) => {
-    setN8nFormData({
-      name: config.name,
-      webhookUrl: config.webhookUrl
-    });
-    setEditingN8nConfig(config);
-    setShowAddForm(true);
-  };
-
-  const handleN8nDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this n8n configuration?')) {
-      deleteN8nConfig(id);
-      loadN8nConfigs();
-    }
-  };
-
-  const handleN8nSetActive = (id: string) => {
-    setActiveN8nConfig(id);
-    loadN8nConfigs();
-  };
-
-  const handleTestN8nConnection = async (webhookUrl: string) => {
-    setTestingConnection(true);
-    try {
-      const isConnected = await testN8nConnection(webhookUrl);
-      if (isConnected) {
-        alert('✅ Connection successful!');
-      } else {
-        alert('❌ Connection failed. Please check your webhook URL.');
-      }
-    } catch (error) {
-      alert('❌ Connection failed. Please check your webhook URL.');
-    } finally {
-      setTestingConnection(false);
-    }
   };
 
   return (
@@ -333,34 +244,6 @@ const Settings: React.FC = () => {
               }}
             >
               {language === 'ko' ? 'API 설정' : 'API Configurations'}
-            </button>
-            <button
-              onClick={() => setActiveTab('webhook')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'webhook'
-                  ? 'border-gray-800 text-gray-800'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              style={{ 
-                color: activeTab === 'webhook' ? 'var(--primary)' : 'var(--text-secondary)',
-                borderBottomColor: activeTab === 'webhook' ? 'var(--primary)' : 'transparent'
-              }}
-            >
-              {language === 'ko' ? '웹훅' : 'Webhooks'}
-            </button>
-            <button
-              onClick={() => setActiveTab('database')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'database'
-                  ? 'border-gray-800 text-gray-800'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              style={{ 
-                color: activeTab === 'database' ? 'var(--primary)' : 'var(--text-secondary)',
-                borderBottomColor: activeTab === 'database' ? 'var(--primary)' : 'transparent'
-              }}
-            >
-              {language === 'ko' ? '데이터베이스' : 'Database'}
             </button>
           </nav>
         </div>
@@ -591,198 +474,6 @@ const Settings: React.FC = () => {
           </>
         )}
 
-        {/* Webhooks Tab */}
-        {activeTab === 'webhook' && (
-          <>
-            {/* Add/Edit n8n Form */}
-            {showAddForm && (
-              <div className="card p-6 rounded-lg mb-6">
-                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
-                  {editingN8nConfig ? 'Edit Webhook Configuration' : 'Add New Webhook Configuration'}
-                </h2>
-                
-                <form onSubmit={handleN8nSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                        Configuration Name
-                      </label>
-                      <input
-                        type="text"
-                        value={n8nFormData.name}
-                        onChange={(e) => setN8nFormData(prev => ({ ...prev, name: e.target.value }))}
-                        className="input w-full px-3 py-2 rounded-md"
-                        placeholder="e.g., Production n8n Webhook"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                        Webhook URL
-                      </label>
-                      <div className="flex space-x-2">
-                        <input
-                          type="url"
-                          value={n8nFormData.webhookUrl}
-                          onChange={(e) => setN8nFormData(prev => ({ ...prev, webhookUrl: e.target.value }))}
-                          className="input flex-1 px-3 py-2 rounded-md"
-                          placeholder="https://n8n.srv978041.hstgr.cloud/webhook/..."
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleTestN8nConnection(n8nFormData.webhookUrl)}
-                          disabled={testingConnection || !n8nFormData.webhookUrl}
-                          className="px-3 py-2 text-sm border rounded-md disabled:opacity-50"
-                          style={{ borderColor: 'var(--border)' }}
-                        >
-                          {testingConnection ? 'Testing...' : 'Test'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={resetN8nForm}
-                      className="px-4 py-2 text-sm border rounded-md"
-                      style={{ borderColor: 'var(--border)' }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn-primary px-4 py-2 text-sm"
-                    >
-                      {editingN8nConfig ? 'Update' : 'Add'} Configuration
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* n8n Configurations List */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>
-                  Webhook Configurations
-                </h2>
-                <button
-                  onClick={() => {
-                    setActiveTab('webhook');
-                    setShowAddForm(true);
-                  }}
-                  className="btn-primary px-4 py-2 text-sm"
-                >
-                  + Add Webhook Configuration
-                </button>
-              </div>
-
-              {n8nConfigs.length === 0 ? (
-                <div className="card p-8 rounded-lg text-center">
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    No webhook configurations found. Add your first webhook to get started.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {n8nConfigs.map((config) => (
-                    <div
-                      key={config.id}
-                      className={`card p-4 rounded-lg ${
-                        config.isActive ? 'border-2' : 'border'
-                      }`}
-                      style={{
-                        borderColor: config.isActive ? 'var(--primary)' : 'var(--border)',
-                        backgroundColor: config.isActive ? 'var(--primary-light)' : 'var(--card)'
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <h3 className="font-medium" style={{ color: 'var(--text)' }}>
-                              {config.name}
-                            </h3>
-                            {config.isActive && (
-                              <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
-                                Active
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                            {config.webhookUrl}
-                          </p>
-                          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                            Created: {new Date(config.createdAt).toLocaleString()}
-                          </p>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleTestN8nConnection(config.webhookUrl)}
-                            disabled={testingConnection}
-                            className="text-xs px-3 py-1 rounded border disabled:opacity-50"
-                            style={{ borderColor: 'var(--border)' }}
-                          >
-                            {testingConnection ? 'Testing...' : 'Test'}
-                          </button>
-                          {!config.isActive && (
-                            <button
-                              onClick={() => handleN8nSetActive(config.id)}
-                              className="text-xs px-3 py-1 rounded border"
-                              style={{ borderColor: 'var(--border)' }}
-                            >
-                              Set Active
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleN8nEdit(config)}
-                            className="text-xs px-3 py-1 rounded border"
-                            style={{ borderColor: 'var(--border)' }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleN8nDelete(config.id)}
-                            className="text-xs px-3 py-1 rounded border"
-                            style={{ 
-                              borderColor: 'var(--error)',
-                              color: 'var(--error)'
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Webhook Info */}
-            <div className="mt-8 card p-4 rounded-lg" style={{ backgroundColor: 'var(--primary-light)' }}>
-              <div className="flex items-start space-x-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                </svg>
-                <div>
-                  <h3 className="text-sm font-medium" style={{ color: 'var(--primary)' }}>
-                    Webhook Integration
-                  </h3>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                    Configure webhooks to connect your chat interface with external workflows (e.g., n8n). 
-                    The system will send chat messages to your webhook and receive AI responses.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
         {/* UI Customization Tab */}
         {activeTab === 'ui' && (
           <div className="space-y-6">
@@ -799,8 +490,9 @@ const Settings: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={customization.chatTitle}
-                    onChange={(e) => updateCustomization({ chatTitle: e.target.value })}
+                    value={localChatTitle}
+                    onChange={(e) => setLocalChatTitle(e.target.value)}
+                    onBlur={() => updateCustomization({ chatTitle: localChatTitle })}
                     className="input w-full px-3 py-2 rounded-md"
                     placeholder={language === 'ko' ? '예: 채팅 인터페이스, AI 어시스턴트 등' : 'e.g., Chat Interface, AI Assistant, etc.'}
                   />
@@ -816,8 +508,9 @@ const Settings: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={customization.chatSubtitle}
-                    onChange={(e) => updateCustomization({ chatSubtitle: e.target.value })}
+                    value={localChatSubtitle}
+                    onChange={(e) => setLocalChatSubtitle(e.target.value)}
+                    onBlur={() => updateCustomization({ chatSubtitle: localChatSubtitle })}
                     className="input w-full px-3 py-2 rounded-md"
                     placeholder={language === 'ko' ? '예: 사이드바에서 대화를 선택하거나 새 채팅을 시작하세요' : 'e.g., Select a conversation from the sidebar or start a new chat'}
                   />
@@ -832,11 +525,11 @@ const Settings: React.FC = () => {
                     {language === 'ko' ? '챗봇 아바타' : 'Chatbot Avatar'}
                   </label>
                   
-                  {/* Avatar Preview and Selector */}
+                  {/* Avatar Preview */}
                   <div className="flex items-center gap-4 mb-3">
                     <div className="flex-shrink-0" style={{ width: '80px', height: '80px' }}>
                       <img 
-                        src={customization.avatarUrl} 
+                        src={customization.avatarUrl || '/default-profile-avatar.png'} 
                         alt="Avatar Preview" 
                         style={{ 
                           width: '80px',
@@ -850,32 +543,6 @@ const Settings: React.FC = () => {
                           e.currentTarget.src = '/default-profile-avatar.png';
                         }}
                       />
-                    </div>
-                    
-                    {/* Default Avatar Selector */}
-                    <div className="flex-1">
-                      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text)' }}>
-                        {language === 'ko' ? '기본 아바타 선택' : 'Select Default Avatar'}
-                      </label>
-                      <select
-                        value={customization.avatarUrl.startsWith('/') ? customization.avatarUrl : 'custom'}
-                        onChange={(e) => {
-                          if (e.target.value !== 'custom') {
-                            updateCustomization({ avatarUrl: e.target.value });
-                          }
-                        }}
-                        className="w-full px-3 py-2 rounded-md"
-                        style={{
-                          backgroundColor: 'var(--bg-secondary)',
-                          border: '1px solid var(--border)',
-                          color: 'var(--text)'
-                        }}
-                      >
-                        <option value="custom">{language === 'ko' ? '커스텀 (업로드된 이미지)' : 'Custom (Uploaded)'}</option>
-                        <option value="/default-profile-avatar.png">{language === 'ko' ? '기본 아바타 1' : 'Default Avatar 1'}</option>
-                        <option value="/chatbot-avatar-2.png">{language === 'ko' ? '챗봇 아바타 2' : 'Chatbot Avatar 2'}</option>
-                        <option value="/professor-avatar.png">{language === 'ko' ? '교수 아바타' : 'Professor Avatar'}</option>
-                      </select>
                     </div>
                   </div>
                   
@@ -917,43 +584,43 @@ const Settings: React.FC = () => {
                         }}
                       />
                     </label>
-                    {customization.avatarUrl !== '/default-profile-avatar.png' && (
-                      <>
-                        <button 
-                          onClick={() => {
-                            // Save current avatar as a preset
-                            const link = document.createElement('a');
-                            link.href = customization.avatarUrl;
-                            link.download = 'chatbot-avatar.png';
-                            link.click();
-                          }}
-                          className="px-4 py-2 rounded-md transition-all hover:opacity-90"
-                          style={{ 
-                            backgroundColor: '#10b981',
-                            color: '#ffffff',
-                            border: '1px solid rgba(16, 185, 129, 0.5)'
-                          }}
-                        >
-                          {language === 'ko' ? '다운로드' : 'Download'}
-                        </button>
-                        <button 
-                          onClick={() => updateCustomization({ avatarUrl: '/default-profile-avatar.png' })}
-                          className="px-4 py-2 rounded-md transition-all hover:opacity-90"
-                          style={{ 
-                            backgroundColor: '#ef4444',
-                            color: '#ffffff',
-                            border: '1px solid rgba(239, 68, 68, 0.5)'
-                          }}
-                        >
-                          {language === 'ko' ? '리셋' : 'Reset'}
-                        </button>
-                      </>
+                    {customization.avatarUrl && customization.avatarUrl !== '/default-profile-avatar.png' && !customization.avatarUrl.startsWith('data:') && (
+                      <button 
+                        onClick={() => {
+                          // Save current avatar as a preset
+                          const link = document.createElement('a');
+                          link.href = customization.avatarUrl;
+                          link.download = 'chatbot-avatar.png';
+                          link.click();
+                        }}
+                        className="px-4 py-2 rounded-md transition-all hover:opacity-90"
+                        style={{ 
+                          backgroundColor: '#10b981',
+                          color: '#ffffff',
+                          border: '1px solid rgba(16, 185, 129, 0.5)'
+                        }}
+                      >
+                        {language === 'ko' ? '다운로드' : 'Download'}
+                      </button>
+                    )}
+                    {customization.avatarUrl && (
+                      <button 
+                        onClick={() => updateCustomization({ avatarUrl: '' })}
+                        className="px-4 py-2 rounded-md transition-all hover:opacity-90"
+                        style={{ 
+                          backgroundColor: '#ef4444',
+                          color: '#ffffff',
+                          border: '1px solid rgba(239, 68, 68, 0.5)'
+                        }}
+                      >
+                        {language === 'ko' ? '아바타 제거' : 'Remove Avatar'}
+                      </button>
                     )}
                   </div>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     {language === 'ko' 
-                      ? '기본 아바타를 선택하거나 새 이미지를 업로드하세요. 다운로드한 이미지를 apps/professor/public/ 폴더에 저장하면 드롭다운에 추가할 수 있습니다.' 
-                      : 'Select a default avatar or upload a new image. Save downloaded images to apps/professor/public/ to add them to the dropdown.'}
+                      ? '새 이미지를 업로드하여 챗봇 아바타를 설정하세요. 이미지를 업로드하면 자동으로 저장됩니다.' 
+                      : 'Upload a new image to set your chatbot avatar. The image will be saved automatically when uploaded.'}
                   </p>
                 </div>
 
@@ -973,8 +640,9 @@ const Settings: React.FC = () => {
                       </label>
                       <input
                         type="text"
-                        value={customization.suggestedQuestions.question1}
-                        onChange={(e) => updateQuestion('question1', e.target.value)}
+                        value={localQuestions.question1}
+                        onChange={(e) => setLocalQuestions({ ...localQuestions, question1: e.target.value })}
+                        onBlur={() => updateQuestion('question1', localQuestions.question1)}
                         className="input w-full px-3 py-2 rounded-md"
                         placeholder={language === 'ko' ? '인공지능이란 무엇인가요?' : 'What is artificial intelligence?'}
                       />
@@ -986,8 +654,9 @@ const Settings: React.FC = () => {
                       </label>
                       <input
                         type="text"
-                        value={customization.suggestedQuestions.question2}
-                        onChange={(e) => updateQuestion('question2', e.target.value)}
+                        value={localQuestions.question2}
+                        onChange={(e) => setLocalQuestions({ ...localQuestions, question2: e.target.value })}
+                        onBlur={() => updateQuestion('question2', localQuestions.question2)}
                         className="input w-full px-3 py-2 rounded-md"
                         placeholder={language === 'ko' ? '머신러닝은 어떻게 작동하나요?' : 'How does machine learning work?'}
                       />
@@ -999,8 +668,9 @@ const Settings: React.FC = () => {
                       </label>
                       <input
                         type="text"
-                        value={customization.suggestedQuestions.question3}
-                        onChange={(e) => updateQuestion('question3', e.target.value)}
+                        value={localQuestions.question3}
+                        onChange={(e) => setLocalQuestions({ ...localQuestions, question3: e.target.value })}
+                        onBlur={() => updateQuestion('question3', localQuestions.question3)}
                         className="input w-full px-3 py-2 rounded-md"
                         placeholder={language === 'ko' ? '양자 컴퓨팅을 설명해주세요' : 'Explain quantum computing'}
                       />
@@ -1012,8 +682,9 @@ const Settings: React.FC = () => {
                       </label>
                       <input
                         type="text"
-                        value={customization.suggestedQuestions.question4}
-                        onChange={(e) => updateQuestion('question4', e.target.value)}
+                        value={localQuestions.question4}
+                        onChange={(e) => setLocalQuestions({ ...localQuestions, question4: e.target.value })}
+                        onBlur={() => updateQuestion('question4', localQuestions.question4)}
                         className="input w-full px-3 py-2 rounded-md"
                         placeholder={language === 'ko' ? '클라우드 컴퓨팅의 장점은 무엇인가요?' : 'What are the benefits of cloud computing?'}
                       />
@@ -1044,6 +715,78 @@ const Settings: React.FC = () => {
               </div>
             </div>
 
+            {/* Simulation Mode Setting */}
+            <div className="card p-6 rounded-lg mt-6">
+              <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
+                Chat Behavior
+              </h3>
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                    Enable Simulation Mode
+                  </label>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    When enabled, chat will fall back to simulated responses if the chatbot server is unavailable.
+                    When disabled, chat will show an error instead of simulation.
+                  </p>
+                </div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={simulationModeEnabled}
+                    onChange={(e) => {
+                      setSimulationModeEnabledState(e.target.checked);
+                      setSimulationModeEnabled(e.target.checked);
+                    }}
+                    className="w-4 h-4 rounded"
+                    style={{ accentColor: 'var(--primary)' }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Reset All Data Section */}
+            <div className="card p-6 rounded-lg mt-6">
+              <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
+                Advanced
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                    Reset All Data
+                  </label>
+                  <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+                    Clear all stored settings, configurations, and cached data. This will reset the app to its default state.
+                    You will need to log in again after reset.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to reset all data? This action cannot be undone. You will be logged out.')) {
+                        // Clear all storage
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        
+                        // Show confirmation
+                        alert('All data has been cleared. The page will now reload.');
+                        
+                        // Reload to login page
+                        window.location.href = '/';
+                      }
+                    }}
+                    className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    style={{ 
+                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                      color: '#ef4444',
+                      border: '1px solid rgba(239, 68, 68, 0.3)'
+                    }}
+                  >
+                    Reset All Data
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Preview */}
             <div className="card p-6 rounded-lg">
               <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
@@ -1055,10 +798,10 @@ const Settings: React.FC = () => {
               }}>
                 <div className="text-center">
                   <h1 className="text-4xl font-light mb-4" style={{ color: 'var(--text)' }}>
-                    {customization.chatTitle}
+                    {localChatTitle}
                   </h1>
                   <p className="text-lg mb-8" style={{ color: 'var(--text-secondary)' }}>
-                    {customization.chatSubtitle}
+                    {localChatSubtitle}
                   </p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl mx-auto">
@@ -1075,7 +818,7 @@ const Settings: React.FC = () => {
                             <path d="M12 7v4"/>
                           </svg>
                         </div>
-                        <span className="text-sm">{customization.suggestedQuestions.question1}</span>
+                        <span className="text-sm">{localQuestions.question1}</span>
                       </div>
                     </div>
                     
@@ -1091,7 +834,7 @@ const Settings: React.FC = () => {
                             <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0-.34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>
                           </svg>
                         </div>
-                        <span className="text-sm">{customization.suggestedQuestions.question2}</span>
+                        <span className="text-sm">{localQuestions.question2}</span>
                       </div>
                     </div>
                     
@@ -1108,7 +851,7 @@ const Settings: React.FC = () => {
                             <path d="M12 8v8"/>
                           </svg>
                         </div>
-                        <span className="text-sm">{customization.suggestedQuestions.question3}</span>
+                        <span className="text-sm">{localQuestions.question3}</span>
                       </div>
                     </div>
                     
@@ -1123,7 +866,7 @@ const Settings: React.FC = () => {
                             <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
                           </svg>
                         </div>
-                        <span className="text-sm">{customization.suggestedQuestions.question4}</span>
+                        <span className="text-sm">{localQuestions.question4}</span>
                       </div>
                     </div>
                   </div>
@@ -1133,209 +876,6 @@ const Settings: React.FC = () => {
           </div>
         )}
 
-        {/* Database Configuration Tab */}
-        {activeTab === 'database' && (
-          <div className="card p-6 rounded-lg">
-            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
-              Database Configuration
-            </h2>
-            <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-              Configure your database connection for prompt management and data storage.
-            </p>
-
-            <div className="space-y-4">
-              {/* Database Type Selector */}
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                  Database Type
-                </label>
-                <select
-                  value={databaseType}
-                  onChange={(e) => setDatabaseType(e.target.value as 'supabase' | 'other')}
-                  className="input w-full px-3 py-2 rounded-md"
-                  style={{ 
-                    backgroundColor: 'var(--card)',
-                    color: 'var(--text)',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <option value="supabase">Supabase</option>
-                  <option value="other">Other (Coming Soon)</option>
-                </select>
-              </div>
-
-              {/* Supabase Configuration */}
-              {databaseType === 'supabase' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                      Supabase URL
-                    </label>
-                    <input
-                      type="text"
-                      value={supabaseConfig.url}
-                      onChange={(e) => setSupabaseConfig({ ...supabaseConfig, url: e.target.value })}
-                      className="input w-full px-3 py-2 rounded-md"
-                      placeholder="https://your-project.supabase.co"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                      Supabase Anon Key
-                    </label>
-                    <input
-                      type="password"
-                      value={supabaseConfig.anonKey}
-                      onChange={(e) => setSupabaseConfig({ ...supabaseConfig, anonKey: e.target.value })}
-                      className="input w-full px-3 py-2 rounded-md"
-                      placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    />
-                  </div>
-                </>
-              )}
-
-              {databaseType === 'supabase' && supabaseTestResult && (
-                <div 
-                  className="p-3 rounded-md"
-                  style={{
-                    backgroundColor: supabaseTestResult.success ? 'var(--success-light)' : 'var(--danger-light)',
-                    color: supabaseTestResult.success ? 'var(--success)' : 'var(--danger)'
-                  }}
-                >
-                  {supabaseTestResult.message}
-                </div>
-              )}
-
-              {databaseType === 'supabase' && (
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setTestingSupabase(true);
-                      setSupabaseTestResult(null);
-                      try {
-                        const success = await testSupabaseConnection(supabaseConfig);
-                        setSupabaseTestResult({
-                          success,
-                          message: success 
-                            ? 'Connection successful!' 
-                            : 'Connection failed. Please check your credentials.'
-                        });
-                      } catch (error) {
-                        setSupabaseTestResult({
-                          success: false,
-                          message: 'Connection test failed: ' + (error instanceof Error ? error.message : 'Unknown error')
-                        });
-                      } finally {
-                        setTestingSupabase(false);
-                      }
-                    }}
-                    disabled={testingSupabase || !supabaseConfig.url || !supabaseConfig.anonKey}
-                    className="btn-ghost px-4 py-2 rounded-md"
-                  >
-                    {testingSupabase ? 'Testing...' : 'Test Connection'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      saveSupabaseConfig(supabaseConfig);
-                      setSupabaseTestResult({
-                        success: true,
-                        message: 'Configuration saved successfully!'
-                      });
-                    }}
-                    disabled={!supabaseConfig.url || !supabaseConfig.anonKey}
-                    className="btn-primary px-4 py-2 rounded-md"
-                  >
-                    Save Configuration
-                  </button>
-                </div>
-              )}
-
-              {/* Simulation Mode Setting */}
-              <div className="border-t pt-4 mt-6" style={{ borderColor: 'var(--border)' }}>
-                <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
-                  Chat Behavior
-                </h3>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                      Enable Simulation Mode
-                    </label>
-                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      When enabled, chat will fall back to simulated responses if the chatbot server is unavailable.
-                      When disabled, chat will show an error instead of simulation.
-                    </p>
-                  </div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={simulationModeEnabled}
-                      onChange={(e) => {
-                        setSimulationModeEnabledState(e.target.checked);
-                        setSimulationModeEnabled(e.target.checked);
-                      }}
-                      className="w-4 h-4 rounded"
-                      style={{ accentColor: 'var(--primary)' }}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* Reset All Data Section */}
-              <div className="border-t pt-4 mt-6" style={{ borderColor: 'var(--border)' }}>
-                <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
-                  Advanced
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                      Reset All Data
-                    </label>
-                    <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
-                      Clear all stored settings, configurations, and cached data. This will reset the app to its default state.
-                      You will need to log in again after reset.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to reset all data? This action cannot be undone. You will be logged out.')) {
-                          // Clear all storage
-                          localStorage.clear();
-                          sessionStorage.clear();
-                          
-                          // Show confirmation
-                          alert('All data has been cleared. The page will now reload.');
-                          
-                          // Reload to login page
-                          window.location.href = '/';
-                        }
-                      }}
-                      className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                      style={{ 
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        color: '#ef4444',
-                        border: '1px solid rgba(239, 68, 68, 0.3)'
-                      }}
-                    >
-                      Reset All Data
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {databaseType === 'other' && (
-                <div className="p-4 rounded-md" style={{ backgroundColor: 'var(--warning-light)' }}>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Additional database types will be available in future updates.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Image Editor Modal */}
