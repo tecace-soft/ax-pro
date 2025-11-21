@@ -246,28 +246,23 @@ export function validateFile(file: File): { valid: boolean; error?: string; warn
     ? 'Filename contains special characters that may cause issues. Will be sanitized during upload.'
     : undefined;
 
-  // Check file type
-  const allowedTypes = [
-    'application/pdf',
-    'text/plain',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'text/csv',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/markdown',
-    'application/json',
-    'text/html',
+  // Check file extension (more reliable than MIME type)
+  const allowedExtensions = [
+    '.txt', '.md', '.json', '.csv', '.xml', '.html', '.css', '.js', '.ts',
+    '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx'
   ];
 
-  if (!allowedTypes.includes(file.type)) {
+  const fileName = file.name.toLowerCase();
+  const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+  if (!hasValidExtension) {
     return {
       valid: false,
-      error: 'Unsupported file type. Please upload PDF, Word, Excel, CSV, TXT, MD, JSON, or HTML files.'
+      error: `Unsupported file type. Allowed extensions: ${allowedExtensions.join(', ')}`
     };
   }
 
-  return { valid: true };
+  return { valid: true, warning };
 }
 
 /**
