@@ -81,7 +81,7 @@ const GroupManagement: React.FC = () => {
         role: 'admin' as const // Creator is always admin
       };
       try {
-        sessionStorage.setItem('axpro_session', JSON.stringify(updatedSession));
+        localStorage.setItem('axpro_session', JSON.stringify(updatedSession));
         console.log('✅ Session updated with selectedGroupId:', groupId);
         // Re-apply universal settings for the new session
         checkAndMigrateSettings();
@@ -98,29 +98,46 @@ const GroupManagement: React.FC = () => {
   };
 
   // Impersonate admin or regular user based on group role, then navigate
-  const handleOpenGroup = (group: Group) => {
+  const handleOpenGroup = async (group: Group) => {
     const session = getSession();
     if (!session) return;
 
-    // Clone session and adjust role to match selected group's context
+    // Update session with selected group
     const nextSession = { 
       ...session, 
-      role: isUserAdministrator(group) ? ('admin' as const) : ('user' as const),
       selectedGroupId: group.group_id,
     };
     try {
-      sessionStorage.setItem('axpro_session', JSON.stringify(nextSession));
+      localStorage.setItem('axpro_session', JSON.stringify(nextSession));
       // Re-apply universal settings for the new session so admin/dashboard and chat use correct config
       checkAndMigrateSettings();
     } catch (e) {
-      console.error('Failed to persist impersonated session', e);
+      console.error('Failed to persist session', e);
     }
 
-    // Route: admins -> dashboard, members -> chat
-    if (nextSession.role === 'admin') {
-      navigate(`/admin/dashboard?group=${group.group_id}`);
-    } else {
-      navigate(`/chat?group=${group.group_id}`);
+    // Check group-based role from Supabase
+    try {
+      const { getUserRoleForGroup } = await import('../services/auth');
+      const groupRole = await getUserRoleForGroup(group.group_id);
+      
+      // Route: admins -> dashboard, members -> chat
+      if (groupRole === 'admin') {
+        navigate(`/admin/dashboard?group=${group.group_id}`);
+      } else if (groupRole === 'user') {
+        navigate(`/chat?group=${group.group_id}`);
+      } else {
+        // User is not a member of this group
+        console.warn('User is not a member of this group');
+        navigate(`/group-management`);
+      }
+    } catch (error) {
+      console.error('Failed to check group role:', error);
+      // Fallback to checking if user is administrator
+      if (isUserAdministrator(group)) {
+        navigate(`/admin/dashboard?group=${group.group_id}`);
+      } else {
+        navigate(`/chat?group=${group.group_id}`);
+      }
     }
   };
 

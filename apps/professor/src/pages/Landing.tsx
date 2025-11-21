@@ -27,21 +27,11 @@ const Landing: React.FC = () => {
   const [isQuickLoginExpanded, setIsQuickLoginExpanded] = useState(false);
 
   // Check if user is already logged in
+  // Always redirect to group-management as the initial landing page
   React.useEffect(() => {
     const session = getSession();
     if (session) {
-      const groupId = (session as any)?.selectedGroupId;
-      // If no group selected, redirect to group management
-      if (!groupId) {
-        navigate('/group-management');
-        return;
-      }
-      // Admin goes to dashboard, user goes to chat (with group param)
-      if (session.role === 'admin') {
-        navigate(`/admin/dashboard?group=${groupId}`);
-      } else {
-        navigate(`/chat?group=${groupId}`);
-      }
+      navigate('/group-management');
     }
   }, [navigate]);
 

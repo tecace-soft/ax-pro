@@ -28,7 +28,7 @@ export const useGroupAuth = () => {
     if (urlGroupId && urlGroupId !== sessionGroupId) {
       const updatedSession = { ...session, selectedGroupId: urlGroupId };
       try {
-        sessionStorage.setItem('axpro_session', JSON.stringify(updatedSession));
+        localStorage.setItem('axpro_session', JSON.stringify(updatedSession));
       } catch (e) {
         console.error('Failed to update session with group_id:', e);
       }
