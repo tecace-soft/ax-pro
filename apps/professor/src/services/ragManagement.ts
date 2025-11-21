@@ -3,7 +3,7 @@ import { getSupabaseClient } from './supabaseUserSpecific';
 
 // RAG Management API configuration
 const N8N_BASE_URL = (import.meta as any).env?.VITE_N8N_BASE_URL || 'https://n8n.srv978041.hstgr.cloud';
-const UPLOAD_WEBHOOK_ID = (import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID || '1f18f1aa-44c4-467f-b299-c87c9b6f9459';
+const UPLOAD_WEBHOOK_ID = (import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID || '30de76ac-a5bf-41a4-a151-ee9f8ec5c19a';
 
 // n8n webhook endpoints for different operations
 const ENDPOINTS = {
