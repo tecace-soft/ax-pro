@@ -1089,25 +1089,18 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     console.log(`🔗 FINAL URL SENT TO N8N: ${fullFileUrl}`);
     console.log(`⏰ Request time: ${new Date().toISOString()}`);
 
-    // Send to n8n webhook - USER-SPECIFIC SELECTOR
-    // Get current user to determine which webhook to use
+    // Send to n8n webhook - UNIVERSAL ENDPOINT (hardcoded)
+    // Get current user for group context
     const { getSession } = await import('./auth');
     const session = getSession();
     
-    // Use the default file indexing webhook for all users
-    const userSpecificWebhookId = UPLOAD_WEBHOOK_ID;
-    console.log(`👤 Using default FILE INDEXING webhook`);
+    // Hardcoded universal endpoint for document indexing (same for all users)
+    const INDEXING_WEBHOOK_URL = 'https://n8n.srv978041.hstgr.cloud/webhook/30de76ac-a5bf-41a4-a151-ee9f8ec5c19a';
+    const n8nWebhookUrl = INDEXING_WEBHOOK_URL;
     
-    // Always use production webhook for file indexing
-    const n8nWebhookUrl = (import.meta as any).env?.VITE_N8N_BASE_URL 
-      ? `${(import.meta as any).env?.VITE_N8N_BASE_URL}/webhook/${userSpecificWebhookId}`
-      : `${N8N_BASE_URL}/webhook/${userSpecificWebhookId}`;
-    
-    console.log(`🔧 Webhook mode: PRODUCTION`);
+    console.log(`🔧 Webhook mode: UNIVERSAL (hardcoded)`);
     console.log(`🌐 Using webhook: ${n8nWebhookUrl}`);
     console.log(`👤 User: ${session?.email || 'Unknown'} (${session?.userId || 'Unknown'})`);
-
-    console.log(`🌐 n8n Webhook URL: ${n8nWebhookUrl}`);
 
     const groupIdFromSession = (session as any)?.selectedGroupId || null;
     const payload = [{

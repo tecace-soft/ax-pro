@@ -126,7 +126,7 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {/* Header */}
       <div className="flex justify-between items-center p-4 border-b" style={{ borderColor: 'var(--border)', flexShrink: 0 }}>
         <div className="flex items-center space-x-4">
@@ -213,9 +213,9 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-6" style={{ flex: 1, overflowY: 'auto' }}>
-        {/* Tab Navigation */}
-        <div className="border-b mb-6" style={{ borderColor: 'var(--border)' }}>
+      <div className="max-w-4xl mx-auto" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Tab Navigation - Fixed at top */}
+        <div className="border-b px-6 pt-6" style={{ borderColor: 'var(--border)', flexShrink: 0 }}>
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('ui')}
@@ -247,7 +247,18 @@ const Settings: React.FC = () => {
             </button>
           </nav>
         </div>
-        {/* API Configurations Tab */}
+        
+        {/* Scrollable Content Area */}
+        <div 
+          className="settings-content-scrollable" 
+          style={{ 
+            flex: 1, 
+            overflowY: 'auto', 
+            overflowX: 'hidden',
+            padding: '1.5rem'
+          }}
+        >
+          {/* API Configurations Tab */}
         {activeTab === 'api' && (
           <>
             {/* Add/Edit Form */}
@@ -873,9 +884,9 @@ const Settings: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
-        )}
-
+           </div>
+         )}
+        </div>
       </div>
 
       {/* Image Editor Modal */}
