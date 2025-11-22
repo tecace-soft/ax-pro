@@ -1103,12 +1103,12 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     console.log(`👤 User: ${session?.email || 'Unknown'} (${session?.userId || 'Unknown'})`);
 
     const groupIdFromSession = (session as any)?.selectedGroupId || null;
-    const payload = [{
+    const payload = {
       fileUrl: fullFileUrl,
       fileName: fileName,
       source: 'supabase-storage',
       groupId: groupIdFromSession,
-    }];
+    };
 
     console.log(`📦 Payload being sent:`, payload);
 
