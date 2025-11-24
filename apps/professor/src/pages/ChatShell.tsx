@@ -14,6 +14,7 @@ import { withGroupParam } from '../utils/navigation';
 import { fetchSessionById } from '../services/chatData';
 import { useSearchParams } from 'react-router-dom';
 import { useSessions } from '../features/sessions/useSessions';
+import { IconSettings } from '../ui/icons';
 
 const ChatShell: React.FC = () => {
   const navigate = useNavigate();
@@ -325,10 +326,7 @@ const ChatShell: React.FC = () => {
                     }}
                     title={t('ui.settings')}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="3"></circle>
-                      <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"></path>
-                    </svg>
+                    <IconSettings size={16} />
                   </button>
                 </>
               )}

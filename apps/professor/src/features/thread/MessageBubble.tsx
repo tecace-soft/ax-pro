@@ -61,50 +61,267 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               <ReactMarkdown 
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  // Custom styling for markdown elements
-                  p: ({ children }) => <p style={{ margin: '0 0 8px 0' }}>{children}</p>,
-                  code: ({ children, className }) => {
+                  // Paragraph
+                  p: ({ children }) => <p style={{ margin: '0 0 8px 0', wordBreak: 'break-word' }}>{children}</p>,
+                  
+                  // Code blocks and inline code
+                  code: ({ children, className, ...props }) => {
                     const isInline = !className;
-                    return isInline ? (
-                      <code style={{ 
-                        backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', 
-                        color: isUser ? '#ffffff' : 'var(--text)',
-                        padding: '2px 4px', 
-                        borderRadius: '3px',
-                        fontSize: '0.9em'
-                      }}>
-                        {children}
-                      </code>
-                    ) : (
-                      <pre style={{ 
-                        backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', 
-                        color: isUser ? '#ffffff' : 'var(--text)',
-                        padding: '8px', 
-                        borderRadius: '4px',
-                        overflow: 'auto',
-                        margin: '8px 0'
-                      }}>
-                        <code>{children}</code>
-                      </pre>
+                    const language = className ? className.replace('language-', '') : '';
+                    
+                    if (isInline) {
+                      return (
+                        <code style={{ 
+                          backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', 
+                          color: isUser ? '#ffffff' : 'var(--text)',
+                          padding: '2px 6px', 
+                          borderRadius: '3px',
+                          fontSize: '0.9em',
+                          fontFamily: 'monospace'
+                        }}>
+                          {children}
+                        </code>
+                      );
+                    }
+                    
+                    return (
+                      <div style={{ margin: '12px 0' }}>
+                        {language && (
+                          <div style={{
+                            backgroundColor: isUser ? 'rgba(255,255,255,0.15)' : 'var(--bg-secondary)',
+                            color: isUser ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)',
+                            padding: '4px 8px',
+                            fontSize: '11px',
+                            fontFamily: 'monospace',
+                            borderTopLeftRadius: '4px',
+                            borderTopRightRadius: '4px',
+                            borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'var(--border)'}`
+                          }}>
+                            {language}
+                          </div>
+                        )}
+                        <pre style={{ 
+                          backgroundColor: isUser ? 'rgba(255,255,255,0.1)' : 'var(--bg-secondary)', 
+                          color: isUser ? '#ffffff' : 'var(--text)',
+                          padding: '12px', 
+                          borderRadius: language ? '0 0 4px 4px' : '4px',
+                          overflow: 'auto',
+                          margin: 0,
+                          fontSize: '13px',
+                          lineHeight: '1.5',
+                          fontFamily: 'monospace'
+                        }}>
+                          <code {...props}>{children}</code>
+                        </pre>
+                      </div>
                     );
                   },
-                  ul: ({ children }) => <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>,
-                  ol: ({ children }) => <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>,
-                  li: ({ children }) => <li style={{ margin: '4px 0' }}>{children}</li>,
+                  
+                  // Lists
+                  ul: ({ children }) => (
+                    <ul style={{ margin: '8px 0', paddingLeft: '20px', listStyleType: 'disc' }}>
+                      {children}
+                    </ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol style={{ margin: '8px 0', paddingLeft: '20px', listStyleType: 'decimal' }}>
+                      {children}
+                    </ol>
+                  ),
+                  li: ({ children }) => (
+                    <li style={{ margin: '4px 0', lineHeight: '1.6' }}>
+                      {children}
+                    </li>
+                  ),
+                  
+                  // Blockquote
                   blockquote: ({ children }) => (
                     <blockquote style={{ 
                       borderLeft: `3px solid ${isUser ? 'rgba(255,255,255,0.3)' : 'var(--border)'}`, 
                       paddingLeft: '12px', 
-                      margin: '8px 0',
+                      margin: '12px 0',
                       fontStyle: 'italic',
-                      color: isUser ? '#ffffff' : 'var(--text)'
+                      color: isUser ? 'rgba(255,255,255,0.9)' : 'var(--text)',
+                      backgroundColor: isUser ? 'rgba(255,255,255,0.05)' : 'var(--bg-secondary)',
+                      padding: '8px 12px',
+                      borderRadius: '4px'
                     }}>
                       {children}
                     </blockquote>
                   ),
-                  h1: ({ children }) => <h1 style={{ fontSize: '1.2em', fontWeight: 'bold', margin: '8px 0', color: isUser ? '#ffffff' : 'var(--text)' }}>{children}</h1>,
-                  h2: ({ children }) => <h2 style={{ fontSize: '1.1em', fontWeight: 'bold', margin: '8px 0', color: isUser ? '#ffffff' : 'var(--text)' }}>{children}</h2>,
-                  h3: ({ children }) => <h3 style={{ fontSize: '1em', fontWeight: 'bold', margin: '8px 0', color: isUser ? '#ffffff' : 'var(--text)' }}>{children}</h3>,
+                  
+                  // Headings
+                  h1: ({ children }) => (
+                    <h1 style={{ 
+                      fontSize: '1.4em', 
+                      fontWeight: 'bold', 
+                      margin: '12px 0 8px 0', 
+                      color: isUser ? '#ffffff' : 'var(--text)',
+                      lineHeight: '1.3'
+                    }}>
+                      {children}
+                    </h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 style={{ 
+                      fontSize: '1.2em', 
+                      fontWeight: 'bold', 
+                      margin: '12px 0 8px 0', 
+                      color: isUser ? '#ffffff' : 'var(--text)',
+                      lineHeight: '1.3'
+                    }}>
+                      {children}
+                    </h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 style={{ 
+                      fontSize: '1.1em', 
+                      fontWeight: 'bold', 
+                      margin: '10px 0 6px 0', 
+                      color: isUser ? '#ffffff' : 'var(--text)',
+                      lineHeight: '1.3'
+                    }}>
+                      {children}
+                    </h3>
+                  ),
+                  h4: ({ children }) => (
+                    <h4 style={{ 
+                      fontSize: '1em', 
+                      fontWeight: '600', 
+                      margin: '8px 0 6px 0', 
+                      color: isUser ? '#ffffff' : 'var(--text)',
+                      lineHeight: '1.3'
+                    }}>
+                      {children}
+                    </h4>
+                  ),
+                  h5: ({ children }) => (
+                    <h5 style={{ 
+                      fontSize: '0.95em', 
+                      fontWeight: '600', 
+                      margin: '8px 0 6px 0', 
+                      color: isUser ? '#ffffff' : 'var(--text)',
+                      lineHeight: '1.3'
+                    }}>
+                      {children}
+                    </h5>
+                  ),
+                  h6: ({ children }) => (
+                    <h6 style={{ 
+                      fontSize: '0.9em', 
+                      fontWeight: '600', 
+                      margin: '8px 0 6px 0', 
+                      color: isUser ? '#ffffff' : 'var(--text)',
+                      lineHeight: '1.3'
+                    }}>
+                      {children}
+                    </h6>
+                  ),
+                  
+                  // Links
+                  a: ({ href, children }) => (
+                    <a 
+                      href={href} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                        color: isUser ? '#90caf9' : '#3b82f6',
+                        textDecoration: 'underline',
+                        textUnderlineOffset: '2px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = '0.8';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                      }}
+                    >
+                      {children}
+                    </a>
+                  ),
+                  
+                  // Images
+                  img: ({ src, alt }) => (
+                    <img 
+                      src={src} 
+                      alt={alt || ''}
+                      style={{
+                        maxWidth: '100%',
+                        height: 'auto',
+                        borderRadius: '4px',
+                        margin: '8px 0',
+                        display: 'block'
+                      }}
+                    />
+                  ),
+                  
+                  // Tables (GFM)
+                  table: ({ children }) => (
+                    <div style={{ overflowX: 'auto', margin: '12px 0' }}>
+                      <table style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
+                        fontSize: '14px',
+                        backgroundColor: isUser ? 'rgba(255,255,255,0.05)' : 'var(--bg-secondary)',
+                        borderRadius: '4px',
+                        overflow: 'hidden'
+                      }}>
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                  thead: ({ children }) => (
+                    <thead style={{
+                      backgroundColor: isUser ? 'rgba(255,255,255,0.1)' : 'var(--bg-tertiary)'
+                    }}>
+                      {children}
+                    </thead>
+                  ),
+                  tbody: ({ children }) => <tbody>{children}</tbody>,
+                  tr: ({ children }) => (
+                    <tr style={{
+                      borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'var(--border)'}`
+                    }}>
+                      {children}
+                    </tr>
+                  ),
+                  th: ({ children }) => (
+                    <th style={{
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      fontWeight: '600',
+                      color: isUser ? '#ffffff' : 'var(--text)',
+                      borderRight: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'var(--border)'}`
+                    }}>
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children }) => (
+                    <td style={{
+                      padding: '8px 12px',
+                      color: isUser ? 'rgba(255,255,255,0.9)' : 'var(--text)',
+                      borderRight: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'var(--border)'}`
+                    }}>
+                      {children}
+                    </td>
+                  ),
+                  
+                  // Horizontal rule
+                  hr: () => (
+                    <hr style={{
+                      border: 'none',
+                      borderTop: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'var(--border)'}`,
+                      margin: '16px 0'
+                    }} />
+                  ),
+                  
+                  // Strong and emphasis
+                  strong: ({ children }) => (
+                    <strong style={{ fontWeight: '600' }}>{children}</strong>
+                  ),
+                  em: ({ children }) => (
+                    <em style={{ fontStyle: 'italic' }}>{children}</em>
+                  ),
                 }}
               >
                 {message.content}
