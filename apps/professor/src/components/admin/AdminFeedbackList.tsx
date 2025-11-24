@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchAllAdminFeedback, deleteAdminFeedback } from '../../services/feedback'
+import { fetchAllAdminFeedback, deleteAdminFeedback, submitAdminFeedback } from '../../services/feedback'
 import { fetchChatById } from '../../services/chatData'
 import { AdminFeedbackData, ChatData } from '../../services/supabaseUserSpecific'
 import { useTranslation } from '../../i18n/I18nProvider'
@@ -33,9 +33,17 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [displayLanguage, setDisplayLanguage] = useState<'en' | 'ko'>('en')
   const [displayLimit, setDisplayLimit] = useState<number>(10)
-  const [editingFeedback, setEditingFeedback] = useState<{ id: number; field: 'feedback' | 'corrected'; originalValue: string } | null>(null)
+  const [editingFeedback, setEditingFeedback] = useState<{ id: number; field: 'feedback' | 'correctedMessage' | 'corrected'; originalValue: string } | null>(null)
   const [editValue, setEditValue] = useState<string>('')
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium')
+  
+  // Add feedback modal state
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addVerdict, setAddVerdict] = useState<'good' | 'bad'>('good')
+  const [addSupervisorFeedback, setAddSupervisorFeedback] = useState('')
+  const [addCorrectedMessage, setAddCorrectedMessage] = useState('')
+  const [addCorrectedResponse, setAddCorrectedResponse] = useState('')
+  const [isSubmittingAdd, setIsSubmittingAdd] = useState(false)
   
   // Font size mapping
   const fontSizeMap = {
@@ -274,13 +282,15 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
     setFilterApply('all')
   }
 
-  const handleStartEdit = (feedbackId: number, field: 'feedback' | 'corrected') => {
+  const handleStartEdit = (feedbackId: number, field: 'feedback' | 'correctedMessage' | 'corrected') => {
     const feedback = feedbacks.find(f => f.id === feedbackId)
     if (!feedback) return
     
     let value = ''
     if (field === 'feedback') {
       value = feedback.feedback_text || ''
+    } else if (field === 'correctedMessage') {
+      value = feedback.corrected_message || ''
     } else {
       value = displayLanguage === 'en' 
         ? ((feedback as any).chatData?.response_en || feedback.corrected_response || '')
@@ -315,6 +325,11 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
         setFeedbacks(prev => prev.map(f => 
           f.id === editingFeedback.id ? { ...f, feedback_text: editValue } : f
         ))
+      } else if (editingFeedback.field === 'correctedMessage') {
+        await updateAdminFeedbackField(editingFeedback.id, { corrected_message: editValue })
+        setFeedbacks(prev => prev.map(f => 
+          f.id === editingFeedback.id ? { ...f, corrected_message: editValue } : f
+        ))
       } else {
         await updateAdminFeedbackField(editingFeedback.id, { corrected_response: editValue })
         setFeedbacks(prev => prev.map(f => 
@@ -344,6 +359,53 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       console.error('Failed to delete admin feedback:', error)
       alert('Failed to delete feedback. Please try again.')
     }
+  }
+
+  const handleSubmitAdd = async () => {
+    // For thumbs up, text fields are optional
+    // For thumbs down, at least one field should be filled
+    if (addVerdict === 'bad' && !addSupervisorFeedback && !addCorrectedResponse) {
+      alert('For negative feedback, please provide either supervisor feedback or corrected response.')
+      return
+    }
+    
+    setIsSubmittingAdd(true)
+    try {
+      // Submit feedback without chat_id (pass null)
+      await submitAdminFeedback(
+        null,
+        addVerdict,
+        addSupervisorFeedback,
+        addCorrectedMessage,
+        addCorrectedResponse
+      )
+      
+      // Success - close modal and reset fields
+      setShowAddModal(false)
+      setAddSupervisorFeedback('')
+      setAddCorrectedMessage('')
+      setAddCorrectedResponse('')
+      setAddVerdict('good')
+      
+      // Show success message
+      alert('Admin feedback added successfully!')
+      
+      // Refresh feedback list
+      await loadFeedback()
+    } catch (error) {
+      console.error('Failed to submit admin feedback:', error)
+      alert('Failed to submit feedback. Please try again.')
+    } finally {
+      setIsSubmittingAdd(false)
+    }
+  }
+
+  const handleCancelAdd = () => {
+    setShowAddModal(false)
+    setAddSupervisorFeedback('')
+    setAddCorrectedMessage('')
+    setAddCorrectedResponse('')
+    setAddVerdict('good')
   }
 
   const formatDate = (dateString?: string) => {
@@ -598,6 +660,16 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
           >
             {t('adminFeedback.export')}
           </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 rounded-md text-sm font-medium"
+            style={{
+              background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
+              color: '#041220'
+            }}
+          >
+            Add
+          </button>
         </div>
       </div>
 
@@ -712,7 +784,8 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                 <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.role')}</th>
                 <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.verdict')}</th>
                 <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '150px', maxWidth: '250px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.feedback')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', maxWidth: '280px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.corrected')}</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', maxWidth: '280px', width: '280px', fontSize: fs.header }}>Corrected Message</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', maxWidth: '280px', width: '280px', fontSize: fs.header }}>Corrected Response</th>
                 <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.apply')}</th>
                 <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.delete')}</th>
               </tr>
@@ -732,8 +805,8 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                     {formatDate(feedback.updated_at || feedback.created_at)}
                   </td>
                   <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '60px', overflow: 'hidden' }}>
-                    <div className="truncate" title={feedback.chatData?.user_id || '교수'}>
-                      {feedback.chatData?.user_id || '교수'}
+                    <div className="truncate" title={feedback.chatData?.user_id || 'Manual'}>
+                      {feedback.chatData?.user_id || 'Manual'}
                     </div>
                   </td>
                   <td className="px-3 py-2 text-center" style={{ fontSize: fs.cell }}>
@@ -812,7 +885,76 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', position: 'relative', fontSize: fs.cell, maxWidth: '280px', overflow: 'hidden' }}>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', position: 'relative', fontSize: fs.cell, minWidth: '200px', maxWidth: '280px', width: '280px', overflow: 'hidden' }}>
+                    {editingFeedback && editingFeedback.id === feedback.id && editingFeedback.field === 'correctedMessage' ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <textarea
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          style={{
+                            padding: '6px',
+                            background: 'var(--admin-card-bg)',
+                            color: 'var(--admin-text)',
+                            border: '1px solid var(--admin-primary)',
+                            borderRadius: '4px',
+                            fontSize: fs.cell,
+                            minHeight: '60px',
+                            resize: 'vertical',
+                            width: '100%',
+                            fontFamily: 'inherit'
+                          }}
+                          autoFocus
+                        />
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={handleSaveEdit}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--admin-primary)',
+                              color: '#041220',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              fontWeight: 600
+                            }}
+                          >
+                            {t('adminFeedback.save')}
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'rgba(9, 14, 34, 0.4)',
+                              color: 'var(--admin-text)',
+                              border: '1px solid var(--admin-border)',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {t('adminFeedback.cancel')}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        className="truncate" 
+                        title={feedback.corrected_message || ''}
+                        onClick={() => handleStartEdit(feedback.id!, 'correctedMessage')}
+                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px', fontSize: fs.cell }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(59, 230, 255, 0.1)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent'
+                        }}
+                      >
+                        {feedback.corrected_message || '-'}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', position: 'relative', fontSize: fs.cell, minWidth: '200px', maxWidth: '280px', width: '280px', overflow: 'hidden' }}>
                     {editingFeedback && editingFeedback.id === feedback.id && editingFeedback.field === 'corrected' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <textarea
@@ -953,7 +1095,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                         <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)' }} />
                       )}
                       <span className="text-sm font-semibold" style={{ color: 'var(--admin-text)' }}>
-                        User: {feedback.chatData?.user_id || 'Unknown'}
+                        User: {feedback.chatData?.user_id || 'Manual Input'}
                       </span>
                     </div>
                   </div>
@@ -1083,6 +1225,156 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       )
       })()
       }
+
+      {/* Add Admin Feedback Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div 
+            className="rounded-lg max-w-2xl w-full mx-4"
+            style={{ 
+              backgroundColor: 'var(--admin-bg-card)',
+              border: '1px solid var(--admin-border)',
+              maxHeight: '90vh',
+              overflow: 'auto'
+            }}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
+                  Add Admin Feedback {addVerdict === 'good' ? '👍' : '👎'}
+                </h3>
+                <button
+                  onClick={handleCancelAdd}
+                  className="p-1 hover:bg-gray-100/10 rounded"
+                  style={{ color: 'var(--admin-text-secondary)' }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Verdict Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
+                  Verdict:
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setAddVerdict('good')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                      addVerdict === 'good' ? 'font-semibold' : ''
+                    }`}
+                    style={{
+                      backgroundColor: addVerdict === 'good' ? 'var(--admin-success)' : 'rgba(9, 14, 34, 0.4)',
+                      color: addVerdict === 'good' ? '#ffffff' : 'var(--admin-text)',
+                      border: '1px solid var(--admin-border)'
+                    }}
+                  >
+                    <IconThumbsUp size={14} /> Good
+                  </button>
+                  <button
+                    onClick={() => setAddVerdict('bad')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                      addVerdict === 'bad' ? 'font-semibold' : ''
+                    }`}
+                    style={{
+                      backgroundColor: addVerdict === 'bad' ? 'var(--admin-danger)' : 'rgba(9, 14, 34, 0.4)',
+                      color: addVerdict === 'bad' ? '#ffffff' : 'var(--admin-text)',
+                      border: '1px solid var(--admin-border)'
+                    }}
+                  >
+                    <IconThumbsDown size={14} /> Bad
+                  </button>
+                </div>
+              </div>
+              
+              {/* Supervisor Feedback */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
+                  Supervisor Feedback:
+                </label>
+                <textarea
+                  value={addSupervisorFeedback}
+                  onChange={(e) => setAddSupervisorFeedback(e.target.value)}
+                  placeholder="Explain what was wrong with this response..."
+                  className="w-full h-24 resize-none text-sm p-3 rounded"
+                  style={{
+                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                    color: 'var(--admin-text)',
+                    border: '1px solid var(--admin-border)'
+                  }}
+                />
+              </div>
+              
+              {/* Corrected Message */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
+                  Corrected Message:
+                </label>
+                <textarea
+                  value={addCorrectedMessage}
+                  onChange={(e) => setAddCorrectedMessage(e.target.value)}
+                  placeholder="Enter the corrected user message..."
+                  className="w-full h-24 resize-none text-sm p-3 rounded"
+                  style={{
+                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                    color: 'var(--admin-text)',
+                    border: '1px solid var(--admin-border)'
+                  }}
+                />
+              </div>
+              
+              {/* Corrected Response */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
+                  Corrected Response:
+                </label>
+                <textarea
+                  value={addCorrectedResponse}
+                  onChange={(e) => setAddCorrectedResponse(e.target.value)}
+                  placeholder="Enter the corrected response..."
+                  className="w-full h-32 resize-none text-sm p-3 rounded"
+                  style={{
+                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                    color: 'var(--admin-text)',
+                    border: '1px solid var(--admin-border)'
+                  }}
+                />
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleCancelAdd}
+                  disabled={isSubmittingAdd}
+                  className="px-4 py-2 text-sm font-medium rounded-md"
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--admin-border)',
+                    color: 'var(--admin-text)'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitAdd}
+                  disabled={isSubmittingAdd}
+                  className="px-6 py-2 text-sm font-medium rounded-md"
+                  style={{
+                    background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
+                    color: '#041220',
+                    opacity: isSubmittingAdd ? 0.6 : 1
+                  }}
+                >
+                  {isSubmittingAdd ? 'Submitting...' : 'Submit'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

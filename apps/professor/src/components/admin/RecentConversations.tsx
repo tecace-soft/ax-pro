@@ -35,6 +35,7 @@ export default function RecentConversations({
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [feedbackModal, setFeedbackModal] = useState<AdminFeedbackModal | null>(null)
   const [supervisorFeedback, setSupervisorFeedback] = useState('')
+  const [correctedMessage, setCorrectedMessage] = useState('')
   const [correctedResponse, setCorrectedResponse] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -299,9 +300,13 @@ export default function RecentConversations({
     if (existingFeedback) {
       setSupervisorFeedback(existingFeedback.feedback_text || '')
       setCorrectedResponse(existingFeedback.corrected_response || '')
+      // Use saved corrected_message if available, otherwise default to user message
+      setCorrectedMessage(existingFeedback.corrected_message || conversation.chat_message || '')
     } else {
       setSupervisorFeedback('')
       setCorrectedResponse('')
+      // Default corrected message to user message
+      setCorrectedMessage(conversation.chat_message || '')
     }
   }
 
@@ -322,12 +327,14 @@ export default function RecentConversations({
         feedbackModal.chatId,
         feedbackModal.verdict,
         supervisorFeedback,
+        correctedMessage,
         correctedResponse
       )
       
       // Success - close modal
       setFeedbackModal(null)
       setSupervisorFeedback('')
+      setCorrectedMessage('')
       setCorrectedResponse('')
       
       // Show success message
@@ -346,6 +353,7 @@ export default function RecentConversations({
   const handleCancelFeedback = () => {
     setFeedbackModal(null)
     setSupervisorFeedback('')
+    setCorrectedMessage('')
     setCorrectedResponse('')
   }
 
@@ -385,6 +393,8 @@ export default function RecentConversations({
       // Open modal in edit mode with existing feedback
       setSupervisorFeedback(adminFeedback.feedback_text || '')
       setCorrectedResponse(adminFeedback.corrected_response || '')
+      // Use saved corrected_message if available, otherwise default to user message
+      setCorrectedMessage(adminFeedback.corrected_message || conversation.chat_message || '')
       setFeedbackModal({
         chatId: conversation.chat_id,
         userMessage: conversation.chat_message || '',
@@ -1138,6 +1148,24 @@ export default function RecentConversations({
                   value={supervisorFeedback}
                   onChange={(e) => setSupervisorFeedback(e.target.value)}
                   placeholder="Explain what was wrong with this response..."
+                  className="w-full h-24 resize-none text-sm p-3 rounded"
+                  style={{
+                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                    color: 'var(--admin-text)',
+                    border: '1px solid var(--admin-border)'
+                  }}
+                />
+              </div>
+              
+              {/* Corrected Message */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
+                  Corrected Message:
+                </label>
+                <textarea
+                  value={correctedMessage}
+                  onChange={(e) => setCorrectedMessage(e.target.value)}
+                  placeholder="Enter the corrected user message..."
                   className="w-full h-24 resize-none text-sm p-3 rounded"
                   style={{
                     backgroundColor: 'rgba(9, 14, 34, 0.6)',

@@ -3,7 +3,7 @@ import { getSupabaseClient } from './supabaseUserSpecific';
 
 // RAG Management API configuration
 const N8N_BASE_URL = (import.meta as any).env?.VITE_N8N_BASE_URL || 'https://n8n.srv978041.hstgr.cloud';
-const UPLOAD_WEBHOOK_ID = (import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID || '1f18f1aa-44c4-467f-b299-c87c9b6f9459';
+const UPLOAD_WEBHOOK_ID = (import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID || '30de76ac-a5bf-41a4-a151-ee9f8ec5c19a';
 
 // n8n webhook endpoints for different operations
 const ENDPOINTS = {
@@ -246,28 +246,23 @@ export function validateFile(file: File): { valid: boolean; error?: string; warn
     ? 'Filename contains special characters that may cause issues. Will be sanitized during upload.'
     : undefined;
 
-  // Check file type
-  const allowedTypes = [
-    'application/pdf',
-    'text/plain',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'text/csv',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/markdown',
-    'application/json',
-    'text/html',
+  // Check file extension (more reliable than MIME type)
+  const allowedExtensions = [
+    '.txt', '.md', '.json', '.csv', '.xml', '.html', '.css', '.js', '.ts',
+    '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx'
   ];
 
-  if (!allowedTypes.includes(file.type)) {
+  const fileName = file.name.toLowerCase();
+  const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+  if (!hasValidExtension) {
     return {
       valid: false,
-      error: 'Unsupported file type. Please upload PDF, Word, Excel, CSV, TXT, MD, JSON, or HTML files.'
+      error: `Unsupported file type. Allowed extensions: ${allowedExtensions.join(', ')}`
     };
   }
 
-  return { valid: true };
+  return { valid: true, warning };
 }
 
 /**
@@ -479,6 +474,39 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
 
       console.log('File uploaded successfully:', data);
 
+      // Save file metadata to database table with group_id
+      const { getSession } = await import('./auth');
+      const session = getSession();
+      const groupId = (session as any)?.selectedGroupId;
+      
+      if (groupId && session?.userId) {
+        try {
+          const { error: dbError } = await supabase
+            .from('files')
+            .insert([{
+              file_name: uniqueFileName,
+              group_id: groupId,
+              user_id: session.userId,
+              file_path: filePath,
+              file_size: file.size,
+              file_type: file.type || 'application/octet-stream',
+              is_indexed: false
+            }]);
+          
+          if (dbError) {
+            console.warn('⚠️ Failed to save file metadata to database:', dbError);
+            // Don't fail the upload if DB insert fails
+          } else {
+            console.log('✅ File metadata saved to database with group_id:', groupId);
+          }
+        } catch (dbErr) {
+          console.warn('⚠️ Error saving file metadata:', dbErr);
+          // Don't fail the upload if DB insert fails
+        }
+      } else {
+        console.warn('⚠️ No group_id or userId in session, file metadata not saved to database');
+      }
+
       results.push({
         success: true,
         message: 'File uploaded successfully',
@@ -508,75 +536,137 @@ export async function uploadSingleFileToSupabase(file: File): Promise<FileUpload
 }
 
 /**
- * Fetch list of files from Supabase Storage
+ * Fetch list of files from Supabase Storage, filtered by group_id
  */
 export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
   try {
-    console.log('Fetching files from Supabase Storage...');
+    console.log('🔍 [fetchFilesFromSupabase] Starting file fetch...');
     const supabase = getSupabaseClient();
-
-    const { data, error } = await supabase.storage
-      .from(SUPABASE_BUCKET)
-      .list('files', {
-        limit: 100,
-        offset: 0,
-        sortBy: { column: 'created_at', order: 'desc' },
-      });
-
-    if (error) {
-      console.error('Supabase list error:', error);
+    
+    // Get group_id from session
+    const { getSession } = await import('./auth');
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
+    const userId = session?.userId;
+    
+    console.log('🔍 [fetchFilesFromSupabase] Session check:', {
+      hasSession: !!session,
+      groupId: groupId || 'MISSING',
+      userId: userId || 'MISSING',
+      sessionKeys: session ? Object.keys(session) : []
+    });
+    
+    if (!groupId) {
+      console.warn('⚠️ [fetchFilesFromSupabase] No group_id in session, cannot fetch group-specific files');
       return {
         success: false,
         files: [],
         total: 0,
-        message: error.message,
+        message: 'No group selected. Please select a group first.',
       };
     }
 
-    console.log('Files fetched from Supabase:', data);
+    console.log(`🔍 [fetchFilesFromSupabase] Querying files table for group_id: ${groupId}`);
+    
+    // Query files table filtered by group_id
+    const { data: fileRecords, error: dbError } = await supabase
+      .from('files')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('uploaded_at', { ascending: false });
 
-    // Transform Supabase file objects to RAGFile format
-    const files: RAGFile[] = data.map((file: any) => ({
-      id: file.id || file.name,
-      name: file.name,
-      size: file.metadata?.size || 0,
-      type: file.metadata?.mimetype || 'application/octet-stream',
-      uploadedAt: file.created_at || new Date().toISOString(),
+    if (dbError) {
+      console.error('❌ [fetchFilesFromSupabase] Database error:', {
+        code: dbError.code,
+        message: dbError.message,
+        details: dbError.details,
+        hint: dbError.hint
+      });
+      
+      // If files table doesn't exist, return empty list with helpful message
+      // We can't filter files by group from storage alone, so we need the table
+      // PGRST205 = PostgREST error: table not found in schema cache
+      // 42P01 = PostgreSQL error: relation does not exist
+      if (dbError.code === '42P01' || dbError.code === 'PGRST205' || dbError.message?.includes('does not exist') || dbError.message?.includes('schema cache')) {
+        console.warn('⚠️ [fetchFilesFromSupabase] Files table does not exist. Please run the migration to create it.');
+        return {
+          success: false,
+          files: [],
+          total: 0,
+          message: 'Files table not found. Please run the database migration (docs/database/files_table_setup.sql) in Supabase SQL Editor to create the table.',
+        };
+      }
+      
+      // Check for RLS policy errors
+      if (dbError.code === '42501' || dbError.message?.includes('permission denied') || dbError.message?.includes('policy')) {
+        console.warn('⚠️ [fetchFilesFromSupabase] RLS policy may be blocking access');
+        return {
+          success: false,
+          files: [],
+          total: 0,
+          message: `Permission denied. Check Row Level Security (RLS) policies on the 'files' table. Error: ${dbError.message}`,
+        };
+      }
+      
+      // For other errors, return empty list rather than showing all files
+      console.warn('⚠️ [fetchFilesFromSupabase] Error querying files table, returning empty list to prevent showing all files');
+      return {
+        success: false,
+        files: [],
+        total: 0,
+        message: `Error fetching files: ${dbError.message} (Code: ${dbError.code || 'unknown'}). Files must be tracked in the database table to filter by group.`,
+      };
+    }
+
+    console.log(`✅ [fetchFilesFromSupabase] Found ${fileRecords?.length || 0} files in database for group ${groupId}`);
+
+    // Transform database file records to RAGFile format
+    const files: RAGFile[] = (fileRecords || []).map((file: any) => ({
+      id: file.id?.toString() || file.file_name,
+      name: file.file_name,
+      size: file.file_size || 0,
+      type: file.file_type || 'application/octet-stream',
+      uploadedAt: file.uploaded_at || file.created_at || new Date().toISOString(),
       status: 'ready',
-      lastModified: file.updated_at || file.created_at,
-      syncStatus: 'pending', // Default to pending
+      lastModified: file.updated_at || file.uploaded_at || file.created_at,
+      syncStatus: file.is_indexed ? 'synced' : 'pending',
     }));
 
     // Check sync status for each file by comparing with indexed documents
-    console.log('🔍 Checking sync status for files...');
-    try {
-      // Fetch ALL indexed document filenames using pagination
-      let allDocMetas: any[] = [];
-      let hasMore = true;
-      let page = 0;
-      const pageSize = 1000;
+    // Only check files that aren't already marked as indexed
+    const filesToCheck = files.filter(f => f.syncStatus !== 'synced');
+    
+    if (filesToCheck.length > 0) {
+      console.log(`🔍 Checking sync status for ${filesToCheck.length} files...`);
+      try {
+        // Fetch indexed document filenames for this group using pagination
+        let allDocMetas: any[] = [];
+        let hasMore = true;
+        let page = 0;
+        const pageSize = 1000;
       
-      while (hasMore) {
-        const { data: pageData, error: pageError } = await supabase
-          .from('documents')
-          .select('metadata')
-          .range(page * pageSize, (page + 1) * pageSize - 1);
+        while (hasMore) {
+          const { data: pageData, error: pageError } = await supabase
+            .from('documents')
+            .select('metadata')
+            .eq('metadata->>groupId', groupId) // Filter by group_id in metadata
+            .range(page * pageSize, (page + 1) * pageSize - 1);
         
-        if (pageError) {
-          console.warn(`⚠️ Error fetching page ${page}:`, pageError);
-          break;
+          if (pageError) {
+            console.warn(`⚠️ Error fetching page ${page}:`, pageError);
+            break;
+          }
+          
+          if (pageData && pageData.length > 0) {
+            allDocMetas = [...allDocMetas, ...pageData];
+            hasMore = pageData.length === pageSize;
+            page++;
+          } else {
+            hasMore = false;
+          }
         }
         
-        if (pageData && pageData.length > 0) {
-          allDocMetas = [...allDocMetas, ...pageData];
-          hasMore = pageData.length === pageSize;
-          page++;
-        } else {
-          hasMore = false;
-        }
-      }
-      
-      console.log(`📊 Total documents fetched: ${allDocMetas.length} (${page} pages)`);
+        console.log(`📊 Total documents fetched for group ${groupId}: ${allDocMetas.length} (${page} pages)`);
 
       const indexedNameSet = new Set<string>();
       const indexedNameMap = new Map<string, string>(); // normalized -> original
@@ -675,6 +765,24 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
         if (isIndexed) {
           file.syncStatus = 'synced';
           console.log(`✅ File "${file.name}" is SYNCED (matched via: "${matchedVariant}")`);
+          
+          // Update database record to mark as indexed
+          const fileRecord = fileRecords?.find((fr: any) => fr.file_name === file.name);
+          if (fileRecord && !fileRecord.is_indexed) {
+            try {
+              await supabase
+                .from('files')
+                .update({ 
+                  is_indexed: true, 
+                  indexed_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', fileRecord.id);
+              console.log(`✅ Updated database record for "${file.name}"`);
+            } catch (updateError) {
+              console.warn('⚠️ Failed to update file record:', updateError);
+            }
+          }
         } else {
           file.syncStatus = 'pending';
           console.log(`⏳ File "${file.name}" is NOT INDEXED`);
@@ -693,27 +801,32 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
           }
         }
       }
-    } catch (error) {
-      console.warn('⚠️ Error during sync status calculation:', error);
-      for (let i = 0; i < files.length; i++) {
-        files[i].syncStatus = 'error';
+      } catch (syncError) {
+        console.warn('⚠️ Error during sync status calculation:', syncError);
+        for (let i = 0; i < files.length; i++) {
+          files[i].syncStatus = 'error';
+        }
       }
     }
 
+    console.log(`✅ [fetchFilesFromSupabase] Successfully returning ${files.length} files`);
     return {
       success: true,
       files,
       total: files.length,
-      message: 'Files fetched successfully',
+      message: files.length === 0 
+        ? 'No files found. Upload files to get started.' 
+        : `Found ${files.length} file(s)`,
     };
 
   } catch (error: any) {
-    console.error('Error fetching files from Supabase:', error);
+    console.error('❌ [fetchFilesFromSupabase] Unexpected error:', error);
+    console.error('Error stack:', error.stack);
     return {
       success: false,
       files: [],
       total: 0,
-      message: error.message || 'Failed to fetch files',
+      message: `Failed to fetch files: ${error.message || 'Unknown error'}. Check browser console for details.`,
     };
   }
 }
@@ -725,9 +838,15 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
   try {
     console.log(`Deleting file from Supabase Storage: ${fileName}`);
     const supabase = getSupabaseClient();
+    
+    // Get group_id from session to delete the correct database record
+    const { getSession } = await import('./auth');
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
 
     const filePath = `files/${fileName}`;
 
+    // Delete from storage
     const { error } = await supabase.storage
       .from(SUPABASE_BUCKET)
       .remove([filePath]);
@@ -738,6 +857,27 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
         success: false,
         message: error.message,
       };
+    }
+
+    // Delete from database table if group_id is available
+    if (groupId) {
+      try {
+        const { error: dbError } = await supabase
+          .from('files')
+          .delete()
+          .eq('file_name', fileName)
+          .eq('group_id', groupId);
+        
+        if (dbError) {
+          console.warn('⚠️ Failed to delete file record from database:', dbError);
+          // Don't fail if DB delete fails (file already deleted from storage)
+        } else {
+          console.log('✅ File record deleted from database');
+        }
+      } catch (dbErr) {
+        console.warn('⚠️ Error deleting file record:', dbErr);
+        // Don't fail if DB delete fails
+      }
     }
 
     console.log('File deleted successfully from Supabase');
@@ -829,17 +969,33 @@ export interface VectorDocument {
 }
 
 /**
- * Fetch all documents from Supabase documents table
+ * Fetch all documents from Supabase documents table, filtered by groupId
  */
 export async function fetchVectorDocuments(limit: number = 50, offset: number = 0): Promise<{ success: boolean; documents: VectorDocument[]; total: number; message?: string }> {
   try {
     console.log(`Fetching vector documents from Supabase (limit: ${limit}, offset: ${offset})...`);
     const supabase = getSupabaseClient();
+    
+    // Get group_id from session
+    const { getSession } = await import('./auth');
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
+    
+    if (!groupId) {
+      console.warn('⚠️ No group_id in session, cannot fetch group-specific documents');
+      return {
+        success: false,
+        documents: [],
+        total: 0,
+        message: 'No group selected. Please select a group first.',
+      };
+    }
 
-    // Fetch only specific fields, excluding large embedding data
+    // Fetch only specific fields, excluding large embedding data, filtered by groupId
     const { data, error, count } = await supabase
       .from('documents')
       .select('id, content, metadata, created_at', { count: 'exact' })
+      .eq('metadata->>groupId', groupId) // Filter by groupId in metadata
       .order('id', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -933,50 +1089,26 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     console.log(`🔗 FINAL URL SENT TO N8N: ${fullFileUrl}`);
     console.log(`⏰ Request time: ${new Date().toISOString()}`);
 
-    // Send to n8n webhook - USER-SPECIFIC SELECTOR
-    // Get current user to determine which webhook to use
+    // Send to n8n webhook - UNIVERSAL ENDPOINT (hardcoded)
+    // Get current user for group context
     const { getSession } = await import('./auth');
     const session = getSession();
     
-    // Determine webhook based on user
-    let userSpecificWebhookId: string;
-    if (session?.userId === 'seokhoon_kang_001' || session?.email === 'hana@tecace.com') {
-      // SeokHoon Kang uses his FILE INDEXING webhook (not chat webhook)
-      userSpecificWebhookId = 'bc7f7d96-1c7f-48c8-8def-6f4a367f7212';
-      console.log(`👤 Using SeokHoon Kang's FILE INDEXING webhook`);
-    } else {
-      // Admin and other users use the default file indexing webhook
-      userSpecificWebhookId = UPLOAD_WEBHOOK_ID;
-      console.log(`👤 Using default FILE INDEXING webhook`);
-    }
+    // Hardcoded universal endpoint for document indexing (same for all users)
+    const INDEXING_WEBHOOK_URL = 'https://n8n.srv978041.hstgr.cloud/webhook/30de76ac-a5bf-41a4-a151-ee9f8ec5c19a';
+    const n8nWebhookUrl = INDEXING_WEBHOOK_URL;
     
-    // DEV/PRODUCTION SELECTOR
-    // Default to PRODUCTION mode, only use DEV if explicitly enabled
-    const isDevMode = ((import.meta as any).env?.VITE_N8N_DEV_MODE === 'true') || 
-                     localStorage.getItem('n8n-dev-mode') === 'true';
-    
-    const n8nWebhookUrl = isDevMode 
-      ? `https://n8n.srv978041.hstgr.cloud/webhook-test/${userSpecificWebhookId}`
-      : ((import.meta as any).env?.VITE_N8N_BASE_URL 
-          ? `${(import.meta as any).env?.VITE_N8N_BASE_URL}/webhook/${userSpecificWebhookId}`
-          : `${N8N_BASE_URL}/webhook/${userSpecificWebhookId}`);
-    
-    console.log(`🔧 Webhook mode: ${isDevMode ? 'DEV (test)' : 'PRODUCTION'}`);
+    console.log(`🔧 Webhook mode: UNIVERSAL (hardcoded)`);
     console.log(`🌐 Using webhook: ${n8nWebhookUrl}`);
     console.log(`👤 User: ${session?.email || 'Unknown'} (${session?.userId || 'Unknown'})`);
-    
-    // Warn if using test webhook
-    if (isDevMode) {
-      console.warn(`⚠️ Using TEST webhook - this may not be active!`);
-    }
 
-    console.log(`🌐 n8n Webhook URL: ${n8nWebhookUrl}`);
-
-    const payload = [{
+    const groupIdFromSession = (session as any)?.selectedGroupId || null;
+    const payload = {
       fileUrl: fullFileUrl,
       fileName: fileName,
       source: 'supabase-storage',
-    }];
+      groupId: groupIdFromSession,
+    };
 
     console.log(`📦 Payload being sent:`, payload);
 
@@ -1076,11 +1208,25 @@ export async function checkIndexingStatus(fileName: string): Promise<{
   try {
     const supabase = getSupabaseClient();
     
-    // Check if chunks exist for this file
+    // Get group_id from session
+    const { getSession } = await import('./auth');
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
+    
+    if (!groupId) {
+      return {
+        success: false,
+        message: 'No group selected',
+        status: 'failed'
+      };
+    }
+    
+    // Check if chunks exist for this file, filtered by groupId
     const { data: chunks, error } = await supabase
       .from('documents')
       .select('id, created_at, metadata')
       .ilike('metadata->>fileName', fileName)
+      .eq('metadata->>groupId', groupId) // Filter by groupId
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -1125,11 +1271,24 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
   try {
     const supabase = getSupabaseClient();
     
-    console.log(`🗑️ Direct Supabase deletion for filename: "${fileName}"`);
+    // Get group_id from session
+    const { getSession } = await import('./auth');
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
+    
+    if (!groupId) {
+      return {
+        success: false,
+        message: 'No group selected. Please select a group first.',
+        deletedCount: 0
+      };
+    }
+    
+    console.log(`🗑️ Direct Supabase deletion for filename: "${fileName}" (group: ${groupId})`);
     console.log(`🔍 Filename length: ${fileName.length}`);
     console.log(`🔍 Filename characters: ${fileName.split('').map(c => c.charCodeAt(0)).join(',')}`);
     
-    // Try multiple query approaches to handle different filename formats
+    // Try multiple query approaches to handle different filename formats, all filtered by groupId
     let records: any[] = [];
     let recordCount = 0;
     
@@ -1138,7 +1297,8 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
     let { data: exactRecords, error: exactError } = await supabase
       .from('documents')
       .select('id, metadata')
-      .eq('metadata->>fileName', fileName);
+      .eq('metadata->>fileName', fileName)
+      .eq('metadata->>groupId', groupId); // Filter by groupId
     
     if (!exactError && exactRecords && exactRecords.length > 0) {
       records = exactRecords;
@@ -1151,7 +1311,8 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
       let { data: ilikeRecords, error: ilikeError } = await supabase
         .from('documents')
         .select('id, metadata')
-        .ilike('metadata->>fileName', fileName);
+        .ilike('metadata->>fileName', fileName)
+        .eq('metadata->>groupId', groupId); // Filter by groupId
       
       if (!ilikeError && ilikeRecords && ilikeRecords.length > 0) {
         records = ilikeRecords;
@@ -1164,7 +1325,8 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
         let { data: containsRecords, error: containsError } = await supabase
           .from('documents')
           .select('id, metadata')
-          .ilike('metadata->>fileName', `%${fileName}%`);
+          .ilike('metadata->>fileName', `%${fileName}%`)
+          .eq('metadata->>groupId', groupId); // Filter by groupId
         
         if (!containsError && containsRecords && containsRecords.length > 0) {
           records = containsRecords;
@@ -1206,7 +1368,7 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
       return { success: true, message: `No records found for filename: ${fileName}`, deletedCount: 0 };
     }
     
-    // Delete the records using the same query that found them
+    // Delete the records using the same query that found them, filtered by groupId
     let deleteQuery = supabase.from('documents').delete();
     
     // Use the same query approach that worked for finding records
@@ -1214,8 +1376,10 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
       const recordIds = records.map(r => r.id);
       deleteQuery = deleteQuery.in('id', recordIds);
     } else {
-      // Fallback to ilike
-      deleteQuery = deleteQuery.ilike('metadata->>fileName', fileName);
+      // Fallback to ilike with groupId filter
+      deleteQuery = deleteQuery
+        .ilike('metadata->>fileName', fileName)
+        .eq('metadata->>groupId', groupId);
     }
     
     const { error: deleteError } = await deleteQuery;
@@ -1275,13 +1439,27 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
   try {
     const supabase = getSupabaseClient();
     
-    console.log(`🔍 Checking sync status for: ${fileName}`);
+    // Get group_id from session
+    const { getSession } = await import('./auth');
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
     
-    // Check if file is indexed in documents table
+    if (!groupId) {
+      return {
+        success: false,
+        syncStatus: 'error',
+        message: 'No group selected. Please select a group first.'
+      };
+    }
+    
+    console.log(`🔍 Checking sync status for: ${fileName} (group: ${groupId})`);
+    
+    // Check if file is indexed in documents table, filtered by groupId
     const { data: indexedDocs, error: indexError } = await supabase
       .from('documents')
       .select('id, metadata')
-      .ilike('metadata->>fileName', fileName);
+      .ilike('metadata->>fileName', fileName)
+      .eq('metadata->>groupId', groupId); // Filter by groupId
     
     if (indexError) {
       console.error('Error checking sync status:', indexError);

@@ -1,18 +1,27 @@
 import { getSupabaseClient } from './supabaseUserSpecific';
 import type { AdminFeedbackData, UserFeedbackData } from './supabaseUserSpecific';
+import { getSession } from './auth';
 
 /**
- * Fetch all admin feedback ordered by most recent first
+ * Fetch all admin feedback ordered by most recent first, filtered by group_id
  */
 export async function fetchAllAdminFeedback(): Promise<AdminFeedbackData[]> {
   try {
     const supabase = getSupabaseClient();
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
     
-    console.log('Fetching admin feedback from Supabase...');
+    if (!groupId) {
+      console.warn('No group_id in session, cannot fetch group-specific admin feedback');
+      return [];
+    }
+    
+    console.log('Fetching admin feedback from Supabase for group_id:', groupId);
     
     const { data, error } = await supabase
       .from('admin_feedback')
       .select('*')
+      .eq('group_id', groupId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -20,7 +29,7 @@ export async function fetchAllAdminFeedback(): Promise<AdminFeedbackData[]> {
       throw new Error(`Failed to fetch admin feedback: ${error.message}`);
     }
 
-    console.log(`✅ Fetched ${data?.length || 0} admin feedback records`);
+    console.log(`✅ Fetched ${data?.length || 0} admin feedback records for group_id: ${groupId}`);
     return data || [];
   } catch (error) {
     console.error('Failed to fetch admin feedback:', error);
@@ -29,17 +38,25 @@ export async function fetchAllAdminFeedback(): Promise<AdminFeedbackData[]> {
 }
 
 /**
- * Fetch all user feedback ordered by most recent first
+ * Fetch all user feedback ordered by most recent first, filtered by group_id
  */
 export async function fetchAllUserFeedback(): Promise<UserFeedbackData[]> {
   try {
     const supabase = getSupabaseClient();
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
     
-    console.log('Fetching user feedback from Supabase...');
+    if (!groupId) {
+      console.warn('No group_id in session, cannot fetch group-specific user feedback');
+      return [];
+    }
+    
+    console.log('Fetching user feedback from Supabase for group_id:', groupId);
     
     const { data, error } = await supabase
       .from('user_feedback')
       .select('*')
+      .eq('group_id', groupId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -47,7 +64,7 @@ export async function fetchAllUserFeedback(): Promise<UserFeedbackData[]> {
       throw new Error(`Failed to fetch user feedback: ${error.message}`);
     }
 
-    console.log(`✅ Fetched ${data?.length || 0} user feedback records`);
+    console.log(`✅ Fetched ${data?.length || 0} user feedback records for group_id: ${groupId}`);
     return data || [];
   } catch (error) {
     console.error('Failed to fetch user feedback:', error);
@@ -56,15 +73,23 @@ export async function fetchAllUserFeedback(): Promise<UserFeedbackData[]> {
 }
 
 /**
- * Fetch user feedback by date range
+ * Fetch user feedback by date range, filtered by group_id
  */
 export async function fetchUserFeedbackByDateRange(startDate: string, endDate: string): Promise<UserFeedbackData[]> {
   try {
     const supabase = getSupabaseClient();
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
+    
+    if (!groupId) {
+      console.warn('No group_id in session, cannot fetch group-specific user feedback');
+      return [];
+    }
     
     const { data, error } = await supabase
       .from('user_feedback')
       .select('*')
+      .eq('group_id', groupId)
       .gte('created_at', startDate)
       .lte('created_at', endDate)
       .order('created_at', { ascending: false });
@@ -111,6 +136,7 @@ export async function getAdminFeedback(chatId: string): Promise<AdminFeedbackDat
 
 /**
  * Submit user feedback for a chat message
+ * Includes group_id from session
  */
 export async function submitUserFeedback(
   chatId: string,
@@ -120,12 +146,19 @@ export async function submitUserFeedback(
 ): Promise<UserFeedbackData> {
   try {
     const supabase = getSupabaseClient();
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
     
-    console.log('Submitting user feedback:', { chatId, userId, reaction, feedbackText });
+    if (!groupId) {
+      throw new Error('No group_id in session. Please select a group first.');
+    }
+    
+    console.log('Submitting user feedback:', { chatId, userId, reaction, feedbackText, groupId });
     
     const feedbackData = {
       chat_id: chatId,
       user_id: userId,
+      group_id: groupId,
       reaction,
       feedback_text: feedbackText || null
     };
@@ -141,7 +174,7 @@ export async function submitUserFeedback(
       throw new Error(`Failed to submit user feedback: ${error.message}`);
     }
 
-    console.log('✅ User feedback submitted:', data);
+    console.log('✅ User feedback submitted:', data, 'for group_id:', groupId);
     return data as UserFeedbackData;
   } catch (error) {
     console.error('Failed to submit user feedback:', error);
@@ -150,17 +183,25 @@ export async function submitUserFeedback(
 }
 
 /**
- * Check if admin feedback already exists for a chat
+ * Check if admin feedback already exists for a chat, filtered by group_id
  */
 export async function getAdminFeedbackByChat(chatId: string): Promise<AdminFeedbackData | null> {
   try {
     const supabase = getSupabaseClient();
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
+    
+    if (!groupId) {
+      console.warn('No group_id in session, cannot fetch group-specific admin feedback');
+      return null;
+    }
     
     // Use maybeSingle() instead of single() to avoid PGRST116 error when no rows found
     const { data, error } = await supabase
       .from('admin_feedback')
       .select('*')
       .eq('chat_id', chatId)
+      .eq('group_id', groupId)
       .maybeSingle();
 
     if (error) {
@@ -178,28 +219,40 @@ export async function getAdminFeedbackByChat(chatId: string): Promise<AdminFeedb
 /**
  * Submit admin feedback for a chat message
  * Checks if feedback exists and updates it, otherwise inserts new
+ * Includes group_id from session
  */
 export async function submitAdminFeedback(
-  chatId: string,
+  chatId: string | null,
   verdict: 'good' | 'bad',
   feedbackText: string,
+  correctedMessage: string,
   correctedResponse: string
 ): Promise<AdminFeedbackData> {
   try {
     const supabase = getSupabaseClient();
+    const session = getSession();
+    const groupId = (session as any)?.selectedGroupId;
     
-    console.log('Submitting admin feedback:', { chatId, verdict, feedbackText, correctedResponse });
+    if (!groupId) {
+      throw new Error('No group_id in session. Please select a group first.');
+    }
     
-    // Check if feedback already exists for this chat
-    const existingFeedback = await getAdminFeedbackByChat(chatId);
+    console.log('Submitting admin feedback:', { chatId, verdict, feedbackText, correctedMessage, correctedResponse, groupId });
+    
+    // If chatId is provided, check if feedback already exists
+    let existingFeedback = null;
+    if (chatId) {
+      existingFeedback = await getAdminFeedbackByChat(chatId);
+    }
     
     let data, error;
     
-    if (existingFeedback) {
+    if (existingFeedback && chatId) {
       // Update existing feedback (don't include created_at or id)
       const updateData = {
         feedback_verdict: verdict,
         feedback_text: feedbackText || null,
+        corrected_message: correctedMessage || null,
         corrected_response: correctedResponse || null,
         updated_at: new Date().toISOString()
       };
@@ -208,18 +261,25 @@ export async function submitAdminFeedback(
         .from('admin_feedback')
         .update(updateData)
         .eq('chat_id', chatId)
+        .eq('group_id', groupId)
         .select()
         .maybeSingle();
       data = result.data;
       error = result.error;
     } else {
-      // Insert new feedback (let database auto-generate id)
-      const insertData = {
-        chat_id: chatId,
+      // Insert new feedback with group_id (chat_id is optional)
+      const insertData: any = {
+        group_id: groupId,
         feedback_verdict: verdict,
         feedback_text: feedbackText || null,
+        corrected_message: correctedMessage || null,
         corrected_response: correctedResponse || null
       };
+      
+      // Only include chat_id if provided
+      if (chatId) {
+        insertData.chat_id = chatId;
+      }
       
       const result = await supabase
         .from('admin_feedback')
@@ -235,7 +295,7 @@ export async function submitAdminFeedback(
       throw new Error(`Failed to submit admin feedback: ${error.message}`);
     }
 
-    console.log('✅ Admin feedback submitted:', data);
+    console.log('✅ Admin feedback submitted:', data, 'for group_id:', groupId);
     return data as AdminFeedbackData;
   } catch (error) {
     console.error('Failed to submit admin feedback:', error);

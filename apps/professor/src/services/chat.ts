@@ -1,6 +1,6 @@
 import { messagesApi } from './api';
-import { isBackendAvailable, isN8nWebhookAvailable, isSimulationModeEnabled } from './devMode';
-import { getActiveN8nConfig, sendToN8n, N8nRequest, N8nResponse } from './n8nUserSpecific';
+import { isBackendAvailable, isSimulationModeEnabled } from './devMode';
+import { N8nRequest, N8nResponse } from './n8nUserSpecific';
 import { getSession } from './auth';
 
 export interface ChatMessage {
@@ -70,6 +70,103 @@ export class ChatStreamReader {
   }
 }
 
+/**
+ * Send message to the universal chatbot webhook (bypasses user settings)
+ * This ensures all chatbot requests use the same endpoint regardless of user configuration
+ */
+const sendToChatbotWebhook = async (request: N8nRequest, webhookUrl: string): Promise<N8nResponse> => {
+  console.log('Sending to universal chatbot webhook:', webhookUrl);
+  console.log('Request payload:', request);
+  
+  try {
+    console.log('Making request to:', webhookUrl);
+    console.log('Request payload:', JSON.stringify(request));
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log('n8n webhook request timed out after 60 seconds');
+      controller.abort();
+    }, 60000);
+    
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      body: JSON.stringify(request),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+
+    const responseText = await response.text();
+    console.log('=== CHATBOT WEBHOOK DEBUG ===');
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
+    console.log('Raw response text length:', responseText.length);
+    console.log('Raw response text:', responseText);
+    console.log('=============================');
+    
+    if (!response.ok) {
+      console.error('Response error:', responseText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${responseText}`);
+    }
+    
+    if (!responseText || responseText.trim() === '') {
+      console.warn('Empty response from webhook');
+      throw new Error('Empty response from webhook. Please check your workflow configuration.');
+    }
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', parseError);
+      console.error('Response text was:', responseText);
+      throw new Error(`Invalid JSON response from n8n: ${responseText.substring(0, 100)}...`);
+    }
+    
+    console.log('n8n response:', data);
+    
+    let responseData;
+    if (Array.isArray(data)) {
+      responseData = data[0];
+    } else if (data && typeof data === 'object') {
+      responseData = data;
+    } else {
+      throw new Error('Unexpected response format from n8n webhook');
+    }
+    
+    if (responseData && responseData.answer) {
+      if (responseData.answer.includes('No response from webhook')) {
+        console.error('Webhook returned error message:', responseData.answer);
+        throw new Error('Webhook returned error: ' + responseData.answer);
+      }
+      
+      if (responseData.answer === null || responseData.answer === '') {
+        console.error('Webhook returned null or empty answer');
+        throw new Error('Empty response from webhook. Please check your workflow configuration.');
+      }
+    }
+    
+    return responseData;
+  } catch (error: any) {
+    console.error('Failed to send to chatbot webhook:', error);
+    
+    if (error.name === 'AbortError') {
+      throw new Error('Webhook request timed out after 60 seconds');
+    } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('Network error: Unable to reach webhook');
+    } else {
+      throw error;
+    }
+  }
+};
+
 // Chat service functions
 export const chatService = {
   async sendMessage(
@@ -111,29 +208,45 @@ export const chatService = {
       }
     } else {
       // Use n8n webhook for chat messages (sessions are handled locally)
-      console.log('Backend unavailable, trying n8n for chat...');
-      const n8nAvailable = isN8nWebhookAvailable();
-      const n8nConfig = getActiveN8nConfig();
-      console.log('n8n webhook available:', n8nAvailable);
-      console.log('Active n8n config:', n8nConfig);
+      // ALWAYS use the universal chatbot endpoint - user settings do not apply to chatbot
+      const CHATBOT_WEBHOOK_URL = 'https://n8n.srv978041.hstgr.cloud/webhook/db3d9fbd-73bd-444a-a689-842446fffdd9';
       
-      if (n8nAvailable && n8nConfig && n8nConfig.webhookUrl) {
-        console.log('Using n8n webhook:', n8nConfig.webhookUrl);
+      console.log('Backend unavailable, using universal chatbot webhook...');
+      console.log('Chatbot webhook URL:', CHATBOT_WEBHOOK_URL);
+      
+      // Always use the universal chatbot webhook (bypasses user settings)
+      try {
+        console.log('Using universal chatbot webhook:', CHATBOT_WEBHOOK_URL);
         try {
           const session = getSession();
+          // Get groupId from session or URL (for non-logged-in users, get from URL)
+          const urlParams = new URLSearchParams(window.location.search);
+          const groupId = (session as any)?.selectedGroupId || urlParams.get('group');
+          
+          // Validate that groupId exists
+          if (!groupId) {
+            console.error('❌ No group_id in session or URL. Session:', session);
+            throw new Error('No group selected. Please select a group first.');
+          }
+          
           // Generate unique chatId for this message (for future feedback API)
           // Use sessionId + timestamp + random to ensure uniqueness across sessions
           const chatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const request: N8nRequest = {
             sessionId,
             chatId,
-            userId: session?.userId || 'unknown',
+            // Only include userId if user is logged in
+            ...(session?.userId ? { userId: session.userId } : {}),
             action: 'sendMessage',
-            chatInput: content
+            chatInput: content,
+            groupId: groupId, // Always include groupId (validated above)
           };
 
           console.log('=== CHAT SERVICE DEBUG ===');
+          console.log('Session:', session);
+          console.log('GroupId from session:', groupId);
           console.log('Sending request to n8n:', request);
+          console.log('Request includes groupId:', !!request.groupId);
           
           // Retry mechanism for n8n requests with chat ID regeneration
           let response: N8nResponse;
@@ -144,7 +257,8 @@ export const chatService = {
             try {
               console.log(`n8n request attempt ${attempt}/3`);
               console.log('Using chatId:', currentRequest.chatId);
-              response = await sendToN8n(currentRequest);
+              // Always use the universal chatbot webhook URL directly
+              response = await sendToChatbotWebhook(currentRequest, CHATBOT_WEBHOOK_URL);
               console.log('n8n response received successfully:', response);
               console.log('Response type:', typeof response);
               console.log('Response has answer?', !!response?.answer);
@@ -276,9 +390,9 @@ export const chatService = {
             throw new Error(`Chat service unavailable: ${error instanceof Error ? error.message : 'n8n webhook failed'}`);
           }
         }
-      } else {
-        console.log('No n8n config found or webhook URL missing');
-        console.log('n8n config was:', n8nConfig);
+      } catch (error) {
+        console.error('Failed to send to chatbot webhook:', error);
+        console.log('n8n failed, checking simulation mode setting');
         
         // Check if simulation mode is enabled
         if (isSimulationModeEnabled()) {
@@ -286,7 +400,7 @@ export const chatService = {
           // Fall back to simulation
         } else {
           console.log('Simulation mode disabled, throwing error');
-          throw new Error('Chat service unavailable: No n8n webhook configured');
+          throw new Error(`Chat service unavailable: ${error instanceof Error ? error.message : 'n8n webhook failed'}`);
         }
       }
       

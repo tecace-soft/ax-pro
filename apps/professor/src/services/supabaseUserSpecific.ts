@@ -11,6 +11,7 @@ export interface ChatData {
   id: number;  // Numeric primary key
   chat_id: string;  // String identifier (chat_1760402027275_ekb47d6kd format)
   session_id?: string;  // Session identifier
+  group_id?: string;  // Group identifier
   chat_message: string;  // User's input message
   response: string;      // Bot's response
   // Optional bilingual fields for translation demo (professor mock only)
@@ -22,12 +23,23 @@ export interface ChatData {
   created_at?: string;
 }
 
+export interface SessionData {
+  session_id: string;  // Primary key - session identifier
+  group_id: string;   // Group identifier
+  created_at?: string;  // Creation timestamp
+  // Note: title and status may not exist in the session table - backend handles session creation
+  title?: string | null;  // Optional session title (if column exists)
+  status?: 'open' | 'closed' | 'archived' | null;  // Session status (if column exists)
+  updated_at?: string;  // Last update timestamp (if column exists)
+}
+
 export interface AdminFeedbackData {
   id?: number;
   chat_id: string;  // Links to chat table
   updated_at?: string;  // When admin reviewed
   feedback_verdict: 'good' | 'bad';
   feedback_text: string;
+  corrected_message?: string | null;
   corrected_response?: string | null;
   created_at?: string;
   apply?: boolean;  // Whether to apply this feedback to prompt
@@ -46,19 +58,27 @@ export interface UserFeedbackData {
 let supabaseClient: SupabaseClient | null = null;
 let currentConfig: string | null = null;
 
+// Hard-coded universal admin defaults (applied if nothing else is available)
+const UNIVERSAL_SUPABASE: SupabaseConfig = {
+  url: 'https://qpyteahuynkgkbmdasbv.supabase.co',
+  anonKey:
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFweXRlYWh1eW5rZ2tibWRhc2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5NDk2NTcsImV4cCI6MjA3NTUyNTY1N30.qvp5ox6Xm0wYcZK89S2MYVu18fqyfYmT8nercIFMKOY',
+};
+
 /**
  * Get or create a singleton Supabase client using current user's settings
  */
 export const getSupabaseClient = (): SupabaseClient => {
-  const config = getUserSupabaseConfig();
+  const userConfig = getUserSupabaseConfig();
+  const config: SupabaseConfig = {
+    url: userConfig?.url || UNIVERSAL_SUPABASE.url,
+    anonKey: userConfig?.anonKey || UNIVERSAL_SUPABASE.anonKey,
+  };
   const configKey = `${config.url}:${config.anonKey}`;
   
   // Only create a new client if config changed or client doesn't exist
   if (!supabaseClient || currentConfig !== configKey) {
-    if (!config.url || !config.anonKey) {
-      throw new Error('Supabase configuration not set for current user. Please configure in Settings > Database.');
-    }
-    
+    // Always have hard-coded fallback; no throwing here
     supabaseClient = createClient(config.url, config.anonKey);
     currentConfig = configKey;
     console.log('✅ Supabase client initialized for current user');

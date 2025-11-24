@@ -1,7 +1,8 @@
-import { IconBell, IconMoon, IconSun, IconUser, IconLogout, IconMessage } from '../../ui/icons'
+import { IconBell, IconMoon, IconSun, IconUser, IconLogout, IconMessage, IconUsers } from '../../ui/icons'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../../theme/ThemeProvider'
 import { useTranslation } from '../../i18n/I18nProvider'
+import { withGroupParam } from '../../utils/navigation'
 
 interface HeaderProps {
   performanceScore: number
@@ -26,7 +27,7 @@ export default function AdminHeader({ performanceScore, performanceDate, current
   }
 
   const handleLogoClick = () => {
-    navigate('/admin/dashboard')
+    navigate(withGroupParam('/admin/dashboard'))
   }
 
   const displayTitle = customTitle || 'TecAce Ax Pro'
@@ -61,7 +62,7 @@ export default function AdminHeader({ performanceScore, performanceDate, current
           <button 
             className="icon-btn" 
             aria-label={t('admin.goToChat')}
-            onClick={() => navigate('/chat')}
+            onClick={() => navigate(withGroupParam('/chat'))}
             title={t('admin.goToChat')}
           >
             <IconMessage size={18} />
@@ -88,10 +89,18 @@ export default function AdminHeader({ performanceScore, performanceDate, current
           <button 
             className="icon-btn" 
             aria-label={t('admin.userProfile')}
-            onClick={() => navigate('/settings')}
+            onClick={() => navigate(withGroupParam('/settings'))}
             title={t('ui.settings')}
           >
             <IconUser size={18} />
+          </button>
+          <button 
+            className="icon-btn" 
+            aria-label="Group Management"
+            onClick={() => navigate('/group-management')}
+            title="Group Management"
+          >
+            <IconUsers size={18} />
           </button>
           <button 
             className="icon-btn signout-btn" 

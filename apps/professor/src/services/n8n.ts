@@ -28,7 +28,7 @@ const ACTIVE_N8N_CONFIG_KEY = 'axpro_active_n8n_config';
 const DEFAULT_N8N_CONFIG: N8nConfig = {
   id: 'default',
   name: 'Default n8n Webhook',
-  webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/328757ba-62e6-465e-be1b-2fff0fd1d353',
+  webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/db3d9fbd-73bd-444a-a689-842446fffdd9',
   isActive: true,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()

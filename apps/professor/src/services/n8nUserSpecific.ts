@@ -9,12 +9,16 @@ export interface N8nConfig {
   updatedAt: string;
 }
 
+// Hard-coded universal admin webhook fallback
+const UNIVERSAL_N8N_WEBHOOK = 'https://n8n.srv978041.hstgr.cloud/webhook/db3d9fbd-73bd-444a-a689-842446fffdd9';
+
 export interface N8nRequest {
   sessionId: string;
   chatId: string;
-  userId: string;
+  userId?: string; // Optional - not sent for non-logged-in users
   action: 'sendMessage';
   chatInput: string;
+  groupId?: string;
 }
 
 export interface N8nResponse {
@@ -56,10 +60,26 @@ export const getActiveN8nConfig = (): N8nConfig | null => {
   try {
     const activeConfig = getUserActiveN8nConfig();
     console.log('Active user n8n config:', activeConfig);
-    return activeConfig;
+    if (activeConfig) return activeConfig;
+    // Fallback to universal webhook if none is configured
+    return {
+      id: 'universal_default',
+      name: 'Universal Default Webhook (Admin)',
+      webhookUrl: UNIVERSAL_N8N_WEBHOOK,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   } catch (error) {
     console.error('Failed to get active user n8n config:', error);
-    return null;
+    return {
+      id: 'universal_default',
+      name: 'Universal Default Webhook (Admin)',
+      webhookUrl: UNIVERSAL_N8N_WEBHOOK,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   }
 };
 
@@ -266,7 +286,8 @@ export const testN8nConnection = async (webhookUrl: string): Promise<boolean> =>
       chatId: 'test-chat-' + Date.now(),
       userId: 'test-user',
       action: 'sendMessage',
-      chatInput: 'Test connection'
+      chatInput: 'Test connection',
+      groupId: 'test-group'
     };
 
     const response = await fetch(webhookUrl, {

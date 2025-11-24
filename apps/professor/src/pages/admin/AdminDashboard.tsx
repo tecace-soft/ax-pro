@@ -19,6 +19,7 @@ import { fetchAllUserFeedback } from '../../services/feedback'
 import { fetchVectorDocuments } from '../../services/ragManagement'
 import { getSupabaseClient } from '../../services/supabaseUserSpecific'
 import { logout as clearSession, getSession } from '../../services/auth'
+import { useGroupAuth } from '../../hooks/useGroupAuth'
 import { getUserCustomization, applyThemeCustomization, resetThemeCustomization, DashboardCustomization } from '../../services/userCustomization'
 import '../../styles/admin-theme.css'
 import '../../styles/admin-components.css'
@@ -40,6 +41,9 @@ export default function AdminDashboard() {
   const { theme } = useTheme()
   const { t } = useTranslation()
   
+  // Require auth and group (also syncs URL)
+  useGroupAuth();
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [, setStartDate] = useState<string>('')
   const [, setEndDate] = useState<string>('')
@@ -66,6 +70,43 @@ export default function AdminDashboard() {
   const [totalQuestions, setTotalQuestions] = useState(0)
   const [avgQuestionsPerSession, setAvgQuestionsPerSession] = useState(0)
   const [activeStudents, setActiveStudents] = useState(0)
+
+  // Group-based role checking
+  const [isGroupAdmin, setIsGroupAdmin] = useState(false)
+  const [roleLoading, setRoleLoading] = useState(true)
+
+  // Check group role on mount and when group changes
+  useEffect(() => {
+    const checkGroupRole = async () => {
+      setRoleLoading(true)
+      const session = getSession()
+      if (!session) {
+        setIsGroupAdmin(false)
+        setRoleLoading(false)
+        return
+      }
+
+      const groupId = searchParams.get('group') || (session as any)?.selectedGroupId
+      if (!groupId) {
+        setIsGroupAdmin(false)
+        setRoleLoading(false)
+        return
+      }
+
+      try {
+        const { getUserRoleForGroup } = await import('../../services/auth')
+        const role = await getUserRoleForGroup(groupId)
+        setIsGroupAdmin(role === 'admin')
+      } catch (error) {
+        console.error('Failed to check group role:', error)
+        setIsGroupAdmin(false)
+      } finally {
+        setRoleLoading(false)
+      }
+    }
+
+    checkGroupRole()
+  }, [searchParams])
 
   // Collapsible section states - default based on user type
   const [isProfessor] = useState(() => {
@@ -167,6 +208,13 @@ export default function AdminDashboard() {
 
   // Initialize dates and load metrics
   useEffect(() => {
+    // Require selected group context; otherwise redirect to group management
+    const session = getSession()
+    if (!session || !(session as any).selectedGroupId) {
+      navigate('/group-management', { replace: true })
+      return
+    }
+
     const today = new Date()
     const start = new Date()
     start.setDate(today.getDate() - 6)

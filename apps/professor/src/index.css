@@ -35,3 +35,35 @@ code {
 .overflow-y-auto::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
+
+/* Custom scrollbar for settings content - thumb only, visible on hover */
+.settings-content-scrollable {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: transparent transparent; /* Firefox - thumb and track transparent by default */
+}
+
+.settings-content-scrollable:hover {
+  scrollbar-color: rgba(128, 128, 128, 0.5) transparent; /* Firefox - show thumb on hover */
+}
+
+.settings-content-scrollable::-webkit-scrollbar {
+  width: 8px; /* Chrome, Safari, Opera */
+}
+
+.settings-content-scrollable::-webkit-scrollbar-track {
+  background: transparent; /* Hide track */
+}
+
+.settings-content-scrollable::-webkit-scrollbar-thumb {
+  background: transparent; /* Hide thumb by default */
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.settings-content-scrollable:hover::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.5); /* Show thumb on hover */
+}
+
+.settings-content-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.7); /* Darker on thumb hover */
+}

@@ -36,7 +36,7 @@ export default function BlobFiles({ language = 'en', onUploadComplete, syncRows 
       title: 'File Library',
       subtitle: 'Manage files in your library (upload/delete). Knowledge indexing is handled in the next section.',
       uploadArea: 'Drag text files here to upload or click to select',
-      supportedFormats: 'Supported formats: .txt, .md, .json, .csv, .xml, .html, .css, .js, .ts',
+      supportedFormats: 'Supported formats: .txt, .md, .json, .csv, .xml, .html, .css, .js, .ts, .yml, .pdf, .doc, .docx, .ppt, .pptx, .xls, .xlsx',
       fileName: 'File Name',
       size: 'Size',
       lastModified: 'Last Modified',
@@ -65,7 +65,7 @@ export default function BlobFiles({ language = 'en', onUploadComplete, syncRows 
       title: '파일 라이브러리',
       subtitle: '파일 라이브러리의 파일을 관리합니다 (업로드/삭제). 지식 인덱싱은 다음 섹션에서 처리됩니다.',
       uploadArea: '텍스트 파일을 드래그하여 업로드하거나 클릭하여 선택하세요',
-      supportedFormats: '지원 형식: .txt, .md, .json, .csv, .xml, .html, .css, .js, .ts',
+      supportedFormats: '지원 형식: .txt, .md, .json, .csv, .xml, .html, .css, .js, .ts, .yml, .pdf, .doc, .docx, .ppt, .pptx, .xls, .xlsx',
       fileName: '파일명',
       size: '크기',
       lastModified: '수정일',
@@ -351,11 +351,11 @@ export default function BlobFiles({ language = 'en', onUploadComplete, syncRows 
         >
           <IconUpload className="upload-icon" />
           <p>{currentT.uploadArea}</p>
-          <p className="supported-formats">Supported formats: .txt, .md, .json, .csv, .xml, .html, .css, .js, .ts, .pdf, .doc, .docx, .ppt, .pptx, .xls, .xlsx</p>
+          <p className="supported-formats">{currentT.supportedFormats}</p>
           <input
             type="file"
             multiple
-            accept=".txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+            accept=".txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.yml,.yaml,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
             onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
             className="file-input"
           />

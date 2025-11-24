@@ -96,7 +96,8 @@ const ChatUsage: React.FC = () => {
     try {
       switch (action) {
         case 'open':
-          navigate(`/chat/${sessionId}`);
+          // Navigate to chat - user can select session from sidebar
+          navigate('/chat');
           break;
         case 'rename':
           if (title) {

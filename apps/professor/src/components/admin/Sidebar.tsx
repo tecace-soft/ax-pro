@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useUICustomization } from '../../hooks/useUICustomization'
 import { useTranslation } from '../../i18n/I18nProvider'
+import { withGroupParam } from '../../utils/navigation'
 import { getSession } from '../../services/auth'
 
 interface SidebarProps {
@@ -171,19 +172,19 @@ export default function AdminSidebar({
     if (isDashboardPage) {
       onScrollToSection(sectionId)
     } else {
-      navigate(`/admin/dashboard?section=${sectionId}`)
+      navigate(withGroupParam(`/admin/dashboard?section=${sectionId}`))
     }
   }
 
   const handleEditClick = () => {
-    setEditTitle(customization.title || 'TecAce Ax Pro')
-    setEditDescription(customization.chatSubtitle || 'Main AI Assistant for HR Support')
+    setEditTitle(customization.chatTitle)
+    setEditDescription(customization.chatSubtitle)
     setIsEditing(true)
   }
 
   const handleSave = () => {
     updateCustomization({ 
-      title: editTitle,
+      chatTitle: editTitle,
       chatSubtitle: editDescription 
     })
     setIsEditing(false)
@@ -320,13 +321,13 @@ export default function AdminSidebar({
                     color: 'var(--admin-text)',
                     marginBottom: '4px'
                   }}>
-                    {customization.title || 'TecAce Ax Pro'}
+                    {customization.chatTitle}
                   </h3>
                   <p style={{ 
                     fontSize: '12px', 
                     color: 'var(--admin-text-muted)'
                   }}>
-                    {customization.chatSubtitle || t('sidebar.mainAssistant')}
+                    {customization.chatSubtitle}
                   </p>
                 </>
               )}
@@ -475,7 +476,7 @@ export default function AdminSidebar({
                     {t('sidebar.edit')}
                   </button>
                   <button
-                    onClick={() => navigate('/settings?tab=photo')}
+                    onClick={() => navigate(withGroupParam('/settings?tab=photo'))}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -802,7 +803,7 @@ export default function AdminSidebar({
             </button>
             <button 
               className="nav-item"
-              onClick={() => navigate('/admin/knowledge-management')}
+              onClick={() => navigate(withGroupParam('/admin/knowledge-management'))}
             >
               <IconDatabase size={18} />
               <span>{t('admin.knowledgeBase')}</span>
