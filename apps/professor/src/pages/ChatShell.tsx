@@ -27,7 +27,7 @@ const ChatShell: React.FC = () => {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [currentSession, setCurrentSession] = useState<any>(null);
   const [searchParams] = useSearchParams();
-  const { createSession } = useSessions();
+  const { createSession, sessions } = useSessions();
   const hasAutoCreatedSession = useRef(false);
   const [urlCopied, setUrlCopied] = useState(false);
   const lastGroupRoleCheckRef = useRef<string | null>(null);
@@ -36,7 +36,7 @@ const ChatShell: React.FC = () => {
   // For non-logged-in users, we skip this to allow access
   const session = getSession();
   if (session) {
-    useGroupAuth();
+  useGroupAuth();
   }
 
   // Check auth on mount - allow non-logged-in users to access chat
@@ -188,7 +188,7 @@ const ChatShell: React.FC = () => {
       console.log('Auto-creating new chat session for group:', groupId);
       hasAutoCreatedSession.current = true;
       createSession().then(sessionId => {
-        if (sessionId) {
+    if (sessionId) {
           setCurrentSessionId(sessionId);
         }
       }).catch(error => {
@@ -393,7 +393,15 @@ const ChatShell: React.FC = () => {
                   }}
                 />
                 <h2 className="text-lg font-medium" style={{ color: 'var(--text)' }}>
-                  {currentSession?.title || t('ui.newChatTitle')}
+                  {(() => {
+                    // Find the current session in the sessions list to get the proper title/firstMessage
+                    const sessionInList = sessions.find(s => s.id === currentSessionId);
+                    if (sessionInList) {
+                      return sessionInList.title || sessionInList.firstMessage || t('ui.newChatTitle');
+                    }
+                    // Fallback to currentSession or default
+                    return currentSession?.title || t('ui.newChatTitle');
+                  })()}
                 </h2>
               </div>
               <div className="flex items-center space-x-2">
@@ -418,13 +426,13 @@ const ChatShell: React.FC = () => {
                   }}
                   title="Copy chat URL to clipboard"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="18" cy="5" r="3"></circle>
                     <circle cx="6" cy="12" r="3"></circle>
                     <circle cx="18" cy="19" r="3"></circle>
                     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
                     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                  </svg>
+                      </svg>
                   <span>{urlCopied ? 'URL Copied!' : 'Share URL'}</span>
                 </button>
                 <button
@@ -447,10 +455,10 @@ const ChatShell: React.FC = () => {
                   }}
                   title="Start a new chat (⌘N or Ctrl+N)"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
+                      </svg>
                   <span>{t('ui.newChat')}</span>
                 </button>
               </div>
