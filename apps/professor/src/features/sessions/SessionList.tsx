@@ -10,7 +10,7 @@ interface SessionListProps {
 }
 
 const SessionList: React.FC<SessionListProps> = ({ currentSessionId, onSessionSelect, onNewSession }) => {
-  const { sessions, loading, createSession, refresh, updateSession, deleteSession, closeSession, reopenSession, error } = useSessions();
+  const { sessions, loading, createSession, refresh, updateSession, deleteSession, error } = useSessions();
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
   const [createError, setCreateError] = useState<string | null>(null);
