@@ -7,10 +7,9 @@ import { useUICustomization } from '../../hooks/useUICustomization';
 
 interface ThreadViewProps {
   sessionId: string;
-  isClosed?: boolean;
 }
 
-const ThreadView: React.FC<ThreadViewProps> = ({ sessionId, isClosed = false }) => {
+const ThreadView: React.FC<ThreadViewProps> = ({ sessionId }) => {
   const { messages, loading, sending, error, sendMessage } = useThread(sessionId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -135,24 +134,10 @@ const ThreadView: React.FC<ThreadViewProps> = ({ sessionId, isClosed = false }) 
 
       {/* Composer */}
       <div className="border-t p-4 flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
-        {isClosed ? (
-          <div className="flex items-center justify-center p-4 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-            <div className="text-center">
-              <div className="text-2xl mb-2">🔒</div>
-              <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                This chat is closed
-              </p>
-              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                Reopen the chat to continue the conversation
-              </p>
-            </div>
-          </div>
-        ) : (
-          <Composer
-            onSend={(content) => sendMessage(content)}
-            disabled={sending}
-          />
-        )}
+        <Composer
+          onSend={(content) => sendMessage(content)}
+          disabled={sending}
+        />
       </div>
     </div>
   );

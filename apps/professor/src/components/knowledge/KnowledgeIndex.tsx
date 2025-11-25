@@ -39,14 +39,13 @@ const KnowledgeIndex: React.FC = () => {
     setError(null);
 
     try {
-      // Load more documents to ensure we have enough unique files after grouping
-      // Since we're grouping by filename, 500 chunks might only be 10-20 files
-      const loadSize = 500; // Load 500 chunks to get more unique files
-      const offset = (currentPage - 1) * loadSize;
-      console.log(`🔄 Loading documents from Supabase (Page ${currentPage}, ${loadSize} items, offset: ${offset})...`);
+      // Fetch ALL documents for the group (the function now handles this internally)
+      // We'll group by fileName and paginate the unique files, not the chunks
+      console.log(`🔄 Loading all documents from Supabase for grouping by fileName...`);
       console.log('⏰ Current time:', new Date().toISOString());
       
-      const response = await fetchVectorDocuments(loadSize, offset);
+      // Fetch all documents (limit and offset are now handled internally for backward compatibility)
+      const response = await fetchVectorDocuments(10000, 0); // Large limit to get all documents
       console.log('📋 Raw response:', response);
       console.log('📊 Total documents found:', response.total || 0);
       console.log('📄 Documents array length:', response.documents?.length || 0);
@@ -66,20 +65,35 @@ const KnowledgeIndex: React.FC = () => {
         const fileNames = new Set((filesResponse.files || []).map((f: any) => f.name.toLowerCase()));
         
         // Transform VectorDocument to KnowledgeDocument
-        const transformedDocs: KnowledgeDocument[] = response.documents.map((doc: VectorDocument) => {
+        const transformedDocs: KnowledgeDocument[] = response.documents.map((doc: VectorDocument, index: number) => {
           const metadata = doc.metadata || {};
           
-          // Extract file name from metadata
+          // Extract file name from metadata - prioritize fileName field
           let fileName = 'Unknown';
           if (metadata.fileName) {
-            fileName = metadata.fileName;
-          } else if (metadata.source && metadata.source !== 'blob') {
-            fileName = metadata.source;
+            fileName = String(metadata.fileName); // Ensure it's a string
+          } else if (metadata.source && metadata.source !== 'blob' && metadata.source !== 'supabase-storage') {
+            // Only use source if it's not a generic value
+            fileName = String(metadata.source);
           } else if (metadata.pdf?.info?.Title) {
-            fileName = metadata.pdf.info.Title;
+            fileName = String(metadata.pdf.info.Title);
           } else if (metadata.blobType) {
             const ext = metadata.blobType.split('/')[1] || 'pdf';
             fileName = `document.${ext}`;
+          }
+          
+          // Log first 5 documents to debug fileName extraction
+          if (index < 5) {
+            console.log(`🔍 Document ${index + 1} metadata extraction:`, {
+              id: doc.id,
+              hasFileName: !!metadata.fileName,
+              fileName: metadata.fileName,
+              source: metadata.source,
+              pdfTitle: metadata.pdf?.info?.Title,
+              blobType: metadata.blobType,
+              extractedFileName: fileName,
+              allMetadataKeys: Object.keys(metadata)
+            });
           }
           
           // Extract page/line info
