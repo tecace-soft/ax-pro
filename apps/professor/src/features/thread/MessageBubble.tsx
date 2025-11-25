@@ -12,7 +12,17 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
-  const [showReferences, setShowReferences] = useState(false);
+  // Persist showReferences state in localStorage
+  const getStoredShowReferences = (): boolean => {
+    try {
+      const stored = localStorage.getItem(`showReferences_${message.id}`);
+      return stored === 'true';
+    } catch {
+      return false;
+    }
+  };
+
+  const [showReferences, setShowReferences] = useState(getStoredShowReferences);
   const [copied, setCopied] = useState(false);
   const { customization } = useUICustomization();
   const isUser = message.role === 'user';
@@ -20,6 +30,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Only mark as simulated if it actually starts with 'sim_'
   // Real n8n messages will have IDs like 'chat_...'
   const isSimulated = message.id.startsWith('sim_');
+
+  // Update localStorage when showReferences changes
+  const toggleShowReferences = () => {
+    const newValue = !showReferences;
+    setShowReferences(newValue);
+    try {
+      localStorage.setItem(`showReferences_${message.id}`, String(newValue));
+    } catch (error) {
+      console.error('Failed to save showReferences state:', error);
+    }
+  };
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString([], { 
@@ -364,7 +385,58 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               </ReactMarkdown>
             ) : (
               <span style={{ color: isUser ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)', fontStyle: 'italic' }}>
-                {message.role === 'assistant' ? 'Thinking...' : 'No content available'}
+                {message.role === 'assistant' ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    Thinking
+                    <span style={{ display: 'inline-flex', gap: '2px' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '4px',
+                          height: '4px',
+                          borderRadius: '50%',
+                          backgroundColor: isUser ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)',
+                          animation: 'thinking-dot 1.4s infinite',
+                          animationDelay: '0s'
+                        }}
+                      />
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '4px',
+                          height: '4px',
+                          borderRadius: '50%',
+                          backgroundColor: isUser ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)',
+                          animation: 'thinking-dot 1.4s infinite',
+                          animationDelay: '0.2s'
+                        }}
+                      />
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '4px',
+                          height: '4px',
+                          borderRadius: '50%',
+                          backgroundColor: isUser ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)',
+                          animation: 'thinking-dot 1.4s infinite',
+                          animationDelay: '0.4s'
+                        }}
+                      />
+                    </span>
+                    <style>{`
+                      @keyframes thinking-dot {
+                        0%, 60%, 100% {
+                          opacity: 0.3;
+                          transform: translateY(0);
+                        }
+                        30% {
+                          opacity: 1;
+                          transform: translateY(-4px);
+                        }
+                      }
+                    `}</style>
+                  </span>
+                ) : 'No content available'}
               </span>
             )}
           </div>
@@ -379,7 +451,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           {/* Show Sources button - next to timestamp */}
           {isAssistant && message.citations && message.citations.length > 0 && (
             <button
-              onClick={() => setShowReferences(!showReferences)}
+              onClick={toggleShowReferences}
               className="text-xs flex items-center gap-1.5 px-2 py-1 rounded transition-colors"
               style={{ 
                 color: 'var(--text-muted)',
