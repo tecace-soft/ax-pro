@@ -41,7 +41,8 @@ import {
 	AlertTriangle,
 	ChevronUp,
 	ChevronLeft,
-	ChevronDown
+	ChevronDown,
+	Copy
 } from 'lucide-react'
 
 export const IconGear = Settings
@@ -88,4 +89,5 @@ export const IconAlertTriangle = AlertTriangle
 export const IconChevronUp = ChevronUp
 export const IconChevronLeft = ChevronLeft
 export const IconChevronDown = ChevronDown
+export const IconCopy = Copy
 

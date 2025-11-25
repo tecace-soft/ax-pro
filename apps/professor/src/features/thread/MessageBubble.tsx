@@ -5,6 +5,7 @@ import { ChatMessage } from '../../services/chat';
 import References from './References';
 import FeedbackBar from './FeedbackBar';
 import { useUICustomization } from '../../hooks/useUICustomization';
+import { IconCopy, IconCheck } from '../../ui/icons';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -12,6 +13,7 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const [showReferences, setShowReferences] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { customization } = useUICustomization();
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
@@ -24,6 +26,31 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       hour: '2-digit', 
       minute: '2-digit' 
     });
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = message.content;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   return (
@@ -40,7 +67,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         </div>
       )}
       
-      <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${isUser ? 'order-2' : 'order-1'}`}>
+      <div className={`max-w-full lg:max-w-2xl xl:max-w-3xl ${isUser ? 'order-2' : 'order-1'}`} style={{ width: '100%' }}>
         {/* Message Content */}
         <div
           className={`p-3 rounded-lg ${
@@ -85,33 +112,42 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                     }
                     
                     return (
-                      <div style={{ margin: '12px 0' }}>
+                      <div style={{ margin: '16px 0', width: '100%' }}>
                         {language && (
                           <div style={{
                             backgroundColor: isUser ? 'rgba(255,255,255,0.15)' : 'var(--bg-secondary)',
-                            color: isUser ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)',
-                            padding: '4px 8px',
-                            fontSize: '11px',
+                            color: isUser ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)',
+                            padding: '6px 12px',
+                            fontSize: '12px',
                             fontFamily: 'monospace',
-                            borderTopLeftRadius: '4px',
-                            borderTopRightRadius: '4px',
+                            fontWeight: '500',
+                            borderTopLeftRadius: '6px',
+                            borderTopRightRadius: '6px',
                             borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'var(--border)'}`
                           }}>
                             {language}
                           </div>
                         )}
                         <pre style={{ 
-                          backgroundColor: isUser ? 'rgba(255,255,255,0.1)' : 'var(--bg-secondary)', 
+                          backgroundColor: isUser ? 'rgba(255,255,255,0.08)' : 'var(--bg-secondary)', 
                           color: isUser ? '#ffffff' : 'var(--text)',
-                          padding: '12px', 
-                          borderRadius: language ? '0 0 4px 4px' : '4px',
+                          padding: '16px', 
+                          borderRadius: language ? '0 0 6px 6px' : '6px',
                           overflow: 'auto',
                           margin: 0,
-                          fontSize: '13px',
-                          lineHeight: '1.5',
-                          fontFamily: 'monospace'
+                          fontSize: '14px',
+                          lineHeight: '1.6',
+                          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+                          border: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'var(--border)'}`,
+                          maxWidth: '100%',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word'
                         }}>
-                          <code {...props}>{children}</code>
+                          <code {...props} style={{ 
+                            fontFamily: 'inherit',
+                            fontSize: 'inherit',
+                            lineHeight: 'inherit'
+                          }}>{children}</code>
                         </pre>
                       </div>
                     );
@@ -334,11 +370,38 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           </div>
         </div>
 
-        {/* Timestamp and Simulation Badge */}
+        {/* Timestamp, Sources, and Simulation Badge */}
         <div className={`flex items-center gap-2 mt-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
           <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
             {formatTime(message.createdAt)}
           </div>
+          
+          {/* Show Sources button - next to timestamp */}
+          {isAssistant && message.citations && message.citations.length > 0 && (
+            <button
+              onClick={() => setShowReferences(!showReferences)}
+              className="text-xs flex items-center gap-1.5 px-2 py-1 rounded transition-colors"
+              style={{ 
+                color: 'var(--text-muted)',
+                backgroundColor: 'transparent'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+              <span>
+                {showReferences ? 'Hide' : 'Show'} Sources ({message.citations.length})
+              </span>
+            </button>
+          )}
+
           {isSimulated && isAssistant && (
             <div 
               className="text-xs px-2 py-0.5 rounded"
@@ -357,31 +420,41 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
         {/* Assistant-specific features */}
         {isAssistant && (
-          <div className="mt-2 space-y-2">
-            {/* References Toggle */}
-            {message.citations && message.citations.length > 0 && (
+          <div className="mt-2">
+            {/* Action buttons row - inline */}
+            <div className="flex items-center gap-1 flex-wrap">
+              {/* Copy button */}
               <button
-                onClick={() => setShowReferences(!showReferences)}
-                className="text-xs link flex items-center space-x-2"
+                onClick={handleCopy}
+                className="p-1.5 rounded transition-colors"
+                style={{
+                  color: copied ? 'var(--success, #10b981)' : 'var(--text-muted)',
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  if (!copied) {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                title={copied ? 'Copied!' : 'Copy'}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                </svg>
-                <span>
-                  {showReferences ? 'Hide' : 'Show'} References ({message.citations.length})
-                </span>
+                {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
               </button>
-            )}
+
+              {/* Feedback buttons - Only show for real messages (not simulated) */}
+              {!isSimulated && (
+                <FeedbackBar messageId={message.id} />
+              )}
+            </div>
 
             {/* References */}
             {showReferences && message.citations && (
-              <References citations={message.citations} />
-            )}
-
-            {/* Feedback Bar - Only show for real messages (not simulated) */}
-            {!isSimulated && (
-              <FeedbackBar messageId={message.id} />
+              <div className="mt-2">
+                <References citations={message.citations} />
+              </div>
             )}
           </div>
         )}
