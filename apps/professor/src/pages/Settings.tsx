@@ -200,7 +200,12 @@ const Settings: React.FC = () => {
     if (!group) return;
     
     const user = groupUsers.find(u => u.user_id === userId);
-    const userName = user ? `${user.first_name} ${user.last_name}` : 'this user';
+    if (!user) {
+      console.error('User not found:', userId);
+      return;
+    }
+    
+    const userName = `${user.first_name} ${user.last_name}`;
     
     setConfirmTitle(language === 'ko' ? '사용자 제거 확인' : 'Confirm User Removal');
     setConfirmMessage(
