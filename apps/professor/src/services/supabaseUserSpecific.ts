@@ -21,6 +21,9 @@ export interface ChatData {
   admin_feedback?: AdminFeedbackData | null;
   user_feedback?: any | null;
   created_at?: string;
+  // Citation fields
+  citation_title?: string | null;
+  citation_content?: string | null;
 }
 
 export interface SessionData {

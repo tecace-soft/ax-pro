@@ -120,11 +120,9 @@ const GroupManagement: React.FC = () => {
       const { getUserRoleForGroup } = await import('../services/auth');
       const groupRole = await getUserRoleForGroup(group.group_id);
       
-      // Route: admins -> dashboard, members -> chat
-      if (groupRole === 'admin') {
+      // Route: both admins and users -> dashboard
+      if (groupRole === 'admin' || groupRole === 'user') {
         navigate(`/admin/dashboard?group=${group.group_id}`);
-      } else if (groupRole === 'user') {
-        navigate(`/chat?group=${group.group_id}`);
       } else {
         // User is not a member of this group
         console.warn('User is not a member of this group');
@@ -132,12 +130,8 @@ const GroupManagement: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to check group role:', error);
-      // Fallback to checking if user is administrator
-      if (isUserAdministrator(group)) {
-        navigate(`/admin/dashboard?group=${group.group_id}`);
-      } else {
-        navigate(`/chat?group=${group.group_id}`);
-      }
+      // Fallback: navigate all users to dashboard
+      navigate(`/admin/dashboard?group=${group.group_id}`);
     }
   };
 

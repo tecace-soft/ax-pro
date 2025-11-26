@@ -30,8 +30,8 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
         return;
       }
 
-      // Use messageId as chat_id to link feedback to the specific message
-      const chatId = messageId;
+      // Extract chat_id from messageId (remove assistant_ prefix)
+      const chatId = messageId.startsWith('assistant_') ? messageId.replace('assistant_', '') : messageId;
       const reaction = currentRating === 1 ? 'good' : 'bad';
 
       console.log('Submitting feedback:', { chatId, userId: session.userId, reaction, feedbackText: note });

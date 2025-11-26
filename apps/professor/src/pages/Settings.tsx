@@ -6,7 +6,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
 import { useUICustomization } from '../hooks/useUICustomization';
 import { getGroupById, updateGroupName, getUsersByIds, updateGroupUsers, searchUsers, updateUserGroups, defaultSupabase, User, Group } from '../services/groupService';
-import { getSession } from '../services/auth';
+import { getSession, getUserRoleForGroup } from '../services/auth';
 import { useSearchParams } from 'react-router-dom';
 
 const Settings: React.FC = () => {
@@ -45,11 +45,13 @@ const Settings: React.FC = () => {
   const [imagePosition, setImagePosition] = useState({ x: 50, y: 50 });
   const [imageZoom, setImageZoom] = useState(100);
   const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState('');
-  
+
   // Group Settings state
   const [group, setGroup] = useState<Group | null>(null);
   const [groupUsers, setGroupUsers] = useState<User[]>([]);
   const [administrator, setAdministrator] = useState<User | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<'admin' | 'user' | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [localGroupName, setLocalGroupName] = useState('');
   const [isLoadingGroup, setIsLoadingGroup] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,6 +85,19 @@ const Settings: React.FC = () => {
       if (groupData) {
         setGroup(groupData);
         setLocalGroupName(groupData.name);
+        
+        // Get current user ID from session
+        const session = getSession();
+        setCurrentUserId(session?.userId || null);
+        
+        // Load current user's role in this group
+        try {
+          const userRole = await getUserRoleForGroup(groupId);
+          setCurrentUserRole(userRole);
+        } catch (error) {
+          console.error('Failed to get user role:', error);
+          setCurrentUserRole(null);
+        }
         
         // Load administrator details
         if (groupData.administrator) {
@@ -185,12 +200,14 @@ const Settings: React.FC = () => {
     const user = groupUsers.find(u => u.user_id === userId);
     const userName = user ? `${user.first_name} ${user.last_name}` : 'this user';
     
-    const message = language === 'ko' 
-      ? `${userName}님을 그룹에서 제거하시겠습니까?`
-      : `Are you sure you want to remove ${userName} from the group?`;
-    
-    setConfirmMessage(message);
-    setConfirmAction(async () => {
+    setConfirmTitle(language === 'ko' ? '사용자 제거 확인' : 'Confirm User Removal');
+    setConfirmMessage(
+      language === 'ko' 
+        ? `${userName}님을 그룹에서 제거하시겠습니까?`
+        : `Are you sure you want to remove ${userName} from the group?`
+    );
+    setUserToRemove(user);
+    setConfirmAction(() => async () => {
       try {
         const updatedUsers = (group.users || []).filter(id => id !== userId);
         await updateGroupUsers(group.group_id, updatedUsers);
@@ -217,6 +234,64 @@ const Settings: React.FC = () => {
       } catch (error) {
         console.error('Failed to remove user:', error);
         showErrorModal(language === 'ko' ? '사용자 제거에 실패했습니다' : 'Failed to remove user from group');
+      } finally {
+        setShowConfirmModal(false);
+        setUserToRemove(null);
+        setConfirmAction(null);
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleLeaveGroup = () => {
+    if (!group || !currentUserId) return;
+    
+    const currentUser = groupUsers.find(u => u.user_id === currentUserId);
+    if (!currentUser) return;
+    
+    setConfirmTitle(language === 'ko' ? '그룹 탈퇴 확인' : 'Confirm Leave Group');
+    setConfirmMessage(
+      language === 'ko'
+        ? '정말로 이 그룹을 탈퇴하시겠습니까? 탈퇴 후에는 그룹에 다시 초대받아야 합니다.'
+        : 'Are you sure you want to leave this group? You will need to be invited again to rejoin.'
+    );
+    setUserToRemove(currentUser);
+    setConfirmAction(() => async () => {
+      if (!group || !currentUserId) return;
+      
+      try {
+        // Remove current user from group.users array
+        const updatedUsers = (group.users || []).filter(id => id !== currentUserId);
+        await updateGroupUsers(group.group_id, updatedUsers);
+        
+        // Remove group from current user's groups array
+        const { data: userData } = await defaultSupabase
+          .from('user')
+          .select('groups')
+          .eq('user_id', currentUserId)
+          .single();
+        
+        if (userData) {
+          const updatedUserGroups = (userData.groups || []).filter((g: string) => g !== group.group_id);
+          await defaultSupabase
+            .from('user')
+            .update({ groups: updatedUserGroups })
+            .eq('user_id', currentUserId);
+        }
+        
+        showSuccessModal(language === 'ko' ? '그룹에서 탈퇴했습니다' : 'Successfully left the group');
+        
+        // Navigate back to group management after leaving
+        setTimeout(() => {
+          navigate('/group-management');
+        }, 2000);
+      } catch (error) {
+        console.error('Failed to leave group:', error);
+        showErrorModal(language === 'ko' ? '그룹 탈퇴에 실패했습니다' : 'Failed to leave group');
+      } finally {
+        setShowConfirmModal(false);
+        setUserToRemove(null);
+        setConfirmAction(null);
       }
     });
     setShowConfirmModal(true);
@@ -364,7 +439,7 @@ const Settings: React.FC = () => {
         {/* Scrollable Content Area */}
         <div 
           className="settings-content-scrollable" 
-          style={{ 
+              style={{ 
             flex: 1, 
             overflowY: 'auto', 
             overflowX: 'hidden',
@@ -377,7 +452,7 @@ const Settings: React.FC = () => {
             {isLoadingGroup ? (
               <div className="text-center py-8" style={{ color: 'var(--text-secondary)' }}>
                 Loading group data...
-              </div>
+        </div>
             ) : !group ? (
               <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
                 <p style={{ color: 'var(--text-secondary)' }}>
@@ -388,12 +463,12 @@ const Settings: React.FC = () => {
               <>
                 {/* Group Name */}
                 <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
-                  <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
                     {language === 'ko' ? '그룹 이름' : 'Group Name'}
-                  </h2>
+            </h2>
                   <div className="flex gap-3">
-                    <input
-                      type="text"
+                  <input
+                    type="text"
                       value={localGroupName}
                       onChange={(e) => setLocalGroupName(e.target.value)}
                       className="input flex-1 px-3 py-2 rounded-md"
@@ -418,9 +493,9 @@ const Settings: React.FC = () => {
                     >
                       {language === 'ko' ? '저장' : 'Save'}
                     </button>
-                  </div>
                 </div>
-
+                </div>
+                
                 {/* Group Administrator */}
                 <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
                   <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
@@ -438,7 +513,7 @@ const Settings: React.FC = () => {
                         <span className="text-sm font-semibold">
                           {administrator.first_name?.[0] || ''}{administrator.last_name?.[0] || ''}
                         </span>
-                      </div>
+                </div>
                       <div className="flex-1">
                         <p className="font-medium" style={{ color: 'var(--text)' }}>
                           {administrator.first_name} {administrator.last_name}
@@ -446,26 +521,26 @@ const Settings: React.FC = () => {
                         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                           {administrator.email}
                         </p>
-                      </div>
+                </div>
                       <div className="px-3 py-1 rounded-full text-xs font-medium" style={{ 
                         backgroundColor: 'rgba(59, 230, 255, 0.1)',
                         color: 'var(--primary)'
                       }}>
                         {language === 'ko' ? '관리자' : 'Administrator'}
-                      </div>
-                    </div>
+                </div>
+                </div>
                   ) : (
                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                       {language === 'ko' ? '관리자 정보를 불러올 수 없습니다' : 'Unable to load administrator information'}
                     </p>
                   )}
-                </div>
-
+              </div>
+              
                 {/* Group Users */}
                 <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
                   <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
                     {language === 'ko' ? '그룹 사용자' : 'Group Users'}
-                  </h2>
+            </h2>
                   
                   {/* Current Users List */}
                   <div className="mb-6">
@@ -473,7 +548,7 @@ const Settings: React.FC = () => {
                       {language === 'ko' ? '현재 사용자' : 'Current Users'} ({groupUsers.length})
                     </h3>
                     {groupUsers.length === 0 ? (
-                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                         {language === 'ko' ? '그룹에 사용자가 없습니다' : 'No users in this group'}
                       </p>
                     ) : (
@@ -482,7 +557,7 @@ const Settings: React.FC = () => {
                           <div
                             key={user.user_id}
                             className="flex items-center justify-between p-3 rounded-lg border"
-                            style={{ 
+                  style={{
                               borderColor: 'var(--border)',
                               backgroundColor: 'var(--card)'
                             }}
@@ -493,30 +568,46 @@ const Settings: React.FC = () => {
                               </p>
                               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                                 {user.email}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => handleRemoveUser(user.user_id)}
-                              className="px-3 py-1 rounded-md text-sm transition-colors"
-                              style={{ 
-                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                color: '#ef4444',
-                                border: '1px solid rgba(239, 68, 68, 0.3)'
-                              }}
-                            >
-                              {language === 'ko' ? '제거' : 'Remove'}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                      </p>
+                    </div>
+                        {user.user_id === currentUserId ? (
+                          // Show "Leave Group" button for current user
+                          <button
+                            onClick={handleLeaveGroup}
+                            className="px-3 py-1 rounded-md text-sm transition-colors"
+                            style={{ 
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              color: '#ef4444',
+                              border: '1px solid rgba(239, 68, 68, 0.3)'
+                            }}
+                          >
+                            {language === 'ko' ? '그룹 탈퇴' : 'Leave Group'}
+                          </button>
+                        ) : currentUserRole === 'admin' ? (
+                          // Show "Remove" button for other users (admin only)
+                          <button
+                            onClick={() => handleRemoveUser(user.user_id)}
+                            className="px-3 py-1 rounded-md text-sm transition-colors"
+                            style={{ 
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              color: '#ef4444',
+                              border: '1px solid rgba(239, 68, 68, 0.3)'
+                            }}
+                          >
+                            {language === 'ko' ? '제거' : 'Remove'}
+                          </button>
+                        ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
                   {/* Add Users */}
-                  <div>
+                <div>
                     <h3 className="text-md font-medium mb-3" style={{ color: 'var(--text)' }}>
                       {language === 'ko' ? '사용자 초대' : 'Invite Users'}
-                    </h3>
+                  </h3>
                     <div className="mb-3" style={{ position: 'relative' }}>
                       <input
                         type="text"
@@ -559,9 +650,9 @@ const Settings: React.FC = () => {
                             <path d="m21 21-4.35-4.35"/>
                           </svg>
                         )}
-                      </div>
                     </div>
-
+                  </div>
+                  
                     {/* Search Results */}
                     {searchResults.length > 0 && (
                       <div className="space-y-2">
@@ -572,7 +663,7 @@ const Settings: React.FC = () => {
                           <div
                             key={user.user_id}
                             className="flex items-center justify-between p-3 rounded-lg border"
-                            style={{ 
+                      style={{
                               borderColor: 'var(--border)',
                               backgroundColor: 'var(--card)'
                             }}
@@ -583,31 +674,31 @@ const Settings: React.FC = () => {
                               </p>
                               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                                 {user.email}
-                              </p>
-                            </div>
-                            <button
+                          </p>
+                        </div>
+                          <button
                               onClick={() => handleAddUser(user.user_id)}
                               className="px-3 py-1 rounded-md text-sm transition-colors"
-                              style={{ 
+                            style={{ 
                                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
                                 color: '#10b981',
                                 border: '1px solid rgba(16, 185, 129, 0.3)'
-                              }}
-                            >
+                            }}
+                          >
                               {language === 'ko' ? '추가' : 'Add'}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          </button>
+                    </div>
+                  ))}
+                </div>
+              )}
                     {searchQuery.trim() && searchResults.length === 0 && !isSearching && (
                       <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
                         {language === 'ko' ? '검색 결과가 없습니다' : 'No users found'}
                       </p>
                     )}
-                  </div>
-                </div>
-              </>
+              </div>
+            </div>
+          </>
             )}
           </div>
         )}
@@ -724,36 +815,36 @@ const Settings: React.FC = () => {
                       />
                     </label>
                     {customization.avatarUrl && customization.avatarUrl !== '/default-profile-avatar.png' && !customization.avatarUrl.startsWith('data:') && (
-                      <button 
-                        onClick={() => {
-                          // Save current avatar as a preset
-                          const link = document.createElement('a');
-                          link.href = customization.avatarUrl;
-                          link.download = 'chatbot-avatar.png';
-                          link.click();
-                        }}
-                        className="px-4 py-2 rounded-md transition-all hover:opacity-90"
-                        style={{ 
-                          backgroundColor: '#10b981',
-                          color: '#ffffff',
-                          border: '1px solid rgba(16, 185, 129, 0.5)'
-                        }}
-                      >
-                        {language === 'ko' ? '다운로드' : 'Download'}
-                      </button>
+                        <button 
+                          onClick={() => {
+                            // Save current avatar as a preset
+                            const link = document.createElement('a');
+                            link.href = customization.avatarUrl;
+                            link.download = 'chatbot-avatar.png';
+                            link.click();
+                          }}
+                          className="px-4 py-2 rounded-md transition-all hover:opacity-90"
+                          style={{ 
+                            backgroundColor: '#10b981',
+                            color: '#ffffff',
+                            border: '1px solid rgba(16, 185, 129, 0.5)'
+                          }}
+                        >
+                          {language === 'ko' ? '다운로드' : 'Download'}
+                        </button>
                     )}
                     {customization.avatarUrl && (
-                      <button 
+                        <button 
                         onClick={() => updateCustomization({ avatarUrl: '' })}
-                        className="px-4 py-2 rounded-md transition-all hover:opacity-90"
-                        style={{ 
-                          backgroundColor: '#ef4444',
-                          color: '#ffffff',
-                          border: '1px solid rgba(239, 68, 68, 0.5)'
-                        }}
-                      >
+                          className="px-4 py-2 rounded-md transition-all hover:opacity-90"
+                          style={{ 
+                            backgroundColor: '#ef4444',
+                            color: '#ffffff',
+                            border: '1px solid rgba(239, 68, 68, 0.5)'
+                          }}
+                        >
                         {language === 'ko' ? '아바타 제거' : 'Remove Avatar'}
-                      </button>
+                        </button>
                     )}
                   </div>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -919,9 +1010,9 @@ const Settings: React.FC = () => {
                 </div>
               </div>
             </div>
-           </div>
-         )}
-        </div>
+          </div>
+        )}
+              </div>
       </div>
 
       {/* Image Editor Modal */}

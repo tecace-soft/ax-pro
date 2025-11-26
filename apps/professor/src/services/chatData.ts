@@ -257,14 +257,29 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
           createdAt: chat.created_at || new Date().toISOString()
         });
         
-        // Add assistant message
-        messages.push({
+        // Add assistant message with citations if available
+        const assistantMessage: any = {
           id: `assistant_${chat.chat_id}`,
           sessionId: chat.session_id || sessionId,
           role: 'assistant' as const,
           content: chat.response,
           createdAt: chat.created_at || new Date().toISOString()
-        });
+        };
+
+        // Add citations if they exist in the database
+        if (chat.citation_title || chat.citation_content) {
+          assistantMessage.citations = [{
+            id: `citation_${chat.chat_id}`,
+            messageId: chat.chat_id,
+            sourceType: 'document' as const,
+            title: chat.citation_title || '',
+            snippet: chat.citation_content || '',
+            sourceId: `doc_${chat.chat_id}`,
+            metadata: {}
+          }];
+        }
+
+        messages.push(assistantMessage);
       }
     }
 
