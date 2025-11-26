@@ -67,6 +67,8 @@ const Settings: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
   const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [userToRemove, setUserToRemove] = useState<User | null>(null);
 
 
   // Load group data when group tab is active or groupId changes
