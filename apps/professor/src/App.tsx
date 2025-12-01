@@ -12,6 +12,7 @@ import UserSettings from './pages/UserSettings';
 import AdminShell from './pages/AdminShell';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProfessorDashboard from './pages/admin/ProfessorDashboard';
+import SuperAdmin from './pages/SuperAdmin';
 import ScrollToTop from './components/ui/ScrollToTop';
 // These are now imported in AdminShell.tsx
 import { isAuthedFor, isAuthedForSync, Role, getSession } from './services/auth';
@@ -88,6 +89,10 @@ const App: React.FC = () => {
               <Route path="/signup" element={<Signup />} />
               
               {/* Protected routes */}
+              <Route 
+                path="/super-admin" 
+                element={<SuperAdmin />}
+              />
               <Route 
                 path="/group-management" 
                 element={

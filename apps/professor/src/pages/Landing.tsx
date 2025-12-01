@@ -31,7 +31,12 @@ const Landing: React.FC = () => {
   React.useEffect(() => {
     const session = getSession();
     if (session) {
-      navigate('/group-management');
+      // Super admins go to super-admin page
+      if (session.isSuperAdmin) {
+        navigate('/super-admin');
+      } else {
+        navigate('/group-management');
+      }
     }
   }, [navigate]);
 
@@ -67,8 +72,13 @@ const Landing: React.FC = () => {
       const session = await login(formData.email, formData.password);
       
       if (session) {
-        // All users go to group management after login
-        navigate('/group-management');
+        // Super admins go to super-admin page
+        if (session.isSuperAdmin) {
+          navigate('/super-admin');
+        } else {
+          // All other users go to group management after login
+          navigate('/group-management');
+        }
       } else {
         setError(t('auth.error'));
       }
@@ -79,8 +89,13 @@ const Landing: React.FC = () => {
       const session = await login(formData.email, formData.password);
       
       if (session) {
-        // All users go to group management after login
-        navigate('/group-management');
+        // Super admins go to super-admin page
+        if (session.isSuperAdmin) {
+          navigate('/super-admin');
+        } else {
+          // All other users go to group management after login
+          navigate('/group-management');
+        }
       } else {
         setError(t('auth.error'));
       }

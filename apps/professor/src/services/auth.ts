@@ -12,6 +12,7 @@ export interface Session {
   userId: string;
   role: Role;
   createdAt: number;
+  isSuperAdmin?: boolean;
 }
 
 // Demo credentials
@@ -44,12 +45,16 @@ export const login = async (email: string, password: string): Promise<Session | 
     const dbUser = await authenticateUser(normalizedEmail, password);
     
     if (dbUser) {
+      // Check if user is super admin
+      const isSuperAdmin = dbUser['s-admin'] === true;
+      
       // Create session data for database user
       const session: Session = {
         email: normalizedEmail,
         userId: dbUser.user_id,
         role: 'user' as const, // All database users get 'user' role
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        isSuperAdmin: isSuperAdmin
       };
       
       // Store session in localStorage for cross-window persistence
