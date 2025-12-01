@@ -209,7 +209,7 @@ export const chatService = {
     } else {
       // Use n8n webhook for chat messages (sessions are handled locally)
       // ALWAYS use the universal chatbot endpoint - user settings do not apply to chatbot
-      const CHATBOT_WEBHOOK_URL = 'https://n8n.srv978041.hstgr.cloud/webhook/db3d9fbd-73bd-444a-a689-842446fffdd9';
+      const CHATBOT_WEBHOOK_URL = 'https://n8n.srv1153481.hstgr.cloud/webhook/db3d9fbd-73bd-444a-a689-842446fffdd9';
       
       console.log('Backend unavailable, using universal chatbot webhook...');
       console.log('Chatbot webhook URL:', CHATBOT_WEBHOOK_URL);
