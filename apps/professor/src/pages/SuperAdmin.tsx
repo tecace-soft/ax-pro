@@ -95,7 +95,8 @@ const SuperAdmin: React.FC = () => {
       // Load all users
       const { data: usersData, error: usersError } = await defaultSupabase
         .from('user')
-        .select('user_id, first_name, last_name, email, s-admin, groups, created_at')
+        // s-admin column has a dash, so it must be quoted
+        .select('user_id, first_name, last_name, email, "s-admin", groups, created_at')
         .order('created_at', { ascending: false });
 
       if (usersError) {
