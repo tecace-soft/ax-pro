@@ -10,20 +10,18 @@ interface SessionListProps {
 }
 
 const SessionList: React.FC<SessionListProps> = ({ currentSessionId, onSessionSelect, onNewSession }) => {
-  const { sessions, loading, createSession, refresh, updateSession, deleteSession, closeSession, reopenSession, error } = useSessions();
+  const { sessions, loading, createSession, refresh, updateSession, deleteSession, error } = useSessions();
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('all');
   const [createError, setCreateError] = useState<string | null>(null);
 
   const filteredSessions = sessions.filter(session => {
     const matchesSearch = !searchQuery || 
       session.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      session.firstMessage?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       session.lastMessage?.content.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || session.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   const handleNewChat = async () => {
@@ -112,37 +110,6 @@ const SessionList: React.FC<SessionListProps> = ({ currentSessionId, onSessionSe
         />
       </div>
 
-      {/* Status Filter - Fixed below New Chat, never scrolls */}
-      <div style={{ 
-        paddingLeft: '1rem',
-        paddingRight: '1rem',
-        paddingBottom: '0.5rem',
-        backgroundColor: 'var(--bg)', 
-        flexShrink: 0,
-        position: 'relative',
-        zIndex: 5
-      }}>
-        <div className="flex space-x-1">
-          {(['all', 'open', 'closed'] as const).map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                statusFilter === status
-                  ? 'text-white'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              style={{
-                backgroundColor: statusFilter === status ? 'var(--text)' : 'transparent',
-                color: statusFilter === status ? 'var(--bg)' : 'var(--text-secondary)'
-              }}
-            >
-              {status === 'all' ? t('ui.all') : status === 'open' ? t('ui.open') : t('ui.closed')}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Session List - ONLY this section scrolls when content overflows */}
       <div style={{ 
         flex: '1 1 0%',
@@ -203,10 +170,7 @@ const SessionList: React.FC<SessionListProps> = ({ currentSessionId, onSessionSe
                 onClick={() => {
                   onSessionSelect(session.id);
                 }}
-                updateSession={updateSession}
                 deleteSession={deleteSession}
-                closeSession={closeSession}
-                reopenSession={reopenSession}
               />
             ))}
           </div>

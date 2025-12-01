@@ -307,9 +307,9 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
   }
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    const month = date.getMonth() + 1
-    const day = date.getDate()
+    // Parse date string as local date to avoid timezone issues
+    const [year, month, day] = dateStr.split('-').map(Number)
+    const date = new Date(year, month - 1, day) // month is 0-indexed in Date constructor
     const weekday = date.toLocaleDateString('en-US', { weekday: 'short' })
     return `${month}/${day} ${weekday}`
   }

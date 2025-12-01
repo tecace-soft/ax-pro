@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getSession } from '../services/auth';
 
@@ -10,8 +10,16 @@ import { getSession } from '../services/auth';
 export const useGroupAuth = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const hasSyncedRef = useRef(false);
 
+  const urlGroupId = searchParams.get('group');
+  
   useEffect(() => {
+    // Prevent infinite loops by only syncing once per group change
+    if (hasSyncedRef.current) {
+      return;
+    }
+    
     const session = getSession();
 
     // Require logged in user
@@ -20,8 +28,6 @@ export const useGroupAuth = () => {
       return;
     }
 
-    // Get group_id from URL query or session
-    const urlGroupId = searchParams.get('group');
     const sessionGroupId = (session as any)?.selectedGroupId;
 
     // If URL has group but session doesn't, update session
@@ -29,15 +35,20 @@ export const useGroupAuth = () => {
       const updatedSession = { ...session, selectedGroupId: urlGroupId };
       try {
         localStorage.setItem('axpro_session', JSON.stringify(updatedSession));
+        hasSyncedRef.current = true;
       } catch (e) {
         console.error('Failed to update session with group_id:', e);
       }
+      return;
     }
 
     // If session has group but URL doesn't, update URL
     if (sessionGroupId && !urlGroupId) {
-      searchParams.set('group', sessionGroupId);
-      setSearchParams(searchParams, { replace: true });
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set('group', sessionGroupId);
+      setSearchParams(newSearchParams, { replace: true });
+      hasSyncedRef.current = true;
+      return;
     }
 
     // If neither has group_id, redirect to group management
@@ -45,7 +56,14 @@ export const useGroupAuth = () => {
       navigate('/group-management', { replace: true });
       return;
     }
-  }, [navigate, searchParams, setSearchParams]);
+    
+    hasSyncedRef.current = true;
+  }, [navigate, urlGroupId, searchParams, setSearchParams]);
+  
+  // Reset sync flag when groupId changes
+  useEffect(() => {
+    hasSyncedRef.current = false;
+  }, [urlGroupId]);
 
   const session = getSession();
   return {

@@ -1,23 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { settingsService, ApiConfig } from '../services/settings';
 import { useGroupAuth } from '../hooks/useGroupAuth';
 import { withGroupParam } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
 import { useUICustomization } from '../hooks/useUICustomization';
-import { isSimulationModeEnabled, setSimulationModeEnabled } from '../services/devMode';
+import { getGroupById, updateGroupName, getUsersByIds, updateGroupUsers, searchUsers, updateUserGroups, defaultSupabase, User, Group } from '../services/groupService';
+import { getSession, getUserRoleForGroup } from '../services/auth';
+import { useSearchParams } from 'react-router-dom';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   useGroupAuth(); // Require auth and group (also syncs URL)
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage } = useTranslation();
-  const [configs, setConfigs] = useState<ApiConfig[]>([]);
-  const [activeTab, setActiveTab] = useState<'api' | 'ui'>('ui');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingConfig, setEditingConfig] = useState<ApiConfig | null>(null);
-  const { customization, updateCustomization, updateQuestion, resetCustomization } = useUICustomization();
+  const [activeTab, setActiveTab] = useState<'ui' | 'group'>('ui');
+  const [searchParams] = useSearchParams();
+  const { customization, updateCustomization, updateQuestion } = useUICustomization();
   
   // Local state for inputs to prevent saving on every keystroke
   const [localChatTitle, setLocalChatTitle] = useState(customization.chatTitle);
@@ -40,90 +39,286 @@ const Settings: React.FC = () => {
     }
   }, []);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    baseUrl: '',
-    apiKey: '',
-    model: 'gpt-3.5-turbo',
-    temperature: 0.7,
-    maxTokens: 1000
-  });
 
-  const [simulationModeEnabled, setSimulationModeEnabledState] = useState(false);
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState('');
   const [imagePosition, setImagePosition] = useState({ x: 50, y: 50 });
   const [imageZoom, setImageZoom] = useState(100);
   const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState('');
 
+  // Group Settings state
+  const [group, setGroup] = useState<Group | null>(null);
+  const [groupUsers, setGroupUsers] = useState<User[]>([]);
+  const [administrator, setAdministrator] = useState<User | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<'admin' | 'user' | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [localGroupName, setLocalGroupName] = useState('');
+  const [isLoadingGroup, setIsLoadingGroup] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  // Custom modal state
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState<'success' | 'error'>('success');
+  
+  // Confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [userToRemove, setUserToRemove] = useState<User | null>(null);
+
+
+  // Load group data when group tab is active or groupId changes
   useEffect(() => {
-    loadConfigs();
-    loadSimulationMode();
-  }, []);
-
-  const loadSimulationMode = () => {
-    const enabled = isSimulationModeEnabled();
-    setSimulationModeEnabledState(enabled);
-  };
-
-  const loadConfigs = () => {
-    const loadedConfigs = settingsService.getConfigs();
-    setConfigs(loadedConfigs);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (editingConfig) {
-      settingsService.updateConfig(editingConfig.id, formData);
-    } else {
-      settingsService.saveConfig({
-        ...formData,
-        isActive: configs.length === 0 // First config is active by default
-      });
+    const groupId = searchParams.get('group') || (getSession() as any)?.selectedGroupId;
+    if (groupId && (activeTab === 'group' || !group)) {
+      loadGroupData(groupId);
     }
-    
-    loadConfigs();
-    resetForm();
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, searchParams.get('group')]);
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      baseUrl: '',
-      apiKey: '',
-      model: 'gpt-3.5-turbo',
-      temperature: 0.7,
-      maxTokens: 1000
-    });
-    setShowAddForm(false);
-    setEditingConfig(null);
-  };
-
-  const handleEdit = (config: ApiConfig) => {
-    setFormData({
-      name: config.name,
-      baseUrl: config.baseUrl,
-      apiKey: config.apiKey,
-      model: config.model || 'gpt-3.5-turbo',
-      temperature: config.temperature || 0.7,
-      maxTokens: config.maxTokens || 1000
-    });
-    setEditingConfig(config);
-    setShowAddForm(true);
-  };
-
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this configuration?')) {
-      settingsService.deleteConfig(id);
-      loadConfigs();
+  const loadGroupData = async (groupId: string) => {
+    setIsLoadingGroup(true);
+    try {
+      const groupData = await getGroupById(groupId);
+      if (groupData) {
+        setGroup(groupData);
+        setLocalGroupName(groupData.name);
+        
+        // Get current user ID from session
+        const session = getSession();
+        setCurrentUserId(session?.userId || null);
+        
+        // Load current user's role in this group
+        try {
+          const userRole = await getUserRoleForGroup(groupId);
+          setCurrentUserRole(userRole);
+        } catch (error) {
+          console.error('Failed to get user role:', error);
+          setCurrentUserRole(null);
+        }
+        
+        // Load administrator details
+        if (groupData.administrator) {
+          const adminUsers = await getUsersByIds([groupData.administrator]);
+          setAdministrator(adminUsers[0] || null);
+        } else {
+          setAdministrator(null);
+        }
+        
+        // Load user details for all user_ids in the group
+        if (groupData.users && groupData.users.length > 0) {
+          const users = await getUsersByIds(groupData.users);
+          setGroupUsers(users);
+        } else {
+          setGroupUsers([]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load group data:', error);
+    } finally {
+      setIsLoadingGroup(false);
     }
   };
 
-  const handleSetActive = (id: string) => {
-    settingsService.setActiveConfig(id);
-    loadConfigs();
+  const showSuccessModal = (message: string) => {
+    setModalMessage(message);
+    setModalType('success');
+    setShowModal(true);
+    setTimeout(() => setShowModal(false), 2000);
   };
+
+  const showErrorModal = (message: string) => {
+    setModalMessage(message);
+    setModalType('error');
+    setShowModal(true);
+    setTimeout(() => setShowModal(false), 3000);
+  };
+
+  const handleUpdateGroupName = async () => {
+    if (!group || !localGroupName.trim()) return;
+    
+    try {
+      await updateGroupName(group.group_id, localGroupName.trim());
+      setGroup({ ...group, name: localGroupName.trim() });
+      showSuccessModal(language === 'ko' ? '그룹 이름이 성공적으로 업데이트되었습니다' : 'Group name updated successfully');
+    } catch (error) {
+      console.error('Failed to update group name:', error);
+      showErrorModal(language === 'ko' ? '그룹 이름 업데이트에 실패했습니다' : 'Failed to update group name');
+    }
+  };
+
+  const handleSearchUsers = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      const results = await searchUsers(searchQuery.trim());
+      // Filter out users already in the group
+      const groupUserIds = group?.users || [];
+      const filteredResults = results.filter(user => !groupUserIds.includes(user.user_id));
+      setSearchResults(filteredResults);
+    } catch (error) {
+      console.error('Failed to search users:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddUser = async (userId: string) => {
+    if (!group) return;
+    
+    try {
+      const updatedUsers = [...(group.users || []), userId];
+      await updateGroupUsers(group.group_id, updatedUsers);
+      
+      // Update user's groups array
+      await updateUserGroups([userId], group.group_id);
+      
+      // Reload group data
+      await loadGroupData(group.group_id);
+      
+      // Clear search
+      setSearchQuery('');
+      setSearchResults([]);
+      
+      showSuccessModal(language === 'ko' ? '사용자가 그룹에 성공적으로 추가되었습니다' : 'User added to group successfully');
+    } catch (error) {
+      console.error('Failed to add user:', error);
+      showErrorModal(language === 'ko' ? '사용자 추가에 실패했습니다' : 'Failed to add user to group');
+    }
+  };
+
+  const handleRemoveUser = (userId: string) => {
+    if (!group) return;
+    
+    const user = groupUsers.find(u => u.user_id === userId);
+    if (!user) {
+      console.error('User not found:', userId);
+      return;
+    }
+    
+    const userName = `${user.first_name} ${user.last_name}`;
+    
+    setConfirmTitle(language === 'ko' ? '사용자 제거 확인' : 'Confirm User Removal');
+    setConfirmMessage(
+      language === 'ko' 
+        ? `${userName}님을 그룹에서 제거하시겠습니까?`
+        : `Are you sure you want to remove ${userName} from the group?`
+    );
+    setUserToRemove(user);
+    setConfirmAction(() => async () => {
+      try {
+        const updatedUsers = (group.users || []).filter(id => id !== userId);
+        await updateGroupUsers(group.group_id, updatedUsers);
+        
+        // Remove group_id from user's groups array
+        const { data: userData } = await defaultSupabase
+          .from('user')
+          .select('groups')
+          .eq('user_id', userId)
+          .single();
+        
+        if (userData) {
+          const updatedUserGroups = (userData.groups || []).filter((g: string) => g !== group.group_id);
+          await defaultSupabase
+            .from('user')
+            .update({ groups: updatedUserGroups })
+            .eq('user_id', userId);
+        }
+        
+        // Reload group data
+        await loadGroupData(group.group_id);
+        
+        showSuccessModal(language === 'ko' ? '사용자가 그룹에서 성공적으로 제거되었습니다' : 'User removed from group successfully');
+      } catch (error) {
+        console.error('Failed to remove user:', error);
+        showErrorModal(language === 'ko' ? '사용자 제거에 실패했습니다' : 'Failed to remove user from group');
+      } finally {
+        setShowConfirmModal(false);
+        setUserToRemove(null);
+        setConfirmAction(null);
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleLeaveGroup = () => {
+    if (!group || !currentUserId) return;
+    
+    const currentUser = groupUsers.find(u => u.user_id === currentUserId);
+    if (!currentUser) return;
+    
+    setConfirmTitle(language === 'ko' ? '그룹 탈퇴 확인' : 'Confirm Leave Group');
+    setConfirmMessage(
+      language === 'ko'
+        ? '정말로 이 그룹을 탈퇴하시겠습니까? 탈퇴 후에는 그룹에 다시 초대받아야 합니다.'
+        : 'Are you sure you want to leave this group? You will need to be invited again to rejoin.'
+    );
+    setUserToRemove(currentUser);
+    setConfirmAction(() => async () => {
+      if (!group || !currentUserId) return;
+      
+      try {
+        // Remove current user from group.users array
+        const updatedUsers = (group.users || []).filter(id => id !== currentUserId);
+        await updateGroupUsers(group.group_id, updatedUsers);
+        
+        // Remove group from current user's groups array
+        const { data: userData } = await defaultSupabase
+          .from('user')
+          .select('groups')
+          .eq('user_id', currentUserId)
+          .single();
+        
+        if (userData) {
+          const updatedUserGroups = (userData.groups || []).filter((g: string) => g !== group.group_id);
+          await defaultSupabase
+            .from('user')
+            .update({ groups: updatedUserGroups })
+            .eq('user_id', currentUserId);
+        }
+        
+        showSuccessModal(language === 'ko' ? '그룹에서 탈퇴했습니다' : 'Successfully left the group');
+        
+        // Navigate back to group management after leaving
+        setTimeout(() => {
+          navigate('/group-management');
+        }, 2000);
+      } catch (error) {
+        console.error('Failed to leave group:', error);
+        showErrorModal(language === 'ko' ? '그룹 탈퇴에 실패했습니다' : 'Failed to leave group');
+      } finally {
+        setShowConfirmModal(false);
+        setUserToRemove(null);
+        setConfirmAction(null);
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirm = () => {
+    if (confirmAction) {
+      confirmAction();
+    }
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+    setConfirmMessage('');
+  };
+
+  const handleCancelConfirm = () => {
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+    setConfirmMessage('');
+  };
+
 
   return (
     <div style={{ backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
@@ -213,7 +408,7 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="max-w-4xl mx-auto" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', width: '100%', maxWidth: '56rem' }}>
         {/* Tab Navigation - Fixed at top */}
         <div className="border-b px-6 pt-6" style={{ borderColor: 'var(--border)', flexShrink: 0 }}>
           <nav className="-mb-px flex space-x-8">
@@ -232,18 +427,18 @@ const Settings: React.FC = () => {
               {language === 'ko' ? 'UI 커스터마이징' : 'UI Customization'}
             </button>
             <button
-              onClick={() => setActiveTab('api')}
+              onClick={() => setActiveTab('group')}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'api'
+                activeTab === 'group'
                   ? 'border-gray-800 text-gray-800'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
               style={{ 
-                color: activeTab === 'api' ? 'var(--primary)' : 'var(--text-secondary)',
-                borderBottomColor: activeTab === 'api' ? 'var(--primary)' : 'transparent'
+                color: activeTab === 'group' ? 'var(--primary)' : 'var(--text-secondary)',
+                borderBottomColor: activeTab === 'group' ? 'var(--primary)' : 'transparent'
               }}
             >
-              {language === 'ko' ? 'API 설정' : 'API Configurations'}
+              {language === 'ko' ? '그룹 설정' : 'Group Settings'}
             </button>
           </nav>
         </div>
@@ -251,244 +446,275 @@ const Settings: React.FC = () => {
         {/* Scrollable Content Area */}
         <div 
           className="settings-content-scrollable" 
-          style={{ 
+              style={{ 
             flex: 1, 
             overflowY: 'auto', 
             overflowX: 'hidden',
             padding: '1.5rem'
           }}
         >
-          {/* API Configurations Tab */}
-        {activeTab === 'api' && (
-          <>
-            {/* Add/Edit Form */}
-            {showAddForm && (
-          <div className="card p-6 rounded-lg mb-6">
+          {/* Group Settings Tab */}
+        {activeTab === 'group' && (
+          <div className="space-y-6" style={{ width: '100%' }}>
+            {isLoadingGroup ? (
+              <div className="text-center py-8" style={{ color: 'var(--text-secondary)' }}>
+                Loading group data...
+        </div>
+            ) : !group ? (
+              <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
+                <p style={{ color: 'var(--text-secondary)' }}>
+                  No group selected. Please select a group first.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Group Name */}
+                <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
             <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
-              {editingConfig ? 'Edit Configuration' : 'Add New Configuration'}
+                    {language === 'ko' ? '그룹 이름' : 'Group Name'}
             </h2>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                    Configuration Name
-                  </label>
+                  <div className="flex gap-3">
                   <input
                     type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="input w-full px-3 py-2 rounded-md"
-                    placeholder="e.g., OpenAI GPT-4"
-                    required
-                  />
+                      value={localGroupName}
+                      onChange={(e) => setLocalGroupName(e.target.value)}
+                      className="input flex-1 px-3 py-2 rounded-md"
+                      placeholder={language === 'ko' ? '그룹 이름을 입력하세요' : 'Enter group name'}
+                    />
+                    <button
+                      onClick={handleUpdateGroupName}
+                      className="px-4 py-2 rounded-md text-sm font-medium transition-all"
+                      style={{ 
+                        backgroundColor: '#10b981',
+                        color: '#ffffff',
+                        border: '1px solid rgba(16, 185, 129, 0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#059669';
+                        e.currentTarget.style.transform = 'scale(1.02)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#10b981';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      {language === 'ko' ? '저장' : 'Save'}
+                    </button>
+                </div>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                    Base URL
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.baseUrl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, baseUrl: e.target.value }))}
-                    className="input w-full px-3 py-2 rounded-md"
-                    placeholder="https://api.openai.com/v1"
-                    required
-                  />
+                {/* Group Administrator */}
+                <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
+                  <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
+                    {language === 'ko' ? '그룹 관리자' : 'Group Administrator'}
+                  </h2>
+                  {administrator ? (
+                    <div className="flex items-center space-x-3 p-3 rounded-lg border" style={{ 
+                      borderColor: 'var(--border)',
+                      backgroundColor: 'var(--card)'
+                    }}>
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ 
+                        backgroundColor: 'var(--primary)',
+                        color: '#ffffff'
+                      }}>
+                        <span className="text-sm font-semibold">
+                          {administrator.first_name?.[0] || ''}{administrator.last_name?.[0] || ''}
+                        </span>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                    API Key
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.apiKey}
-                    onChange={(e) => setFormData(prev => ({ ...prev, apiKey: e.target.value }))}
-                    className="input w-full px-3 py-2 rounded-md"
-                    placeholder="sk-..."
-                    required
-                  />
+                      <div className="flex-1">
+                        <p className="font-medium" style={{ color: 'var(--text)' }}>
+                          {administrator.first_name} {administrator.last_name}
+                        </p>
+                        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                          {administrator.email}
+                        </p>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                    Model
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.model}
-                    onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
-                    className="input w-full px-3 py-2 rounded-md"
-                    placeholder="gpt-3.5-turbo"
-                  />
+                      <div className="px-3 py-1 rounded-full text-xs font-medium" style={{ 
+                        backgroundColor: 'rgba(59, 230, 255, 0.1)',
+                        color: 'var(--primary)'
+                      }}>
+                        {language === 'ko' ? '관리자' : 'Administrator'}
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                    Temperature: {formData.temperature}
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="2"
-                    step="0.1"
-                    value={formData.temperature}
-                    onChange={(e) => setFormData(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
-                    className="w-full"
-                  />
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                    Max Tokens
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.maxTokens}
-                    onChange={(e) => setFormData(prev => ({ ...prev, maxTokens: parseInt(e.target.value) }))}
-                    className="input w-full px-3 py-2 rounded-md"
-                    min="1"
-                    max="4000"
-                  />
-                </div>
+                  ) : (
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      {language === 'ko' ? '관리자 정보를 불러올 수 없습니다' : 'Unable to load administrator information'}
+                    </p>
+                  )}
               </div>
               
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="px-4 py-2 text-sm border rounded-md"
-                  style={{ borderColor: 'var(--border)' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary px-4 py-2 text-sm"
-                >
-                  {editingConfig ? 'Update' : 'Add'} Configuration
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Configurations List */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>
-              API Configurations
+                {/* Group Users */}
+                <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
+                  <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
+                    {language === 'ko' ? '그룹 사용자' : 'Group Users'}
             </h2>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="btn-primary px-4 py-2 text-sm"
-            >
-              + Add Configuration
-            </button>
-          </div>
-
-          {configs.length === 0 ? (
-            <div className="card p-8 rounded-lg text-center">
+                  
+                  {/* Current Users List */}
+                  <div className="mb-6">
+                    <h3 className="text-md font-medium mb-3" style={{ color: 'var(--text)' }}>
+                      {language === 'ko' ? '현재 사용자' : 'Current Users'} ({groupUsers.length})
+                    </h3>
+                    {groupUsers.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                No API configurations found. Add your first configuration to get started.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {configs.map((config) => (
-                <div
-                  key={config.id}
-                  className={`card p-4 rounded-lg ${
-                    config.isActive ? 'border-2' : 'border'
-                  }`}
+                        {language === 'ko' ? '그룹에 사용자가 없습니다' : 'No users in this group'}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {groupUsers.map((user) => (
+                          <div
+                            key={user.user_id}
+                            className="flex items-center justify-between p-3 rounded-lg border"
                   style={{
-                    borderColor: config.isActive ? 'var(--primary)' : 'var(--border)',
-                    backgroundColor: config.isActive ? 'var(--primary-light)' : 'var(--card)'
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-medium" style={{ color: 'var(--text)' }}>
-                          {config.name}
-                        </h3>
-                        {config.isActive && (
-                          <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
-                            Active
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                        {config.baseUrl}
-                      </p>
-                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                        Model: {config.model} • Temperature: {config.temperature} • Max Tokens: {config.maxTokens}
+                              borderColor: 'var(--border)',
+                              backgroundColor: 'var(--card)'
+                            }}
+                          >
+                            <div>
+                              <p className="font-medium" style={{ color: 'var(--text)' }}>
+                                {user.first_name} {user.last_name}
+                              </p>
+                              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                {user.email}
                       </p>
                     </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      {!config.isActive && (
-                        <button
-                          onClick={() => handleSetActive(config.id)}
-                          className="text-xs px-3 py-1 rounded border"
-                          style={{ borderColor: 'var(--border)' }}
-                        >
-                          Set Active
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleEdit(config)}
-                        className="text-xs px-3 py-1 rounded border"
-                        style={{ borderColor: 'var(--border)' }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(config.id)}
-                        className="text-xs px-3 py-1 rounded border"
-                        style={{ 
-                          borderColor: 'var(--error)',
-                          color: 'var(--error)'
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
+                        {user.user_id === currentUserId ? (
+                          // Show "Leave Group" button for current user
+                          <button
+                            onClick={handleLeaveGroup}
+                            className="px-3 py-1 rounded-md text-sm transition-colors"
+                            style={{ 
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              color: '#ef4444',
+                              border: '1px solid rgba(239, 68, 68, 0.3)'
+                            }}
+                          >
+                            {language === 'ko' ? '그룹 탈퇴' : 'Leave Group'}
+                          </button>
+                        ) : currentUserRole === 'admin' ? (
+                          // Show "Remove" button for other users (admin only)
+                          <button
+                            onClick={() => handleRemoveUser(user.user_id)}
+                            className="px-3 py-1 rounded-md text-sm transition-colors"
+                            style={{ 
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              color: '#ef4444',
+                              border: '1px solid rgba(239, 68, 68, 0.3)'
+                            }}
+                          >
+                            {language === 'ko' ? '제거' : 'Remove'}
+                          </button>
+                        ) : null}
                 </div>
               ))}
             </div>
           )}
         </div>
 
-            {/* Simulation Info */}
-            <div className="mt-8 card p-4 rounded-lg" style={{ backgroundColor: 'var(--warning-light)' }}>
-              <div className="flex items-start space-x-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="16" x2="12" y2="12"/>
-                  <line x1="12" y1="8" x2="12.01" y2="8"/>
-                </svg>
+                  {/* Add Users */}
                 <div>
-                  <h3 className="text-sm font-medium" style={{ color: 'var(--warning)' }}>
-                    Development Mode
+                    <h3 className="text-md font-medium mb-3" style={{ color: 'var(--text)' }}>
+                      {language === 'ko' ? '사용자 초대' : 'Invite Users'}
                   </h3>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                    When backend is unavailable, the system uses intelligent simulation based on your chat input. 
-                    Configure your API settings above for full functionality when backend is running.
-                  </p>
+                    <div className="mb-3" style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          if (e.target.value.trim()) {
+                            handleSearchUsers();
+                          } else {
+                            setSearchResults([]);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && searchQuery.trim()) {
+                            handleSearchUsers();
+                          }
+                        }}
+                        className="input w-full px-3 py-2 pr-10 rounded-md"
+                        placeholder={language === 'ko' ? '이름 또는 이메일로 검색...' : 'Search by name or email...'}
+                        style={{ paddingRight: '2.5rem' }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          right: '0.75rem',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          pointerEvents: 'none',
+                          color: isSearching ? 'var(--primary)' : 'var(--text-muted)'
+                        }}
+                      >
+                        {isSearching ? (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+                            <circle cx="12" cy="12" r="10" opacity="0.25"/>
+                            <path d="M12 2a10 10 0 0 1 10 10" opacity="0.75"/>
+                          </svg>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                          </svg>
+                        )}
+                    </div>
+                  </div>
+                  
+                    {/* Search Results */}
+                    {searchResults.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                          {language === 'ko' ? '검색 결과' : 'Search Results'}
+                        </p>
+                        {searchResults.map((user) => (
+                          <div
+                            key={user.user_id}
+                            className="flex items-center justify-between p-3 rounded-lg border"
+                      style={{
+                              borderColor: 'var(--border)',
+                              backgroundColor: 'var(--card)'
+                            }}
+                          >
+                            <div>
+                              <p className="font-medium" style={{ color: 'var(--text)' }}>
+                                {user.first_name} {user.last_name}
+                              </p>
+                              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                {user.email}
+                          </p>
+                        </div>
+                          <button
+                              onClick={() => handleAddUser(user.user_id)}
+                              className="px-3 py-1 rounded-md text-sm transition-colors"
+                            style={{ 
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                color: '#10b981',
+                                border: '1px solid rgba(16, 185, 129, 0.3)'
+                            }}
+                          >
+                              {language === 'ko' ? '추가' : 'Add'}
+                          </button>
+                    </div>
+                  ))}
                 </div>
+              )}
+                    {searchQuery.trim() && searchResults.length === 0 && !isSearching && (
+                      <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
+                        {language === 'ko' ? '검색 결과가 없습니다' : 'No users found'}
+                      </p>
+                    )}
               </div>
             </div>
           </>
+            )}
+          </div>
         )}
+
 
         {/* UI Customization Tab */}
         {activeTab === 'ui' && (
-          <div className="space-y-6">
-            <div className="card p-6 rounded-lg">
+          <div className="space-y-6" style={{ width: '100%' }}>
+            <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
               <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
                 {language === 'ko' ? '채팅 인터페이스 커스터마이징' : 'Chat Interface Customization'}
               </h2>
@@ -596,36 +822,36 @@ const Settings: React.FC = () => {
                       />
                     </label>
                     {customization.avatarUrl && customization.avatarUrl !== '/default-profile-avatar.png' && !customization.avatarUrl.startsWith('data:') && (
-                      <button 
-                        onClick={() => {
-                          // Save current avatar as a preset
-                          const link = document.createElement('a');
-                          link.href = customization.avatarUrl;
-                          link.download = 'chatbot-avatar.png';
-                          link.click();
-                        }}
-                        className="px-4 py-2 rounded-md transition-all hover:opacity-90"
-                        style={{ 
-                          backgroundColor: '#10b981',
-                          color: '#ffffff',
-                          border: '1px solid rgba(16, 185, 129, 0.5)'
-                        }}
-                      >
-                        {language === 'ko' ? '다운로드' : 'Download'}
-                      </button>
+                        <button 
+                          onClick={() => {
+                            // Save current avatar as a preset
+                            const link = document.createElement('a');
+                            link.href = customization.avatarUrl;
+                            link.download = 'chatbot-avatar.png';
+                            link.click();
+                          }}
+                          className="px-4 py-2 rounded-md transition-all hover:opacity-90"
+                          style={{ 
+                            backgroundColor: '#10b981',
+                            color: '#ffffff',
+                            border: '1px solid rgba(16, 185, 129, 0.5)'
+                          }}
+                        >
+                          {language === 'ko' ? '다운로드' : 'Download'}
+                        </button>
                     )}
                     {customization.avatarUrl && (
-                      <button 
+                        <button 
                         onClick={() => updateCustomization({ avatarUrl: '' })}
-                        className="px-4 py-2 rounded-md transition-all hover:opacity-90"
-                        style={{ 
-                          backgroundColor: '#ef4444',
-                          color: '#ffffff',
-                          border: '1px solid rgba(239, 68, 68, 0.5)'
-                        }}
-                      >
+                          className="px-4 py-2 rounded-md transition-all hover:opacity-90"
+                          style={{ 
+                            backgroundColor: '#ef4444',
+                            color: '#ffffff',
+                            border: '1px solid rgba(239, 68, 68, 0.5)'
+                          }}
+                        >
                         {language === 'ko' ? '아바타 제거' : 'Remove Avatar'}
-                      </button>
+                        </button>
                     )}
                   </div>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -702,104 +928,11 @@ const Settings: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Reset Button */}
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => {
-                      const message = language === 'ko' 
-                        ? '모든 UI 커스터마이징을 기본값으로 초기화하시겠습니까?' 
-                        : 'Are you sure you want to reset all UI customizations to default values?';
-                      if (window.confirm(message)) {
-                        resetCustomization();
-                      }
-                    }}
-                    className="px-4 py-2 text-sm border rounded-md"
-                    style={{ 
-                      borderColor: 'var(--error)',
-                      color: 'var(--error)'
-                    }}
-                  >
-                    {language === 'ko' ? '기본값으로 초기화' : 'Reset to Defaults'}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Simulation Mode Setting */}
-            <div className="card p-6 rounded-lg mt-6">
-              <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
-                Chat Behavior
-              </h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                    Enable Simulation Mode
-                  </label>
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    When enabled, chat will fall back to simulated responses if the chatbot server is unavailable.
-                    When disabled, chat will show an error instead of simulation.
-                  </p>
-                </div>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={simulationModeEnabled}
-                    onChange={(e) => {
-                      setSimulationModeEnabledState(e.target.checked);
-                      setSimulationModeEnabled(e.target.checked);
-                    }}
-                    className="w-4 h-4 rounded"
-                    style={{ accentColor: 'var(--primary)' }}
-                  />
-                </label>
-              </div>
-            </div>
-
-            {/* Reset All Data Section */}
-            <div className="card p-6 rounded-lg mt-6">
-              <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
-                Advanced
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                    Reset All Data
-                  </label>
-                  <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
-                    Clear all stored settings, configurations, and cached data. This will reset the app to its default state.
-                    You will need to log in again after reset.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm('Are you sure you want to reset all data? This action cannot be undone. You will be logged out.')) {
-                        // Clear all storage
-                        localStorage.clear();
-                        sessionStorage.clear();
-                        
-                        // Show confirmation
-                        alert('All data has been cleared. The page will now reload.');
-                        
-                        // Reload to login page
-                        window.location.href = '/';
-                      }
-                    }}
-                    className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                    style={{ 
-                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                      color: '#ef4444',
-                      border: '1px solid rgba(239, 68, 68, 0.3)'
-                    }}
-                  >
-                    Reset All Data
-                  </button>
-                </div>
               </div>
             </div>
 
             {/* Preview */}
-            <div className="card p-6 rounded-lg">
+            <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
               <h3 className="text-md font-medium mb-4" style={{ color: 'var(--text)' }}>
                 {language === 'ko' ? '미리보기' : 'Preview'}
               </h3>
@@ -884,9 +1017,9 @@ const Settings: React.FC = () => {
                 </div>
               </div>
             </div>
-           </div>
-         )}
-        </div>
+          </div>
+        )}
+              </div>
       </div>
 
       {/* Image Editor Modal */}
@@ -1083,6 +1216,177 @@ const Settings: React.FC = () => {
                 }}
               >
                 {language === 'ko' ? '취소' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Success/Error Modal */}
+      {showModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000
+          }}
+          onClick={() => setShowModal(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'var(--card)',
+              borderRadius: '12px',
+              padding: '24px',
+              minWidth: '300px',
+              maxWidth: '500px',
+              border: `2px solid ${modalType === 'success' ? '#10b981' : '#ef4444'}`,
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+            }}
+          >
+            <div className="flex items-center space-x-3 mb-4">
+              {modalType === 'success' ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              )}
+              <h3 
+                className="text-lg font-semibold"
+                style={{ 
+                  color: modalType === 'success' ? '#10b981' : '#ef4444'
+                }}
+              >
+                {modalType === 'success' 
+                  ? (language === 'ko' ? '성공' : 'Success')
+                  : (language === 'ko' ? '오류' : 'Error')
+                }
+              </h3>
+            </div>
+            <p style={{ color: 'var(--text)', marginBottom: '16px' }}>
+              {modalMessage}
+            </p>
+            <button
+              onClick={() => setShowModal(false)}
+              className="w-full px-4 py-2 rounded-md font-medium transition-all"
+              style={{ 
+                backgroundColor: modalType === 'success' ? '#10b981' : '#ef4444',
+                color: '#ffffff',
+                border: 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.transform = 'scale(1.02)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              {language === 'ko' ? '확인' : 'OK'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal */}
+      {showConfirmModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000
+          }}
+          onClick={handleCancelConfirm}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'var(--card)',
+              borderRadius: '12px',
+              padding: '24px',
+              minWidth: '300px',
+              maxWidth: '500px',
+              border: '2px solid #f59e0b',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+            }}
+          >
+            <div className="flex items-center space-x-3 mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <h3 
+                className="text-lg font-semibold"
+                style={{ 
+                  color: '#f59e0b'
+                }}
+              >
+                {language === 'ko' ? '확인' : 'Confirm'}
+              </h3>
+            </div>
+            <p style={{ color: 'var(--text)', marginBottom: '20px' }}>
+              {confirmMessage}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelConfirm}
+                className="flex-1 px-4 py-2 rounded-md font-medium transition-all"
+                style={{ 
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--border)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg)';
+                  e.currentTarget.style.transform = 'scale(1.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                {language === 'ko' ? '취소' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="flex-1 px-4 py-2 rounded-md font-medium transition-all"
+                style={{ 
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  border: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#dc2626';
+                  e.currentTarget.style.transform = 'scale(1.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ef4444';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                {language === 'ko' ? '확인' : 'Confirm'}
               </button>
             </div>
           </div>

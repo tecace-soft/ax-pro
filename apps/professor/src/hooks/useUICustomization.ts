@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { UICustomization } from '../services/settings';
 import { fetchUICustomization, saveUICustomization, DEFAULT_CUSTOMIZATION } from '../services/uiCustomization';
@@ -18,26 +18,62 @@ export const useUICustomization = () => {
     }
   });
   const [loading, setLoading] = useState(true);
+  const lastGroupIdRef = useRef<string | null>(null);
+  const isLoadingRef = useRef(false);
 
   // Get group_id from URL or session
-  const getGroupId = (): string | null => {
+  const getGroupId = useCallback((): string | null => {
     const urlGroupId = searchParams.get('group');
     const session = getSession();
     const sessionGroupId = (session as any)?.selectedGroupId;
     return urlGroupId || sessionGroupId || null;
-  };
+  }, [searchParams]);
 
-  // Load customization from Supabase group table on mount and when group_id changes
+  // Load customization when group_id changes
+  const groupId = searchParams.get('group');
   useEffect(() => {
-    loadCustomization();
-  }, [searchParams.get('group')]); // Reload when group_id changes
+    const loadCustomization = async () => {
+      // Prevent concurrent calls
+      if (isLoadingRef.current) {
+        return;
+      }
+      
+      const urlGroupId = searchParams.get('group');
+      const session = getSession();
+      const sessionGroupId = (session as any)?.selectedGroupId;
+      const currentGroupId = urlGroupId || sessionGroupId || null;
+      
+      // Prevent duplicate calls for the same groupId
+      if (currentGroupId === lastGroupIdRef.current) {
+        return;
+      }
+      lastGroupIdRef.current = currentGroupId;
+      isLoadingRef.current = true;
+      
+      setLoading(true);
+      try {
+        if (!currentGroupId) {
+          console.warn('No group_id available, using empty values with default avatar');
+          setCustomization({
+            chatTitle: '',
+            chatSubtitle: '',
+            avatarUrl: DEFAULT_CUSTOMIZATION.avatarUrl,
+            suggestedQuestions: {
+              question1: '',
+              question2: '',
+              question3: '',
+              question4: '',
+            }
+          });
+          setLoading(false);
+          isLoadingRef.current = false;
+          return;
+        }
 
-  const loadCustomization = async () => {
-    setLoading(true);
-    try {
-      const groupId = getGroupId();
-      if (!groupId) {
-        console.warn('No group_id available, using empty values with default avatar');
+        const data = await fetchUICustomization(currentGroupId);
+        setCustomization(data);
+      } catch (error) {
+        console.error('Failed to load UI customization:', error);
         setCustomization({
           chatTitle: '',
           chatSubtitle: '',
@@ -49,29 +85,15 @@ export const useUICustomization = () => {
             question4: '',
           }
         });
+      } finally {
         setLoading(false);
-        return;
+        isLoadingRef.current = false;
       }
-
-      const data = await fetchUICustomization(groupId);
-      setCustomization(data);
-    } catch (error) {
-      console.error('Failed to load UI customization:', error);
-      setCustomization({
-        chatTitle: '',
-        chatSubtitle: '',
-        avatarUrl: DEFAULT_CUSTOMIZATION.avatarUrl,
-        suggestedQuestions: {
-          question1: '',
-          question2: '',
-          question3: '',
-          question4: '',
-        }
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    
+    loadCustomization();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupId]); // Only depend on groupId string, not searchParams object
 
   const updateCustomization = async (updates: Partial<UICustomization>) => {
     setLoading(true);

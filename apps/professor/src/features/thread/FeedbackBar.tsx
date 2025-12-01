@@ -30,8 +30,8 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
         return;
       }
 
-      // Use messageId as chat_id to link feedback to the specific message
-      const chatId = messageId;
+      // Extract chat_id from messageId (remove assistant_ prefix)
+      const chatId = messageId.startsWith('assistant_') ? messageId.replace('assistant_', '') : messageId;
       const reaction = currentRating === 1 ? 'good' : 'bad';
 
       console.log('Submitting feedback:', { chatId, userId: session.userId, reaction, feedbackText: note });
@@ -58,42 +58,52 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
 
   return (
     <>
-      <div className="flex items-center space-x-2">
-        <button
-          onClick={() => handleRating(1)}
-          className={`p-1 rounded transition-colors ${
-            rating === 1 
-              ? 'bg-green-100 text-green-600' 
-              : 'hover:bg-gray-100'
-          }`}
-          style={{
-            backgroundColor: rating === 1 ? 'var(--success-light)' : 'transparent',
-            color: rating === 1 ? 'var(--success)' : 'var(--text-muted)'
-          }}
-          title="Thumbs up"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-          </svg>
-        </button>
-        <button
-          onClick={() => handleRating(-1)}
-          className={`p-1 rounded transition-colors ${
-            rating === -1 
-              ? 'bg-red-100 text-red-600' 
-              : 'hover:bg-gray-100'
-          }`}
-          style={{
-            backgroundColor: rating === -1 ? 'var(--error-light)' : 'transparent',
-            color: rating === -1 ? 'var(--error)' : 'var(--text-muted)'
-          }}
-          title="Thumbs down"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
-          </svg>
-        </button>
-      </div>
+      <button
+        onClick={() => handleRating(1)}
+        className="p-1.5 rounded transition-colors"
+        style={{
+          backgroundColor: rating === 1 ? 'var(--success-light, rgba(16, 185, 129, 0.1))' : 'transparent',
+          color: rating === 1 ? 'var(--success, #10b981)' : 'var(--text-muted)'
+        }}
+        onMouseEnter={(e) => {
+          if (rating !== 1) {
+            e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (rating !== 1) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }
+        }}
+        title="Thumbs up"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+        </svg>
+      </button>
+      <button
+        onClick={() => handleRating(-1)}
+        className="p-1.5 rounded transition-colors"
+        style={{
+          backgroundColor: rating === -1 ? 'var(--error-light, rgba(239, 68, 68, 0.1))' : 'transparent',
+          color: rating === -1 ? 'var(--error, #ef4444)' : 'var(--text-muted)'
+        }}
+        onMouseEnter={(e) => {
+          if (rating !== -1) {
+            e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (rating !== -1) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }
+        }}
+        title="Thumbs down"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
+        </svg>
+      </button>
 
       {/* Feedback Modal */}
       {showNoteModal && (

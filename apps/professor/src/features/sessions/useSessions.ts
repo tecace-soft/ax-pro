@@ -5,7 +5,9 @@ import { sessionsApi } from '../../services/api';
 import { isBackendAvailable } from '../../services/devMode';
 import { getSession } from '../../services/auth';
 import { 
-  fetchSessionsByGroup
+  fetchSessionsByGroup,
+  fetchChatMessagesForSession,
+  deleteSessionAndChatData
 } from '../../services/chatData';
 
 export interface Session {
@@ -19,6 +21,7 @@ export interface Session {
     role: string;
     createdAt: string;
   };
+  firstMessage?: string; // First user message content for sessions without title
 }
 
 export const useSessions = () => {
@@ -49,13 +52,36 @@ export const useSessions = () => {
         const sessionData = await fetchSessionsByGroup(groupId);
         
         // Convert SessionData to Session format
-        const convertedSessions: Session[] = sessionData.map(s => ({
-          id: s.session_id,
-          title: s.title || undefined,
-          status: (s.status || 'open') as 'open' | 'closed' | 'archived', // Default to 'open' if status doesn't exist
-          createdAt: s.created_at || new Date().toISOString(),
-          updatedAt: s.updated_at || s.created_at || new Date().toISOString()
-        }));
+        const convertedSessions: Session[] = await Promise.all(
+          sessionData.map(async (s) => {
+            const session: Session = {
+              id: s.session_id,
+              title: s.title || undefined,
+              status: (s.status || 'open') as 'open' | 'closed' | 'archived', // Default to 'open' if status doesn't exist
+              createdAt: s.created_at || new Date().toISOString(),
+              updatedAt: s.updated_at || s.created_at || new Date().toISOString()
+            };
+
+            // If session doesn't have a title, fetch the first message
+            if (!session.title) {
+              try {
+                const messages = await fetchChatMessagesForSession(s.session_id, groupId);
+                // Find the first user message
+                const firstUserMessage = messages.find(msg => msg.role === 'user');
+                if (firstUserMessage && firstUserMessage.content) {
+                  // Truncate to 50 characters for display
+                  session.firstMessage = firstUserMessage.content.length > 50 
+                    ? firstUserMessage.content.substring(0, 50) + '...'
+                    : firstUserMessage.content;
+                }
+              } catch (msgError) {
+                console.warn(`Could not fetch first message for session ${s.session_id}:`, msgError);
+              }
+            }
+
+            return session;
+          })
+        );
         
         setSessions(convertedSessions);
         console.log(`✅ Loaded ${convertedSessions.length} sessions from Supabase for group: ${groupId}`);
@@ -133,14 +159,16 @@ export const useSessions = () => {
         throw new Error('No group selected. Please select a group first.');
       }
       
-      // Session deletion is handled by backend if needed
-      // For now, just remove from local state and navigate away
-      await fetchSessions(); // Refresh list
+      // Delete session and all chat data from Supabase
+      await deleteSessionAndChatData(id, groupId);
+      
+      // Refresh the session list
+      await fetchSessions();
       
       // If we deleted the current session, navigate to the most recent one
       const remainingSessions = sessions.filter(s => s.id !== id);
       if (remainingSessions.length > 0) {
-        navigate(withGroupParam(`/chat/${remainingSessions[0].id}`, groupId));
+        navigate(withGroupParam('/chat', groupId));
       } else {
         navigate(withGroupParam('/chat', groupId));
       }
@@ -151,17 +179,11 @@ export const useSessions = () => {
     }
   };
 
-  const closeSession = async (id: string) => {
-    await updateSession(id, { status: 'closed' });
-  };
-
-  const reopenSession = async (id: string) => {
-    await updateSession(id, { status: 'open' });
-  };
-
+  const groupId = searchParams.get('group');
   useEffect(() => {
     fetchSessions();
-  }, [searchParams.get('group')]); // Refetch when group changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupId]); // Refetch when group changes
 
   return {
     sessions,
@@ -170,8 +192,6 @@ export const useSessions = () => {
     createSession,
     updateSession,
     deleteSession,
-    closeSession,
-    reopenSession,
     refresh: fetchSessions
   };
 };

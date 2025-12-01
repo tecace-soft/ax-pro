@@ -14,6 +14,7 @@ import { withGroupParam } from '../utils/navigation';
 import { fetchSessionById } from '../services/chatData';
 import { useSearchParams } from 'react-router-dom';
 import { useSessions } from '../features/sessions/useSessions';
+import { IconSettings } from '../ui/icons';
 
 const ChatShell: React.FC = () => {
   const navigate = useNavigate();
@@ -26,15 +27,16 @@ const ChatShell: React.FC = () => {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [currentSession, setCurrentSession] = useState<any>(null);
   const [searchParams] = useSearchParams();
-  const { createSession } = useSessions();
+  const { createSession, sessions } = useSessions();
   const hasAutoCreatedSession = useRef(false);
   const [urlCopied, setUrlCopied] = useState(false);
+  const lastGroupRoleCheckRef = useRef<string | null>(null);
 
   // Check auth and group on mount (also syncs URL) - only if user is logged in
   // For non-logged-in users, we skip this to allow access
   const session = getSession();
   if (session) {
-    useGroupAuth();
+  useGroupAuth();
   }
 
   // Check auth on mount - allow non-logged-in users to access chat
@@ -67,9 +69,10 @@ const ChatShell: React.FC = () => {
           role: localSession.role
         });
 
-        // Check group-based role
+        // Check group-based role (only once on mount, not on every searchParams change)
         const groupId = searchParams.get('group') || (localSession as any)?.selectedGroupId;
-        if (groupId) {
+        if (groupId && groupId !== lastGroupRoleCheckRef.current) {
+          lastGroupRoleCheckRef.current = groupId;
           try {
             const role = await getUserRoleForGroup(groupId);
             setGroupRole(role);
@@ -85,22 +88,31 @@ const ChatShell: React.FC = () => {
       // No else clause - allow non-logged-in users to continue
     };
     checkAuth();
-  }, [navigate, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate]); // Only run on mount, not on searchParams changes
 
   // Update group role when group changes
+  const groupId = searchParams.get('group');
   useEffect(() => {
     const updateGroupRole = async () => {
       const session = getSession();
       if (!session) return;
 
-      const groupId = searchParams.get('group') || (session as any)?.selectedGroupId;
-      if (!groupId) {
+      const currentGroupId = groupId || (session as any)?.selectedGroupId;
+      if (!currentGroupId) {
         setGroupRole(null);
+        lastGroupRoleCheckRef.current = null;
         return;
       }
 
+      // Prevent duplicate calls for the same groupId
+      if (currentGroupId === lastGroupRoleCheckRef.current) {
+        return;
+      }
+      lastGroupRoleCheckRef.current = currentGroupId;
+
       try {
-        const role = await getUserRoleForGroup(groupId);
+        const role = await getUserRoleForGroup(currentGroupId);
         setGroupRole(role);
         // Update user role based on group membership
         if (role) {
@@ -115,16 +127,16 @@ const ChatShell: React.FC = () => {
     if (user) {
       updateGroupRole();
     }
-  }, [searchParams.get('group'), user]);
+  }, [groupId, user]);
 
   // Check current session status from Supabase
   useEffect(() => {
     const loadCurrentSession = async () => {
       if (currentSessionId) {
-        const groupId = searchParams.get('group') || (getSession() as any)?.selectedGroupId;
-        if (groupId) {
+        const currentGroupId = groupId || (getSession() as any)?.selectedGroupId;
+        if (currentGroupId) {
           try {
-            const sessionData = await fetchSessionById(currentSessionId, groupId);
+            const sessionData = await fetchSessionById(currentSessionId, currentGroupId);
             if (sessionData) {
               setCurrentSession({
                 id: sessionData.session_id,
@@ -144,7 +156,7 @@ const ChatShell: React.FC = () => {
       }
     };
     loadCurrentSession();
-  }, [currentSessionId, searchParams.get('group')]);
+  }, [currentSessionId, groupId]);
 
   // Reset auto-create flag when navigating to a session
   useEffect(() => {
@@ -176,7 +188,7 @@ const ChatShell: React.FC = () => {
       console.log('Auto-creating new chat session for group:', groupId);
       hasAutoCreatedSession.current = true;
       createSession().then(sessionId => {
-        if (sessionId) {
+    if (sessionId) {
           setCurrentSessionId(sessionId);
         }
       }).catch(error => {
@@ -325,10 +337,7 @@ const ChatShell: React.FC = () => {
                     }}
                     title={t('ui.settings')}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="3"></circle>
-                      <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"></path>
-                    </svg>
+                    <IconSettings size={16} />
                   </button>
                 </>
               )}
@@ -384,51 +393,16 @@ const ChatShell: React.FC = () => {
                   }}
                 />
                 <h2 className="text-lg font-medium" style={{ color: 'var(--text)' }}>
-                  {currentSession?.title || t('ui.newChatTitle')}
-                </h2>
-                {currentSession?.status === 'closed' && (
-                  <span className="text-xs px-2 py-1 rounded bg-gray-100" style={{ color: 'var(--text-muted)' }}>
-                    🔒 Closed
-                  </span>
-                )}
-                <button
-                  onClick={() => {
-                    // Session status updates are handled by backend
-                    // Just update local state for UI
-                    if (currentSession?.status === 'closed') {
-                      setCurrentSession({ ...currentSession, status: 'open' });
-                    } else {
-                      setCurrentSession({ ...currentSession, status: 'closed' });
+                  {(() => {
+                    // Find the current session in the sessions list to get the proper title/firstMessage
+                    const sessionInList = sessions.find(s => s.id === currentSessionId);
+                    if (sessionInList) {
+                      return sessionInList.title || sessionInList.firstMessage || t('ui.newChatTitle');
                     }
-                    // Trigger a refresh of the session list
-                    window.dispatchEvent(new CustomEvent('sessionUpdated'));
-                  }}
-                  className="text-sm px-3 py-1 rounded border hover:bg-gray-50"
-                  style={{ 
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-secondary)'
-                  }}
-                >
-                  {currentSession?.status === 'closed' ? (
-                    <div className="flex items-center space-x-2">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-                        <path d="M21 3v5h-5"/>
-                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-                        <path d="M3 21v-5h5"/>
-                      </svg>
-                      <span>{t('context.reopen')} {t('ui.newChatTitle')}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                        <path d="M9 9h6v6H9z"/>
-                      </svg>
-                      <span>{t('ui.closeChat')}</span>
-                    </div>
-                  )}
-                </button>
+                    // Fallback to currentSession or default
+                    return currentSession?.title || t('ui.newChatTitle');
+                  })()}
+                </h2>
               </div>
               <div className="flex items-center space-x-2">
                 <button
@@ -452,13 +426,13 @@ const ChatShell: React.FC = () => {
                   }}
                   title="Copy chat URL to clipboard"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="18" cy="5" r="3"></circle>
                     <circle cx="6" cy="12" r="3"></circle>
                     <circle cx="18" cy="19" r="3"></circle>
                     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
                     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                  </svg>
+                      </svg>
                   <span>{urlCopied ? 'URL Copied!' : 'Share URL'}</span>
                 </button>
                 <button
@@ -481,15 +455,15 @@ const ChatShell: React.FC = () => {
                   }}
                   title="Start a new chat (⌘N or Ctrl+N)"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
+                      </svg>
                   <span>{t('ui.newChat')}</span>
                 </button>
               </div>
             </div>
-            <ThreadView sessionId={currentSessionId} isClosed={currentSession?.status === 'closed'} />
+            <ThreadView sessionId={currentSessionId} />
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center">

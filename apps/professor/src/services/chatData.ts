@@ -148,45 +148,36 @@ export async function fetchChatById(chatId: string): Promise<ChatData | null> {
 
     if (error) {
       console.error('Supabase error:', error);
-      return null;
-    }
-
-    if (data) {
-      console.log(`✅ Found chat for chat_id: ${chatId}`);
-    } else {
-      console.warn(`No chat found for chat_id: ${chatId}`);
+      throw new Error(`Failed to fetch chat data: ${error.message}`);
     }
 
     return data;
   } catch (error) {
-    console.error('Error fetching chat by ID:', error);
-    return null;
+    console.error('Error fetching chat data:', error);
+    throw error;
   }
 }
 
 /**
- * Fetch all sessions for a group, ordered by most recent first
- * Returns empty array if session table doesn't exist (sessions are created by backend)
+ * Fetch sessions from Supabase filtered by group_id
  */
-export async function fetchSessionsByGroup(groupId: string, limit: number = 100): Promise<SessionData[]> {
+export async function fetchSessionsByGroup(groupId: string): Promise<SessionData[]> {
   try {
     const supabase = getSupabaseClient();
     
-    console.log('Fetching sessions from Supabase for group_id:', groupId);
+    console.log(`Fetching sessions for group_id: ${groupId}`);
     
-    // Only select columns that definitely exist (session_id, group_id, created_at)
-    // Don't select status or title as they may not exist
+    // Only select columns that definitely exist
     const { data, error } = await supabase
       .from('session')
       .select('session_id, group_id, created_at')
       .eq('group_id', groupId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+      .order('created_at', { ascending: false });
 
     if (error) {
-      // If table doesn't exist or has issues, return empty array
+      // If table doesn't exist, return empty array (sessions are created by backend)
       if (error.code === 'PGRST116' || error.message.includes('does not exist') || error.message.includes('schema cache')) {
-        console.warn('Session table may not exist or have different schema - sessions are created by backend');
+        console.warn('Session table does not exist or has schema issues (this is okay - sessions are created by backend)');
         return [];
       }
       console.error('Supabase error:', error);
@@ -196,7 +187,7 @@ export async function fetchSessionsByGroup(groupId: string, limit: number = 100)
     console.log(`✅ Fetched ${data?.length || 0} sessions for group_id: ${groupId}`);
     return data || [];
   } catch (error) {
-    console.error('Failed to fetch sessions:', error);
+    console.error('Error fetching sessions:', error);
     // Return empty array instead of throwing - sessions are created by backend
     return [];
   }
@@ -266,14 +257,29 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
           createdAt: chat.created_at || new Date().toISOString()
         });
         
-        // Add assistant message
-        messages.push({
+        // Add assistant message with citations if available
+        const assistantMessage: any = {
           id: `assistant_${chat.chat_id}`,
           sessionId: chat.session_id || sessionId,
           role: 'assistant' as const,
           content: chat.response,
           createdAt: chat.created_at || new Date().toISOString()
-        });
+        };
+
+        // Add citations if they exist in the database
+        if (chat.citation_title || chat.citation_content) {
+          assistantMessage.citations = [{
+            id: `citation_${chat.chat_id}`,
+            messageId: chat.chat_id,
+            sourceType: 'document' as const,
+            title: chat.citation_title || '',
+            snippet: chat.citation_content || '',
+            sourceId: `doc_${chat.chat_id}`,
+            metadata: {}
+          }];
+        }
+
+        messages.push(assistantMessage);
       }
     }
 
@@ -285,3 +291,94 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
   }
 }
 
+/**
+ * Delete a session and all associated chat data from Supabase
+ */
+export async function deleteSessionAndChatData(sessionId: string, groupId: string): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    console.log(`Deleting session ${sessionId} and all chat data for group ${groupId}`);
+    
+    // First, delete all chat data for this session
+    // Use a more aggressive delete to ensure all related records are removed
+    const { data: chatData, error: chatSelectError } = await supabase
+      .from('chat')
+      .select('chat_id')
+      .eq('session_id', sessionId)
+      .eq('group_id', groupId);
+
+    if (chatSelectError) {
+      console.warn('Could not query chat data (may not exist):', chatSelectError);
+    } else if (chatData && chatData.length > 0) {
+      console.log(`Found ${chatData.length} chat records to delete`);
+      
+      // Delete all chat records
+      const { error: chatError } = await supabase
+        .from('chat')
+        .delete()
+        .eq('session_id', sessionId)
+        .eq('group_id', groupId);
+
+      if (chatError) {
+        console.error('Error deleting chat data:', chatError);
+        throw new Error(`Failed to delete chat data: ${chatError.message}`);
+      }
+
+      console.log(`✅ Deleted ${chatData.length} chat records for session: ${sessionId}`);
+      
+      // Wait a bit to ensure the deletion is committed
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } else {
+      console.log('No chat records found for this session');
+    }
+
+    // Then, delete the session itself
+    const { error: sessionError } = await supabase
+      .from('session')
+      .delete()
+      .eq('session_id', sessionId)
+      .eq('group_id', groupId);
+
+    if (sessionError) {
+      // If session table doesn't exist or has issues, that's okay - chat data is already deleted
+      if (sessionError.code === 'PGRST116' || sessionError.message.includes('does not exist') || sessionError.message.includes('schema cache')) {
+        console.warn('Session table does not exist or has schema issues, but chat data was deleted successfully');
+        return;
+      }
+      
+      // Check if it's a foreign key constraint error
+      if (sessionError.message.includes('foreign key constraint') || sessionError.code === '23503') {
+        console.error('Foreign key constraint error - chat data may still exist:', sessionError);
+        // Try to delete chat data again more aggressively
+        const { error: retryChatError } = await supabase
+          .from('chat')
+          .delete()
+          .eq('session_id', sessionId);
+        
+        if (!retryChatError) {
+          // Retry session deletion
+          const { error: retrySessionError } = await supabase
+            .from('session')
+            .delete()
+            .eq('session_id', sessionId)
+            .eq('group_id', groupId);
+          
+          if (retrySessionError) {
+            throw new Error(`Failed to delete session after retry: ${retrySessionError.message}`);
+          }
+          console.log(`✅ Successfully deleted session after retry: ${sessionId}`);
+          return;
+        }
+      }
+      
+      console.error('Error deleting session:', sessionError);
+      throw new Error(`Failed to delete session: ${sessionError.message}`);
+    }
+
+    console.log(`✅ Deleted session: ${sessionId}`);
+  } catch (error) {
+    console.error('Failed to delete session and chat data:', error);
+    throw error;
+  }
+}

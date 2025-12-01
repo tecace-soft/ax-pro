@@ -266,8 +266,8 @@ export const useThread = (sessionId: string) => {
         throw new Error('Message not found');
       }
 
-      // Use the messageId as chatId (this should be the chatId from n8n response)
-      const chatId = messageId;
+      // Extract chat_id from messageId (remove assistant_ prefix)
+      const chatId = messageId.startsWith('assistant_') ? messageId.replace('assistant_', '') : messageId;
       const reaction = rating === 1 ? 'good' : 'bad';
 
       console.log('Submitting feedback:', { chatId, userId: session.userId, reaction, feedbackText });

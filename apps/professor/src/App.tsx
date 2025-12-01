@@ -129,7 +129,7 @@ const App: React.FC = () => {
               <Route 
                 path="/admin/dashboard" 
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute requiredRole="user">
                     <AdminDashboard />
                   </ProtectedRoute>
                 } 
@@ -137,7 +137,7 @@ const App: React.FC = () => {
               <Route 
                 path="/admin" 
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute requiredRole="user">
                     <AdminShell />
                   </ProtectedRoute>
                 } 
@@ -145,7 +145,7 @@ const App: React.FC = () => {
               <Route 
                 path="/admin/usage" 
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute requiredRole="user">
                     <AdminShell />
                   </ProtectedRoute>
                 } 
@@ -153,7 +153,7 @@ const App: React.FC = () => {
               <Route 
                 path="/admin/prompt" 
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute requiredRole="user">
                     <AdminShell />
                   </ProtectedRoute>
                 } 
@@ -161,7 +161,7 @@ const App: React.FC = () => {
               <Route 
                 path="/admin/knowledge-management" 
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute requiredRole="user">
                     <AdminDashboard />
                   </ProtectedRoute>
                 } 

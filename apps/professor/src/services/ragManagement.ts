@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getSupabaseClient } from './supabaseUserSpecific';
 
 // RAG Management API configuration
-const N8N_BASE_URL = (import.meta as any).env?.VITE_N8N_BASE_URL || 'https://n8n.srv978041.hstgr.cloud';
+const N8N_BASE_URL = (import.meta as any).env?.VITE_N8N_BASE_URL || 'https://n8n.srv1153481.hstgr.cloud';
 const UPLOAD_WEBHOOK_ID = (import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID || '30de76ac-a5bf-41a4-a151-ee9f8ec5c19a';
 
 // n8n webhook endpoints for different operations
@@ -970,6 +970,7 @@ export interface VectorDocument {
 
 /**
  * Fetch all documents from Supabase documents table, filtered by groupId
+ * Note: This function now fetches ALL documents for the group (not paginated) to ensure we get all unique files
  */
 export async function fetchVectorDocuments(limit: number = 50, offset: number = 0): Promise<{ success: boolean; documents: VectorDocument[]; total: number; message?: string }> {
   try {
@@ -991,29 +992,76 @@ export async function fetchVectorDocuments(limit: number = 50, offset: number = 
       };
     }
 
-    // Fetch only specific fields, excluding large embedding data, filtered by groupId
-    const { data, error, count } = await supabase
+    // First, get the total count for this group
+    const { count, error: countError } = await supabase
       .from('documents')
-      .select('id, content, metadata, created_at', { count: 'exact' })
-      .eq('metadata->>groupId', groupId) // Filter by groupId in metadata
-      .order('id', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    if (error) {
-      console.error('Supabase error:', error);
+      .select('*', { count: 'exact', head: true })
+      .eq('metadata->>groupId', groupId);
+    
+    if (countError) {
+      console.error('Error getting count:', countError);
       return {
         success: false,
         documents: [],
         total: 0,
-        message: error.message,
+        message: countError.message,
       };
     }
 
-    console.log(`✅ Fetched ${data?.length || 0} documents from Supabase (Total: ${count || 0})`);
-
+    // Fetch ALL documents for this group (not paginated) to ensure we get all unique files
+    // We'll handle pagination in the UI by grouping by fileName
+    let allData: any[] = [];
+    let hasMore = true;
+    let page = 0;
+    const pageSize = 1000; // Fetch in batches of 1000
+    
+    while (hasMore) {
+      const { data: pageData, error: pageError } = await supabase
+        .from('documents')
+        .select('id, content, metadata, created_at')
+        .eq('metadata->>groupId', groupId)
+        .order('id', { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+      
+      if (pageError) {
+        console.error('Error fetching page:', pageError);
+        break;
+      }
+      
+      if (pageData && pageData.length > 0) {
+        allData = [...allData, ...pageData];
+        hasMore = pageData.length === pageSize;
+        page++;
+        console.log(`📄 Fetched page ${page}: ${pageData.length} documents (total so far: ${allData.length})`);
+      } else {
+        hasMore = false;
+      }
+    }
+    
+    console.log(`✅ Fetched ${allData.length} total documents for groupId: ${groupId}`);
+    
+    // Extract unique fileNames to verify we're getting all files
+    const uniqueFileNames = [...new Set(allData.map(d => {
+      const meta = d.metadata || {};
+      return meta.fileName || 'Unknown';
+    }).filter(f => f !== 'Unknown'))];
+    console.log(`📋 Found ${uniqueFileNames.length} unique files:`, uniqueFileNames);
+    
+    // Group by fileName to show distribution
+    const fileDistribution = allData.reduce((acc, d) => {
+      const meta = d.metadata || {};
+      const fileName = meta.fileName || 'Unknown';
+      acc[fileName] = (acc[fileName] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    console.log(`📊 Documents per file:`, fileDistribution);
+    
+    // Apply pagination to the results (for backward compatibility with existing code)
+    const paginatedData = allData.slice(offset, offset + limit);
+    
     return {
       success: true,
-      documents: data || [],
+      documents: paginatedData || [],
       total: count || 0,
       message: 'Documents fetched successfully',
     };
@@ -1095,7 +1143,7 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     const session = getSession();
     
     // Hardcoded universal endpoint for document indexing (same for all users)
-    const INDEXING_WEBHOOK_URL = 'https://n8n.srv978041.hstgr.cloud/webhook/30de76ac-a5bf-41a4-a151-ee9f8ec5c19a';
+    const INDEXING_WEBHOOK_URL = 'https://n8n.srv1153481.hstgr.cloud/webhook/30de76ac-a5bf-41a4-a151-ee9f8ec5c19a';
     const n8nWebhookUrl = INDEXING_WEBHOOK_URL;
     
     console.log(`🔧 Webhook mode: UNIVERSAL (hardcoded)`);

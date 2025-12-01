@@ -10,7 +10,7 @@ export interface N8nConfig {
 }
 
 // Hard-coded universal admin webhook fallback
-const UNIVERSAL_N8N_WEBHOOK = 'https://n8n.srv978041.hstgr.cloud/webhook/db3d9fbd-73bd-444a-a689-842446fffdd9';
+const UNIVERSAL_N8N_WEBHOOK = 'https://n8n.srv1153481.hstgr.cloud/webhook/db3d9fbd-73bd-444a-a689-842446fffdd9';
 
 export interface N8nRequest {
   sessionId: string;

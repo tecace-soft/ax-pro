@@ -5,7 +5,7 @@ const DEFAULT_SUPABASE_URL = 'https://qpyteahuynkgkbmdasbv.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFweXRlYWh1eW5rZ2tibWRhc2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5NDk2NTcsImV4cCI6MjA3NTUyNTY1N30.qvp5ox6Xm0wYcZK89S2MYVu18fqyfYmT8nercIFMKOY';
 
 // Create default Supabase client for group operations
-const defaultSupabase = createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
+export const defaultSupabase = createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
 
 export interface User {
   id: number;
@@ -214,6 +214,76 @@ export async function getGroupById(groupId: string): Promise<Group | null> {
     return data as Group;
   } catch (error) {
     console.error('Failed to fetch group:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update group name
+ */
+export async function updateGroupName(groupId: string, name: string): Promise<void> {
+  try {
+    const { error } = await defaultSupabase
+      .from('group')
+      .update({ name })
+      .eq('group_id', groupId);
+
+    if (error) {
+      console.error('Error updating group name:', error);
+      throw new Error(`Failed to update group name: ${error.message}`);
+    }
+
+    console.log('✅ Group name updated successfully');
+  } catch (error) {
+    console.error('Failed to update group name:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get users by user_ids array
+ */
+export async function getUsersByIds(userIds: string[]): Promise<User[]> {
+  try {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    const { data, error } = await defaultSupabase
+      .from('user')
+      .select('id, user_id, first_name, last_name, email, groups')
+      .in('user_id', userIds);
+
+    if (error) {
+      console.error('Error fetching users:', error);
+      throw new Error(`Failed to fetch users: ${error.message}`);
+    }
+
+    return data as User[] || [];
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update group users array (add or remove users)
+ */
+export async function updateGroupUsers(groupId: string, userIds: string[]): Promise<void> {
+  try {
+    const { error } = await defaultSupabase
+      .from('group')
+      .update({ users: userIds })
+      .eq('group_id', groupId);
+
+    if (error) {
+      console.error('Error updating group users:', error);
+      throw new Error(`Failed to update group users: ${error.message}`);
+    }
+
+    console.log('✅ Group users updated successfully');
+  } catch (error) {
+    console.error('Failed to update group users:', error);
     throw error;
   }
 }
