@@ -1,22 +1,33 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { getSession } from '../services/auth';
 
 /**
  * Hook to ensure user is authenticated and has a selected group.
- * Syncs group_id between session and URL query parameter.
+ * Group ID is ONLY from URL query parameter - no session storage.
+ * This allows multiple tabs/windows to work independently with different groups.
  * Redirects to login or group-management if required.
  */
 export const useGroupAuth = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const hasSyncedRef = useRef(false);
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const hasCheckedRef = useRef(false);
+  const lastGroupIdRef = useRef<string | null>(null);
 
   const urlGroupId = searchParams.get('group');
   
   useEffect(() => {
-    // Prevent infinite loops by only syncing once per group change
-    if (hasSyncedRef.current) {
+    console.log('🔄 useGroupAuth: Effect running', {
+      pathname: location.pathname,
+      urlGroupId,
+      hasChecked: hasCheckedRef.current,
+      lastGroupId: lastGroupIdRef.current
+    });
+
+    // Skip if we've already checked this group ID
+    if (hasCheckedRef.current && lastGroupIdRef.current === urlGroupId) {
+      console.log('⏭️ useGroupAuth: Already checked this group, skipping');
       return;
     }
     
@@ -24,51 +35,52 @@ export const useGroupAuth = () => {
 
     // Require logged in user
     if (!session) {
+      console.log('🔒 useGroupAuth: No session, redirecting to login');
       navigate('/', { replace: true });
       return;
     }
 
-    const sessionGroupId = (session as any)?.selectedGroupId;
-
-    // If URL has group but session doesn't, update session
-    if (urlGroupId && urlGroupId !== sessionGroupId) {
-      const updatedSession = { ...session, selectedGroupId: urlGroupId };
-      try {
-        localStorage.setItem('axpro_session', JSON.stringify(updatedSession));
-        hasSyncedRef.current = true;
-      } catch (e) {
-        console.error('Failed to update session with group_id:', e);
-      }
-      return;
-    }
-
-    // If session has group but URL doesn't, update URL
-    if (sessionGroupId && !urlGroupId) {
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.set('group', sessionGroupId);
-      setSearchParams(newSearchParams, { replace: true });
-      hasSyncedRef.current = true;
-      return;
-    }
-
-    // If neither has group_id, redirect to group management
-    if (!sessionGroupId && !urlGroupId) {
+    // Only redirect to group-management if:
+    // 1. There's no group in the URL
+    // 2. We're on a page that requires a group (admin dashboard, settings, etc.)
+    // 3. We're NOT already on the group-management page
+    const requiresGroup = location.pathname.startsWith('/admin') || 
+                          location.pathname.startsWith('/settings') ||
+                          location.pathname.startsWith('/chat');
+    
+    console.log('🔍 useGroupAuth: Check conditions', {
+      urlGroupId,
+      requiresGroup,
+      pathname: location.pathname,
+      isGroupManagement: location.pathname === '/group-management'
+    });
+    
+    if (!urlGroupId && requiresGroup && location.pathname !== '/group-management') {
+      console.log('⚠️ useGroupAuth: No group in URL for page that requires it, redirecting to group management');
+      console.trace('Redirect trace:');
       navigate('/group-management', { replace: true });
       return;
     }
     
-    hasSyncedRef.current = true;
-  }, [navigate, urlGroupId, searchParams, setSearchParams]);
+    if (urlGroupId) {
+      console.log('✅ useGroupAuth: Valid session and group:', urlGroupId);
+    }
+    
+    hasCheckedRef.current = true;
+    lastGroupIdRef.current = urlGroupId;
+  }, [navigate, urlGroupId, location.pathname]);
   
-  // Reset sync flag when groupId changes
+  // Only reset if the URL group actually changed (not just re-rendered)
   useEffect(() => {
-    hasSyncedRef.current = false;
+    if (lastGroupIdRef.current !== urlGroupId) {
+      hasCheckedRef.current = false;
+    }
   }, [urlGroupId]);
 
   const session = getSession();
   return {
     session,
-    groupId: (session as any)?.selectedGroupId || searchParams.get('group') || null
+    groupId: urlGroupId // ONLY use URL parameter
   };
 };
 

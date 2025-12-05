@@ -15,14 +15,12 @@ export const DEFAULT_CUSTOMIZATION: UICustomization = {
 };
 
 /**
- * Get group_id from URL or session
+ * Get group_id from URL ONLY (not from session)
+ * This allows multiple tabs/windows to work independently with different groups
  */
 function getGroupId(): string | null {
   const urlParams = new URLSearchParams(window.location.search);
-  const urlGroupId = urlParams.get('group');
-  const session = getSession();
-  const sessionGroupId = (session as any)?.selectedGroupId;
-  return urlGroupId || sessionGroupId || null;
+  return urlParams.get('group');
 }
 
 /**

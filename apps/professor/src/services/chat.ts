@@ -219,9 +219,9 @@ export const chatService = {
         console.log('Using universal chatbot webhook:', CHATBOT_WEBHOOK_URL);
         try {
           const session = getSession();
-          // Get groupId from session or URL (for non-logged-in users, get from URL)
+          // Get groupId from URL ONLY (allows multiple tabs with different groups)
           const urlParams = new URLSearchParams(window.location.search);
-          const groupId = (session as any)?.selectedGroupId || urlParams.get('group');
+          const groupId = urlParams.get('group');
           
           // Validate that groupId exists
           if (!groupId) {

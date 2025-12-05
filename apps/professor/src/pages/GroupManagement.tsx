@@ -70,67 +70,44 @@ const GroupManagement: React.FC = () => {
   };
 
   const handleGroupCreated = async (groupId: string) => {
-    console.log('Group created, setting selectedGroupId:', groupId);
-    
-    // Set the selectedGroupId in session immediately after group creation
-    const session = getSession();
-    if (session) {
-      const updatedSession = {
-        ...session,
-        selectedGroupId: groupId,
-        role: 'admin' as const // Creator is always admin
-      };
-      try {
-        localStorage.setItem('axpro_session', JSON.stringify(updatedSession));
-        console.log('✅ Session updated with selectedGroupId:', groupId);
-        // Re-apply universal settings for the new session
-        checkAndMigrateSettings();
-      } catch (e) {
-        console.error('Failed to update session with group_id:', e);
-      }
-    }
+    console.log('Group created with ID:', groupId);
     
     // Reload groups after creation
     await loadGroups();
     
-    // Automatically navigate to admin dashboard for the new group
+    // Navigate to admin dashboard with group ID in URL only
     navigate(`/admin/dashboard?group=${groupId}`);
   };
 
-  // Impersonate admin or regular user based on group role, then navigate
+  // Open group - navigate with group ID in URL only (no session storage)
   const handleOpenGroup = async (group: Group) => {
+    console.log('🚀 Opening group:', group.name, 'ID:', group.group_id);
     const session = getSession();
-    if (!session) return;
-
-    // Update session with selected group
-    const nextSession = { 
-      ...session, 
-      selectedGroupId: group.group_id,
-    };
-    try {
-      localStorage.setItem('axpro_session', JSON.stringify(nextSession));
-      // Re-apply universal settings for the new session so admin/dashboard and chat use correct config
-      checkAndMigrateSettings();
-    } catch (e) {
-      console.error('Failed to persist session', e);
+    if (!session) {
+      console.error('❌ No session found');
+      return;
     }
 
     // Check group-based role from Supabase
     try {
       const { getUserRoleForGroup } = await import('../services/auth');
       const groupRole = await getUserRoleForGroup(group.group_id);
+      console.log('👤 User role in group:', groupRole);
       
       // Route: both admins and users -> dashboard
+      // Group ID is ONLY in URL - allows multiple tabs with different groups
       if (groupRole === 'admin' || groupRole === 'user') {
+        console.log('✅ Navigating to /admin/dashboard?group=' + group.group_id);
         navigate(`/admin/dashboard?group=${group.group_id}`);
       } else {
         // User is not a member of this group
-        console.warn('User is not a member of this group');
+        console.warn('⚠️ User is not a member of this group');
         navigate(`/group-management`);
       }
     } catch (error) {
-      console.error('Failed to check group role:', error);
+      console.error('❌ Failed to check group role:', error);
       // Fallback: navigate all users to dashboard
+      console.log('🔄 Fallback: Navigating to /admin/dashboard?group=' + group.group_id);
       navigate(`/admin/dashboard?group=${group.group_id}`);
     }
   };

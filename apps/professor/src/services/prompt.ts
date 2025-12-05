@@ -20,10 +20,11 @@ export async function fetchSystemPrompt(): Promise<string> {
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in session, cannot fetch group-specific prompt');
+      console.warn('No group_id in URL, cannot fetch group-specific prompt');
       return '';
     }
     
@@ -64,7 +65,8 @@ export async function updateSystemPrompt(promptText: string): Promise<void> {
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
       throw new Error('No group_id in session. Please select a group first.');
@@ -97,7 +99,8 @@ export async function fetchPromptHistory(limit: number = 10): Promise<PromptHist
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
       console.warn('No group_id in session, cannot fetch group-specific prompt history');

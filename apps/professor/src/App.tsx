@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { I18nProvider } from './i18n/I18nProvider';
 import Landing from './pages/Landing';
@@ -25,32 +25,35 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole: Role }
 }) => {
   const [isAuthorized, setIsAuthorized] = React.useState<boolean | null>(null);
   const session = getSession();
+  const [searchParams] = useSearchParams();
+  const groupId = searchParams.get('group');
 
   React.useEffect(() => {
     const checkAuth = async () => {
       // First check if user is logged in
       if (!session) {
+        console.log('🔒 ProtectedRoute: No session, unauthorized');
         setIsAuthorized(false);
         return;
       }
 
-      // Get groupId from URL or session
-      const urlParams = new URLSearchParams(window.location.search);
-      const groupId = urlParams.get('group') || (session as any)?.selectedGroupId;
+      console.log('🔐 ProtectedRoute: Checking auth for role:', requiredRole, 'groupId:', groupId);
 
       // If groupId exists, check group-based role
       if (groupId) {
         const authorized = await isAuthedFor(requiredRole, groupId);
+        console.log('✅ ProtectedRoute: Group-based auth result:', authorized);
         setIsAuthorized(authorized);
       } else {
-        // Fall back to session-based role check
+        // Fall back to session-based role check (for pages without group)
         const authorized = isAuthedForSync(requiredRole);
+        console.log('✅ ProtectedRoute: Session-based auth result:', authorized);
         setIsAuthorized(authorized);
       }
     };
 
     checkAuth();
-  }, [requiredRole, session]);
+  }, [requiredRole, session, groupId]);
 
   // Show loading state while checking
   if (isAuthorized === null) {
