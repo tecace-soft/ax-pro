@@ -9,10 +9,11 @@ export async function fetchAllChatData(limit: number = 100): Promise<ChatData[]>
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in session, cannot fetch group-specific chat data');
+      console.warn('No group_id in URL, cannot fetch group-specific chat data');
       return [];
     }
     
@@ -45,10 +46,11 @@ export async function fetchChatDataBySession(sessionId: string): Promise<ChatDat
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in session, cannot fetch group-specific chat data');
+      console.warn('No group_id in URL, cannot fetch group-specific chat data');
       return [];
     }
     
@@ -78,10 +80,11 @@ export async function fetchChatDataByDateRange(startDate: string, endDate: strin
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in session, cannot fetch group-specific chat data');
+      console.warn('No group_id in URL, cannot fetch group-specific chat data');
       return [];
     }
     

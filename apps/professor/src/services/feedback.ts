@@ -9,10 +9,11 @@ export async function fetchAllAdminFeedback(): Promise<AdminFeedbackData[]> {
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in session, cannot fetch group-specific admin feedback');
+      console.warn('No group_id in URL, cannot fetch group-specific admin feedback');
       return [];
     }
     
@@ -44,10 +45,11 @@ export async function fetchAllUserFeedback(): Promise<UserFeedbackData[]> {
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in session, cannot fetch group-specific user feedback');
+      console.warn('No group_id in URL, cannot fetch group-specific user feedback');
       return [];
     }
     
@@ -79,10 +81,11 @@ export async function fetchUserFeedbackByDateRange(startDate: string, endDate: s
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in session, cannot fetch group-specific user feedback');
+      console.warn('No group_id in URL, cannot fetch group-specific user feedback');
       return [];
     }
     
@@ -147,10 +150,11 @@ export async function submitUserFeedback(
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      throw new Error('No group_id in session. Please select a group first.');
+      throw new Error('No group_id in URL. Please select a group first.');
     }
     
     console.log('Submitting user feedback:', { chatId, userId, reaction, feedbackText, groupId });
@@ -189,10 +193,11 @@ export async function getAdminFeedbackByChat(chatId: string): Promise<AdminFeedb
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in session, cannot fetch group-specific admin feedback');
+      console.warn('No group_id in URL, cannot fetch group-specific admin feedback');
       return null;
     }
     
@@ -231,10 +236,11 @@ export async function submitAdminFeedback(
   try {
     const supabase = getSupabaseClient();
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      throw new Error('No group_id in session. Please select a group first.');
+      throw new Error('No group_id in URL. Please select a group first.');
     }
     
     console.log('Submitting admin feedback:', { chatId, verdict, feedbackText, correctedMessage, correctedResponse, groupId });

@@ -21,12 +21,10 @@ export const useUICustomization = () => {
   const lastGroupIdRef = useRef<string | null>(null);
   const isLoadingRef = useRef(false);
 
-  // Get group_id from URL or session
+  // Get group_id from URL ONLY (not from session)
+  // This allows multiple tabs/windows to work independently with different groups
   const getGroupId = useCallback((): string | null => {
-    const urlGroupId = searchParams.get('group');
-    const session = getSession();
-    const sessionGroupId = (session as any)?.selectedGroupId;
-    return urlGroupId || sessionGroupId || null;
+    return searchParams.get('group');
   }, [searchParams]);
 
   // Load customization when group_id changes

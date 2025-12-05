@@ -476,8 +476,9 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
 
       // Save file metadata to database table with group_id
       const { getSession } = await import('./auth');
+      const { getGroupIdFromUrl } = await import('../utils/navigation');
       const session = getSession();
-      const groupId = (session as any)?.selectedGroupId;
+      const groupId = getGroupIdFromUrl();
       
       if (groupId && session?.userId) {
         try {
@@ -543,10 +544,11 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
     console.log('🔍 [fetchFilesFromSupabase] Starting file fetch...');
     const supabase = getSupabaseClient();
     
-    // Get group_id from session
+    // Get group_id from URL
     const { getSession } = await import('./auth');
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const groupId = getGroupIdFromUrl();
     const userId = session?.userId;
     
     console.log('🔍 [fetchFilesFromSupabase] Session check:', {
@@ -839,10 +841,11 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
     console.log(`Deleting file from Supabase Storage: ${fileName}`);
     const supabase = getSupabaseClient();
     
-    // Get group_id from session to delete the correct database record
+    // Get group_id from URL to delete the correct database record
     const { getSession } = await import('./auth');
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const groupId = getGroupIdFromUrl();
 
     const filePath = `files/${fileName}`;
 
@@ -977,13 +980,14 @@ export async function fetchVectorDocuments(limit: number = 50, offset: number = 
     console.log(`Fetching vector documents from Supabase (limit: ${limit}, offset: ${offset})...`);
     const supabase = getSupabaseClient();
     
-    // Get group_id from session
+    // Get group_id from URL
     const { getSession } = await import('./auth');
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('⚠️ No group_id in session, cannot fetch group-specific documents');
+      console.warn('⚠️ No group_id in URL, cannot fetch group-specific documents');
       return {
         success: false,
         documents: [],
@@ -1150,13 +1154,52 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     console.log(`🌐 Using webhook: ${n8nWebhookUrl}`);
     console.log(`👤 User: ${session?.email || 'Unknown'} (${session?.userId || 'Unknown'})`);
 
-    const groupIdFromSession = (session as any)?.selectedGroupId || null;
-    const payload = {
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupIdFromSession = getGroupIdFromUrl();
+    
+    // Fetch group data to get chunking options
+    let chunkingOptions: { chunk_size: number; chunk_overlap: number } | undefined;
+    if (groupIdFromSession) {
+      try {
+        const { defaultSupabase } = await import('./groupService');
+        const { data: groupData, error: groupError } = await defaultSupabase
+          .from('group')
+          .select('chunk_size, chunk_overlap')
+          .eq('group_id', groupIdFromSession)
+          .single();
+        
+        if (!groupError && groupData) {
+          const chunkSize = groupData.chunk_size;
+          const chunkOverlap = groupData.chunk_overlap;
+          
+          if (chunkSize !== null && chunkSize !== undefined && chunkOverlap !== null && chunkOverlap !== undefined) {
+            chunkingOptions = {
+              chunk_size: Number(chunkSize),
+              chunk_overlap: Number(chunkOverlap)
+            };
+            console.log(`📊 Using chunking options from group:`, chunkingOptions);
+          } else {
+            console.warn(`⚠️ Group ${groupIdFromSession} has missing chunk_size or chunk_overlap values`);
+          }
+        } else {
+          console.warn(`⚠️ Failed to fetch group data for ${groupIdFromSession}:`, groupError);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Error fetching group chunking options:`, error);
+      }
+    }
+    
+    const payload: any = {
       fileUrl: fullFileUrl,
       fileName: fileName,
       source: 'supabase-storage',
       groupId: groupIdFromSession,
     };
+    
+    // Add chunking_options if available
+    if (chunkingOptions) {
+      payload.chunking_options = chunkingOptions;
+    }
 
     console.log(`📦 Payload being sent:`, payload);
 
@@ -1256,10 +1299,11 @@ export async function checkIndexingStatus(fileName: string): Promise<{
   try {
     const supabase = getSupabaseClient();
     
-    // Get group_id from session
+    // Get group_id from URL
     const { getSession } = await import('./auth');
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
       return {
@@ -1319,10 +1363,11 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
   try {
     const supabase = getSupabaseClient();
     
-    // Get group_id from session
+    // Get group_id from URL
     const { getSession } = await import('./auth');
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
       return {
@@ -1487,10 +1532,11 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
   try {
     const supabase = getSupabaseClient();
     
-    // Get group_id from session
+    // Get group_id from URL
     const { getSession } = await import('./auth');
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
     const session = getSession();
-    const groupId = (session as any)?.selectedGroupId;
+    const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
       return {

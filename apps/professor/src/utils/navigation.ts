@@ -1,11 +1,22 @@
 import { getSession } from '../services/auth';
 
 /**
- * Get the current group_id from session
+ * Get the current group_id from URL ONLY (not from session)
+ * This allows multiple tabs/windows to work independently with different groups
  */
 export const getCurrentGroupId = (): string | null => {
-  const session = getSession();
-  return (session as any)?.selectedGroupId || null;
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('group');
+};
+
+/**
+ * Get group_id from URL query parameter
+ * Used by services that need group context
+ */
+export const getGroupIdFromUrl = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('group');
 };
 
 /**

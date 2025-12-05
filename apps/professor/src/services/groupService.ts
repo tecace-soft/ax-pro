@@ -287,3 +287,61 @@ export async function updateGroupUsers(groupId: string, userIds: string[]): Prom
     throw error;
   }
 }
+
+/**
+ * Update group chunking options (chunk_size and chunk_overlap)
+ * Both values can be null - if either is null, chunking_options won't be passed to n8n
+ */
+export async function updateGroupChunkingOptions(
+  groupId: string, 
+  chunkSize: number | null, 
+  chunkOverlap: number | null
+): Promise<void> {
+  try {
+    const { error } = await defaultSupabase
+      .from('group')
+      .update({ 
+        chunk_size: chunkSize,
+        chunk_overlap: chunkOverlap
+      })
+      .eq('group_id', groupId);
+
+    if (error) {
+      console.error('Error updating group chunking options:', error);
+      throw new Error(`Failed to update group chunking options: ${error.message}`);
+    }
+
+    console.log('✅ Group chunking options updated successfully');
+  } catch (error) {
+    console.error('Failed to update group chunking options:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update group top_k value
+ * Can be null to use default value
+ */
+export async function updateGroupTopK(
+  groupId: string, 
+  topK: number | null
+): Promise<void> {
+  try {
+    const { error } = await defaultSupabase
+      .from('group')
+      .update({ 
+        top_k: topK
+      })
+      .eq('group_id', groupId);
+
+    if (error) {
+      console.error('Error updating group top_k:', error);
+      throw new Error(`Failed to update group top_k: ${error.message}`);
+    }
+
+    console.log('✅ Group top_k updated successfully');
+  } catch (error) {
+    console.error('Failed to update group top_k:', error);
+    throw error;
+  }
+}

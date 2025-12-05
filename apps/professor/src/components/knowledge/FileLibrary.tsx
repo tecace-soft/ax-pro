@@ -1,6 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from '../../i18n/I18nProvider';
+import { useTheme } from '../../theme/ThemeProvider';
 import { ToastContainer } from '../ui/Toast';
+import { IconSettings, IconX } from '../../ui/icons';
+import { getSession } from '../../services/auth';
+import { defaultSupabase } from '../../services/groupService';
+import { updateGroupChunkingOptions, updateGroupTopK } from '../../services/groupService';
 import { 
   uploadFilesToSupabase,
   fetchFilesFromSupabase,
@@ -19,6 +24,7 @@ import {
 
 const FileLibrary: React.FC = () => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResults, setUploadResults] = useState<FileUploadResult[]>([]);
@@ -38,14 +44,12 @@ const FileLibrary: React.FC = () => {
     lastUpdated?: string;
   }>>({});
   const [pollingFiles, setPollingFiles] = useState<Set<string>>(new Set());
-  const [isDevMode, setIsDevMode] = useState(() => {
-    // Default to false (production mode), only true if explicitly set
-    const stored = localStorage.getItem('n8n-dev-mode');
-    // If no value stored, default to production (false)
-    // If 'true' is stored, use dev mode
-    // If 'false' is stored, use production mode
-    return stored === 'true';
-  });
+  const [showChunkingModal, setShowChunkingModal] = useState(false);
+  const [chunkSize, setChunkSize] = useState<string>('');
+  const [chunkOverlap, setChunkOverlap] = useState<string>('');
+  const [topK, setTopK] = useState<string>('');
+  const [isLoadingChunking, setIsLoadingChunking] = useState(false);
+  const [isSavingChunking, setIsSavingChunking] = useState(false);
   // Always use Supabase Storage
   const storageType = 'supabase' as const;
 
@@ -57,21 +61,6 @@ const FileLibrary: React.FC = () => {
 
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
-
-  // Toggle dev mode
-  const toggleDevMode = () => {
-    const newDevMode = !isDevMode;
-    setIsDevMode(newDevMode);
-    localStorage.setItem('n8n-dev-mode', newDevMode.toString());
-    console.log(`🔧 Switched to ${newDevMode ? 'DEV' : 'PRODUCTION'} mode`);
-  };
-
-  // Reset to production mode (useful for debugging)
-  const resetToProduction = () => {
-    setIsDevMode(false);
-    localStorage.setItem('n8n-dev-mode', 'false');
-    console.log(`🔧 Reset to PRODUCTION mode`);
   };
 
   // Refresh sync status for all files
@@ -96,25 +85,119 @@ const FileLibrary: React.FC = () => {
     loadFiles();
   }, [storageType]);
 
-  // Force production mode on mount if no explicit dev mode setting
+  // Load chunking options when modal opens
   useEffect(() => {
-    const stored = localStorage.getItem('n8n-dev-mode');
-    if (stored === null || stored === 'true') {
-      // No setting stored or was set to dev, default to production
-      setIsDevMode(false);
-      localStorage.setItem('n8n-dev-mode', 'false');
-      console.log('🔧 Defaulted to PRODUCTION mode');
+    if (showChunkingModal) {
+      loadChunkingOptions();
     }
-  }, []);
+  }, [showChunkingModal]);
 
-  // Add console command for easy debugging
-  useEffect(() => {
-    (window as any).resetToProduction = resetToProduction;
-    (window as any).toggleDevMode = toggleDevMode;
-    console.log('🔧 Debug commands available:');
-    console.log('  - window.resetToProduction() - Reset to production mode');
-    console.log('  - window.toggleDevMode() - Toggle between dev/prod');
-  }, []);
+  // Load chunking options from current group
+  const loadChunkingOptions = async () => {
+    setIsLoadingChunking(true);
+    try {
+      const session = getSession();
+      const groupId = (session as any)?.selectedGroupId;
+      
+      if (!groupId) {
+        showToast('No group selected', 'error');
+        setShowChunkingModal(false);
+        return;
+      }
+
+      const { data: groupData, error: groupError } = await defaultSupabase
+        .from('group')
+        .select('chunk_size, chunk_overlap, top_k')
+        .eq('group_id', groupId)
+        .single();
+
+      if (groupError) {
+        console.error('Error loading chunking options:', groupError);
+        showToast('Failed to load chunking options', 'error');
+        return;
+      }
+
+      if (groupData) {
+        setChunkSize(groupData.chunk_size !== null && groupData.chunk_size !== undefined ? String(groupData.chunk_size) : '');
+        setChunkOverlap(groupData.chunk_overlap !== null && groupData.chunk_overlap !== undefined ? String(groupData.chunk_overlap) : '');
+        setTopK(groupData.top_k !== null && groupData.top_k !== undefined ? String(groupData.top_k) : '');
+      }
+    } catch (error) {
+      console.error('Error loading chunking options:', error);
+      showToast('Failed to load chunking options', 'error');
+    } finally {
+      setIsLoadingChunking(false);
+    }
+  };
+
+  // Save chunking options
+  const handleSaveChunkingOptions = async () => {
+    setIsSavingChunking(true);
+    try {
+      const session = getSession();
+      const groupId = (session as any)?.selectedGroupId;
+      
+      if (!groupId) {
+        showToast('No group selected', 'error');
+        return;
+      }
+
+      // Parse values - allow null/empty
+      const parsedChunkSize = chunkSize.trim() === '' ? null : parseInt(chunkSize.trim(), 10);
+      const parsedChunkOverlap = chunkOverlap.trim() === '' ? null : parseInt(chunkOverlap.trim(), 10);
+      const parsedTopK = topK.trim() === '' ? null : parseInt(topK.trim(), 10);
+
+      // Validate chunking options only if both values are provided
+      if (parsedChunkSize !== null && parsedChunkOverlap !== null) {
+        if (isNaN(parsedChunkSize) || isNaN(parsedChunkOverlap)) {
+          showToast('Please enter valid numbers for chunking options', 'error');
+          return;
+        }
+
+        if (parsedChunkSize <= 0) {
+          showToast('Chunk size must be greater than 0', 'error');
+          return;
+        }
+
+        if (parsedChunkOverlap < 0) {
+          showToast('Chunk overlap must be 0 or greater', 'error');
+          return;
+        }
+
+        if (parsedChunkOverlap >= parsedChunkSize) {
+          showToast('Chunk overlap must be less than chunk size', 'error');
+          return;
+        }
+      } else if (parsedChunkSize !== null || parsedChunkOverlap !== null) {
+        // If only one chunking value is provided, show error
+        showToast('Please provide both chunking values or leave both empty', 'error');
+        return;
+      }
+
+      // Validate top_k if provided
+      if (parsedTopK !== null) {
+        if (isNaN(parsedTopK)) {
+          showToast('Please enter a valid number for Top K', 'error');
+          return;
+        }
+
+        if (parsedTopK <= 0) {
+          showToast('Top K must be greater than 0', 'error');
+          return;
+        }
+      }
+
+      await updateGroupChunkingOptions(groupId, parsedChunkSize, parsedChunkOverlap);
+      await updateGroupTopK(groupId, parsedTopK);
+      showToast('Chunking options saved successfully', 'success');
+      setShowChunkingModal(false);
+    } catch (error: any) {
+      console.error('Error saving chunking options:', error);
+      showToast(error.message || 'Failed to save chunking options', 'error');
+    } finally {
+      setIsSavingChunking(false);
+    }
+  };
 
   // Polling for indexing status
   useEffect(() => {
@@ -447,14 +530,30 @@ const FileLibrary: React.FC = () => {
             <h2 className="fl-title">{t('knowledge.fileLibrary')}</h2>
             <p className="fl-description">{t('knowledge.fileLibraryDescription')}</p>
           </div>
-          <div className="webhook-mode-toggle">
-            <button
-              onClick={toggleDevMode}
-              className={`mode-toggle-btn ${isDevMode ? 'dev-mode' : 'prod-mode'}`}
-            >
-              {isDevMode ? '🔧 DEV Mode' : '🚀 PROD Mode'}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowChunkingModal(true)}
+            className="settings-icon-btn"
+            title="Chunking Options"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--admin-text-muted, #666)',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--admin-primary, #3b82f6)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--admin-text-muted, #666)';
+            }}
+          >
+            <IconSettings size={20} />
+          </button>
         </div>
       </div>
 
@@ -631,6 +730,226 @@ const FileLibrary: React.FC = () => {
           </table>
         )}
       </div>
+      
+      {/* Chunking Options Modal */}
+      {showChunkingModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            // Don't close if clicking inside the modal
+            if (e.target !== e.currentTarget) {
+              return;
+            }
+            // Don't close if user is selecting text
+            const selection = window.getSelection();
+            if (selection && selection.toString().length > 0) {
+              return;
+            }
+            setShowChunkingModal(false);
+          }}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full border-2"
+            onClick={(e) => e.stopPropagation()}
+            onMouseUp={(e) => {
+              // Prevent backdrop click when releasing mouse after text selection
+              e.stopPropagation();
+            }}
+            style={{
+              backgroundColor: 'var(--card, #2f2f2f)',
+              borderColor: 'var(--admin-border)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+            }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold" style={{ color: 'var(--admin-text)' }}>
+                Advanced Settings
+              </h3>
+              <button
+                onClick={() => setShowChunkingModal(false)}
+                className="rounded-full p-2 transition-colors"
+                style={{ 
+                  color: 'var(--admin-text-muted)',
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--admin-text, #111827)';
+                  e.currentTarget.style.backgroundColor = 'var(--admin-bg-secondary, rgba(0, 0, 0, 0.05))';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--admin-text-muted, #6b7280)';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconX size={20} />
+              </button>
+            </div>
+            
+            {isLoadingChunking ? (
+              <div className="text-center py-8" style={{ color: 'var(--admin-text-muted)' }}>
+                Loading chunking options...
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--admin-text)' }}>
+                    Indexing Options
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label 
+                        htmlFor="chunk-size" 
+                        className="block text-xs font-medium mb-1"
+                        style={{ color: 'var(--admin-text)' }}
+                      >
+                        Chunk Size
+                      </label>
+                      <input
+                        id="chunk-size"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={chunkSize}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Allow empty string or numbers only
+                          if (value === '' || /^\d+$/.test(value)) {
+                            setChunkSize(value);
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        style={{
+                          backgroundColor: 'var(--admin-bg)',
+                          borderColor: 'var(--admin-border)',
+                          color: 'var(--admin-text)'
+                        }}
+                      />
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--admin-text-muted)' }}>
+                        Characters per chunk (empty to disable)
+                      </p>
+                    </div>
+
+                    <div>
+                      <label 
+                        htmlFor="chunk-overlap" 
+                        className="block text-xs font-medium mb-1"
+                        style={{ color: 'var(--admin-text)' }}
+                      >
+                        Chunk Overlap
+                      </label>
+                      <input
+                        id="chunk-overlap"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={chunkOverlap}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Allow empty string or numbers only
+                          if (value === '' || /^\d+$/.test(value)) {
+                            setChunkOverlap(value);
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        style={{
+                          backgroundColor: 'var(--admin-bg)',
+                          borderColor: 'var(--admin-border)',
+                          color: 'var(--admin-text)'
+                        }}
+                      />
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--admin-text-muted)' }}>
+                        Overlapping characters (empty to disable)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chat Options Section */}
+                <div className="pt-2 border-t" style={{ borderColor: 'var(--admin-border)' }}>
+                  <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--admin-text)' }}>
+                    Chat Options
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label 
+                        htmlFor="top-k" 
+                        className="block text-xs font-medium mb-1"
+                        style={{ color: 'var(--admin-text)' }}
+                      >
+                        Top K
+                      </label>
+                      <input
+                        id="top-k"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={topK}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Allow empty string or numbers only
+                          if (value === '' || /^\d+$/.test(value)) {
+                            setTopK(value);
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        style={{
+                          backgroundColor: 'var(--admin-bg)',
+                          borderColor: 'var(--admin-border)',
+                          color: 'var(--admin-text)'
+                        }}
+                      />
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--admin-text-muted)' }}>
+                        Number of top results to retrieve (empty to use default)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setShowChunkingModal(false)}
+                    className="flex-1 px-4 py-2 border rounded-lg font-medium transition-colors"
+                    style={{
+                      backgroundColor: 'transparent',
+                      borderColor: 'var(--admin-border)',
+                      color: 'var(--admin-text)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--admin-bg-secondary, rgba(0, 0, 0, 0.05))';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveChunkingOptions}
+                    disabled={isSavingChunking}
+                    className="flex-1 px-4 py-2 rounded-lg font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: 'var(--admin-primary, #3b82f6)',
+                      boxShadow: '0 4px 14px 0 rgba(59, 130, 246, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSavingChunking) {
+                        e.currentTarget.style.backgroundColor = '#2563eb';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSavingChunking) {
+                        e.currentTarget.style.backgroundColor = 'var(--admin-primary, #3b82f6)';
+                      }
+                    }}
+                  >
+                    {isSavingChunking ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>

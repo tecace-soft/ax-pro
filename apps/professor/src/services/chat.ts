@@ -219,14 +219,35 @@ export const chatService = {
         console.log('Using universal chatbot webhook:', CHATBOT_WEBHOOK_URL);
         try {
           const session = getSession();
-          // Get groupId from session or URL (for non-logged-in users, get from URL)
+          // Get groupId from URL ONLY (allows multiple tabs with different groups)
           const urlParams = new URLSearchParams(window.location.search);
-          const groupId = (session as any)?.selectedGroupId || urlParams.get('group');
+          const groupId = urlParams.get('group');
           
           // Validate that groupId exists
           if (!groupId) {
             console.error('❌ No group_id in session or URL. Session:', session);
             throw new Error('No group selected. Please select a group first.');
+          }
+          
+          // Fetch top_k from group data
+          let topK: number | undefined;
+          try {
+            const { defaultSupabase } = await import('./groupService');
+            const { data: groupData, error: groupError } = await defaultSupabase
+              .from('group')
+              .select('top_k')
+              .eq('group_id', groupId)
+              .single();
+            
+            if (!groupError && groupData && groupData.top_k !== null && groupData.top_k !== undefined) {
+              topK = Number(groupData.top_k);
+              console.log(`📊 Using top_k from group: ${topK}`);
+            } else {
+              console.log(`⚠️ Group ${groupId} has no top_k value, using default`);
+            }
+          } catch (error) {
+            console.warn(`⚠️ Error fetching group top_k:`, error);
+            // Continue without topK if fetch fails
           }
           
           // Generate unique chatId for this message (for future feedback API)
@@ -240,6 +261,7 @@ export const chatService = {
             action: 'sendMessage',
             chatInput: content,
             groupId: groupId, // Always include groupId (validated above)
+            ...(topK !== undefined ? { topK } : {}), // Include topK only if it exists
           };
 
           console.log('=== CHAT SERVICE DEBUG ===');

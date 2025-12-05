@@ -19,6 +19,7 @@ export interface N8nRequest {
   action: 'sendMessage';
   chatInput: string;
   groupId?: string;
+  topK?: number; // Optional - top_k value from group data
 }
 
 export interface N8nResponse {

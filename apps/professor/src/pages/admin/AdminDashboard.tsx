@@ -208,10 +208,10 @@ export default function AdminDashboard() {
 
   // Initialize dates and load metrics
   useEffect(() => {
-    // Require selected group context; otherwise redirect to group management
+    // Check if user is logged in (group is verified by useGroupAuth hook)
     const session = getSession()
-    if (!session || !(session as any).selectedGroupId) {
-      navigate('/group-management', { replace: true })
+    if (!session) {
+      navigate('/', { replace: true })
       return
     }
 
