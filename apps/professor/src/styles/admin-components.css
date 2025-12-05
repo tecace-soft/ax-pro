@@ -707,44 +707,6 @@
   gap: 16px;
 }
 
-.webhook-mode-toggle {
-  flex-shrink: 0;
-}
-
-.mode-toggle-btn {
-  padding: 8px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 6px;
-  border: 2px solid;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  user-select: none;
-}
-
-.mode-toggle-btn.prod-mode {
-  background: #10b981;
-  border-color: #10b981;
-  color: white;
-}
-
-.mode-toggle-btn.prod-mode:hover {
-  background: #059669;
-  border-color: #059669;
-}
-
-.mode-toggle-btn.dev-mode {
-  background: #f59e0b;
-  border-color: #f59e0b;
-  color: white;
-}
-
-.mode-toggle-btn.dev-mode:hover {
-  background: #d97706;
-  border-color: #d97706;
-}
-
 .sync-status-btn {
   padding: 8px 12px;
   font-size: 12px;

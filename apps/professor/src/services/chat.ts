@@ -229,6 +229,27 @@ export const chatService = {
             throw new Error('No group selected. Please select a group first.');
           }
           
+          // Fetch top_k from group data
+          let topK: number | undefined;
+          try {
+            const { defaultSupabase } = await import('./groupService');
+            const { data: groupData, error: groupError } = await defaultSupabase
+              .from('group')
+              .select('top_k')
+              .eq('group_id', groupId)
+              .single();
+            
+            if (!groupError && groupData && groupData.top_k !== null && groupData.top_k !== undefined) {
+              topK = Number(groupData.top_k);
+              console.log(`📊 Using top_k from group: ${topK}`);
+            } else {
+              console.log(`⚠️ Group ${groupId} has no top_k value, using default`);
+            }
+          } catch (error) {
+            console.warn(`⚠️ Error fetching group top_k:`, error);
+            // Continue without topK if fetch fails
+          }
+          
           // Generate unique chatId for this message (for future feedback API)
           // Use sessionId + timestamp + random to ensure uniqueness across sessions
           const chatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -240,6 +261,7 @@ export const chatService = {
             action: 'sendMessage',
             chatInput: content,
             groupId: groupId, // Always include groupId (validated above)
+            ...(topK !== undefined ? { topK } : {}), // Include topK only if it exists
           };
 
           console.log('=== CHAT SERVICE DEBUG ===');

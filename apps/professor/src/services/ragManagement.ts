@@ -1151,12 +1151,50 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     console.log(`👤 User: ${session?.email || 'Unknown'} (${session?.userId || 'Unknown'})`);
 
     const groupIdFromSession = (session as any)?.selectedGroupId || null;
-    const payload = {
+    
+    // Fetch group data to get chunking options
+    let chunkingOptions: { chunk_size: number; chunk_overlap: number } | undefined;
+    if (groupIdFromSession) {
+      try {
+        const { defaultSupabase } = await import('./groupService');
+        const { data: groupData, error: groupError } = await defaultSupabase
+          .from('group')
+          .select('chunk_size, chunk_overlap')
+          .eq('group_id', groupIdFromSession)
+          .single();
+        
+        if (!groupError && groupData) {
+          const chunkSize = groupData.chunk_size;
+          const chunkOverlap = groupData.chunk_overlap;
+          
+          if (chunkSize !== null && chunkSize !== undefined && chunkOverlap !== null && chunkOverlap !== undefined) {
+            chunkingOptions = {
+              chunk_size: Number(chunkSize),
+              chunk_overlap: Number(chunkOverlap)
+            };
+            console.log(`📊 Using chunking options from group:`, chunkingOptions);
+          } else {
+            console.warn(`⚠️ Group ${groupIdFromSession} has missing chunk_size or chunk_overlap values`);
+          }
+        } else {
+          console.warn(`⚠️ Failed to fetch group data for ${groupIdFromSession}:`, groupError);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Error fetching group chunking options:`, error);
+      }
+    }
+    
+    const payload: any = {
       fileUrl: fullFileUrl,
       fileName: fileName,
       source: 'supabase-storage',
       groupId: groupIdFromSession,
     };
+    
+    // Add chunking_options if available
+    if (chunkingOptions) {
+      payload.chunking_options = chunkingOptions;
+    }
 
     console.log(`📦 Payload being sent:`, payload);
 
