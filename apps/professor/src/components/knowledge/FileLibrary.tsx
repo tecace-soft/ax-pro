@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from '../../i18n/I18nProvider';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ToastContainer } from '../ui/Toast';
-import { IconSettings, IconX } from '../../ui/icons';
+import { IconSettings, IconX, IconDatabase, IconSearch } from '../../ui/icons';
 import { getSession } from '../../services/auth';
 import { defaultSupabase } from '../../services/groupService';
 import { updateGroupChunkingOptions, updateGroupTopK } from '../../services/groupService';
@@ -44,12 +44,110 @@ const FileLibrary: React.FC = () => {
     lastUpdated?: string;
   }>>({});
   const [pollingFiles, setPollingFiles] = useState<Set<string>>(new Set());
-  const [showChunkingModal, setShowChunkingModal] = useState(false);
+  const [showIndexingModal, setShowIndexingModal] = useState(false);
+  const [showRetrievalModal, setShowRetrievalModal] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set()); // file.id를 저장
   const [chunkSize, setChunkSize] = useState<string>('');
   const [chunkOverlap, setChunkOverlap] = useState<string>('');
   const [topK, setTopK] = useState<string>('');
   const [isLoadingChunking, setIsLoadingChunking] = useState(false);
   const [isSavingChunking, setIsSavingChunking] = useState(false);
+  
+  // Docling Parser Options
+  const [doclingOptions, setDoclingOptions] = useState<{
+    // OCR Options
+    do_ocr_enabled: boolean;
+    do_ocr: boolean;
+    force_ocr_enabled: boolean;
+    force_ocr: boolean;
+    ocr_engine_enabled: boolean;
+    ocr_engine: string;
+    ocr_lang_enabled: boolean;
+    ocr_lang: string;
+    // PDF Options
+    pdf_backend_enabled: boolean;
+    pdf_backend: string;
+    pipeline_enabled: boolean;
+    pipeline: string;
+    // Table Options
+    table_mode_enabled: boolean;
+    table_mode: string;
+    table_cell_matching_enabled: boolean;
+    table_cell_matching: boolean;
+    do_table_structure_enabled: boolean;
+    do_table_structure: boolean;
+    // Image Options
+    include_images_enabled: boolean;
+    include_images: boolean;
+    images_scale_enabled: boolean;
+    images_scale: string;
+    image_export_mode_enabled: boolean;
+    image_export_mode: string;
+    // Page Options
+    page_range_enabled: boolean;
+    page_range_start: string;
+    page_range_end: string;
+    // Timeout Options
+    document_timeout_enabled: boolean;
+    document_timeout: string;
+    abort_on_error_enabled: boolean;
+    abort_on_error: boolean;
+    // Markdown Options
+    md_page_break_placeholder_enabled: boolean;
+    md_page_break_placeholder: string;
+    // Advanced Options
+    do_code_enrichment_enabled: boolean;
+    do_code_enrichment: boolean;
+    do_formula_enrichment_enabled: boolean;
+    do_formula_enrichment: boolean;
+    do_picture_classification_enabled: boolean;
+    do_picture_classification: boolean;
+    do_picture_description_enabled: boolean;
+    do_picture_description: boolean;
+  }>({
+    // Defaults (all disabled) - values match backend defaults from n8n
+    do_ocr_enabled: false,
+    do_ocr: false, // Backend default: false
+    force_ocr_enabled: false,
+    force_ocr: false,
+    ocr_engine_enabled: false,
+    ocr_engine: 'auto', // Backend default: 'auto'
+    ocr_lang_enabled: false,
+    ocr_lang: 'en', // Backend default: ['en']
+    pdf_backend_enabled: false,
+    pdf_backend: 'dlparse_v4', // Not in backend defaults, but common
+    pipeline_enabled: false,
+    pipeline: 'standard', // Backend doesn't set this (commented out)
+    table_mode_enabled: false,
+    table_mode: 'fast', // Backend default: 'fast'
+    table_cell_matching_enabled: false,
+    table_cell_matching: false, // Backend default: false
+    do_table_structure_enabled: false,
+    do_table_structure: false, // Backend default: false
+    include_images_enabled: false,
+    include_images: false, // Backend default: false
+    images_scale_enabled: false,
+    images_scale: '1', // Backend default: 1
+    image_export_mode_enabled: false,
+    image_export_mode: 'embedded', // Not in backend defaults
+    page_range_enabled: false,
+    page_range_start: '1', // Backend default: [1, 999999999]
+    page_range_end: '999999999',
+    document_timeout_enabled: false,
+    document_timeout: '600', // Backend default: 600
+    abort_on_error_enabled: false,
+    abort_on_error: false, // Backend default: false
+    md_page_break_placeholder_enabled: false,
+    md_page_break_placeholder: '<!-- page-break -->', // Backend default: '<!-- page-break -->'
+    do_code_enrichment_enabled: false,
+    do_code_enrichment: false, // Backend default: false
+    do_formula_enrichment_enabled: false,
+    do_formula_enrichment: false, // Backend default: false
+    do_picture_classification_enabled: false,
+    do_picture_classification: false, // Backend default: false
+    do_picture_description_enabled: false,
+    do_picture_description: false, // Backend default: false
+  });
   // Always use Supabase Storage
   const storageType = 'supabase' as const;
 
@@ -85,33 +183,63 @@ const FileLibrary: React.FC = () => {
     loadFiles();
   }, [storageType]);
 
-  // Load chunking options when modal opens
+  // Load options when modals open
   useEffect(() => {
-    if (showChunkingModal) {
+    if (showIndexingModal || showRetrievalModal) {
       loadChunkingOptions();
     }
-  }, [showChunkingModal]);
+  }, [showIndexingModal, showRetrievalModal]);
 
   // Load chunking options from current group
   const loadChunkingOptions = async () => {
     setIsLoadingChunking(true);
     try {
-      const session = getSession();
-      const groupId = (session as any)?.selectedGroupId;
+      // Get groupId from URL (consistent with other parts of the app)
+      const { getGroupIdFromUrl } = await import('../../utils/navigation');
+      const groupId = getGroupIdFromUrl();
       
       if (!groupId) {
-        showToast('No group selected', 'error');
-        setShowChunkingModal(false);
+        // Don't close modal, just show warning and use defaults
+        console.warn('No group selected, using default values');
+        // Reset to defaults
+        setChunkSize('');
+        setChunkOverlap('');
+        setTopK('');
+        // doclingOptions already has defaults
         return;
       }
 
       const { data: groupData, error: groupError } = await defaultSupabase
         .from('group')
-        .select('chunk_size, chunk_overlap, top_k')
+        .select('chunk_size, chunk_overlap, top_k, docling_options')
         .eq('group_id', groupId)
         .single();
 
       if (groupError) {
+        // If docling_options field doesn't exist, try without it
+        if (groupError.message?.includes('docling_options') || groupError.code === 'PGRST116') {
+          console.warn('docling_options field not found, loading without it:', groupError);
+          const { data: fallbackData, error: fallbackError } = await defaultSupabase
+            .from('group')
+            .select('chunk_size, chunk_overlap, top_k')
+            .eq('group_id', groupId)
+            .single();
+          
+          if (fallbackError) {
+            console.error('Error loading chunking options:', fallbackError);
+            showToast('Failed to load chunking options', 'error');
+            return;
+          }
+          
+          if (fallbackData) {
+            setChunkSize(fallbackData.chunk_size !== null && fallbackData.chunk_size !== undefined ? String(fallbackData.chunk_size) : '');
+            setChunkOverlap(fallbackData.chunk_overlap !== null && fallbackData.chunk_overlap !== undefined ? String(fallbackData.chunk_overlap) : '');
+            setTopK(fallbackData.top_k !== null && fallbackData.top_k !== undefined ? String(fallbackData.top_k) : '');
+            // docling_options will use defaults
+          }
+          return;
+        }
+        
         console.error('Error loading chunking options:', groupError);
         showToast('Failed to load chunking options', 'error');
         return;
@@ -121,6 +249,18 @@ const FileLibrary: React.FC = () => {
         setChunkSize(groupData.chunk_size !== null && groupData.chunk_size !== undefined ? String(groupData.chunk_size) : '');
         setChunkOverlap(groupData.chunk_overlap !== null && groupData.chunk_overlap !== undefined ? String(groupData.chunk_overlap) : '');
         setTopK(groupData.top_k !== null && groupData.top_k !== undefined ? String(groupData.top_k) : '');
+        
+        // Load Docling options if available
+        if (groupData.docling_options) {
+          try {
+            const savedOptions = typeof groupData.docling_options === 'string' 
+              ? JSON.parse(groupData.docling_options) 
+              : groupData.docling_options;
+            setDoclingOptions(prev => ({ ...prev, ...savedOptions }));
+          } catch (e) {
+            console.warn('Failed to parse docling_options:', e);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading chunking options:', error);
@@ -134,11 +274,13 @@ const FileLibrary: React.FC = () => {
   const handleSaveChunkingOptions = async () => {
     setIsSavingChunking(true);
     try {
-      const session = getSession();
-      const groupId = (session as any)?.selectedGroupId;
+      // Get groupId from URL (consistent with other parts of the app)
+      const { getGroupIdFromUrl } = await import('../../utils/navigation');
+      const groupId = getGroupIdFromUrl();
       
       if (!groupId) {
-        showToast('No group selected', 'error');
+        showToast('No group selected. Please select a group first.', 'error');
+        setIsSavingChunking(false);
         return;
       }
 
@@ -189,8 +331,31 @@ const FileLibrary: React.FC = () => {
 
       await updateGroupChunkingOptions(groupId, parsedChunkSize, parsedChunkOverlap);
       await updateGroupTopK(groupId, parsedTopK);
-      showToast('Chunking options saved successfully', 'success');
-      setShowChunkingModal(false);
+      
+      // Save Docling options (only if field exists)
+      try {
+        const { error: doclingError } = await defaultSupabase
+          .from('group')
+          .update({ docling_options: doclingOptions })
+          .eq('group_id', groupId);
+        
+        if (doclingError) {
+          // If field doesn't exist, it's okay - we'll just skip saving docling_options
+          if (doclingError.message?.includes('docling_options') || doclingError.code === 'PGRST116') {
+            console.warn('docling_options field not found in database, skipping save. This is okay for now.');
+          } else {
+            console.warn('Failed to save Docling options:', doclingError);
+          }
+          // Don't fail the whole operation if docling_options save fails
+        }
+      } catch (e) {
+        console.warn('Error saving Docling options (field may not exist):', e);
+        // Continue anyway
+      }
+      
+      showToast('Options saved successfully', 'success');
+      setShowIndexingModal(false);
+      setShowRetrievalModal(false);
     } catch (error: any) {
       console.error('Error saving chunking options:', error);
       showToast(error.message || 'Failed to save chunking options', 'error');
@@ -274,13 +439,120 @@ const FileLibrary: React.FC = () => {
       if (result.success) {
         // Remove file from local state
         setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+        // Remove from selected files if selected
+        setSelectedFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(fileId);
+          return newSet;
+        });
         console.log(`✅ File ${fileName} deleted successfully`);
+        showToast(`File "${fileName}" deleted successfully`, 'success');
       } else {
-        alert(`Failed to delete file: ${result.message}`);
+        showToast(`Failed to delete file: ${result.message}`, 'error');
       }
     } catch (error) {
       console.error('Error deleting file:', error);
-      alert('Failed to delete file');
+      showToast('Failed to delete file', 'error');
+    }
+  };
+
+  // Handle batch delete
+  const handleBatchDelete = async () => {
+    if (selectedFiles.size === 0) {
+      showToast('No files selected', 'warning');
+      return;
+    }
+
+    const selectedFileNames = uploadedFiles
+      .filter(file => selectedFiles.has(file.id))
+      .map(file => file.name);
+
+    const fileCount = selectedFiles.size;
+    const fileList = selectedFileNames.slice(0, 5).join(', ');
+    const moreFiles = fileCount > 5 ? ` and ${fileCount - 5} more file(s)` : '';
+
+    // Double confirmation for batch delete
+    const confirmMessage = `Are you sure you want to delete ${fileCount} file(s)?\n\nFiles:\n${fileList}${moreFiles}\n\nThis action cannot be undone.`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    // Second confirmation for safety
+    if (!confirm(`⚠️ FINAL CONFIRMATION: Delete ${fileCount} file(s)?\n\nThis will permanently delete:\n${fileList}${moreFiles}`)) {
+      return;
+    }
+
+    setActionLoading('batch-delete');
+    let successCount = 0;
+    let failCount = 0;
+    const failedFiles: string[] = [];
+
+    try {
+      // Delete files one by one
+      for (const fileId of selectedFiles) {
+        const file = uploadedFiles.find(f => f.id === fileId);
+        if (!file) continue;
+
+        try {
+          const result = await deleteFileFromSupabase(file.name);
+          if (result.success) {
+            successCount++;
+            // Remove from local state
+            setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+          } else {
+            failCount++;
+            failedFiles.push(file.name);
+          }
+        } catch (error) {
+          failCount++;
+          failedFiles.push(file.name);
+          console.error(`Error deleting ${file.name}:`, error);
+        }
+      }
+
+      // Clear selection
+      setSelectedFiles(new Set());
+
+      // Show results
+      if (successCount > 0) {
+        showToast(`✅ ${successCount} file(s) deleted successfully`, 'success');
+      }
+      if (failCount > 0) {
+        showToast(`❌ ${failCount} file(s) failed to delete: ${failedFiles.join(', ')}`, 'error');
+      }
+
+      // Refresh file list
+      await loadFiles();
+    } catch (error) {
+      console.error('Error in batch delete:', error);
+      showToast('Error during batch delete', 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Toggle file selection
+  const toggleFileSelection = (fileId: string) => {
+    setSelectedFiles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(fileId)) {
+        newSet.delete(fileId);
+      } else {
+        newSet.add(fileId);
+      }
+      return newSet;
+    });
+  };
+
+  // Toggle select all
+  const toggleSelectAll = () => {
+    if (selectedFiles.size === filteredAndSortedFiles.length) {
+      // Deselect all
+      setSelectedFiles(new Set());
+    } else {
+      // Select all visible files
+      setSelectedFiles(new Set(filteredAndSortedFiles.map(file => file.id)));
     }
   };
 
@@ -443,6 +715,19 @@ const FileLibrary: React.FC = () => {
 
   // Upload files to Supabase Storage
   const uploadFiles = async (files: File[]) => {
+    // Check for .txt files and show confirmation
+    const txtFiles = files.filter(f => f.name.toLowerCase().endsWith('.txt'));
+    if (txtFiles.length > 0) {
+      const fileNames = txtFiles.map(f => f.name).join(', ');
+      const confirmMessage = txtFiles.length === 1
+        ? `"${fileNames}" 파일은 .md 형식으로 변환되어 저장됩니다. 계속하시겠습니까?`
+        : `${txtFiles.length}개의 .txt 파일이 .md 형식으로 변환되어 저장됩니다:\n${fileNames}\n\n계속하시겠습니까?`;
+      
+      if (!confirm(confirmMessage)) {
+        return; // User cancelled
+      }
+    }
+
     setIsUploading(true);
     setUploadResults([]);
 
@@ -456,7 +741,13 @@ const FileLibrary: React.FC = () => {
       const failedResults = results.filter(r => !r.success);
 
       if (successCount > 0) {
-        showToast(`✅ ${successCount} file(s) uploaded successfully`, 'success');
+        // Check if any files were renamed from .txt to .md
+        const renamedFiles = results.filter(r => r.success && r.message?.includes('renamed from .txt to .md'));
+        if (renamedFiles.length > 0) {
+          showToast(`✅ ${successCount} file(s) uploaded successfully. ${renamedFiles.length} .txt file(s) renamed to .md for Docling compatibility.`, 'success');
+        } else {
+          showToast(`✅ ${successCount} file(s) uploaded successfully`, 'success');
+        }
       }
       if (failCount > 0) {
         const errorMessages = failedResults.map(r => r.message).join(', ');
@@ -530,30 +821,56 @@ const FileLibrary: React.FC = () => {
             <h2 className="fl-title">{t('knowledge.fileLibrary')}</h2>
             <p className="fl-description">{t('knowledge.fileLibraryDescription')}</p>
           </div>
-          <button
-            onClick={() => setShowChunkingModal(true)}
-            className="settings-icon-btn"
-            title="Chunking Options"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--admin-text-muted, #666)',
-              transition: 'color 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--admin-primary, #3b82f6)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--admin-text-muted, #666)';
-            }}
-          >
-            <IconSettings size={20} />
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => setShowIndexingModal(true)}
+              className="settings-icon-btn"
+              title="Indexing Options"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--admin-text-muted, #666)',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--admin-primary, #3b82f6)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--admin-text-muted, #666)';
+              }}
+            >
+              <IconDatabase size={20} />
+            </button>
+            <button
+              onClick={() => setShowRetrievalModal(true)}
+              className="settings-icon-btn"
+              title="Retrieval Options"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--admin-text-muted, #666)',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--admin-primary, #3b82f6)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--admin-text-muted, #666)';
+              }}
+            >
+              <IconSearch size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -605,10 +922,26 @@ const FileLibrary: React.FC = () => {
             className="search-input"
           />
         </div>
-        <button className="refresh-btn" onClick={handleRefresh} disabled={isLoading}>
-          <span className="refresh-icon">↻</span>
-          {isLoading ? t('knowledge.loading') || 'Loading...' : t('knowledge.refresh')}
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {selectedFiles.size > 0 && (
+            <button 
+              className="refresh-btn" 
+              onClick={handleBatchDelete}
+              disabled={isLoading || actionLoading === 'batch-delete'}
+              style={{
+                backgroundColor: '#ef4444',
+                color: 'white',
+                border: 'none'
+              }}
+            >
+              {actionLoading === 'batch-delete' ? 'Deleting...' : `Delete ${selectedFiles.size} file(s)`}
+            </button>
+          )}
+          <button className="refresh-btn" onClick={handleRefresh} disabled={isLoading}>
+            <span className="refresh-icon">↻</span>
+            {isLoading ? t('knowledge.loading') || 'Loading...' : t('knowledge.refresh')}
+          </button>
+        </div>
       </div>
 
       {/* Error Message */}
@@ -647,6 +980,14 @@ const FileLibrary: React.FC = () => {
           <table className="fl-table" style={{ width: '100%', minWidth: '900px' }}>
             <thead>
               <tr>
+                <th style={{ width: '40px', textAlign: 'center', padding: '8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={filteredAndSortedFiles.length > 0 && selectedFiles.size === filteredAndSortedFiles.length}
+                    onChange={toggleSelectAll}
+                    style={{ cursor: 'pointer' }}
+                  />
+                </th>
                 <th style={{ width: '30%', minWidth: '200px' }}>{t('knowledge.fileName')}</th>
                 <th style={{ width: '10%', minWidth: '80px' }}>{t('knowledge.size')}</th>
                 <th style={{ width: '15%', minWidth: '150px' }}>{t('knowledge.lastModified')}</th>
@@ -658,13 +999,21 @@ const FileLibrary: React.FC = () => {
             <tbody>
               {filteredAndSortedFiles.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
                     {error ? 'Failed to load files' : 'No files found. Upload some files to get started.'}
                   </td>
                 </tr>
               ) : (
                 filteredAndSortedFiles.map(file => (
-                  <tr key={file.id}>
+                  <tr key={file.id} style={{ backgroundColor: selectedFiles.has(file.id) ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
+                    <td style={{ textAlign: 'center', padding: '8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedFiles.has(file.id)}
+                        onChange={() => toggleFileSelection(file.id)}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </td>
                     <td className="file-name" style={{ wordBreak: 'break-word' }}>
                       {file.name}
                     </td>
@@ -732,7 +1081,8 @@ const FileLibrary: React.FC = () => {
       </div>
       
       {/* Chunking Options Modal */}
-      {showChunkingModal && (
+      {/* Indexing Options Modal */}
+      {showIndexingModal && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
           onClick={(e) => {
@@ -745,11 +1095,11 @@ const FileLibrary: React.FC = () => {
             if (selection && selection.toString().length > 0) {
               return;
             }
-            setShowChunkingModal(false);
+            setShowIndexingModal(false);
           }}
         >
           <div 
-            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full border-2"
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full border-2 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
             onMouseUp={(e) => {
               // Prevent backdrop click when releasing mouse after text selection
@@ -763,10 +1113,10 @@ const FileLibrary: React.FC = () => {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold" style={{ color: 'var(--admin-text)' }}>
-                Advanced Settings
+                Indexing Options
               </h3>
               <button
-                onClick={() => setShowChunkingModal(false)}
+                onClick={() => setShowIndexingModal(false)}
                 className="rounded-full p-2 transition-colors"
                 style={{ 
                   color: 'var(--admin-text-muted)',
@@ -864,10 +1214,409 @@ const FileLibrary: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Chat Options Section */}
+                {/* Docling Parser Options Section */}
                 <div className="pt-2 border-t" style={{ borderColor: 'var(--admin-border)' }}>
                   <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--admin-text)' }}>
-                    Chat Options
+                    Docling Parser Options
+                  </h4>
+                  <p className="text-xs mb-3" style={{ color: 'var(--admin-text-muted)' }}>
+                    Configure Docling document parser options. Only enabled options will override defaults. 
+                    Default values are shown when options are disabled.
+                  </p>
+                  
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    {/* OCR Options */}
+                    <div className="space-y-2 pb-2 border-b" style={{ borderColor: 'var(--admin-border)' }}>
+                      <h5 className="text-xs font-medium" style={{ color: 'var(--admin-text)' }}>OCR Options</h5>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label className="text-xs" style={{ color: 'var(--admin-text)' }}>Enable OCR</label>
+                          {!doclingOptions.do_ocr_enabled && (
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--admin-text-muted)' }}>
+                              Default: do_ocr=false, ocr_engine='auto', ocr_lang=['en']
+                            </p>
+                          )}
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={doclingOptions.do_ocr_enabled}
+                          onChange={(e) => setDoclingOptions(prev => ({ ...prev, do_ocr_enabled: e.target.checked }))}
+                          className="w-4 h-4"
+                        />
+                      </div>
+                      {doclingOptions.do_ocr_enabled && (
+                        <div className="ml-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>Do OCR</span>
+                            <input
+                              type="checkbox"
+                              checked={doclingOptions.do_ocr}
+                              onChange={(e) => setDoclingOptions(prev => ({ ...prev, do_ocr: e.target.checked }))}
+                              className="w-4 h-4"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs block mb-1" style={{ color: 'var(--admin-text)' }}>OCR Engine</label>
+                            <select
+                              value={doclingOptions.ocr_engine}
+                              onChange={(e) => setDoclingOptions(prev => ({ ...prev, ocr_engine: e.target.value }))}
+                              className="w-full px-2 py-1 text-xs border rounded"
+                              style={{
+                                backgroundColor: 'var(--admin-bg)',
+                                borderColor: 'var(--admin-border)',
+                                color: 'var(--admin-text)'
+                              }}
+                            >
+                              <option value="auto">auto</option>
+                              <option value="easyocr">easyocr</option>
+                              <option value="ocrmac">ocrmac</option>
+                              <option value="rapidocr">rapidocr</option>
+                              <option value="tesserocr">tesserocr</option>
+                              <option value="tesseract">tesseract</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs block mb-1" style={{ color: 'var(--admin-text)' }}>OCR Languages (comma-separated)</label>
+                            <input
+                              type="text"
+                              value={doclingOptions.ocr_lang}
+                              onChange={(e) => setDoclingOptions(prev => ({ ...prev, ocr_lang: e.target.value }))}
+                              placeholder="en, ko, fr"
+                              className="w-full px-2 py-1 text-xs border rounded"
+                              style={{
+                                backgroundColor: 'var(--admin-bg)',
+                                borderColor: 'var(--admin-border)',
+                                color: 'var(--admin-text)'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* PDF Options */}
+                    <div className="space-y-2 pb-2 border-b" style={{ borderColor: 'var(--admin-border)' }}>
+                      <h5 className="text-xs font-medium" style={{ color: 'var(--admin-text)' }}>PDF Options</h5>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label className="text-xs" style={{ color: 'var(--admin-text)' }}>PDF Backend</label>
+                          {!doclingOptions.pdf_backend_enabled && (
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--admin-text-muted)' }}>
+                              Default: Not set (uses system default)
+                            </p>
+                          )}
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={doclingOptions.pdf_backend_enabled}
+                          onChange={(e) => setDoclingOptions(prev => ({ ...prev, pdf_backend_enabled: e.target.checked }))}
+                          className="w-4 h-4"
+                        />
+                      </div>
+                      {doclingOptions.pdf_backend_enabled && (
+                        <div className="ml-4">
+                          <select
+                            value={doclingOptions.pdf_backend}
+                            onChange={(e) => setDoclingOptions(prev => ({ ...prev, pdf_backend: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs border rounded"
+                            style={{
+                              backgroundColor: 'var(--admin-bg)',
+                              borderColor: 'var(--admin-border)',
+                              color: 'var(--admin-text)'
+                            }}
+                          >
+                            <option value="pypdfium2">pypdfium2</option>
+                            <option value="dlparse_v1">dlparse_v1</option>
+                            <option value="dlparse_v2">dlparse_v2</option>
+                            <option value="dlparse_v4">dlparse_v4</option>
+                          </select>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label className="text-xs" style={{ color: 'var(--admin-text)' }}>Pipeline</label>
+                          {!doclingOptions.pipeline_enabled && (
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--admin-text-muted)' }}>
+                              Default: Not set (commented out in backend)
+                            </p>
+                          )}
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={doclingOptions.pipeline_enabled}
+                          onChange={(e) => setDoclingOptions(prev => ({ ...prev, pipeline_enabled: e.target.checked }))}
+                          className="w-4 h-4"
+                        />
+                      </div>
+                      {doclingOptions.pipeline_enabled && (
+                        <div className="ml-4">
+                          <select
+                            value={doclingOptions.pipeline}
+                            onChange={(e) => setDoclingOptions(prev => ({ ...prev, pipeline: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs border rounded"
+                            style={{
+                              backgroundColor: 'var(--admin-bg)',
+                              borderColor: 'var(--admin-border)',
+                              color: 'var(--admin-text)'
+                            }}
+                          >
+                            <option value="legacy">legacy</option>
+                            <option value="standard">standard</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Table Options */}
+                    <div className="space-y-2 pb-2 border-b" style={{ borderColor: 'var(--admin-border)' }}>
+                      <h5 className="text-xs font-medium" style={{ color: 'var(--admin-text)' }}>Table Options</h5>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label className="text-xs" style={{ color: 'var(--admin-text)' }}>Table Mode</label>
+                          {!doclingOptions.table_mode_enabled && (
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--admin-text-muted)' }}>
+                              Default: 'fast'
+                            </p>
+                          )}
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={doclingOptions.table_mode_enabled}
+                          onChange={(e) => setDoclingOptions(prev => ({ ...prev, table_mode_enabled: e.target.checked }))}
+                          className="w-4 h-4"
+                        />
+                      </div>
+                      {doclingOptions.table_mode_enabled && (
+                        <div className="ml-4">
+                          <select
+                            value={doclingOptions.table_mode}
+                            onChange={(e) => setDoclingOptions(prev => ({ ...prev, table_mode: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs border rounded"
+                            style={{
+                              backgroundColor: 'var(--admin-bg)',
+                              borderColor: 'var(--admin-border)',
+                              color: 'var(--admin-text)'
+                            }}
+                          >
+                            <option value="fast">fast</option>
+                            <option value="accurate">accurate</option>
+                          </select>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label className="text-xs" style={{ color: 'var(--admin-text)' }}>Do Table Structure</label>
+                          {!doclingOptions.do_table_structure_enabled && (
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--admin-text-muted)' }}>
+                              Default: false
+                            </p>
+                          )}
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={doclingOptions.do_table_structure_enabled}
+                          onChange={(e) => setDoclingOptions(prev => ({ ...prev, do_table_structure_enabled: e.target.checked }))}
+                          className="w-4 h-4"
+                        />
+                      </div>
+                      {doclingOptions.do_table_structure_enabled && (
+                        <div className="ml-4">
+                          <input
+                            type="checkbox"
+                            checked={doclingOptions.do_table_structure}
+                            onChange={(e) => setDoclingOptions(prev => ({ ...prev, do_table_structure: e.target.checked }))}
+                            className="w-4 h-4"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Image Options */}
+                    <div className="space-y-2">
+                      <h5 className="text-xs font-medium" style={{ color: 'var(--admin-text)' }}>Image Options</h5>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label className="text-xs" style={{ color: 'var(--admin-text)' }}>Include Images</label>
+                          {!doclingOptions.include_images_enabled && (
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--admin-text-muted)' }}>
+                              Default: false
+                            </p>
+                          )}
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={doclingOptions.include_images_enabled}
+                          onChange={(e) => setDoclingOptions(prev => ({ ...prev, include_images_enabled: e.target.checked }))}
+                          className="w-4 h-4"
+                        />
+                      </div>
+                      {doclingOptions.include_images_enabled && (
+                        <div className="ml-4">
+                          <input
+                            type="checkbox"
+                            checked={doclingOptions.include_images}
+                            onChange={(e) => setDoclingOptions(prev => ({ ...prev, include_images: e.target.checked }))}
+                            className="w-4 h-4"
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label className="text-xs" style={{ color: 'var(--admin-text)' }}>Images Scale</label>
+                          {!doclingOptions.images_scale_enabled && (
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--admin-text-muted)' }}>
+                              Default: 1
+                            </p>
+                          )}
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={doclingOptions.images_scale_enabled}
+                          onChange={(e) => setDoclingOptions(prev => ({ ...prev, images_scale_enabled: e.target.checked }))}
+                          className="w-4 h-4"
+                        />
+                      </div>
+                      {doclingOptions.images_scale_enabled && (
+                        <div className="ml-4">
+                          <input
+                            type="text"
+                            value={doclingOptions.images_scale}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                setDoclingOptions(prev => ({ ...prev, images_scale: value }));
+                              }
+                            }}
+                            placeholder="2.0"
+                            className="w-full px-2 py-1 text-xs border rounded"
+                            style={{
+                              backgroundColor: 'var(--admin-bg)',
+                              borderColor: 'var(--admin-border)',
+                              color: 'var(--admin-text)'
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setShowIndexingModal(false)}
+                    className="flex-1 px-4 py-2 border rounded-lg font-medium transition-colors"
+                    style={{
+                      backgroundColor: 'transparent',
+                      borderColor: 'var(--admin-border)',
+                      color: 'var(--admin-text)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--admin-bg-secondary, rgba(0, 0, 0, 0.05))';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveChunkingOptions}
+                    disabled={isSavingChunking}
+                    className="flex-1 px-4 py-2 rounded-lg font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: 'var(--admin-primary, #3b82f6)',
+                      boxShadow: '0 4px 14px 0 rgba(59, 130, 246, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSavingChunking) {
+                        e.currentTarget.style.backgroundColor = '#2563eb';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSavingChunking) {
+                        e.currentTarget.style.backgroundColor = 'var(--admin-primary, #3b82f6)';
+                      }
+                    }}
+                  >
+                    {isSavingChunking ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Retrieval Options Modal */}
+      {showRetrievalModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            // Don't close if clicking inside the modal
+            if (e.target !== e.currentTarget) {
+              return;
+            }
+            // Don't close if user is selecting text
+            const selection = window.getSelection();
+            if (selection && selection.toString().length > 0) {
+              return;
+            }
+            setShowRetrievalModal(false);
+          }}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full border-2"
+            onClick={(e) => e.stopPropagation()}
+            onMouseUp={(e) => {
+              // Prevent backdrop click when releasing mouse after text selection
+              e.stopPropagation();
+            }}
+            style={{
+              backgroundColor: 'var(--card, #2f2f2f)',
+              borderColor: 'var(--admin-border)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+            }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold" style={{ color: 'var(--admin-text)' }}>
+                Retrieval Options
+              </h3>
+              <button
+                onClick={() => setShowRetrievalModal(false)}
+                className="rounded-full p-2 transition-colors"
+                style={{ 
+                  color: 'var(--admin-text-muted)',
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--admin-text, #111827)';
+                  e.currentTarget.style.backgroundColor = 'var(--admin-bg-secondary, rgba(0, 0, 0, 0.05))';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--admin-text-muted, #6b7280)';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconX size={20} />
+              </button>
+            </div>
+            
+            {isLoadingChunking ? (
+              <div className="text-center py-8" style={{ color: 'var(--admin-text-muted)' }}>
+                Loading retrieval options...
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--admin-text)' }}>
+                    Retrieval Options
                   </h4>
                   <div className="space-y-3">
                     <div>
@@ -907,7 +1656,7 @@ const FileLibrary: React.FC = () => {
 
                 <div className="flex gap-3 pt-4">
                   <button
-                    onClick={() => setShowChunkingModal(false)}
+                    onClick={() => setShowRetrievalModal(false)}
                     className="flex-1 px-4 py-2 border rounded-lg font-medium transition-colors"
                     style={{
                       backgroundColor: 'transparent',
