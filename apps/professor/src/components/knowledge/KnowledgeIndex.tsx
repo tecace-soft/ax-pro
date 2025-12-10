@@ -28,6 +28,8 @@ const KnowledgeIndex: React.FC = () => {
   const [selectedMetadata, setSelectedMetadata] = useState<any>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState<string>('');
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [isSelectAll, setIsSelectAll] = useState(false);
 
   // Load documents from Supabase on mount and when pagination changes
   useEffect(() => {
@@ -201,6 +203,84 @@ const KnowledgeIndex: React.FC = () => {
     }
   };
 
+
+  const handleToggleFile = (fileName: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row expansion when clicking checkbox
+    setSelectedFiles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(fileName)) {
+        newSet.delete(fileName);
+      } else {
+        newSet.add(fileName);
+      }
+      return newSet;
+    });
+    setIsSelectAll(false); // Deselect "Select All" if individual file is toggled
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedFiles.size === 0) {
+      alert('No files selected for deletion.');
+      return;
+    }
+
+    const filesToDelete = Array.from(selectedFiles);
+    const fileList = filesToDelete.slice(0, 5).join(', ');
+    const moreFiles = filesToDelete.length > 5 ? ` and ${filesToDelete.length - 5} more file(s)` : '';
+    const fullFileList = fileList + moreFiles;
+
+    // First confirmation
+    if (!confirm(`Are you sure you want to unindex all chunks for ${filesToDelete.length} file(s)?\n\nFiles:\n${fullFileList}\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    // Second confirmation for safety
+    if (!confirm(`⚠️ FINAL CONFIRMATION: Unindex all chunks for ${filesToDelete.length} file(s)?\n\nThis will permanently remove ALL chunks for:\n${fullFileList}`)) {
+      return;
+    }
+
+    setActionLoading('batch-delete');
+    let successCount = 0;
+    let failCount = 0;
+    const failedFiles: string[] = [];
+
+    try {
+      for (const fileName of filesToDelete) {
+        try {
+          const result = await unindexFileByFilename(fileName);
+          if (result.success) {
+            successCount++;
+          } else {
+            failCount++;
+            failedFiles.push(`${fileName}: ${result.message}`);
+          }
+        } catch (error) {
+          failCount++;
+          failedFiles.push(`${fileName}: Unknown error`);
+          console.error(`Error unindexing file ${fileName}:`, error);
+        }
+      }
+
+      // Show results
+      if (successCount > 0) {
+        alert(`✅ ${successCount} file(s) unindexed successfully.`);
+      }
+      if (failCount > 0) {
+        alert(`❌ ${failCount} file(s) failed to unindex: ${failedFiles.join(', ')}`);
+      }
+
+      // Clear selection and refresh
+      setSelectedFiles(new Set());
+      setIsSelectAll(false);
+      await loadDocuments();
+    } catch (error) {
+      console.error('Error in batch delete:', error);
+      alert('Error during batch delete');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const toggleFileExpansion = (fileName: string) => {
     setExpandedFiles(prev => {
       const newSet = new Set(prev);
@@ -279,6 +359,16 @@ const KnowledgeIndex: React.FC = () => {
   const endIndex = startIndex + displayItemsPerPage;
   const paginatedGroupedFiles = groupedFilesArray.slice(startIndex, endIndex);
   const paginatedGroupedDocuments = Object.fromEntries(paginatedGroupedFiles);
+
+  const handleToggleSelectAll = () => {
+    const currentPageFiles = Object.keys(paginatedGroupedDocuments);
+    if (isSelectAll) {
+      setSelectedFiles(new Set());
+    } else {
+      setSelectedFiles(new Set(currentPageFiles));
+    }
+    setIsSelectAll(prev => !prev);
+  };
 
   return (
     <div className="knowledge-index">
@@ -388,6 +478,14 @@ const KnowledgeIndex: React.FC = () => {
           <table className="ki-table">
             <thead>
               <tr>
+                <th style={{ width: '40px' }}>
+                  <input
+                    type="checkbox"
+                    checked={isSelectAll}
+                    onChange={handleToggleSelectAll}
+                    style={{ cursor: 'pointer' }}
+                  />
+                </th>
                 <th>File Name</th>
                 <th>Chunk</th>
                 <th>Location</th>
@@ -400,7 +498,7 @@ const KnowledgeIndex: React.FC = () => {
             <tbody>
               {filteredDocuments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
                     {error ? 'Failed to load documents' : 'No documents found. Upload and index files to see them here.'}
                   </td>
                 </tr>
@@ -417,10 +515,19 @@ const KnowledgeIndex: React.FC = () => {
                         onClick={() => toggleFileExpansion(fileName)} 
                         style={{ 
                           cursor: 'pointer', 
-                          backgroundColor: isExpanded ? 'rgba(59, 230, 255, 0.1)' : undefined,
+                          backgroundColor: isExpanded ? 'rgba(59, 230, 255, 0.1)' : selectedFiles.has(fileName) ? 'rgba(59, 130, 246, 0.15)' : undefined,
                           fontWeight: isExpanded ? '500' : 'normal'
                         }}
                       >
+                        <td onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selectedFiles.has(fileName)}
+                            onChange={(e) => handleToggleFile(fileName, e)}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
                         <td className="doc-title" title={fileName} style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontSize: '12px', color: 'var(--admin-primary)' }}>

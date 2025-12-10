@@ -429,7 +429,7 @@ const FileLibrary: React.FC = () => {
 
   // Handle file deletion
   const handleDeleteFile = async (fileId: string, fileName: string) => {
-    if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
+    if (!confirm(t('knowledge.deleteConfirm', { fileName }))) {
       return;
     }
 
@@ -446,20 +446,20 @@ const FileLibrary: React.FC = () => {
           return newSet;
         });
         console.log(`✅ File ${fileName} deleted successfully`);
-        showToast(`File "${fileName}" deleted successfully`, 'success');
+        showToast(t('knowledge.deleteSuccess', { fileName }), 'success');
       } else {
-        showToast(`Failed to delete file: ${result.message}`, 'error');
+        showToast(t('knowledge.deleteFailed', { message: result.message }), 'error');
       }
     } catch (error) {
       console.error('Error deleting file:', error);
-      showToast('Failed to delete file', 'error');
+      showToast(t('knowledge.deleteFailed', { message: 'Unknown error' }), 'error');
     }
   };
 
   // Handle batch delete
   const handleBatchDelete = async () => {
     if (selectedFiles.size === 0) {
-      showToast('No files selected', 'warning');
+      showToast(t('knowledge.noFilesSelected'), 'warning');
       return;
     }
 
@@ -470,16 +470,17 @@ const FileLibrary: React.FC = () => {
     const fileCount = selectedFiles.size;
     const fileList = selectedFileNames.slice(0, 5).join(', ');
     const moreFiles = fileCount > 5 ? ` and ${fileCount - 5} more file(s)` : '';
+    const fullFileList = fileList + moreFiles;
 
     // Double confirmation for batch delete
-    const confirmMessage = `Are you sure you want to delete ${fileCount} file(s)?\n\nFiles:\n${fileList}${moreFiles}\n\nThis action cannot be undone.`;
+    const confirmMessage = t('knowledge.batchDeleteConfirm', { count: fileCount, fileList: fullFileList });
     
     if (!confirm(confirmMessage)) {
       return;
     }
 
     // Second confirmation for safety
-    if (!confirm(`⚠️ FINAL CONFIRMATION: Delete ${fileCount} file(s)?\n\nThis will permanently delete:\n${fileList}${moreFiles}`)) {
+    if (!confirm(t('knowledge.batchDeleteFinalConfirm', { count: fileCount, fileList: fullFileList }))) {
       return;
     }
 
@@ -516,10 +517,10 @@ const FileLibrary: React.FC = () => {
 
       // Show results
       if (successCount > 0) {
-        showToast(`✅ ${successCount} file(s) deleted successfully`, 'success');
+        showToast(t('knowledge.batchDeleteSuccess', { count: successCount }), 'success');
       }
       if (failCount > 0) {
-        showToast(`❌ ${failCount} file(s) failed to delete: ${failedFiles.join(', ')}`, 'error');
+        showToast(t('knowledge.batchDeleteFailed', { count: failCount, errors: failedFiles.join(', ') }), 'error');
       }
 
       // Refresh file list
@@ -720,8 +721,8 @@ const FileLibrary: React.FC = () => {
     if (txtFiles.length > 0) {
       const fileNames = txtFiles.map(f => f.name).join(', ');
       const confirmMessage = txtFiles.length === 1
-        ? `"${fileNames}" 파일은 .md 형식으로 변환되어 저장됩니다. 계속하시겠습니까?`
-        : `${txtFiles.length}개의 .txt 파일이 .md 형식으로 변환되어 저장됩니다:\n${fileNames}\n\n계속하시겠습니까?`;
+        ? t('knowledge.txtConvertConfirmSingle', { fileName: fileNames })
+        : t('knowledge.txtConvertConfirmMultiple', { count: txtFiles.length, fileNames });
       
       if (!confirm(confirmMessage)) {
         return; // User cancelled
@@ -744,14 +745,14 @@ const FileLibrary: React.FC = () => {
         // Check if any files were renamed from .txt to .md
         const renamedFiles = results.filter(r => r.success && r.message?.includes('renamed from .txt to .md'));
         if (renamedFiles.length > 0) {
-          showToast(`✅ ${successCount} file(s) uploaded successfully. ${renamedFiles.length} .txt file(s) renamed to .md for Docling compatibility.`, 'success');
+          showToast(t('knowledge.uploadSuccessWithConvert', { count: successCount, renamedCount: renamedFiles.length }), 'success');
         } else {
-          showToast(`✅ ${successCount} file(s) uploaded successfully`, 'success');
+          showToast(t('knowledge.uploadSuccess', { count: successCount }), 'success');
         }
       }
       if (failCount > 0) {
         const errorMessages = failedResults.map(r => r.message).join(', ');
-        showToast(`❌ ${failCount} file(s) failed: ${errorMessages}`, 'error');
+        showToast(t('knowledge.uploadFailed', { count: failCount, errors: errorMessages }), 'error');
       }
       
       // Immediately refresh the file list to show new files

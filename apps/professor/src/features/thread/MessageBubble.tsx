@@ -24,6 +24,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
   const [showReferences, setShowReferences] = useState(getStoredShowReferences);
   const [copied, setCopied] = useState(false);
+  const [copiedCodeBlock, setCopiedCodeBlock] = useState<string | null>(null);
   const { customization } = useUICustomization();
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
@@ -74,6 +75,31 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     }
   };
 
+  const handleCopyCode = async (codeContent: string, codeId: string) => {
+    try {
+      await navigator.clipboard.writeText(codeContent);
+      setCopiedCodeBlock(codeId);
+      setTimeout(() => setCopiedCodeBlock(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy code:', error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = codeContent;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopiedCodeBlock(codeId);
+        setTimeout(() => setCopiedCodeBlock(null), 2000);
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} gap-3`}>
       {/* Avatar for assistant */}
@@ -88,7 +114,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         </div>
       )}
       
-      <div className={`max-w-full lg:max-w-2xl xl:max-w-3xl ${isUser ? 'order-2' : 'order-1'}`} style={{ width: '100%' }}>
+      <div 
+        className={`${isUser ? 'max-w-md lg:max-w-lg xl:max-w-xl order-2' : 'max-w-full lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl order-1'}`} 
+        style={{ width: isUser ? 'fit-content' : '100%' }}
+      >
         {/* Message Content */}
         <div
           className={`p-3 rounded-lg ${
@@ -102,7 +131,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             style={{ 
               fontSize: '14px',
               lineHeight: '1.5',
-              color: isUser ? '#ffffff' : 'var(--text)'
+              color: isUser ? '#ffffff' : 'var(--text)',
+              overflow: 'hidden',
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word'
             }}
           >
             {message.content && message.content.trim() ? (
@@ -117,59 +149,163 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                     const isInline = !className;
                     const language = className ? className.replace('language-', '') : '';
                     
+                    // Extract code content as string
+                    const extractCodeContent = (node: any): string => {
+                      if (typeof node === 'string') return node;
+                      if (typeof node === 'number') return String(node);
+                      if (Array.isArray(node)) {
+                        return node.map(extractCodeContent).join('');
+                      }
+                      if (node && typeof node === 'object' && 'props' in node) {
+                        return extractCodeContent(node.props?.children || node);
+                      }
+                      return '';
+                    };
+                    
                     if (isInline) {
                       return (
                         <code style={{ 
-                          backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', 
-                          color: isUser ? '#ffffff' : 'var(--text)',
+                          backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : 'rgba(110, 118, 129, 0.4)', 
+                          color: isUser ? '#ffffff' : '#c9d1d9',
                           padding: '2px 6px', 
                           borderRadius: '3px',
                           fontSize: '0.9em',
-                          fontFamily: 'monospace'
+                          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace'
                         }}>
                           {children}
                         </code>
                       );
                     }
                     
+                    // Code block styling - similar to ChatGPT/benchmark app
+                    const codeBlockBg = isUser ? 'rgba(22, 27, 34, 0.95)' : '#0d1117';
+                    const codeBlockBorder = isUser ? 'rgba(255,255,255,0.15)' : 'rgba(240, 246, 252, 0.15)';
+                    const codeBlockText = isUser ? '#c9d1d9' : '#c9d1d9';
+                    const languageLabelBg = isUser ? 'rgba(22, 27, 34, 1)' : '#161b22';
+                    const languageLabelText = isUser ? 'rgba(255,255,255,0.8)' : '#8b949e';
+                    
+                    // Generate unique ID for this code block
+                    const codeId = `code-${message.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    const codeContent = extractCodeContent(children).replace(/\n$/, ''); // Remove trailing newline
+                    const isCodeCopied = copiedCodeBlock === codeId;
+                    
                     return (
-                      <div style={{ margin: '16px 0', width: '100%' }}>
-                        {language && (
+                      <div style={{ 
+                        margin: '16px 0', 
+                        width: '100%',
+                        maxWidth: '100%',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        border: `1px solid ${codeBlockBorder}`,
+                        backgroundColor: codeBlockBg,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        isolation: 'isolate' // Create new stacking context
+                      }}>
+                        {(language || true) && (
                           <div style={{
-                            backgroundColor: isUser ? 'rgba(255,255,255,0.15)' : 'var(--bg-secondary)',
-                            color: isUser ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)',
-                            padding: '6px 12px',
-                            fontSize: '12px',
-                            fontFamily: 'monospace',
-                            fontWeight: '500',
-                            borderTopLeftRadius: '6px',
-                            borderTopRightRadius: '6px',
-                            borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'var(--border)'}`
+                            backgroundColor: languageLabelBg,
+                            color: languageLabelText,
+                            padding: '10px 16px',
+                            fontSize: '11px',
+                            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+                            fontWeight: '600',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.8px',
+                            borderBottom: `1px solid ${codeBlockBorder}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexShrink: 0
                           }}>
-                            {language}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                backgroundColor: '#58a6ff',
+                                display: 'inline-block',
+                                flexShrink: 0
+                              }}></span>
+                              {language || 'code'}
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyCode(codeContent, codeId);
+                              }}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: isCodeCopied ? '#10b981' : languageLabelText,
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                fontWeight: '500',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                transition: 'all 0.2s',
+                                opacity: 0.8
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.opacity = '1';
+                                e.currentTarget.style.backgroundColor = isUser ? 'rgba(255,255,255,0.1)' : 'rgba(240, 246, 252, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.opacity = '0.8';
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              title={isCodeCopied ? 'Copied!' : 'Copy code'}
+                            >
+                              {isCodeCopied ? (
+                                <>
+                                  <IconCheck size={12} />
+                                  <span>Copied</span>
+                                </>
+                              ) : (
+                                <>
+                                  <IconCopy size={12} />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
                           </div>
                         )}
-                        <pre style={{ 
-                          backgroundColor: isUser ? 'rgba(255,255,255,0.08)' : 'var(--bg-secondary)', 
-                          color: isUser ? '#ffffff' : 'var(--text)',
-                          padding: '16px', 
-                          borderRadius: language ? '0 0 6px 6px' : '6px',
+                        <div style={{
                           overflow: 'auto',
-                          margin: 0,
-                          fontSize: '14px',
-                          lineHeight: '1.6',
-                          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
-                          border: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'var(--border)'}`,
                           maxWidth: '100%',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word'
+                          WebkitOverflowScrolling: 'touch'
                         }}>
-                          <code {...props} style={{ 
-                            fontFamily: 'inherit',
-                            fontSize: 'inherit',
-                            lineHeight: 'inherit'
-                          }}>{children}</code>
-                        </pre>
+                          <pre style={{ 
+                            backgroundColor: 'transparent',
+                            color: codeBlockText,
+                            padding: '16px',
+                            margin: 0,
+                            fontSize: '13px',
+                            lineHeight: '1.6',
+                            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+                            overflow: 'visible',
+                            whiteSpace: 'pre',
+                            wordBreak: 'normal',
+                            overflowWrap: 'normal',
+                            minWidth: 'fit-content'
+                          }}>
+                            <code {...props} style={{ 
+                              fontFamily: 'inherit',
+                              fontSize: 'inherit',
+                              lineHeight: 'inherit',
+                              color: 'inherit',
+                              background: 'transparent',
+                              padding: 0,
+                              margin: 0,
+                              display: 'block',
+                              whiteSpace: 'pre'
+                            }}>{children}</code>
+                          </pre>
+                        </div>
                       </div>
                     );
                   },
