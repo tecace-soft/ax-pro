@@ -144,7 +144,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                   // Paragraph
                   p: ({ children }) => <p style={{ margin: '0 0 8px 0', wordBreak: 'break-word' }}>{children}</p>,
                   
-                  // Pre tag - for code blocks, pass through to code component
+                  // Pre tag - for code blocks, make it invisible (code component handles styling)
                   pre: ({ children, ...props }: any) => {
                     // Check if this is a code block (has code child with className)
                     const codeChild = React.Children.toArray(children).find(
@@ -153,8 +153,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                     
                     if (codeChild) {
                       // This is a code block - code component will handle the full styling
-                      // Return children directly so code component can wrap it in its own div
-                      return <>{children}</>;
+                      // Make pre tag invisible so it doesn't interfere with code component's div
+                      return (
+                        <pre style={{
+                          margin: 0,
+                          padding: 0,
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          display: 'contents'
+                        }} {...props}>
+                          {children}
+                        </pre>
+                      );
                     }
                     
                     // Regular pre tag (not a code block)
