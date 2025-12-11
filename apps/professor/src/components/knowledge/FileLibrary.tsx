@@ -1229,7 +1229,7 @@ const FileLibrary: React.FC = () => {
             Loading files from n8n...
           </div>
         ) : (
-          <table className="fl-table" style={{ width: '100%', minWidth: '900px' }}>
+          <table className="fl-table" style={{ width: '100%', minWidth: '900px', tableLayout: 'fixed' }}>
             <thead>
               <tr>
                 <th style={{ width: '40px', textAlign: 'center', padding: '8px' }}>

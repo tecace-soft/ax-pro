@@ -293,6 +293,44 @@ const KnowledgeIndex: React.FC = () => {
     });
   };
 
+  // Truncate filename in the middle (macOS Finder style) - always show extension at the end
+  const truncateFileName = (fileName: string, maxLength: number = 30): string => {
+    if (fileName.length <= maxLength) {
+      return fileName;
+    }
+    
+    // Extract extension (everything after the last dot)
+    const lastDotIndex = fileName.lastIndexOf('.');
+    if (lastDotIndex === -1 || lastDotIndex === 0) {
+      // No extension or starts with dot, just truncate in the middle
+      const half = Math.floor(maxLength / 2);
+      return `${fileName.substring(0, half - 2)}...${fileName.substring(fileName.length - half + 2)}`;
+    }
+    
+    const nameWithoutExt = fileName.substring(0, lastDotIndex);
+    const extension = fileName.substring(lastDotIndex); // includes the dot, e.g., ".md"
+    
+    // Calculate available length for name part (subtract extension and "...")
+    const availableLength = maxLength - extension.length - 3; // 3 for "..."
+    
+    if (availableLength < 4) {
+      // Too short, show as much as possible but always show extension
+      const frontPart = fileName.substring(0, Math.max(1, maxLength - extension.length - 3));
+      return `${frontPart}...${extension}`;
+    }
+    
+    // Split available length between front and back parts
+    const frontLength = Math.floor(availableLength / 2);
+    const backLength = availableLength - frontLength;
+    
+    // Get front part and back part of name (before extension)
+    const frontPart = nameWithoutExt.substring(0, frontLength);
+    const backPart = nameWithoutExt.substring(nameWithoutExt.length - backLength);
+    
+    // Ensure extension is always at the end
+    return `${frontPart}...${backPart}${extension}`;
+  };
+
   const handleShowMetadata = (doc: KnowledgeDocument) => {
     // Get unique filenames and their chunk counts
     const uniqueFiles = documents.reduce((acc, d) => {
@@ -552,12 +590,20 @@ const KnowledgeIndex: React.FC = () => {
                             style={{ cursor: 'pointer' }}
                           />
                         </td>
-                        <td className="doc-title" title={fileName} style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--admin-primary)' }}>
+                        <td className="doc-title" title={fileName} style={{ maxWidth: '200px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--admin-primary)', flexShrink: 0 }}>
                               {isExpanded ? '▼' : '▶'}
                             </span>
-                            {fileName}
+                            <span style={{ 
+                              whiteSpace: 'nowrap',
+                              minWidth: 0,
+                              display: 'inline-block',
+                              maxWidth: '100%',
+                              overflow: 'hidden'
+                            }}>
+                              {truncateFileName(fileName, 25)}
+                            </span>
                           </div>
                         </td>
                         <td className="doc-chunk-index" style={{ color: 'var(--admin-primary)', fontWeight: '600' }}>
