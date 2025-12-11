@@ -24,7 +24,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
   onGroupCreated
 }) => {
   const { theme } = useTheme();
-  const { language } = useTranslation();
+  const { language, t } = useTranslation();
   const [groupName, setGroupName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
@@ -91,7 +91,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
         setSearchResults(users);
       } catch (error) {
         console.error('Failed to search users:', error);
-        setError('Failed to search users');
+        setError(t('group.create.error.searchFailed'));
       } finally {
         setIsSearching(false);
       }
@@ -124,13 +124,13 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
 
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
-      setError('Group name is required');
+      setError(t('group.create.error.groupNameRequired'));
       return;
     }
 
     const session = getSession();
     if (!session) {
-      setError('You must be logged in to create a group');
+      setError(t('group.create.error.mustBeLoggedIn'));
       return;
     }
 
@@ -186,12 +186,12 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
       onClose();
     } catch (error) {
       console.error('❌ Failed to create group:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create group';
+      const errorMessage = error instanceof Error ? error.message : t('group.create.error.createFailed');
       console.error('Error details:', {
         message: errorMessage,
         error: error
       });
-      setError(`Failed to create group: ${errorMessage}. Please check the console for details.`);
+      setError(`${t('group.create.error.createFailed')}: ${errorMessage}. Please check the console for details.`);
     } finally {
       setIsCreating(false);
     }
@@ -208,7 +208,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: 'var(--border)' }}>
           <h2 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>
-            Create New Group
+            {t('group.create.title')}
           </h2>
           <button
             onClick={onClose}
@@ -225,13 +225,13 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
           {/* Group Name */}
           <div className="mb-6">
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-              Group Name *
+              {t('group.create.groupNameRequired')}
             </label>
             <input
               type="text"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Enter group name"
+              placeholder={t('group.create.groupNamePlaceholder')}
               className="w-full px-3 py-2 border rounded-md"
               style={{
                 backgroundColor: 'var(--bg)',
@@ -244,14 +244,14 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
           {/* User Search */}
           <div className="mb-6">
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-              Add Users
+              {t('group.create.addUsers')}
             </label>
             <div className="relative">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by first name, last name, or email"
+                placeholder={t('group.create.searchUsersPlaceholder')}
                 className="w-full px-3 py-2 border rounded-md"
                 style={{
                   backgroundColor: 'var(--bg)',
@@ -292,7 +292,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
           {selectedUsers.length > 0 && (
             <div className="mb-6">
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                Selected Users ({selectedUsers.length})
+                {t('group.create.selectedUsers')} ({selectedUsers.length})
               </label>
               <div className="space-y-2">
                 {selectedUsers.map((user) => (
@@ -326,13 +326,13 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
           {/* UI Customization Section */}
           <div className="mb-6 border-t pt-6" style={{ borderColor: 'var(--border)' }}>
             <h3 className="text-md font-semibold mb-4" style={{ color: 'var(--text)' }}>
-              {language === 'ko' ? '채팅 인터페이스 설정' : 'Chat Interface Settings'}
+              {t('group.create.chatInterfaceSettings')}
             </h3>
             
             {/* Avatar Photo Upload - First */}
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                {language === 'ko' ? '챗봇 아바타' : 'Chatbot Avatar'}
+                {t('group.create.chatbotAvatar')}
               </label>
               
               {/* Avatar Preview */}
@@ -372,7 +372,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
                   </svg>
-                  {language === 'ko' ? '사진 업로드' : 'Upload Photo'}
+                  {t('group.create.uploadPhoto')}
                   <input 
                     type="file" 
                     accept="image/*"
@@ -404,27 +404,25 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
                       border: '1px solid rgba(239, 68, 68, 0.5)'
                     }}
                   >
-                    {language === 'ko' ? '아바타 제거' : 'Remove Avatar'}
+                    {t('group.create.removeAvatar')}
                   </button>
                 )}
               </div>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {language === 'ko' 
-                  ? '이미지를 업로드하여 챗봇 아바타를 설정하세요. 업로드 후 크기와 위치를 조정할 수 있습니다.' 
-                  : 'Upload an image to set your chatbot avatar. You can adjust size and position after uploading.'}
+                {t('group.create.avatarDescription')}
               </p>
             </div>
 
             {/* Chat Title */}
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                {language === 'ko' ? '채팅 인터페이스 제목' : 'Chat Interface Title'}
+                {t('group.create.chatTitle')}
               </label>
               <input
                 type="text"
                 value={chatTitle}
                 onChange={(e) => setChatTitle(e.target.value)}
-                placeholder={language === 'ko' ? '예: 채팅 인터페이스, AI 어시스턴트 등' : 'e.g., Chat Interface, AI Assistant, etc.'}
+                placeholder={t('group.create.chatTitlePlaceholder')}
                 className="w-full px-3 py-2 border rounded-md"
                 style={{
                   backgroundColor: 'var(--bg)',
@@ -437,13 +435,13 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
             {/* Chat Subtitle */}
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                {language === 'ko' ? '채팅 인터페이스 부제목' : 'Chat Interface Subtitle'}
+                {t('group.create.chatSubtitle')}
               </label>
               <input
                 type="text"
                 value={chatSubtitle}
                 onChange={(e) => setChatSubtitle(e.target.value)}
-                placeholder={language === 'ko' ? '예: 사이드바에서 대화를 선택하거나 새 채팅을 시작하세요' : 'e.g., Select a conversation from the sidebar or start a new chat'}
+                placeholder={t('group.create.chatSubtitlePlaceholder')}
                 className="w-full px-3 py-2 border rounded-md"
                 style={{
                   backgroundColor: 'var(--bg)',
@@ -456,14 +454,14 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
             {/* Suggested Questions */}
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                {language === 'ko' ? '추천 질문' : 'Suggested Questions'}
+                {t('group.create.suggestedQuestions')}
               </label>
               <div className="space-y-2">
                 <input
                   type="text"
                   value={suggestedQuestions.question1}
                   onChange={(e) => setSuggestedQuestions({ ...suggestedQuestions, question1: e.target.value })}
-                  placeholder={language === 'ko' ? '질문 1' : 'Question 1'}
+                  placeholder={`${t('group.create.question')} 1`}
                   className="w-full px-3 py-2 border rounded-md text-sm"
                   style={{
                     backgroundColor: 'var(--bg)',
@@ -475,7 +473,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
                   type="text"
                   value={suggestedQuestions.question2}
                   onChange={(e) => setSuggestedQuestions({ ...suggestedQuestions, question2: e.target.value })}
-                  placeholder={language === 'ko' ? '질문 2' : 'Question 2'}
+                  placeholder={`${t('group.create.question')} 2`}
                   className="w-full px-3 py-2 border rounded-md text-sm"
                   style={{
                     backgroundColor: 'var(--bg)',
@@ -487,7 +485,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
                   type="text"
                   value={suggestedQuestions.question3}
                   onChange={(e) => setSuggestedQuestions({ ...suggestedQuestions, question3: e.target.value })}
-                  placeholder={language === 'ko' ? '질문 3' : 'Question 3'}
+                  placeholder={`${t('group.create.question')} 3`}
                   className="w-full px-3 py-2 border rounded-md text-sm"
                   style={{
                     backgroundColor: 'var(--bg)',
@@ -499,7 +497,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
                   type="text"
                   value={suggestedQuestions.question4}
                   onChange={(e) => setSuggestedQuestions({ ...suggestedQuestions, question4: e.target.value })}
-                  placeholder={language === 'ko' ? '질문 4' : 'Question 4'}
+                  placeholder={`${t('group.create.question')} 4`}
                   className="w-full px-3 py-2 border rounded-md text-sm"
                   style={{
                     backgroundColor: 'var(--bg)',
@@ -530,14 +528,14 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
               backgroundColor: 'var(--bg)'
             }}
           >
-            Cancel
+            {t('group.create.cancel')}
           </button>
           <button
             onClick={handleCreateGroup}
             disabled={isCreating || !groupName.trim()}
             className="btn-primary px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isCreating ? 'Creating...' : 'Create Group'}
+            {isCreating ? t('group.create.creating') : t('group.create.createGroup')}
           </button>
         </div>
       </div>
@@ -573,7 +571,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
             }}
           >
             <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>
-              {language === 'ko' ? '이미지 조정' : 'Adjust Image'}
+              {t('group.create.adjustImage')}
             </h3>
 
             {/* Preview */}
@@ -606,7 +604,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
               {/* Zoom Control */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#e5e5e5' }}>
-                  {language === 'ko' ? '확대/축소' : 'Zoom'}: {imageZoom}%
+                  {t('group.create.zoom')}: {imageZoom}%
                 </label>
                 <input
                   type="range"
@@ -624,7 +622,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
               {/* Horizontal Position */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#e5e5e5' }}>
-                  {language === 'ko' ? '가로 위치' : 'Horizontal Position'}
+                  {t('group.create.horizontalPosition')}
                 </label>
                 <input
                   type="range"
@@ -642,7 +640,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
               {/* Vertical Position */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#e5e5e5' }}>
-                  {language === 'ko' ? '세로 위치' : 'Vertical Position'}
+                  {t('group.create.verticalPosition')}
                 </label>
                 <input
                   type="range"
@@ -672,7 +670,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
                   color: '#ffffff'
                 }}
               >
-                {language === 'ko' ? '원본 사용' : 'Use Original'}
+                {t('group.create.useOriginal')}
               </button>
               
               <button
@@ -723,7 +721,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
                   color: '#ffffff'
                 }}
               >
-                {language === 'ko' ? '조정된 이미지 사용' : 'Use Adjusted'}
+                {t('group.create.useAdjusted')}
               </button>
               
               <button
@@ -735,7 +733,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
                   border: '1px solid var(--border)'
                 }}
               >
-                {language === 'ko' ? '취소' : 'Cancel'}
+                {t('group.create.cancel')}
               </button>
             </div>
           </div>

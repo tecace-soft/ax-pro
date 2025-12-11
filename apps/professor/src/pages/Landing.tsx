@@ -238,13 +238,13 @@ const Landing: React.FC = () => {
           {/* Signup Link */}
           <div className="text-center mt-6">
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              New user?{' '}
+              {t('auth.newUser')}{' '}
               <Link
                 to="/signup"
                 className="font-medium hover:underline"
                 style={{ color: 'var(--primary)' }}
               >
-                Create an account
+                {t('auth.createAccount')}
               </Link>
             </p>
           </div>
@@ -258,25 +258,25 @@ const Landing: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" style={{ justifyItems: 'center' }}>
             {/* Company Info */}
             <div style={{ textAlign: 'center' }}>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>TecAce</h3>
+              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>{t('footer.tecace')}</h3>
               <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                Enterprise AI Solutions for Modern Businesses
+                {t('footer.tecaceDescription')}
               </p>
             </div>
 
             {/* Product */}
             <div style={{ textAlign: 'center' }}>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>Product</h3>
+              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>{t('footer.product')}</h3>
               <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)', listStyle: 'none', padding: 0 }}>
-                <li>AI Assistant Platform</li>
-                <li>Knowledge Management</li>
-                <li>Analytics Dashboard</li>
+                <li>{t('footer.aiAssistantPlatform')}</li>
+                <li>{t('footer.knowledgeManagement')}</li>
+                <li>{t('footer.analyticsDashboard')}</li>
               </ul>
             </div>
 
             {/* Company */}
             <div style={{ textAlign: 'center' }}>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>Company</h3>
+              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>{t('footer.company')}</h3>
               <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)', listStyle: 'none', padding: 0 }}>
                 <li>
                   <a 
@@ -285,7 +285,7 @@ const Landing: React.FC = () => {
                     rel="noopener noreferrer"
                     className="hover:opacity-80 transition-opacity"
                   >
-                    About Us
+                    {t('footer.aboutUs')}
                   </a>
                 </li>
                 <li>
@@ -295,7 +295,7 @@ const Landing: React.FC = () => {
                     rel="noopener noreferrer"
                     className="hover:opacity-80 transition-opacity"
                   >
-                    Contact
+                    {t('footer.contact')}
                   </a>
                 </li>
               </ul>
@@ -303,7 +303,7 @@ const Landing: React.FC = () => {
 
             {/* Resources */}
             <div style={{ textAlign: 'center' }}>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>Resources</h3>
+              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>{t('footer.resources')}</h3>
               <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)', listStyle: 'none', padding: 0 }}>
                 <li>
                   <a 
@@ -312,7 +312,7 @@ const Landing: React.FC = () => {
                     rel="noopener noreferrer"
                     className="hover:opacity-80 transition-opacity"
                   >
-                    Documentation
+                    {t('footer.documentation')}
                   </a>
                 </li>
                 <li>
@@ -322,7 +322,7 @@ const Landing: React.FC = () => {
                     rel="noopener noreferrer"
                     className="hover:opacity-80 transition-opacity"
                   >
-                    Support
+                    {t('footer.support')}
                   </a>
                 </li>
               </ul>

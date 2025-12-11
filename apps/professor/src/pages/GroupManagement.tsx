@@ -12,7 +12,7 @@ import { IconUser, IconMoon, IconSun } from '../ui/icons';
 const GroupManagement: React.FC = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { t } = useTranslation();
+  const { language, setLanguage, t } = useTranslation();
   
   const [groups, setGroups] = useState<Group[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -135,28 +135,46 @@ const GroupManagement: React.FC = () => {
       <header className="border-b" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* User Name */}
+            {/* Brand Name */}
             <div className="flex items-center space-x-4">
               <span className="text-lg font-semibold" style={{ color: 'var(--text)' }}>
-                {userName || 'Loading...'}
+                {t('app.brand')}
               </span>
             </div>
 
             {/* Right side controls */}
             <div className="flex items-center space-x-4">
+              {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                title="Toggle theme"
-                style={{ color: 'var(--text)' }}
+                className="text-sm px-3 py-1 rounded border"
+                style={{ 
+                  backgroundColor: 'var(--card)', 
+                  borderColor: 'var(--border)',
+                  color: 'var(--text)'
+                }}
               >
-                {theme === 'light' ? <IconMoon size={20} /> : <IconSun size={20} />}
+                {theme === 'light' ? t('ui.theme.dark') : t('ui.theme.light')}
               </button>
+              
+              {/* Language Toggle */}
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
+                className="text-sm px-3 py-1 rounded border bg-transparent"
+                style={{ 
+                  borderColor: 'var(--border)',
+                  color: 'var(--text)'
+                }}
+              >
+                <option value="en">{t('ui.lang.en')}</option>
+                <option value="ko">{t('ui.lang.ko')}</option>
+              </select>
               
               <button
                 onClick={() => navigate('/user-settings')}
                 className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                title="User Settings"
+                title={t('group.management.userSettings')}
                 style={{ color: 'var(--text)' }}
               >
                 <IconUser size={20} />
@@ -170,7 +188,7 @@ const GroupManagement: React.FC = () => {
                   color: 'white'
                 }}
               >
-                Sign Out
+                {t('auth.signOut')}
               </button>
             </div>
           </div>
@@ -182,7 +200,7 @@ const GroupManagement: React.FC = () => {
         {/* Page Title */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold" style={{ color: 'var(--text)' }}>
-            Groups
+            {t('group.management.title')}
           </h1>
         </div>
 
@@ -199,7 +217,7 @@ const GroupManagement: React.FC = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search for a group"
+                  placeholder={t('group.management.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2 border rounded-md"
@@ -240,10 +258,10 @@ const GroupManagement: React.FC = () => {
 
               {/* New Group Button */}
               <button
-                onClick={handleCreateGroup}
+                onClick={() => setIsModalOpen(true)}
                 className="btn-primary px-4 py-2 rounded-md text-sm font-medium"
               >
-                + New Group
+                + {t('group.management.newGroup')}
               </button>
             </div>
           </div>
@@ -254,7 +272,7 @@ const GroupManagement: React.FC = () => {
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--primary)' }}></div>
-              <p style={{ color: 'var(--text-muted)' }}>Loading groups...</p>
+              <p style={{ color: 'var(--text-muted)' }}>{t('group.management.loading')}</p>
             </div>
           </div>
         ) : filteredGroups.length === 0 ? (
@@ -266,16 +284,16 @@ const GroupManagement: React.FC = () => {
                 </svg>
               </div>
               <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--text)' }}>
-                No groups yet
+                {t('group.management.empty.title')}
               </h3>
               <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-                Get started by creating your first group to organize your projects and team members.
+                {t('group.management.empty.description')}
               </p>
               <button
-                onClick={handleCreateGroup}
+                onClick={() => setIsModalOpen(true)}
                 className="btn-primary px-6 py-3 rounded-md text-sm font-medium"
               >
-                Create Your First Group
+                {t('group.management.newGroup')}
               </button>
             </div>
           </div>
@@ -319,13 +337,13 @@ const GroupManagement: React.FC = () => {
                             ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
                             : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
                         }`}>
-                          {isUserAdministrator(group) ? 'Administrator' : 'User'}
+                          {isUserAdministrator(group) ? t('group.management.role.administrator') : t('group.management.role.user')}
                         </span>
                       </div>
                       <div className="flex items-center space-x-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-                        <span>{group.users.length + 1} members</span>
+                        <span>{group.users.length + 1} {t('group.management.members')}</span>
                         <span>•</span>
-                        <span>Created {formatDate(group.created_at)}</span>
+                        <span>{t('group.management.created')} {formatDate(group.created_at)}</span>
                       </div>
                     </div>
                     
@@ -379,9 +397,9 @@ const GroupManagement: React.FC = () => {
                           {group.name}
                         </h3>
                         <div className="flex items-center space-x-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-                          <span>{group.users.length + 1} members</span>
+                          <span>{group.users.length + 1} {t('group.management.members')}</span>
                           <span>•</span>
-                          <span>Created {formatDate(group.created_at)}</span>
+                          <span>{t('group.management.created')} {formatDate(group.created_at)}</span>
                         </div>
                       </div>
                       <div>
@@ -390,7 +408,7 @@ const GroupManagement: React.FC = () => {
                             ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
                             : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
                         }`}>
-                          {isUserAdministrator(group) ? 'Administrator' : 'User'}
+                          {isUserAdministrator(group) ? t('group.management.role.administrator') : t('group.management.role.user')}
                         </span>
                       </div>
                     </div>
