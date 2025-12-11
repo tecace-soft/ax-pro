@@ -148,7 +148,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                   pre: ({ children, ...props }: any) => {
                     // Check if this is a code block (has code child with className)
                     const codeChild = React.Children.toArray(children).find(
-                      (child: any) => React.isValidElement(child) && child.type === 'code' && child.props?.className?.startsWith('language-')
+                      (child: any) => {
+                        if (!React.isValidElement(child) || child.type !== 'code') return false;
+                        const props = child.props as any;
+                        return props?.className?.startsWith('language-');
+                      }
                     );
                     
                     if (codeChild) {

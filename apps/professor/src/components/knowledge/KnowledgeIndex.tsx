@@ -537,7 +537,17 @@ const KnowledgeIndex: React.FC = () => {
                           <input
                             type="checkbox"
                             checked={selectedFiles.has(fileName)}
-                            onChange={(e) => handleToggleFile(fileName, e)}
+                            onChange={() => {
+                              setSelectedFiles(prev => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(fileName)) {
+                                  newSet.delete(fileName);
+                                } else {
+                                  newSet.add(fileName);
+                                }
+                                return newSet;
+                              });
+                            }}
                             onClick={(e) => e.stopPropagation()}
                             style={{ cursor: 'pointer' }}
                           />
