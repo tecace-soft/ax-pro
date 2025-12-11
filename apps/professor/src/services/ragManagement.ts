@@ -30,7 +30,8 @@ export interface RAGFile {
   status: 'uploading' | 'processing' | 'ready' | 'error';
   url?: string;
   lastModified?: string;
-  syncStatus?: 'synced' | 'pending' | 'error';
+  syncStatus?: 'synced' | 'pending' | 'index_started' | 'error';
+  indexRequestedAt?: string; // Timestamp when indexing was requested
 }
 
 export interface FileListResponse {
@@ -247,9 +248,17 @@ export function validateFile(file: File): { valid: boolean; error?: string; warn
     : undefined;
 
   // Check file extension (more reliable than MIME type)
+  // Docling supported formats: docx, pptx, html, image, pdf, asciidoc, md, csv, xlsx, xml, json_docling, audio, vtt
+  // Note: .txt is allowed but will be renamed to .md during upload (Docling doesn't support .txt)
   const allowedExtensions = [
-    '.txt', '.md', '.json', '.csv', '.xml', '.html', '.css', '.js', '.ts',
-    '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx'
+    // Documents
+    '.docx', '.pptx', '.html', '.pdf', '.asciidoc', '.adoc', '.md', '.txt', '.csv', '.xlsx', '.xml', '.json',
+    // Images
+    '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp',
+    // Audio
+    '.mp3', '.wav', '.ogg', '.m4a', '.flac',
+    // Video/Subtitle
+    '.vtt'
   ];
 
   const fileName = file.name.toLowerCase();
@@ -440,11 +449,31 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
       }
 
       // Sanitize filename to avoid unicode issues
-      const sanitizedName = sanitizeFileName(file.name);
+      let sanitizedName = sanitizeFileName(file.name);
+      
+      // Convert .txt to .md (Docling doesn't support .txt format)
+      let renamedToMd = false;
+      let contentType = file.type || 'application/octet-stream';
+      
+      if (sanitizedName.toLowerCase().endsWith('.txt')) {
+        sanitizedName = sanitizedName.slice(0, -4) + '.md';
+        renamedToMd = true;
+        contentType = 'text/markdown'; // Set content type to markdown for .txt files converted to .md
+        console.log(`📝 .txt file detected: "${file.name}" → "${sanitizedName}" (Docling requires .md format)`);
+      }
+      
+      // Normalize .md files to always use text/markdown (not text/x-markdown or other variants)
+      if (sanitizedName.toLowerCase().endsWith('.md')) {
+        contentType = 'text/markdown';
+      }
       
       // Show warning if filename was changed
       if (sanitizedName !== file.name) {
-        console.warn(`⚠️ Filename sanitized: "${file.name}" → "${sanitizedName}"`);
+        if (renamedToMd) {
+          console.warn(`⚠️ File renamed from .txt to .md: "${file.name}" → "${sanitizedName}" (Docling doesn't support .txt)`);
+        } else {
+          console.warn(`⚠️ Filename sanitized: "${file.name}" → "${sanitizedName}"`);
+        }
       }
       
       // Get unique filename (macOS style - add (1), (2) if duplicate)
@@ -453,12 +482,20 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
 
       console.log(`Uploading file to Supabase Storage: ${filePath}`);
 
+      // Create a new File object with updated content type if needed
+      let fileToUpload: File = file;
+      if (sanitizedName.toLowerCase().endsWith('.md') && file.type !== 'text/markdown') {
+        // Create a new File with markdown content type (normalize text/x-markdown to text/markdown)
+        fileToUpload = new File([file], uniqueFileName, { type: 'text/markdown' });
+      }
+
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from(SUPABASE_BUCKET)
-        .upload(filePath, file, {
+        .upload(filePath, fileToUpload, {
           cacheControl: '3600',
           upsert: false,
+          contentType: contentType, // Explicitly set content type
         });
 
       if (error) {
@@ -490,7 +527,7 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
               user_id: session.userId,
               file_path: filePath,
               file_size: file.size,
-              file_type: file.type || 'application/octet-stream',
+              file_type: contentType, // Use the determined content type (text/markdown for .txt files)
               is_indexed: false
             }]);
           
@@ -510,8 +547,10 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
 
       results.push({
         success: true,
-        message: 'File uploaded successfully',
-        fileName: uniqueFileName, // Return the unique filename
+        message: renamedToMd 
+          ? `File uploaded successfully (renamed from .txt to .md for Docling compatibility)`
+          : 'File uploaded successfully',
+        fileName: uniqueFileName, // Return the unique filename (may be .md if originally .txt)
       });
 
     } catch (error: any) {
@@ -933,13 +972,17 @@ export function validateFileExtended(file: File): { valid: boolean; error?: stri
   }
 
   // Check file extension
+  // Docling supported formats: docx, pptx, html, image, pdf, asciidoc, md, csv, xlsx, xml, json_docling, audio, vtt
+  // Note: .txt is allowed but will be renamed to .md during upload (Docling doesn't support .txt)
   const allowedExtensions = [
-    '.pdf', '.docx', '.doc',
-    '.xlsx', '.xls',
-    '.pptx', '.ppt',
-    '.txt', '.md', '.csv',
-    '.json', '.html', '.rtf',
-    '.xml', '.css', '.js', '.ts'
+    // Documents
+    '.docx', '.pptx', '.html', '.pdf', '.asciidoc', '.adoc', '.md', '.txt', '.csv', '.xlsx', '.xml', '.json',
+    // Images
+    '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp',
+    // Audio
+    '.mp3', '.wav', '.ogg', '.m4a', '.flac',
+    // Video/Subtitle
+    '.vtt'
   ];
 
   const fileName = file.name.toLowerCase();
@@ -1189,12 +1232,167 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       }
     }
     
+    // Map file extension to Docling format
+    // Note: json_docling is the Docling API format name for .json files
+    const getDoclingFormat = (fileName: string): string => {
+      const ext = fileName.toLowerCase().split('.').pop() || '';
+      const formatMap: Record<string, string> = {
+        // Documents
+        'pdf': 'pdf',
+        'docx': 'docx',
+        'pptx': 'pptx',
+        'html': 'html',
+        'htm': 'html',
+        'md': 'md',
+        'json': 'json_docling',  // .json files → json_docling format
+        'csv': 'csv',
+        'xlsx': 'xlsx',
+        'xml': 'xml_uspto',  // Default XML type, can be xml_jats or mets_gbs based on content
+        'asciidoc': 'asciidoc',
+        'adoc': 'asciidoc',
+        // Images
+        'png': 'image',
+        'jpg': 'image',
+        'jpeg': 'image',
+        'gif': 'image',
+        'bmp': 'image',
+        'tiff': 'image',
+        'webp': 'image',
+        // Audio
+        'mp3': 'audio',
+        'wav': 'audio',
+        'ogg': 'audio',
+        'm4a': 'audio',
+        'flac': 'audio',
+        // Video/Subtitle
+        'vtt': 'vtt',
+      };
+      return formatMap[ext] || 'pdf'; // Default to pdf if unknown
+    };
+    
+    const detectedFormat = getDoclingFormat(fileName);
+    console.log(`📄 Detected file format: ${detectedFormat} for ${fileName}`);
+    
     const payload: any = {
       fileUrl: fullFileUrl,
       fileName: fileName,
       source: 'supabase-storage',
       groupId: groupIdFromSession,
     };
+    
+    // Load Docling options from group if available
+    let doclingOptions: any = null;
+    if (groupIdFromSession) {
+      try {
+        const { defaultSupabase } = await import('./groupService');
+        const { data: groupData, error: groupError } = await defaultSupabase
+          .from('group')
+          .select('docling_options')
+          .eq('group_id', groupIdFromSession)
+          .single();
+        
+        if (!groupError && groupData?.docling_options) {
+          try {
+            doclingOptions = typeof groupData.docling_options === 'string'
+              ? JSON.parse(groupData.docling_options)
+              : groupData.docling_options;
+            console.log(`📊 Loaded Docling options from group:`, doclingOptions);
+          } catch (e) {
+            console.warn(`⚠️ Failed to parse docling_options:`, e);
+          }
+        }
+      } catch (error) {
+        console.warn(`⚠️ Error fetching Docling options:`, error);
+      }
+    }
+    
+    // Build parser_options: start with detected format, then merge enabled options
+    const parserOptions: any = {
+      from_formats: [detectedFormat]
+    };
+    
+    // Merge enabled Docling options
+    if (doclingOptions) {
+      // OCR Options
+      if (doclingOptions.do_ocr_enabled) {
+        parserOptions.do_ocr = doclingOptions.do_ocr;
+        if (doclingOptions.ocr_engine_enabled) {
+          parserOptions.ocr_engine = doclingOptions.ocr_engine;
+        }
+        if (doclingOptions.ocr_lang_enabled && doclingOptions.ocr_lang) {
+          parserOptions.ocr_lang = doclingOptions.ocr_lang.split(',').map((lang: string) => lang.trim()).filter(Boolean);
+        }
+        if (doclingOptions.force_ocr_enabled) {
+          parserOptions.force_ocr = doclingOptions.force_ocr;
+        }
+      }
+      
+      // PDF Options
+      if (doclingOptions.pdf_backend_enabled) {
+        parserOptions.pdf_backend = doclingOptions.pdf_backend;
+      }
+      if (doclingOptions.pipeline_enabled) {
+        parserOptions.pipeline = doclingOptions.pipeline;
+      }
+      
+      // Table Options
+      if (doclingOptions.table_mode_enabled) {
+        parserOptions.table_mode = doclingOptions.table_mode;
+      }
+      if (doclingOptions.table_cell_matching_enabled) {
+        parserOptions.table_cell_matching = doclingOptions.table_cell_matching;
+      }
+      if (doclingOptions.do_table_structure_enabled) {
+        parserOptions.do_table_structure = doclingOptions.do_table_structure;
+      }
+      
+      // Image Options
+      if (doclingOptions.include_images_enabled) {
+        parserOptions.include_images = doclingOptions.include_images;
+      }
+      if (doclingOptions.images_scale_enabled && doclingOptions.images_scale) {
+        parserOptions.images_scale = parseFloat(doclingOptions.images_scale) || 2.0;
+      }
+      if (doclingOptions.image_export_mode_enabled) {
+        parserOptions.image_export_mode = doclingOptions.image_export_mode;
+      }
+      
+      // Page Range
+      if (doclingOptions.page_range_enabled) {
+        const start = parseInt(doclingOptions.page_range_start) || 1;
+        const end = parseInt(doclingOptions.page_range_end) || 999999999;
+        parserOptions.page_range = [start, end];
+      }
+      
+      // Timeout
+      if (doclingOptions.document_timeout_enabled && doclingOptions.document_timeout) {
+        parserOptions.document_timeout = parseInt(doclingOptions.document_timeout) || 600;
+      }
+      if (doclingOptions.abort_on_error_enabled) {
+        parserOptions.abort_on_error = doclingOptions.abort_on_error;
+      }
+      
+      // Markdown
+      if (doclingOptions.md_page_break_placeholder_enabled) {
+        parserOptions.md_page_break_placeholder = doclingOptions.md_page_break_placeholder || '';
+      }
+      
+      // Advanced Options
+      if (doclingOptions.do_code_enrichment_enabled) {
+        parserOptions.do_code_enrichment = doclingOptions.do_code_enrichment;
+      }
+      if (doclingOptions.do_formula_enrichment_enabled) {
+        parserOptions.do_formula_enrichment = doclingOptions.do_formula_enrichment;
+      }
+      if (doclingOptions.do_picture_classification_enabled) {
+        parserOptions.do_picture_classification = doclingOptions.do_picture_classification;
+      }
+      if (doclingOptions.do_picture_description_enabled) {
+        parserOptions.do_picture_description = doclingOptions.do_picture_description;
+      }
+    }
+    
+    payload.parser_options = parserOptions;
     
     // Add chunking_options if available
     if (chunkingOptions) {

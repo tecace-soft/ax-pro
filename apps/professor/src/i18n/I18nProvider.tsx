@@ -5,7 +5,7 @@ type Language = 'en' | 'ko';
 interface I18nContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
@@ -279,8 +279,21 @@ const translations = {
     'knowledge.knowledgeIndexDescription': 'Documents indexed for AI chatbot knowledge queries',
     'knowledge.syncOverviewDescription': 'Monitor synchronization status between files and knowledge index',
     'knowledge.dragFilesHere': 'Drag text files here to upload or click to select',
-    'knowledge.supportedFormats': 'Supported formats: .txt, .md, .json, .csv, .xml, .html, .css, .js, .ts, .pdf, .doc, .docx, .ppt, .pptx, .xls, .xlsx',
+    'knowledge.supportedFormats': 'Supported formats: .docx, .pptx, .html, .pdf, .asciidoc, .adoc, .md, .txt (converted to .md), .csv, .xlsx, .xml, .json, .png, .jpg, .jpeg, .gif, .bmp, .tiff, .webp, .mp3, .wav, .ogg, .m4a, .flac, .vtt',
     'knowledge.uploadingFiles': 'Uploading files...',
+    'knowledge.txtConvertConfirmSingle': '"{fileName}" will be converted to .md format and saved. Continue?',
+    'knowledge.txtConvertConfirmMultiple': '{count} .txt file(s) will be converted to .md format:\n{fileNames}\n\nContinue?',
+    'knowledge.uploadSuccess': '{count} file(s) uploaded successfully',
+    'knowledge.uploadSuccessWithConvert': '{count} file(s) uploaded successfully. {renamedCount} .txt file(s) renamed to .md for Docling compatibility.',
+    'knowledge.uploadFailed': '{count} file(s) failed: {errors}',
+    'knowledge.deleteConfirm': 'Are you sure you want to delete "{fileName}"?',
+    'knowledge.deleteSuccess': 'File "{fileName}" deleted successfully',
+    'knowledge.deleteFailed': 'Failed to delete file: {message}',
+    'knowledge.batchDeleteConfirm': 'Are you sure you want to delete {count} file(s)?\n\nFiles:\n{fileList}\n\nThis action cannot be undone.',
+    'knowledge.batchDeleteFinalConfirm': '⚠️ FINAL CONFIRMATION: Delete {count} file(s)?\n\nThis will permanently delete:\n{fileList}',
+    'knowledge.batchDeleteSuccess': '✅ {count} file(s) deleted successfully',
+    'knowledge.batchDeleteFailed': '❌ {count} file(s) failed to delete: {errors}',
+    'knowledge.noFilesSelected': 'No files selected',
     'knowledge.searchByFilename': 'Search by filename...',
     'knowledge.searchByTitleFilepathContent': 'Search by title, filepath, or content...',
     'knowledge.refresh': 'Refresh',
@@ -662,8 +675,21 @@ const translations = {
     'knowledge.knowledgeIndexDescription': 'AI 챗봇 지식 쿼리를 위해 인덱싱된 문서',
     'knowledge.syncOverviewDescription': '파일과 지식 인덱스 간의 동기화 상태 모니터링',
     'knowledge.dragFilesHere': '텍스트 파일을 여기에 드래그하여 업로드하거나 클릭하여 선택',
-    'knowledge.supportedFormats': '지원 형식: .txt, .md, .json, .csv, .xml, .html, .css, .js, .ts, .pdf, .doc, .docx, .ppt, .pptx, .xls, .xlsx',
+    'knowledge.supportedFormats': '지원 형식: .docx, .pptx, .html, .pdf, .asciidoc, .adoc, .md, .txt (.md로 변환됨), .csv, .xlsx, .xml, .json, .png, .jpg, .jpeg, .gif, .bmp, .tiff, .webp, .mp3, .wav, .ogg, .m4a, .flac, .vtt',
     'knowledge.uploadingFiles': '파일 업로드 중...',
+    'knowledge.txtConvertConfirmSingle': '"{fileName}" 파일은 .md 형식으로 변환되어 저장됩니다. 계속하시겠습니까?',
+    'knowledge.txtConvertConfirmMultiple': '{count}개의 .txt 파일이 .md 형식으로 변환되어 저장됩니다:\n{fileNames}\n\n계속하시겠습니까?',
+    'knowledge.uploadSuccess': '{count}개 파일 업로드 성공',
+    'knowledge.uploadSuccessWithConvert': '{count}개 파일 업로드 성공. {renamedCount}개의 .txt 파일이 Docling 호환성을 위해 .md로 변환되었습니다.',
+    'knowledge.uploadFailed': '{count}개 파일 업로드 실패: {errors}',
+    'knowledge.deleteConfirm': '"{fileName}" 파일을 삭제하시겠습니까?',
+    'knowledge.deleteSuccess': '파일 "{fileName}" 삭제 성공',
+    'knowledge.deleteFailed': '파일 삭제 실패: {message}',
+    'knowledge.batchDeleteConfirm': '{count}개 파일을 삭제하시겠습니까?\n\n파일:\n{fileList}\n\n이 작업은 되돌릴 수 없습니다.',
+    'knowledge.batchDeleteFinalConfirm': '⚠️ 최종 확인: {count}개 파일을 삭제하시겠습니까?\n\n다음 파일들이 영구적으로 삭제됩니다:\n{fileList}',
+    'knowledge.batchDeleteSuccess': '✅ {count}개 파일 삭제 성공',
+    'knowledge.batchDeleteFailed': '❌ {count}개 파일 삭제 실패: {errors}',
+    'knowledge.noFilesSelected': '선택된 파일이 없습니다',
     'knowledge.searchByFilename': '파일명으로 검색...',
     'knowledge.searchByTitleFilepathContent': '제목, 파일 경로 또는 내용으로 검색...',
     'knowledge.refresh': '새로고침',
@@ -791,8 +817,18 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(LANG_STORAGE_KEY, lang);
   };
 
-  const t = (key: string): string => {
-    return translations[language][key as keyof typeof translations[Language]] || key;
+  const t = (key: string, params?: Record<string, string | number>): string => {
+    let text = translations[language][key as keyof typeof translations[Language]] || key;
+    
+    // Replace parameters in the format {paramName}
+    if (params) {
+      Object.keys(params).forEach(param => {
+        const value = String(params[param]);
+        text = text.replace(new RegExp(`\\{${param}\\}`, 'g'), value);
+      });
+    }
+    
+    return text;
   };
 
   const value: I18nContextType = {

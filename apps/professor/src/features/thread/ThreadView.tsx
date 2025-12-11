@@ -113,7 +113,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ sessionId }) => {
             </div>
           </div>
         ) : (
-          <div className="p-4 space-y-4">
+          <div className="px-2 sm:px-4 md:px-6 lg:px-8 py-4 space-y-4 max-w-full mx-auto">
             {messages.map((message) => {
               console.log('Rendering message:', message);
               return <MessageBubble key={message.id} message={message} />;
