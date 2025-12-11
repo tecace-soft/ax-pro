@@ -208,6 +208,12 @@ export const useThread = (sessionId: string) => {
 
       // Messages are automatically saved to Supabase by the chatbot backend
       // No need to refetch - messages are already in state from streaming
+      
+      // Trigger session list refresh so new session appears in sidebar
+      // Delay slightly to allow backend to create/update session
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('sessionUpdated'));
+      }, 1000);
 
     } catch (err) {
       console.error('Error in sendMessage:', err);

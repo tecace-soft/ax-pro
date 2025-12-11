@@ -30,7 +30,8 @@ export interface RAGFile {
   status: 'uploading' | 'processing' | 'ready' | 'error';
   url?: string;
   lastModified?: string;
-  syncStatus?: 'synced' | 'pending' | 'error';
+  syncStatus?: 'synced' | 'pending' | 'index_started' | 'error';
+  indexRequestedAt?: string; // Timestamp when indexing was requested
 }
 
 export interface FileListResponse {

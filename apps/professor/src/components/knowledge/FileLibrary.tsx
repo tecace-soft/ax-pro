@@ -43,7 +43,71 @@ const FileLibrary: React.FC = () => {
     chunksCount?: number;
     lastUpdated?: string;
   }>>({});
-  const [pollingFiles, setPollingFiles] = useState<Set<string>>(new Set());
+  // Load pollingFiles and request times from localStorage on mount
+  const getStoredPollingFiles = (): Set<string> => {
+    try {
+      const { getGroupIdFromUrl } = require('../../utils/navigation');
+      const groupId = getGroupIdFromUrl();
+      if (!groupId) return new Set();
+      
+      const stored = localStorage.getItem(`pollingFiles_${groupId}`);
+      if (stored) {
+        const files = JSON.parse(stored) as string[];
+        return new Set(files);
+      }
+    } catch (error) {
+      console.warn('Failed to load pollingFiles from localStorage:', error);
+    }
+    return new Set();
+  };
+
+  const getStoredRequestTimes = (): Map<string, string> => {
+    try {
+      const { getGroupIdFromUrl } = require('../../utils/navigation');
+      const groupId = getGroupIdFromUrl();
+      if (!groupId) return new Map();
+      
+      const stored = localStorage.getItem(`indexRequestTimes_${groupId}`);
+      if (stored) {
+        const times = JSON.parse(stored) as Record<string, string>;
+        return new Map(Object.entries(times));
+      }
+    } catch (error) {
+      console.warn('Failed to load indexRequestTimes from localStorage:', error);
+    }
+    return new Map();
+  };
+
+  const [pollingFiles, setPollingFiles] = useState<Set<string>>(getStoredPollingFiles());
+  const [indexRequestTimes, setIndexRequestTimes] = useState<Map<string, string>>(getStoredRequestTimes());
+  
+  // Save pollingFiles to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const { getGroupIdFromUrl } = require('../../utils/navigation');
+      const groupId = getGroupIdFromUrl();
+      if (!groupId) return;
+      
+      const filesArray = Array.from(pollingFiles);
+      localStorage.setItem(`pollingFiles_${groupId}`, JSON.stringify(filesArray));
+    } catch (error) {
+      console.warn('Failed to save pollingFiles to localStorage:', error);
+    }
+  }, [pollingFiles]);
+
+  // Save indexRequestTimes to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const { getGroupIdFromUrl } = require('../../utils/navigation');
+      const groupId = getGroupIdFromUrl();
+      if (!groupId) return;
+      
+      const timesObj = Object.fromEntries(indexRequestTimes);
+      localStorage.setItem(`indexRequestTimes_${groupId}`, JSON.stringify(timesObj));
+    } catch (error) {
+      console.warn('Failed to save indexRequestTimes to localStorage:', error);
+    }
+  }, [indexRequestTimes]);
   const [showIndexingModal, setShowIndexingModal] = useState(false);
   const [showRetrievalModal, setShowRetrievalModal] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set()); // file.id를 저장
@@ -52,6 +116,8 @@ const FileLibrary: React.FC = () => {
   const [topK, setTopK] = useState<string>('');
   const [isLoadingChunking, setIsLoadingChunking] = useState(false);
   const [isSavingChunking, setIsSavingChunking] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true); // Auto-refresh enabled by default
+  const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Docling Parser Options
   const [doclingOptions, setDoclingOptions] = useState<{
@@ -178,10 +244,74 @@ const FileLibrary: React.FC = () => {
     }
   };
 
-  // Fetch files on component mount
+  // Fetch files on component mount and restore index_started status
   useEffect(() => {
-    loadFiles();
+    const loadAndRestore = async () => {
+      await loadFiles();
+      // After loading files, restore index_started status for files in pollingFiles
+      // Also check if any files in pollingFiles are already synced (completed)
+      if (pollingFiles.size > 0) {
+        const filesToRemove: string[] = [];
+        setUploadedFiles(prev => prev.map(file => {
+          if (pollingFiles.has(file.name)) {
+            // If file is already synced, remove from pollingFiles
+            if (file.syncStatus === 'synced') {
+              filesToRemove.push(file.name);
+              return file;
+            }
+            // Otherwise, restore index_started status
+            if (file.syncStatus === 'pending') {
+              const requestTime = indexRequestTimes.get(file.name);
+              return { 
+                ...file, 
+                syncStatus: 'index_started' as const,
+                indexRequestedAt: requestTime
+              };
+            }
+          }
+          return file;
+        }));
+        
+        // Remove completed files from pollingFiles
+        if (filesToRemove.length > 0) {
+          setPollingFiles(prev => {
+            const newSet = new Set(prev);
+            filesToRemove.forEach(fileName => newSet.delete(fileName));
+            return newSet;
+          });
+        }
+      }
+    };
+    loadAndRestore();
   }, [storageType]);
+
+  // Auto-refresh every 15 seconds
+  useEffect(() => {
+    if (autoRefresh) {
+      // Clear any existing interval
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+      }
+      
+      // Set up new interval
+      autoRefreshIntervalRef.current = setInterval(() => {
+        console.log('🔄 Auto-refreshing file list...');
+        loadFiles();
+      }, 15000); // 15 seconds
+      
+      return () => {
+        if (autoRefreshIntervalRef.current) {
+          clearInterval(autoRefreshIntervalRef.current);
+        }
+      };
+    } else {
+      // Clear interval if auto-refresh is disabled
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+        autoRefreshIntervalRef.current = null;
+      }
+    }
+  }, [autoRefresh]);
 
   // Load options when modals open
   useEffect(() => {
@@ -387,8 +517,55 @@ const FileLibrary: React.FC = () => {
             setPollingFiles(prev => {
               const newSet = new Set(prev);
               newSet.delete(fileName);
+              
+              // Update localStorage when polling stops
+              try {
+                const { getGroupIdFromUrl } = require('../../utils/navigation');
+                const groupId = getGroupIdFromUrl();
+                if (groupId) {
+                  const filesArray = Array.from(newSet);
+                  localStorage.setItem(`pollingFiles_${groupId}`, JSON.stringify(filesArray));
+                }
+              } catch (error) {
+                console.warn('Failed to update pollingFiles in localStorage:', error);
+              }
+              
               return newSet;
             });
+            
+            // Update syncStatus when indexing completes
+            if (status.status === 'completed') {
+              // Remove from request times
+              setIndexRequestTimes(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(fileName);
+                return newMap;
+              });
+              
+              setUploadedFiles(prev => prev.map(file => 
+                file.name === fileName 
+                  ? { ...file, syncStatus: 'synced' as const }
+                  : file
+              ));
+              // Refresh files to get updated status from database
+              loadFiles();
+            } else if (status.status === 'failed') {
+              // Remove from request times
+              setIndexRequestTimes(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(fileName);
+                return newMap;
+              });
+              
+              // On failure, revert to pending - user can retry indexing
+              // No need to show error - user can just reindex if needed
+              setUploadedFiles(prev => prev.map(file => 
+                file.name === fileName 
+                  ? { ...file, syncStatus: 'pending' as const }
+                  : file
+              ));
+              console.log(`⚠️ Indexing failed for ${fileName}, reverted to pending. User can retry.`);
+            }
           }
         } catch (error) {
           console.error(`Error polling status for ${fileName}:`, error);
@@ -407,7 +584,32 @@ const FileLibrary: React.FC = () => {
     try {
       const response = await fetchFilesFromSupabase();
       if (response.success) {
-        setUploadedFiles(response.files);
+        // Preserve 'index_started' status for files that are currently being polled
+        setUploadedFiles(prevFiles => {
+          const newFiles = response.files.map(newFile => {
+            // If this file is in pollingFiles, keep it as 'index_started'
+            if (pollingFiles.has(newFile.name)) {
+              const requestTime = indexRequestTimes.get(newFile.name);
+              return { 
+                ...newFile, 
+                syncStatus: 'index_started' as const,
+                indexRequestedAt: requestTime
+              };
+            }
+            // Otherwise, check if we had it as 'index_started' before and it's still pending
+            const prevFile = prevFiles.find(f => f.name === newFile.name);
+            if (prevFile?.syncStatus === 'index_started' && newFile.syncStatus === 'pending') {
+              const requestTime = indexRequestTimes.get(newFile.name) || prevFile.indexRequestedAt;
+              return { 
+                ...newFile, 
+                syncStatus: 'index_started' as const,
+                indexRequestedAt: requestTime
+              };
+            }
+            return newFile;
+          });
+          return newFiles;
+        });
         console.log(`✅ Loaded ${response.files.length} files from Supabase Storage`);
       } else {
         setError(response.message || 'Failed to load files from Supabase');
@@ -576,6 +778,21 @@ const FileLibrary: React.FC = () => {
       console.log('📋 Index result:', result);
       
       if (result.success) {
+        // Save request time
+        const requestTime = new Date().toISOString();
+        setIndexRequestTimes(prev => {
+          const newMap = new Map(prev);
+          newMap.set(fileName, requestTime);
+          return newMap;
+        });
+        
+        // Update file syncStatus to 'index_started' immediately
+        setUploadedFiles(prev => prev.map(file => 
+          file.name === fileName 
+            ? { ...file, syncStatus: 'index_started' as const, indexRequestedAt: requestTime }
+            : file
+        ));
+        
         // Start polling for status updates
         setPollingFiles(prev => new Set(prev).add(fileName));
         
@@ -942,6 +1159,40 @@ const FileLibrary: React.FC = () => {
             <span className="refresh-icon">↻</span>
             {isLoading ? t('knowledge.loading') || 'Loading...' : t('knowledge.refresh')}
           </button>
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className="refresh-btn"
+            style={{
+              backgroundColor: autoRefresh ? '#10b981' : 'var(--bg-secondary, #2a2a2a)',
+              color: autoRefresh ? '#ffffff' : 'var(--text-secondary, #9ca3af)',
+              border: `1px solid ${autoRefresh ? '#10b981' : 'var(--border, #404040)'}`,
+              padding: '6px 12px',
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: autoRefresh ? '600' : '400',
+              opacity: autoRefresh ? 1 : 0.8
+            }}
+            onMouseEnter={(e) => {
+              if (!autoRefresh) {
+                e.currentTarget.style.backgroundColor = 'var(--bg-tertiary, #333)';
+                e.currentTarget.style.color = 'var(--text, #e5e7eb)';
+                e.currentTarget.style.borderColor = 'var(--border, #555)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!autoRefresh) {
+                e.currentTarget.style.backgroundColor = 'var(--bg-secondary, #2a2a2a)';
+                e.currentTarget.style.color = 'var(--text-secondary, #9ca3af)';
+                e.currentTarget.style.borderColor = 'var(--border, #404040)';
+              }
+            }}
+            title={autoRefresh ? 'Auto-refresh enabled (15s)' : 'Auto-refresh disabled'}
+          >
+            <span style={{ fontSize: '14px' }}>{autoRefresh ? '⏱' : '⏸'}</span>
+            <span>{autoRefresh ? 'Auto' : 'Manual'}</span>
+          </button>
         </div>
       </div>
 
@@ -1024,17 +1275,34 @@ const FileLibrary: React.FC = () => {
                     <td className="sync-status-cell" style={{ whiteSpace: 'nowrap' }}>
                       <span 
                         style={{
-                          color: file.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
-                          fontWeight: file.syncStatus === 'pending' ? 'bold' : 'normal',
+                          color: file.syncStatus === 'synced' ? '#10b981' 
+                            : file.syncStatus === 'index_started' ? '#3b82f6' 
+                            : '#f59e0b',
+                          fontWeight: file.syncStatus === 'pending' || file.syncStatus === 'index_started' ? 'bold' : 'normal',
                           fontSize: '14px'
                         }}
                       >
-                        {file.syncStatus === 'synced' ? '✓ Synced' : '⚠ Not Indexed'}
+                        {file.syncStatus === 'synced' ? '✓ Synced' 
+                          : file.syncStatus === 'index_started' ? (() => {
+                            const requestTime = indexRequestTimes.get(file.name) || file.indexRequestedAt;
+                            const formattedTime = requestTime 
+                              ? new Date(requestTime).toLocaleString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric', 
+                                  year: 'numeric',
+                                  hour: 'numeric', 
+                                  minute: '2-digit',
+                                  hour12: true 
+                                })
+                              : '';
+                            return `⏳ Index Started${formattedTime ? ` (Request at ${formattedTime})` : ''}`;
+                          })()
+                          : '⚠ Not Indexed'}
                       </span>
                     </td>
                     <td style={{ textAlign: 'right', paddingRight: '16px' }}>
                       <div className="file-actions" style={{ justifyContent: 'flex-end' }}>
-                        {file.syncStatus === 'pending' && (
+                        {(file.syncStatus === 'pending' || file.syncStatus === undefined) && (
                           <button 
                             className="icon-action-btn index-btn" 
                             title="Index this file"

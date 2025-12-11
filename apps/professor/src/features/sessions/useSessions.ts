@@ -226,6 +226,25 @@ export const useSessions = () => {
       console.log('✅ Generated new session ID:', sessionId);
       setError(null); // Clear any previous errors
       
+      // Add temporary session to list immediately so it appears in sidebar
+      const now = new Date().toISOString();
+      const tempSession: Session = {
+        id: sessionId,
+        title: title,
+        status: 'open',
+        createdAt: now,
+        updatedAt: now
+      };
+      
+      setSessions(prev => {
+        // Check if session already exists
+        if (prev.some(s => s.id === sessionId)) {
+          return prev;
+        }
+        // Add new session at the beginning of the list
+        return [tempSession, ...prev];
+      });
+      
       // Return sessionId - let the caller handle navigation/state management
       return sessionId;
     } catch (err) {

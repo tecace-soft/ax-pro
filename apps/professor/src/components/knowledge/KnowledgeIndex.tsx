@@ -417,6 +417,20 @@ const KnowledgeIndex: React.FC = () => {
             </span>
           )}
         </button>
+        {selectedFiles.size > 0 && (
+          <button
+            className="refresh-btn"
+            onClick={handleBatchDelete}
+            disabled={actionLoading === 'batch-delete'}
+            style={{
+              backgroundColor: 'var(--error, #ef4444)',
+              color: 'white',
+              marginLeft: '8px'
+            }}
+          >
+            Unindex {selectedFiles.size} file(s)
+          </button>
+        )}
       </div>
 
       {/* Debug Info */}

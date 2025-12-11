@@ -144,6 +144,37 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                   // Paragraph
                   p: ({ children }) => <p style={{ margin: '0 0 8px 0', wordBreak: 'break-word' }}>{children}</p>,
                   
+                  // Pre tag - for code blocks, pass through to code component
+                  pre: ({ children, ...props }: any) => {
+                    // Check if this is a code block (has code child with className)
+                    const codeChild = React.Children.toArray(children).find(
+                      (child: any) => React.isValidElement(child) && child.type === 'code' && child.props?.className?.startsWith('language-')
+                    );
+                    
+                    if (codeChild) {
+                      // This is a code block - code component will handle the full styling
+                      // Return children directly so code component can wrap it in its own div
+                      return <>{children}</>;
+                    }
+                    
+                    // Regular pre tag (not a code block)
+                    return (
+                      <pre style={{
+                        backgroundColor: isUser ? 'rgba(22, 27, 34, 0.5)' : 'var(--bg-secondary)',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        overflow: 'auto',
+                        fontSize: '13px',
+                        lineHeight: '1.6',
+                        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+                        color: isUser ? '#c9d1d9' : 'var(--text)',
+                        margin: '8px 0'
+                      }} {...props}>
+                        {children}
+                      </pre>
+                    );
+                  },
+                  
                   // Code blocks and inline code
                   code: ({ children, className, ...props }) => {
                     const isInline = !className;
@@ -177,12 +208,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                       );
                     }
                     
-                    // Code block styling - similar to ChatGPT/benchmark app
-                    const codeBlockBg = isUser ? 'rgba(22, 27, 34, 0.95)' : '#0d1117';
-                    const codeBlockBorder = isUser ? 'rgba(255,255,255,0.15)' : 'rgba(240, 246, 252, 0.15)';
-                    const codeBlockText = isUser ? '#c9d1d9' : '#c9d1d9';
+                    // Code block styling - ChatGPT style
+                    const codeBlockBg = isUser ? 'rgba(22, 27, 34, 0.95)' : '#1b1b1b';
+                    const codeBlockBorder = isUser ? 'rgba(255,255,255,0.15)' : 'rgba(255, 255, 255, 0.1)';
+                    const codeBlockText = isUser ? '#c9d1d9' : '#e6edf3';
                     const languageLabelBg = isUser ? 'rgba(22, 27, 34, 1)' : '#161b22';
-                    const languageLabelText = isUser ? 'rgba(255,255,255,0.8)' : '#8b949e';
+                    const languageLabelText = isUser ? 'rgba(255,255,255,0.7)' : '#8b949e';
                     
                     // Generate unique ID for this code block
                     const codeId = `code-${message.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -194,90 +225,88 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                         margin: '16px 0', 
                         width: '100%',
                         maxWidth: '100%',
-                        borderRadius: '8px',
+                        borderRadius: '12px',
                         overflow: 'hidden',
                         border: `1px solid ${codeBlockBorder}`,
                         backgroundColor: codeBlockBg,
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2)',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2)',
                         display: 'flex',
                         flexDirection: 'column',
-                        isolation: 'isolate' // Create new stacking context
+                        isolation: 'isolate',
+                        position: 'relative'
                       }}>
-                        {(language || true) && (
-                          <div style={{
-                            backgroundColor: languageLabelBg,
-                            color: languageLabelText,
-                            padding: '10px 16px',
-                            fontSize: '11px',
-                            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
-                            fontWeight: '600',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.8px',
-                            borderBottom: `1px solid ${codeBlockBorder}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            flexShrink: 0
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{
-                                width: '6px',
-                                height: '6px',
-                                borderRadius: '50%',
-                                backgroundColor: '#58a6ff',
-                                display: 'inline-block',
-                                flexShrink: 0
-                              }}></span>
-                              {language || 'code'}
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCopyCode(codeContent, codeId);
-                              }}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: isCodeCopied ? '#10b981' : languageLabelText,
-                                cursor: 'pointer',
-                                padding: '4px 8px',
-                                borderRadius: '4px',
-                                fontSize: '11px',
-                                fontWeight: '500',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                transition: 'all 0.2s',
-                                opacity: 0.8
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.opacity = '1';
-                                e.currentTarget.style.backgroundColor = isUser ? 'rgba(255,255,255,0.1)' : 'rgba(240, 246, 252, 0.1)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.opacity = '0.8';
-                                e.currentTarget.style.backgroundColor = 'transparent';
-                              }}
-                              title={isCodeCopied ? 'Copied!' : 'Copy code'}
-                            >
-                              {isCodeCopied ? (
-                                <>
-                                  <IconCheck size={12} />
-                                  <span>Copied</span>
-                                </>
-                              ) : (
-                                <>
-                                  <IconCopy size={12} />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
+                        {/* Header with language and copy button */}
+                        <div style={{
+                          backgroundColor: languageLabelBg,
+                          color: languageLabelText,
+                          padding: '12px 16px',
+                          fontSize: '12px',
+                          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+                          fontWeight: '500',
+                          textTransform: 'none',
+                          letterSpacing: '0.3px',
+                          borderBottom: `1px solid ${codeBlockBorder}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexShrink: 0
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'capitalize' }}>
+                            {language || 'code'}
                           </div>
-                        )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyCode(codeContent, codeId);
+                            }}
+                            style={{
+                              background: isCodeCopied ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
+                              border: `1px solid ${isCodeCopied ? '#10b981' : codeBlockBorder}`,
+                              color: isCodeCopied ? '#10b981' : languageLabelText,
+                              cursor: 'pointer',
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: '500',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease',
+                              opacity: 1
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isCodeCopied) {
+                                e.currentTarget.style.backgroundColor = isUser ? 'rgba(255,255,255,0.1)' : 'rgba(240, 246, 252, 0.1)';
+                                e.currentTarget.style.borderColor = isUser ? 'rgba(255,255,255,0.3)' : 'rgba(240, 246, 252, 0.3)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isCodeCopied) {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                                e.currentTarget.style.borderColor = codeBlockBorder;
+                              }
+                            }}
+                            title={isCodeCopied ? 'Copied!' : 'Copy code'}
+                          >
+                            {isCodeCopied ? (
+                              <>
+                                <IconCheck size={14} />
+                                <span>Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <IconCopy size={14} />
+                                <span>Copy</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        {/* Code content */}
                         <div style={{
                           overflow: 'auto',
                           maxWidth: '100%',
-                          WebkitOverflowScrolling: 'touch'
+                          WebkitOverflowScrolling: 'touch',
+                          position: 'relative'
                         }}>
                           <pre style={{ 
                             backgroundColor: 'transparent',
