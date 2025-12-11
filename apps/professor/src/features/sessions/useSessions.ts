@@ -164,14 +164,14 @@ export const useSessions = () => {
               updatedAt: s.updated_at || s.created_at || new Date().toISOString()
             };
 
-            // If session doesn't have a title, fetch the first message and generate a smart title
+            // If session doesn't have a title, fetch the first message and use it as-is
             if (!session.title) {
               try {
                 const messages = await fetchChatMessagesForSession(s.session_id, groupId);
                 // Find the first user message
                 const firstUserMessage = messages.find(msg => msg.role === 'user');
                 if (firstUserMessage && firstUserMessage.content) {
-                  session.firstMessage = generateSmartTitle(firstUserMessage.content);
+                  session.firstMessage = firstUserMessage.content.trim();
                 }
               } catch (msgError) {
                 console.warn(`Could not fetch first message for session ${s.session_id}:`, msgError);
