@@ -255,9 +255,9 @@ const Landing: React.FC = () => {
       {/* Footer */}
       <footer className="mt-auto py-6 px-4 border-t" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" style={{ justifyItems: 'center' }}>
             {/* Company Info */}
-            <div>
+            <div style={{ textAlign: 'center' }}>
               <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>TecAce</h3>
               <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                 Enterprise AI Solutions for Modern Businesses
@@ -265,9 +265,9 @@ const Landing: React.FC = () => {
             </div>
 
             {/* Product */}
-            <div>
+            <div style={{ textAlign: 'center' }}>
               <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>Product</h3>
-              <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)', listStyle: 'none', padding: 0 }}>
                 <li>AI Assistant Platform</li>
                 <li>Knowledge Management</li>
                 <li>Analytics Dashboard</li>
@@ -275,9 +275,9 @@ const Landing: React.FC = () => {
             </div>
 
             {/* Company */}
-            <div>
+            <div style={{ textAlign: 'center' }}>
               <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>Company</h3>
-              <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)', listStyle: 'none', padding: 0 }}>
                 <li>
                   <a 
                     href="https://tecace.com" 
@@ -300,12 +300,39 @@ const Landing: React.FC = () => {
                 </li>
               </ul>
             </div>
+
+            {/* Resources */}
+            <div style={{ textAlign: 'center' }}>
+              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>Resources</h3>
+              <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)', listStyle: 'none', padding: 0 }}>
+                <li>
+                  <a 
+                    href="https://tecace.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:opacity-80 transition-opacity"
+                  >
+                    Documentation
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="https://tecace.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:opacity-80 transition-opacity"
+                  >
+                    Support
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
 
           {/* Copyright */}
           <div className="pt-4 border-t text-center" style={{ borderColor: 'var(--border)' }}>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              © {new Date().getFullYear()} TecAce Software, Ltd. All rights reserved. |{' '}
+              © 2025-2026 TecAce Software, Ltd. All rights reserved. |{' '}
               <a 
                 href="https://tecace.com" 
                 target="_blank" 
