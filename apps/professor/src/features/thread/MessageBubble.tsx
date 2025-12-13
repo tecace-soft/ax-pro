@@ -250,71 +250,71 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                         position: 'relative'
                       }}>
                         {/* Header with language and copy button */}
-                        <div style={{
-                          backgroundColor: languageLabelBg,
-                          color: languageLabelText,
+                          <div style={{
+                            backgroundColor: languageLabelBg,
+                            color: languageLabelText,
                           padding: '12px 16px',
                           fontSize: '12px',
-                          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+                            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
                           fontWeight: '500',
                           textTransform: 'none',
                           letterSpacing: '0.3px',
-                          borderBottom: `1px solid ${codeBlockBorder}`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexShrink: 0
-                        }}>
+                            borderBottom: `1px solid ${codeBlockBorder}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexShrink: 0
+                          }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'capitalize' }}>
-                            {language || 'code'}
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCopyCode(codeContent, codeId);
-                            }}
-                            style={{
+                              {language || 'code'}
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyCode(codeContent, codeId);
+                              }}
+                              style={{
                               background: isCodeCopied ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
                               border: `1px solid ${isCodeCopied ? '#10b981' : codeBlockBorder}`,
-                              color: isCodeCopied ? '#10b981' : languageLabelText,
-                              cursor: 'pointer',
+                                color: isCodeCopied ? '#10b981' : languageLabelText,
+                                cursor: 'pointer',
                               padding: '6px 12px',
                               borderRadius: '6px',
                               fontSize: '12px',
-                              fontWeight: '500',
-                              display: 'flex',
-                              alignItems: 'center',
+                                fontWeight: '500',
+                                display: 'flex',
+                                alignItems: 'center',
                               gap: '6px',
                               transition: 'all 0.2s ease',
                               opacity: 1
-                            }}
-                            onMouseEnter={(e) => {
+                              }}
+                              onMouseEnter={(e) => {
                               if (!isCodeCopied) {
                                 e.currentTarget.style.backgroundColor = isUser ? 'rgba(255,255,255,0.1)' : 'rgba(240, 246, 252, 0.1)';
                                 e.currentTarget.style.borderColor = isUser ? 'rgba(255,255,255,0.3)' : 'rgba(240, 246, 252, 0.3)';
                               }
-                            }}
-                            onMouseLeave={(e) => {
+                              }}
+                              onMouseLeave={(e) => {
                               if (!isCodeCopied) {
                                 e.currentTarget.style.backgroundColor = 'transparent';
                                 e.currentTarget.style.borderColor = codeBlockBorder;
                               }
-                            }}
-                            title={isCodeCopied ? 'Copied!' : 'Copy code'}
-                          >
-                            {isCodeCopied ? (
-                              <>
+                              }}
+                              title={isCodeCopied ? 'Copied!' : 'Copy code'}
+                            >
+                              {isCodeCopied ? (
+                                <>
                                 <IconCheck size={14} />
-                                <span>Copied</span>
-                              </>
-                            ) : (
-                              <>
+                                  <span>Copied</span>
+                                </>
+                              ) : (
+                                <>
                                 <IconCopy size={14} />
-                                <span>Copy</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                         {/* Code content */}
                         <div style={{
                           overflow: 'auto',

@@ -68,13 +68,36 @@ export function parseCitations(
       // HTML entity version
       contents = citationContent.split('&lt;|||&gt;').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
     } else {
-      // No delimiter found - log warning
-      console.warn('⚠️ citationContent does not contain <|||> delimiter!', {
+      // No delimiter found - split by title count
+      console.warn('⚠️ citationContent does not contain <|||> delimiter! Splitting by title count.', {
+        titlesCount: titles.length,
         contentPreview: citationContent.substring(0, 200),
         contentLength: citationContent.length
       });
-      // If no delimiter, treat entire content as single citation
-      contents = [citationContent.trim()].filter((c: string) => c.length > 0);
+      
+      // If we have multiple titles but no delimiter, split content evenly
+      if (titles.length > 1 && citationContent.length > 0) {
+        const contentLength = citationContent.length;
+        const chunkSize = Math.ceil(contentLength / titles.length);
+        contents = [];
+        for (let i = 0; i < titles.length; i++) {
+          const start = i * chunkSize;
+          const end = i === titles.length - 1 ? contentLength : (i + 1) * chunkSize;
+          const chunk = citationContent.substring(start, end).trim();
+          if (chunk.length > 0) {
+            contents.push(chunk);
+          }
+        }
+        console.log('📊 Split content by title count:', {
+          titlesCount: titles.length,
+          contentsCount: contents.length,
+          chunkSize,
+          contentLength
+        });
+      } else {
+        // Single title or no titles - treat entire content as single citation
+        contents = [citationContent.trim()].filter((c: string) => c.length > 0);
+      }
     }
   }
 

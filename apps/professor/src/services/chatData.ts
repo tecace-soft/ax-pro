@@ -425,34 +425,16 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
               chat_id: chat.chat_id
             });
             
-            // Split citationTitle by ';;;' separator
-            const titles = citationTitle.split(';;;').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
-            
-            // Split citationContent by '<|||>' separator
-            const contents = citationContent.split('<|||>').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
+            // Use parseCitations function from chat.ts for consistent parsing
+            const { parseCitations } = await import('./chat');
+            const parsedCitations = parseCitations(citationTitle, citationContent, chat.chat_id, String(chat.chat_id));
             
             console.log('🔪 Split results from DB:', {
-              titlesCount: titles.length,
-              contentsCount: contents.length,
-              titles,
-              contents
+              titlesCount: parsedCitations.length,
+              citations: parsedCitations.map((c, i) => ({ index: i, title: c.title, snippetLength: c.snippet.length }))
             });
             
-            // Use the shorter length to avoid mismatched pairs (no fallback to first item only)
-            const count = Math.min(titles.length, contents.length);
-            
-            assistantMessage.citations = [];
-            for (let i = 0; i < count; i++) {
-              assistantMessage.citations.push({
-                id: `citation_${chat.chat_id}_${i}`,
-                messageId: chat.chat_id,
-                sourceType: 'document' as const,
-                title: titles[i] || 'Untitled Source',
-                snippet: contents[i] || '',
-                sourceId: `doc_${chat.chat_id}_${i}`,
-                metadata: {}
-              });
-            }
+            assistantMessage.citations = parsedCitations;
             
             console.log('✅ Parsed citations from DB:', assistantMessage.citations.length, assistantMessage.citations);
           }
