@@ -246,43 +246,219 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
       console.error('Supabase error:', error);
       throw new Error(`Failed to fetch chat messages: ${error.message}`);
     }
+    
+    // Log raw data for debugging
+    if (data && data.length > 0) {
+      console.log('📊 Raw chat data from database:', data.map(chat => ({
+        chat_id: chat.chat_id,
+        has_response: !!chat.response,
+        response_type: typeof chat.response,
+        response_value: chat.response, // Show full value to see if it's actually "undefined" string
+        response_is_undefined_string: chat.response === 'undefined',
+        response_length: typeof chat.response === 'string' ? chat.response.length : 'N/A',
+        chat_message: chat.chat_message?.substring(0, 50),
+        created_at: chat.created_at,
+        all_keys: Object.keys(chat) // Show all available fields
+      })));
+    }
 
     // Convert ChatData to ChatMessage format
     const messages: any[] = [];
     if (data) {
+      console.log(`📥 Fetched ${data.length} chat records from database`);
       for (const chat of data) {
-        // Add user message
-        messages.push({
-          id: `user_${chat.chat_id}`,
-          sessionId: chat.session_id || sessionId,
-          role: 'user' as const,
-          content: chat.chat_message,
-          createdAt: chat.created_at || new Date().toISOString()
+        // Log raw data for debugging - show ALL fields
+        console.log(`🔍 Processing chat ${chat.chat_id}:`, {
+          chat_id: chat.chat_id,
+          has_response: !!chat.response,
+          response_type: typeof chat.response,
+          response_value: chat.response,
+          response_length: chat.response?.length,
+          chat_message: chat.chat_message,
+          created_at: chat.created_at,
+          ALL_FIELDS: chat  // Show all fields to see what's actually in the database
         });
         
-        // Add assistant message with citations if available
-        const assistantMessage: any = {
-          id: `assistant_${chat.chat_id}`,
-          sessionId: chat.session_id || sessionId,
-          role: 'assistant' as const,
-          content: chat.response,
-          createdAt: chat.created_at || new Date().toISOString()
-        };
-
-        // Add citations if they exist in the database
-        if (chat.citation_title || chat.citation_content) {
-          assistantMessage.citations = [{
-            id: `citation_${chat.chat_id}`,
-            messageId: chat.chat_id,
-            sourceType: 'document' as const,
-            title: chat.citation_title || '',
-            snippet: chat.citation_content || '',
-            sourceId: `doc_${chat.chat_id}`,
-            metadata: {}
-          }];
+        // Safely extract and parse content
+        // Try multiple possible field names for response
+        let userContent = chat.chat_message;
+        let assistantContent = chat.response || (chat as any).answer || (chat as any).output_text || (chat as any).outputText;
+        
+        // Early filter: if response is the string "undefined" or "null", treat it as empty
+        if (assistantContent === 'undefined' || assistantContent === 'null' || 
+            (typeof assistantContent === 'string' && assistantContent.trim() === 'undefined') ||
+            (typeof assistantContent === 'string' && assistantContent.trim() === 'null')) {
+          console.warn(`⚠️ Chat ${chat.chat_id} has invalid response (string "undefined"/"null"):`, {
+            chat_id: chat.chat_id,
+            response: assistantContent,
+            responseType: typeof assistantContent,
+            chat_message: userContent,
+            all_chat_keys: Object.keys(chat)
+          });
+          assistantContent = null; // Set to null so it will be filtered out later
         }
+        
+        // Debug logging for troubleshooting
+        if (!assistantContent) {
+          console.warn(`⚠️ Chat ${chat.chat_id} has no valid response:`, {
+            chat_id: chat.chat_id,
+            original_response: chat.response,
+            responseType: typeof chat.response,
+            chat_message: userContent,
+            all_chat_keys: Object.keys(chat)
+          });
+        }
+        
+        // Handle different response formats
+        if (assistantContent !== null && assistantContent !== undefined) {
+          const originalContent = assistantContent;
+          
+          // If response is already an object (shouldn't happen but handle it)
+          if (typeof assistantContent === 'object' && assistantContent !== null) {
+            console.log(`📦 Response is object for ${chat.chat_id}:`, assistantContent);
+            assistantContent = assistantContent.answer || assistantContent.content || assistantContent.response || JSON.stringify(assistantContent);
+          }
+          // If response is a JSON string
+          else if (typeof assistantContent === 'string') {
+            const trimmed = assistantContent.trim();
+            // Try to parse if it looks like JSON
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+              try {
+                const parsed = JSON.parse(assistantContent);
+                console.log(`📦 Parsed JSON response for ${chat.chat_id}:`, parsed);
+                // If parsed is an object with an 'answer' or 'content' field, use that
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                  assistantContent = parsed.answer || parsed.content || parsed.response || assistantContent;
+                  console.log(`✅ Extracted content from JSON object:`, assistantContent?.substring(0, 100));
+                } else if (Array.isArray(parsed) && parsed.length > 0) {
+                  // Handle array responses (take first element)
+                  const first = parsed[0];
+                  assistantContent = first?.answer || first?.content || first?.response || assistantContent;
+                  console.log(`✅ Extracted content from JSON array:`, assistantContent?.substring(0, 100));
+                }
+              } catch (e) {
+                // Not valid JSON, use as-is
+                console.warn(`⚠️ Failed to parse response as JSON for ${chat.chat_id}, using as string:`, e);
+                console.warn(`   Response was:`, assistantContent?.substring(0, 200));
+              }
+            } else {
+              // Regular string, use as-is
+              console.log(`📝 Response is plain string for ${chat.chat_id}, length:`, assistantContent.length);
+            }
+          }
+          
+          if (originalContent !== assistantContent) {
+            console.log(`🔄 Transformed response for ${chat.chat_id}:`, {
+              original: typeof originalContent === 'string' ? originalContent.substring(0, 100) : originalContent,
+              transformed: typeof assistantContent === 'string' ? assistantContent.substring(0, 100) : assistantContent
+            });
+          }
+        } else {
+          console.error(`❌ Chat ${chat.chat_id} has null/undefined response!`);
+        }
+        
+        // Ensure content is a string, not null, undefined, or the string "undefined"
+        // Also check for common invalid values
+        userContent = (userContent && 
+                      userContent !== 'undefined' && 
+                      userContent !== 'null' && 
+                      userContent !== 'null' &&
+                      String(userContent).trim() !== '' &&
+                      String(userContent).trim() !== 'undefined') 
+                      ? String(userContent).trim() 
+                      : '';
+        
+        assistantContent = (assistantContent && 
+                           assistantContent !== 'undefined' && 
+                           assistantContent !== 'null' &&
+                           String(assistantContent).trim() !== '' &&
+                           String(assistantContent).trim() !== 'undefined') 
+                           ? String(assistantContent).trim() 
+                           : '';
+        
+        // If assistantContent is still empty or "undefined", log detailed info
+        if (!assistantContent || assistantContent === 'undefined') {
+          console.error(`❌ Chat ${chat.chat_id} has empty/invalid response after processing:`, {
+            chat_id: chat.chat_id,
+            original_response: chat.response,
+            response_type: typeof chat.response,
+            processed_content: assistantContent,
+            all_fields: Object.keys(chat).reduce((acc, key) => {
+              acc[key] = chat[key];
+              return acc;
+            }, {} as any)
+          });
+        }
+        
+        // Add user message (only if content exists)
+        if (userContent) {
+          messages.push({
+            id: `user_${chat.chat_id}`,
+            sessionId: chat.session_id || sessionId,
+            role: 'user' as const,
+            content: String(userContent),
+            createdAt: chat.created_at || new Date().toISOString()
+          });
+        }
+        
+        // Add assistant message with citations if available (only if content exists)
+        if (assistantContent) {
+          const assistantMessage: any = {
+            id: `assistant_${chat.chat_id}`,
+            sessionId: chat.session_id || sessionId,
+            role: 'assistant' as const,
+            content: String(assistantContent),
+            createdAt: chat.created_at || new Date().toISOString()
+          };
 
-        messages.push(assistantMessage);
+          // Add citations if they exist in the database
+          // Parse citationTitle and citationContent by splitting on delimiters
+          // citationTitle uses ';;;' separator, citationContent uses '<|||>' separator
+          if (chat.citation_title || chat.citation_content) {
+            const citationTitle = chat.citation_title || '';
+            const citationContent = chat.citation_content || '';
+            
+            // Log RAW data for debugging
+            console.log('📋 RAW citation data from DB:', {
+              citationTitle,
+              citationContent,
+              chat_id: chat.chat_id
+            });
+            
+            // Split citationTitle by ';;;' separator
+            const titles = citationTitle.split(';;;').map(t => t.trim()).filter(t => t.length > 0);
+            
+            // Split citationContent by '<|||>' separator
+            const contents = citationContent.split('<|||>').map(c => c.trim()).filter(c => c.length > 0);
+            
+            console.log('🔪 Split results from DB:', {
+              titlesCount: titles.length,
+              contentsCount: contents.length,
+              titles,
+              contents
+            });
+            
+            // Use the shorter length to avoid mismatched pairs (no fallback to first item only)
+            const count = Math.min(titles.length, contents.length);
+            
+            assistantMessage.citations = [];
+            for (let i = 0; i < count; i++) {
+              assistantMessage.citations.push({
+                id: `citation_${chat.chat_id}_${i}`,
+                messageId: chat.chat_id,
+                sourceType: 'document' as const,
+                title: titles[i] || 'Untitled Source',
+                snippet: contents[i] || '',
+                sourceId: `doc_${chat.chat_id}_${i}`,
+                metadata: {}
+              });
+            }
+            
+            console.log('✅ Parsed citations from DB:', assistantMessage.citations.length, assistantMessage.citations);
+          }
+
+          messages.push(assistantMessage);
+        }
       }
     }
 

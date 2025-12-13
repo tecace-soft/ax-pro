@@ -23,6 +23,65 @@ export interface MessageCitation {
   metadata?: Record<string, any>;
 }
 
+/**
+ * Parse citationTitle and citationContent by splitting on delimiters
+ * citationTitle uses ';;;' separator
+ * citationContent uses '<|||>' separator
+ * and pair them by index to create multiple citations
+ */
+export function parseCitations(
+  citationTitle?: string,
+  citationContent?: string,
+  messageId: string = '',
+  baseId: string = ''
+): MessageCitation[] {
+  // Log RAW data for debugging
+  console.log('📋 RAW citation data:', {
+    citationTitle,
+    citationContent,
+    titleType: typeof citationTitle,
+    contentType: typeof citationContent
+  });
+
+  if (!citationTitle || !citationTitle.trim()) {
+    return [];
+  }
+
+  // Split citationTitle by ';;;' separator
+  const titles = citationTitle.split(';;;').map(t => t.trim()).filter(t => t.length > 0);
+  
+  // Split citationContent by '<|||>' separator
+  const contents = citationContent 
+    ? citationContent.split('<|||>').map(c => c.trim()).filter(c => c.length > 0)
+    : [];
+
+  console.log('🔪 Split results:', {
+    titlesCount: titles.length,
+    contentsCount: contents.length,
+    titles,
+    contents
+  });
+
+  // Use the shorter length to avoid mismatched pairs (no fallback to first item only)
+  const count = Math.min(titles.length, contents.length);
+
+  const citations: MessageCitation[] = [];
+  for (let i = 0; i < count; i++) {
+    citations.push({
+      id: baseId ? `citation_${baseId}_${i}` : `citation_${Date.now()}_${i}`,
+      messageId: messageId,
+      sourceType: 'document' as const,
+      title: titles[i] || 'Untitled Source',
+      snippet: contents[i] || '',
+      sourceId: `doc_${baseId || Date.now()}_${i}`,
+      metadata: {}
+    });
+  }
+
+  console.log('✅ Parsed citations:', citations.length, citations);
+  return citations;
+}
+
 export interface StreamEvent {
   type: 'delta' | 'final';
   text?: string;
@@ -375,29 +434,13 @@ export const chatService = {
             onStream({
               type: 'final',
               messageId: chatId,
-              citations: response.citationTitle ? [{
-                id: `citation_${Date.now()}`,
-                messageId: chatId,
-                sourceType: 'document' as const,
-                title: response.citationTitle,
-                snippet: response.citationContent || '',
-                sourceId: `doc_${Date.now()}`,
-                metadata: {}
-              }] : []
+              citations: parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()))
             });
           }
 
           return {
             messageId: chatId,  // Return the chatId that was sent to n8n
-            citations: response.citationTitle ? [{
-              id: `citation_${Date.now()}`,
-              messageId: chatId,
-              sourceType: 'document' as const,
-              title: response.citationTitle,
-              snippet: response.citationContent || '',
-              sourceId: `doc_${Date.now()}`,
-              metadata: {}
-            }] : []
+            citations: parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()))
           };
         } catch (error) {
           console.error('Failed to send to n8n:', error);
