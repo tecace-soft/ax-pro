@@ -137,7 +137,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               overflowWrap: 'break-word'
             }}
           >
-            {message.content && message.content.trim() ? (
+            {message.content && typeof message.content === 'string' && message.content.trim() ? (
               <ReactMarkdown 
                 remarkPlugins={[remarkGfm]}
                 components={{

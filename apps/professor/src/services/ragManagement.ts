@@ -248,20 +248,29 @@ export function validateFile(file: File): { valid: boolean; error?: string; warn
     : undefined;
 
   // Check file extension (more reliable than MIME type)
-  // Docling supported formats: docx, pptx, html, image, pdf, asciidoc, md, csv, xlsx, xml, json_docling, audio, vtt
+  // Docling supported formats: docx, pptx, html, image, pdf, asciidoc, md, csv, xlsx, xml, json_docling, vtt
   // Note: .txt is allowed but will be renamed to .md during upload (Docling doesn't support .txt)
+  // Audio formats are NOT supported by Docling, so they are excluded
+  const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac'];
+  const fileName = file.name.toLowerCase();
+  
+  // Check if file is an audio format (block immediately)
+  if (audioExtensions.some(ext => fileName.endsWith(ext))) {
+    return {
+      valid: false,
+      error: '오디오 파일은 문서 변환이 지원되지 않습니다. 텍스트 기반 문서를 업로드하세요.'
+    };
+  }
+
   const allowedExtensions = [
     // Documents
     '.docx', '.pptx', '.html', '.pdf', '.asciidoc', '.adoc', '.md', '.txt', '.csv', '.xlsx', '.xml', '.json',
     // Images
     '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp',
-    // Audio
-    '.mp3', '.wav', '.ogg', '.m4a', '.flac',
     // Video/Subtitle
     '.vtt'
   ];
 
-  const fileName = file.name.toLowerCase();
   const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
 
   if (!hasValidExtension) {
@@ -972,20 +981,29 @@ export function validateFileExtended(file: File): { valid: boolean; error?: stri
   }
 
   // Check file extension
-  // Docling supported formats: docx, pptx, html, image, pdf, asciidoc, md, csv, xlsx, xml, json_docling, audio, vtt
+  // Docling supported formats: docx, pptx, html, image, pdf, asciidoc, md, csv, xlsx, xml, json_docling, vtt
   // Note: .txt is allowed but will be renamed to .md during upload (Docling doesn't support .txt)
+  // Audio formats are NOT supported by Docling, so they are excluded
+  const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac'];
+  const fileName = file.name.toLowerCase();
+  
+  // Check if file is an audio format (block immediately)
+  if (audioExtensions.some(ext => fileName.endsWith(ext))) {
+    return {
+      valid: false,
+      error: '오디오 파일은 문서 변환이 지원되지 않습니다. 텍스트 기반 문서를 업로드하세요.'
+    };
+  }
+
   const allowedExtensions = [
     // Documents
     '.docx', '.pptx', '.html', '.pdf', '.asciidoc', '.adoc', '.md', '.txt', '.csv', '.xlsx', '.xml', '.json',
     // Images
     '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp',
-    // Audio
-    '.mp3', '.wav', '.ogg', '.m4a', '.flac',
     // Video/Subtitle
     '.vtt'
   ];
 
-  const fileName = file.name.toLowerCase();
   const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
 
   if (!hasValidExtension) {

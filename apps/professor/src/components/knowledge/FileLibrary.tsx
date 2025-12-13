@@ -1106,7 +1106,7 @@ const FileLibrary: React.FC = () => {
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+            accept=".docx,.pptx,.html,.pdf,.asciidoc,.adoc,.md,.txt,.csv,.xlsx,.xml,.json,.png,.jpg,.jpeg,.gif,.bmp,.tiff,.webp,.vtt"
             onChange={handleFileInputChange}
             style={{ display: 'none' }}
             disabled={isUploading}
