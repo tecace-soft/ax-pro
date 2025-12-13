@@ -40,7 +40,11 @@ export function parseCitations(
     citationTitle,
     citationContent,
     titleType: typeof citationTitle,
-    contentType: typeof citationContent
+    contentType: typeof citationContent,
+    titleLength: citationTitle?.length,
+    contentLength: citationContent?.length,
+    hasDelimiter: citationContent?.includes('<|||>'),
+    delimiterCount: citationContent ? (citationContent.match(/<\|{3}>/g) || []).length : 0
   });
 
   if (!citationTitle || !citationTitle.trim()) {
@@ -51,15 +55,34 @@ export function parseCitations(
   const titles = citationTitle.split(';;;').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
   
   // Split citationContent by '<|||>' separator
-  const contents = citationContent 
-    ? citationContent.split('<|||>').map((c: string) => c.trim()).filter((c: string) => c.length > 0)
-    : [];
+  // Also check for escaped versions or variations
+  let contents: string[] = [];
+  if (citationContent) {
+    // Try different delimiter patterns
+    if (citationContent.includes('<|||>')) {
+      contents = citationContent.split('<|||>').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
+    } else if (citationContent.includes('<|\\|\\|>')) {
+      // Escaped version
+      contents = citationContent.split('<|\\|\\|>').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
+    } else if (citationContent.includes('&lt;|||&gt;')) {
+      // HTML entity version
+      contents = citationContent.split('&lt;|||&gt;').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
+    } else {
+      // No delimiter found - log warning
+      console.warn('⚠️ citationContent does not contain <|||> delimiter!', {
+        contentPreview: citationContent.substring(0, 200),
+        contentLength: citationContent.length
+      });
+      // If no delimiter, treat entire content as single citation
+      contents = [citationContent.trim()].filter((c: string) => c.length > 0);
+    }
+  }
 
   console.log('🔪 Split results:', {
     titlesCount: titles.length,
     contentsCount: contents.length,
     titles,
-    contents
+    contents: contents.map((c, i) => ({ index: i, length: c.length, preview: c.substring(0, 100) }))
   });
 
   // Use the shorter length to avoid mismatched pairs (no fallback to first item only)
@@ -414,6 +437,18 @@ export const chatService = {
           
           console.log('==========================');
           
+          // Log response citation data BEFORE parsing
+          console.log('🔍 n8n response citation data:', {
+            citationTitle: response.citationTitle,
+            citationContent: response.citationContent,
+            titleType: typeof response.citationTitle,
+            contentType: typeof response.citationContent,
+            titleLength: response.citationTitle?.length,
+            contentLength: response.citationContent?.length,
+            hasDelimiter: response.citationContent?.includes('<|||>'),
+            delimiterCount: response.citationContent ? (response.citationContent.match(/<\|{3}>/g) || []).length : 0
+          });
+          
           // Use chatId as messageId so feedback can link correctly
           // chatId was sent to n8n and will be in the database
           if (onStream) {
@@ -431,16 +466,22 @@ export const chatService = {
               await new Promise(resolve => setTimeout(resolve, 50));
             }
             
+            const parsedCitations = parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()));
+            console.log('📦 Parsed citations for streaming:', parsedCitations.length, parsedCitations);
+            
             onStream({
               type: 'final',
               messageId: chatId,
-              citations: parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()))
+              citations: parsedCitations
             });
           }
 
+          const parsedCitations = parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()));
+          console.log('📦 Parsed citations for return:', parsedCitations.length, parsedCitations);
+          
           return {
             messageId: chatId,  // Return the chatId that was sent to n8n
-            citations: parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()))
+            citations: parsedCitations
           };
         } catch (error) {
           console.error('Failed to send to n8n:', error);
