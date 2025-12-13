@@ -426,10 +426,10 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
             });
             
             // Split citationTitle by ';;;' separator
-            const titles = citationTitle.split(';;;').map(t => t.trim()).filter(t => t.length > 0);
+            const titles = citationTitle.split(';;;').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
             
             // Split citationContent by '<|||>' separator
-            const contents = citationContent.split('<|||>').map(c => c.trim()).filter(c => c.length > 0);
+            const contents = citationContent.split('<|||>').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
             
             console.log('🔪 Split results from DB:', {
               titlesCount: titles.length,
