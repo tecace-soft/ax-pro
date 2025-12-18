@@ -1305,7 +1305,7 @@ const FileLibrary: React.FC = () => {
             fontSize: '13px'
           }}>
             <span style={{ color: '#f59e0b', fontWeight: '500' }}>▲ Not Indexed:</span>
-            <span style={{ color: '#f59e0b' }}>{uploadedFiles.filter(f => f.syncStatus === 'pending' || f.syncStatus === 'not_indexed').length}</span>
+            <span style={{ color: '#f59e0b' }}>{uploadedFiles.filter(f => f.syncStatus === 'pending').length}</span>
           </div>
           {uploadedFiles.filter(f => f.syncStatus === 'error').length > 0 && (
             <div style={{ 
