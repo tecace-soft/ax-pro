@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../../i18n/I18nProvider';
-import { fetchVectorDocuments, VectorDocument, indexFileToVector, unindexFileByFilename } from '../../services/ragManagement';
+import { fetchFileSummaries, fetchChunksForFile, FileSummary, VectorDocument, indexFileToVector, unindexFileByFilename } from '../../services/ragManagement';
 
 interface KnowledgeDocument {
   id: string;
@@ -19,8 +19,14 @@ const KnowledgeIndex: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [totalItems, setTotalItems] = useState(0);
-  const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
+  const [fileSummaries, setFileSummaries] = useState<FileSummary[]>([]);
+  const [chunksByFile, setChunksByFile] = useState<Map<string, KnowledgeDocument[]>>(new Map());
+  const [loadingChunks, setLoadingChunks] = useState<Set<string>>(new Set());
+  const [loadedChunkCounts, setLoadedChunkCounts] = useState<Map<string, number>>(new Map()); // Track how many chunks are loaded per file
+  const [totalChunkCounts, setTotalChunkCounts] = useState<Map<string, number>>(new Map()); // Track total chunks per file
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<string>('');
+  const [loadingProgress, setLoadingProgress] = useState<{ current: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedDocument, setSelectedDocument] = useState<KnowledgeDocument | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -31,72 +37,97 @@ const KnowledgeIndex: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [isSelectAll, setIsSelectAll] = useState(false);
 
-  // Load documents from Supabase on mount and when pagination changes
+  // Load file summaries on mount and when pagination changes
   useEffect(() => {
-    loadDocuments();
+    loadFileSummaries();
   }, [currentPage, itemsPerPage]);
 
-  const loadDocuments = async () => {
+  // Load chunks when a file is expanded (only initial 10 chunks)
+  useEffect(() => {
+    expandedFiles.forEach(fileName => {
+      const hasChunks = chunksByFile.has(fileName) && (chunksByFile.get(fileName)?.length || 0) > 0;
+      if (!hasChunks && !loadingChunks.has(fileName)) {
+        loadChunksForFile(fileName, 10, 0); // Load initial 10 chunks
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedFiles, chunksByFile, loadingChunks]);
+
+  const loadFileSummaries = async () => {
     setIsLoading(true);
     setError(null);
+    setLoadingStatus('Connecting to database...');
+    setLoadingProgress(null);
 
     try {
-      // Fetch ALL documents for the group (the function now handles this internally)
-      // We'll group by fileName and paginate the unique files, not the chunks
-      console.log(`🔄 Loading all documents from Supabase for grouping by fileName...`);
-      console.log('⏰ Current time:', new Date().toISOString());
+      console.log(`🔄 Loading file summaries (fast mode)...`);
+      setLoadingStatus('Fetching document metadata...');
       
-      // Fetch all documents (limit and offset are now handled internally for backward compatibility)
-      const response = await fetchVectorDocuments(10000, 0); // Large limit to get all documents
-      console.log('📋 Raw response:', response);
-      console.log('📊 Total documents found:', response.total || 0);
-      console.log('📄 Documents array length:', response.documents?.length || 0);
+      const response = await fetchFileSummaries((current, total, status) => {
+        setLoadingStatus(status);
+        setLoadingProgress({ current, total });
+      });
       
-      // Log each document's creation time to see if new ones are there
-      if (response.documents && response.documents.length > 0) {
-        console.log('📅 Document creation times:');
-        response.documents.forEach((doc, index) => {
-          console.log(`  ${index + 1}. ID: ${doc.id}, Created: ${(doc as any).created_at || 'N/A'}, Metadata:`, doc.metadata);
-        });
-      }
+      console.log('📋 File summaries response:', response);
       
       if (response.success) {
-        // Get list of files from storage to check sync status
-        const { fetchFilesFromSupabase } = await import('../../services/ragManagement');
-        const filesResponse = await fetchFilesFromSupabase();
-        const fileNames = new Set((filesResponse.files || []).map((f: any) => f.name.toLowerCase()));
+        setError(null); // Clear any previous errors
+        setLoadingStatus(`Found ${response.files.length} files with ${response.total.toLocaleString()} chunks`);
+        setFileSummaries(response.files);
+        setTotalItems(response.total);
+        console.log(`✅ Loaded ${response.files.length} file summaries (${response.total} total chunks)`);
+        
+        // Clear status after a brief moment
+        setTimeout(() => {
+          setLoadingStatus('');
+          setLoadingProgress(null);
+        }, 1000);
+      } else {
+        const errorMsg = response.message || 'Failed to load file summaries';
+        setError(errorMsg);
+        setLoadingStatus('');
+        setLoadingProgress(null);
+        console.error('❌ Failed to load file summaries:', {
+          message: errorMsg,
+          response: response
+        });
+      }
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Failed to connect to Supabase. Please check your configuration.';
+      setError(errorMessage);
+      setLoadingStatus('');
+      setLoadingProgress(null);
+      console.error('❌ Error loading file summaries:', {
+        error: err,
+        message: err?.message,
+        stack: err?.stack
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadChunksForFile = async (fileName: string, limit: number = 10, offset: number = 0) => {
+    setLoadingChunks(prev => new Set(prev).add(fileName));
+    
+    try {
+      const response = await fetchChunksForFile(fileName, limit, offset);
+      
+      if (response.success) {
+        // Get file summary for total chunk count
+        const fileSummary = fileSummaries.find(f => f.fileName === fileName);
+        const totalChunks = response.total || fileSummary?.chunkCount || response.documents.length;
+        
+        // Update total chunk count
+        setTotalChunkCounts(prev => {
+          const newMap = new Map(prev);
+          newMap.set(fileName, totalChunks);
+          return newMap;
+        });
         
         // Transform VectorDocument to KnowledgeDocument
         const transformedDocs: KnowledgeDocument[] = response.documents.map((doc: VectorDocument, index: number) => {
           const metadata = doc.metadata || {};
-          
-          // Extract file name from metadata - prioritize fileName field
-          let fileName = 'Unknown';
-          if (metadata.fileName) {
-            fileName = String(metadata.fileName); // Ensure it's a string
-          } else if (metadata.source && metadata.source !== 'blob' && metadata.source !== 'supabase-storage') {
-            // Only use source if it's not a generic value
-            fileName = String(metadata.source);
-          } else if (metadata.pdf?.info?.Title) {
-            fileName = String(metadata.pdf.info.Title);
-          } else if (metadata.blobType) {
-            const ext = metadata.blobType.split('/')[1] || 'pdf';
-            fileName = `document.${ext}`;
-          }
-          
-          // Log first 5 documents to debug fileName extraction
-          if (index < 5) {
-            console.log(`🔍 Document ${index + 1} metadata extraction:`, {
-              id: doc.id,
-              hasFileName: !!metadata.fileName,
-              fileName: metadata.fileName,
-              source: metadata.source,
-              pdfTitle: metadata.pdf?.info?.Title,
-              blobType: metadata.blobType,
-              extractedFileName: fileName,
-              allMetadataKeys: Object.keys(metadata)
-            });
-          }
           
           // Extract page/line info
           let pageInfo = '';
@@ -106,59 +137,70 @@ const KnowledgeIndex: React.FC = () => {
             pageInfo = `Page ${metadata.loc.pageNumber}`;
           }
           
-          // Check if file exists in storage
-          const syncStatus: 'synced' | 'orphaned' = fileNames.has(fileName.toLowerCase()) ? 'synced' : 'orphaned';
-          
           return {
             id: doc.id.toString(),
             fileName: fileName,
             source: metadata.source || 'blob',
-            chunkIndex: metadata.chunkIndex || 0,
+            chunkIndex: metadata.chunkIndex || (offset + index),
             content: doc.content,
             pageInfo: pageInfo,
-            syncStatus: syncStatus,
+            syncStatus: fileSummary?.syncStatus || 'orphaned',
             createdAt: (doc as any).created_at || new Date().toISOString(),
             metadata: metadata,
           };
         });
 
-        // Calculate chunk counts per file
-        const chunkCounts: Record<string, number> = {};
-        transformedDocs.forEach(doc => {
-          chunkCounts[doc.fileName] = (chunkCounts[doc.fileName] || 0) + 1;
+        // Add chunk info with total count
+        transformedDocs.forEach((doc, idx) => {
+          const chunkNumber = offset + idx + 1;
+          (doc as any).chunkInfo = `Chunk ${chunkNumber} of ${totalChunks}`;
         });
 
-        // Add chunk info to each document
-        const chunkPositions: Record<string, number> = {};
-        transformedDocs.forEach(doc => {
-          if (!chunkPositions[doc.fileName]) {
-            chunkPositions[doc.fileName] = 0;
-          }
-          chunkPositions[doc.fileName]++;
-          (doc as any).chunkInfo = `${chunkPositions[doc.fileName]} of ${chunkCounts[doc.fileName]}`;
+        setChunksByFile(prev => {
+          const newMap = new Map(prev);
+          const existingChunks = newMap.get(fileName) || [];
+          // Append new chunks to existing ones
+          newMap.set(fileName, [...existingChunks, ...transformedDocs]);
+          return newMap;
         });
-
-        setDocuments(transformedDocs);
-        setTotalItems(response.total);
-        console.log(`✅ Loaded ${transformedDocs.length} documents from Supabase`);
+        
+        // Update loaded count
+        setLoadedChunkCounts(prev => {
+          const newMap = new Map(prev);
+          const currentLoaded = newMap.get(fileName) || 0;
+          newMap.set(fileName, currentLoaded + transformedDocs.length);
+          return newMap;
+        });
+        
+        console.log(`✅ Loaded ${transformedDocs.length} chunks for ${fileName} (${offset + transformedDocs.length} / ${totalChunks} total)`);
       } else {
-        setError(response.message || 'Failed to load documents');
-        console.error('Failed to load documents:', response.message);
+        console.error('Failed to load chunks:', response.message);
       }
     } catch (err) {
-      const errorMessage = 'Failed to connect to Supabase. Please check your configuration.';
-      setError(errorMessage);
-      console.error('Error loading documents:', err);
+      console.error('Error loading chunks for file:', err);
     } finally {
-      setIsLoading(false);
+      setLoadingChunks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fileName);
+        return newSet;
+      });
     }
+  };
+
+  const loadMoreChunks = async (fileName: string) => {
+    const currentLoaded = loadedChunkCounts.get(fileName) || 0;
+    await loadChunksForFile(fileName, 50, currentLoaded);
   };
 
   const handleRefresh = () => {
     console.log('🔄 Manual refresh triggered by user');
     setLastRefreshTime(new Date().toLocaleTimeString());
     setCurrentPage(1); // Reset to first page
-    loadDocuments();
+    setChunksByFile(new Map()); // Clear cached chunks
+    setLoadedChunkCounts(new Map()); // Clear loaded counts
+    setTotalChunkCounts(new Map()); // Clear total counts
+    setExpandedFiles(new Set()); // Collapse all files
+    loadFileSummaries();
   };
 
   const handleViewDocument = (doc: KnowledgeDocument) => {
@@ -171,7 +213,9 @@ const KnowledgeIndex: React.FC = () => {
       const result = await indexFileToVector(fileName);
       if (result.success) {
         alert(`✅ ${result.message}`);
-        loadDocuments(); // Refresh the list
+        setChunksByFile(new Map()); // Clear cached chunks
+        setExpandedFiles(new Set()); // Collapse all files
+        loadFileSummaries(); // Refresh the list
       } else {
         alert(`❌ ${result.message}`);
       }
@@ -192,7 +236,18 @@ const KnowledgeIndex: React.FC = () => {
       const result = await unindexFileByFilename(fileName);
       if (result.success) {
         alert(`✅ ${result.message} (${result.deletedCount || 0} chunks removed)`);
-        loadDocuments(); // Refresh the list
+        // Remove chunks from cache
+        setChunksByFile(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(fileName);
+          return newMap;
+        });
+        setExpandedFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(fileName);
+          return newSet;
+        });
+        loadFileSummaries(); // Refresh the list
       } else {
         alert(`❌ ${result.message}`);
       }
@@ -272,7 +327,9 @@ const KnowledgeIndex: React.FC = () => {
       // Clear selection and refresh
       setSelectedFiles(new Set());
       setIsSelectAll(false);
-      await loadDocuments();
+      setChunksByFile(new Map()); // Clear cached chunks
+      setExpandedFiles(new Set()); // Collapse all files
+      await loadFileSummaries();
     } catch (error) {
       console.error('Error in batch delete:', error);
       alert('Error during batch delete');
@@ -332,19 +389,16 @@ const KnowledgeIndex: React.FC = () => {
   };
 
   const handleShowMetadata = (doc: KnowledgeDocument) => {
-    // Get unique filenames and their chunk counts
-    const uniqueFiles = documents.reduce((acc, d) => {
-      if (!acc[d.fileName]) {
-        acc[d.fileName] = {
-          fileName: d.fileName,
-          chunkCount: 0,
-          chunks: []
-        };
-      }
-      acc[d.fileName].chunkCount++;
-      acc[d.fileName].chunks.push(d);
-      return acc;
-    }, {} as Record<string, any>);
+    // Build metadata from file summaries and loaded chunks
+    const uniqueFiles: Record<string, any> = {};
+    
+    fileSummaries.forEach(file => {
+      uniqueFiles[file.fileName] = {
+        fileName: file.fileName,
+        chunkCount: file.chunkCount,
+        chunks: chunksByFile.get(file.fileName) || []
+      };
+    });
 
     setSelectedMetadata(uniqueFiles);
     setShowMetadataModal(true);
@@ -352,8 +406,9 @@ const KnowledgeIndex: React.FC = () => {
 
   // Get original document metadata for display
   const getOriginalMetadata = (doc: KnowledgeDocument) => {
-    // Find the original document in the documents array to get full metadata
-    const originalDoc = documents.find(d => d.id === doc.id);
+    // Find the document in loaded chunks
+    const chunks = chunksByFile.get(doc.fileName);
+    const originalDoc = chunks?.find(d => d.id === doc.id);
     return originalDoc ? originalDoc : doc;
   };
 
@@ -371,35 +426,23 @@ const KnowledgeIndex: React.FC = () => {
     };
   };
 
-  const filteredDocuments = documents.filter(doc =>
-    doc.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.source.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.content.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filter file summaries by search query
+  const filteredFiles = fileSummaries.filter(file =>
+    file.fileName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Group documents by filename
-  const groupedDocuments = filteredDocuments.reduce((acc, doc) => {
-    if (!acc[doc.fileName]) {
-      acc[doc.fileName] = [];
-    }
-    acc[doc.fileName].push(doc);
-    return acc;
-  }, {} as Record<string, KnowledgeDocument[]>);
-
-  // Calculate pagination based on number of unique files, not chunks
-  const totalUniqueFiles = Object.keys(groupedDocuments).length;
+  // Calculate pagination based on number of unique files
+  const totalUniqueFiles = filteredFiles.length;
   const displayItemsPerPage = 20; // Show 20 files per page
   const totalPages = Math.ceil(totalUniqueFiles / displayItemsPerPage);
   
-  // Paginate grouped files
-  const groupedFilesArray = Object.entries(groupedDocuments);
+  // Paginate files
   const startIndex = (currentPage - 1) * displayItemsPerPage;
   const endIndex = startIndex + displayItemsPerPage;
-  const paginatedGroupedFiles = groupedFilesArray.slice(startIndex, endIndex);
-  const paginatedGroupedDocuments = Object.fromEntries(paginatedGroupedFiles);
+  const paginatedFiles = filteredFiles.slice(startIndex, endIndex);
 
   const handleToggleSelectAll = () => {
-    const currentPageFiles = Object.keys(paginatedGroupedDocuments);
+    const currentPageFiles = paginatedFiles.map(f => f.fileName);
     if (isSelectAll) {
       setSelectedFiles(new Set());
     } else {
@@ -428,7 +471,7 @@ const KnowledgeIndex: React.FC = () => {
         </div>
         <div className="ki-pagination-info">
           <span>Total: {totalItems.toLocaleString()} chunks in {totalUniqueFiles} files</span>
-          <span>Showing {Object.keys(paginatedGroupedDocuments).length} files (Page {currentPage} of {totalPages || 1})</span>
+          <span>Showing {paginatedFiles.length} files (Page {currentPage} of {totalPages || 1})</span>
         </div>
         <div className="ki-navigation">
           <button
@@ -447,9 +490,12 @@ const KnowledgeIndex: React.FC = () => {
           </button>
         </div>
         <button className="refresh-btn" onClick={handleRefresh} disabled={isLoading}>
-          <span className="refresh-icon">↻</span>
-          {isLoading ? 'Loading...' : t('knowledge.refresh')}
-          {lastRefreshTime && (
+          <span className="refresh-icon" style={{ 
+            animation: isLoading ? 'spin 1s linear infinite' : 'none',
+            display: 'inline-block'
+          }}>↻</span>
+          {isLoading ? (loadingStatus || 'Loading...') : t('knowledge.refresh')}
+          {lastRefreshTime && !isLoading && (
             <span style={{ fontSize: '0.8em', opacity: 0.7, marginLeft: '8px' }}>
               (Last: {lastRefreshTime})
             </span>
@@ -471,6 +517,81 @@ const KnowledgeIndex: React.FC = () => {
         )}
       </div>
 
+      {/* Loading Status Indicator */}
+      {isLoading && loadingStatus && (
+        <div style={{
+          backgroundColor: 'var(--admin-bg-secondary)',
+          border: '1px solid var(--admin-border)',
+          borderRadius: '6px',
+          padding: '16px',
+          marginBottom: '16px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: loadingProgress ? '8px' : '0'
+          }}>
+            <div className="spinner" style={{
+              width: '20px',
+              height: '20px',
+              border: '2px solid rgba(59, 230, 255, 0.2)',
+              borderTop: '2px solid #3be6ff',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              flexShrink: 0
+            }}></div>
+            <span style={{ 
+              flex: 1, 
+              fontWeight: '500',
+              fontSize: '14px',
+              color: 'var(--admin-text)'
+            }}>
+              {loadingStatus}
+            </span>
+            {loadingProgress && loadingProgress.total > 0 && (
+              <span style={{ 
+                color: 'var(--admin-primary)',
+                fontWeight: '600',
+                fontSize: '14px',
+                whiteSpace: 'nowrap'
+              }}>
+                {Math.round((loadingProgress.current / loadingProgress.total) * 100)}%
+              </span>
+            )}
+          </div>
+          {loadingProgress && loadingProgress.total > 0 && (
+            <div style={{
+              marginTop: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '12px',
+              color: 'var(--admin-text-muted)'
+            }}>
+              <div style={{
+                flex: 1,
+                height: '6px',
+                backgroundColor: 'var(--admin-border)',
+                borderRadius: '3px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${Math.min(100, (loadingProgress.current / loadingProgress.total) * 100)}%`,
+                  backgroundColor: 'var(--admin-primary)',
+                  transition: 'width 0.3s ease',
+                  borderRadius: '3px'
+                }}></div>
+              </div>
+              <span style={{ whiteSpace: 'nowrap' }}>
+                {loadingProgress.current.toLocaleString()} / {loadingProgress.total.toLocaleString()} documents
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Debug Info */}
       <div style={{ 
         backgroundColor: 'var(--admin-bg-secondary)',
@@ -480,13 +601,14 @@ const KnowledgeIndex: React.FC = () => {
         marginBottom: '16px',
         fontSize: '0.9em'
       }}>
-        <strong>🔍 Debug Info:</strong> Total: {totalItems} chunks ({totalUniqueFiles} unique files) | 
-        Loaded: {documents.length} chunks | Showing: {Object.keys(paginatedGroupedDocuments).length} files on this page | 
+        <strong>🔍 Debug Info:</strong> Total: {totalItems.toLocaleString()} chunks ({totalUniqueFiles} unique files) | 
+        Loaded chunks: {Array.from(chunksByFile.values()).reduce((sum, chunks) => sum + chunks.length, 0).toLocaleString()} | Showing: {paginatedFiles.length} files on this page | 
         Last Refresh: {lastRefreshTime || 'Never'} | 
         <button 
           onClick={() => {
-            console.log('📊 Current documents state:', documents);
-            console.log('📊 Filtered documents:', filteredDocuments);
+            console.log('📊 File summaries:', fileSummaries);
+            console.log('📊 Loaded chunks:', chunksByFile);
+            console.log('📊 Filtered files:', filteredFiles);
           }}
           style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '0.8em' }}
         >
@@ -497,13 +619,37 @@ const KnowledgeIndex: React.FC = () => {
       {/* Error Message */}
       {error && (
         <div className="error-message" style={{ 
-          padding: '12px', 
+          padding: '12px 16px', 
           backgroundColor: '#fee', 
           color: '#c33', 
           borderRadius: '4px', 
-          marginBottom: '16px' 
+          marginBottom: '16px',
+          border: '1px solid #fcc',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
         }}>
-          {error}
+          <span style={{ fontSize: '18px' }}>⚠️</span>
+          <div style={{ flex: 1 }}>
+            <strong>Error:</strong> {error}
+          </div>
+          <button
+            onClick={() => {
+              setError(null);
+              loadFileSummaries();
+            }}
+            style={{
+              padding: '4px 12px',
+              backgroundColor: '#c33',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            Retry
+          </button>
         </div>
       )}
 
@@ -548,17 +694,19 @@ const KnowledgeIndex: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredDocuments.length === 0 ? (
+              {filteredFiles.length === 0 ? (
                 <tr>
                   <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                    {error ? 'Failed to load documents' : 'No documents found. Upload and index files to see them here.'}
+                    {error ? 'Failed to load file summaries' : 'No files found. Upload and index files to see them here.'}
                   </td>
                 </tr>
               ) : (
-                Object.entries(paginatedGroupedDocuments).map(([fileName, chunks]) => {
+                paginatedFiles.map((fileSummary) => {
+                  const fileName = fileSummary.fileName;
                   const isExpanded = expandedFiles.has(fileName);
+                  const chunks = chunksByFile.get(fileName) || [];
+                  const isLoadingChunks = loadingChunks.has(fileName);
                   const firstChunk = chunks[0];
-                  const chunkCount = chunks.length;
                   
                   return (
                     <React.Fragment key={fileName}>
@@ -607,35 +755,37 @@ const KnowledgeIndex: React.FC = () => {
                           </div>
                         </td>
                         <td className="doc-chunk-index" style={{ color: 'var(--admin-primary)', fontWeight: '600' }}>
-                          {chunkCount} {chunkCount === 1 ? 'chunk' : 'chunks'}
+                          {fileSummary.chunkCount} {fileSummary.chunkCount === 1 ? 'chunk' : 'chunks'}
                         </td>
-                        <td className="doc-page-info">{firstChunk.pageInfo || '-'}</td>
-                        <td className="doc-content" title={firstChunk.content} style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {firstChunk.content.substring(0, 100)}...
+                        <td className="doc-page-info">{firstChunk?.pageInfo || '-'}</td>
+                        <td className="doc-content" title={firstChunk?.content} style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {firstChunk ? `${firstChunk.content.substring(0, 100)}...` : '-'}
                         </td>
                         <td>
                           <span style={{ 
-                            color: firstChunk.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
+                            color: fileSummary.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
                             fontSize: '14px'
                           }}>
-                            {firstChunk.syncStatus === 'synced' ? 'Synced' : 'Orphaned'}
+                            {fileSummary.syncStatus === 'synced' ? 'Synced' : 'Orphaned'}
                           </span>
                         </td>
                         <td style={{ fontSize: '13px', color: 'var(--admin-text-muted)' }}>
-                          {firstChunk.createdAt ? new Date(firstChunk.createdAt).toLocaleDateString() : '-'}
+                          {fileSummary.firstChunkCreatedAt ? new Date(fileSummary.firstChunkCreatedAt).toLocaleDateString() : '-'}
                         </td>
                         <td onClick={(e) => e.stopPropagation()}>
                           <div className="file-actions">
-                            <button 
-                              className="icon-action-btn" 
-                              title="View details"
-                              onClick={() => handleViewDocument(firstChunk)}
-                            >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                              </svg>
-                            </button>
+                            {firstChunk && (
+                              <button 
+                                className="icon-action-btn" 
+                                title="View details"
+                                onClick={() => handleViewDocument(firstChunk)}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                  <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                              </button>
+                            )}
                             <button 
                               className="icon-action-btn delete-icon-btn" 
                               title="Unindex all chunks"
@@ -652,42 +802,99 @@ const KnowledgeIndex: React.FC = () => {
                       </tr>
                       
                       {/* Expanded rows - show individual chunks */}
-                      {isExpanded && chunks.map((doc, idx) => (
-                        <tr key={doc.id} style={{ backgroundColor: 'rgba(9, 14, 34, 0.3)' }}>
-                          <td style={{ paddingLeft: '40px', fontSize: '13px', color: 'var(--admin-text-muted)' }}>
-                            └ Chunk {idx + 1}
-                          </td>
-                          <td className="doc-chunk-index">{(doc as any).chunkInfo || `${idx + 1} of ${chunkCount}`}</td>
-                          <td className="doc-page-info">{doc.pageInfo || '-'}</td>
-                          <td className="doc-content" title={doc.content} style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '13px' }}>
-                            {doc.content.substring(0, 100)}...
-                          </td>
-                          <td>
-                            <span style={{ 
-                              color: doc.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
-                              fontSize: '13px'
-                            }}>
-                              {doc.syncStatus === 'synced' ? 'Synced' : 'Orphaned'}
-                            </span>
-                          </td>
-                          <td style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>
-                            {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : '-'}
-                          </td>
-                          <td>
-                            <button 
-                              className="icon-action-btn" 
-                              title="View this chunk"
-                              onClick={() => handleViewDocument(doc)}
-                              style={{ fontSize: '12px' }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                              </svg>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {isExpanded && (
+                        <>
+                          {isLoadingChunks && chunks.length === 0 ? (
+                            <tr>
+                              <td colSpan={8} style={{ paddingLeft: '40px', textAlign: 'center', padding: '20px', color: '#666' }}>
+                                Loading chunks...
+                              </td>
+                            </tr>
+                          ) : chunks.length > 0 ? (
+                            <>
+                              {chunks.map((doc, idx) => (
+                                <tr key={doc.id} style={{ backgroundColor: 'rgba(9, 14, 34, 0.3)' }}>
+                                  <td style={{ paddingLeft: '40px', fontSize: '13px', color: 'var(--admin-text-muted)' }}>
+                                    └ Chunk {idx + 1}
+                                  </td>
+                                  <td className="doc-chunk-index">{(doc as any).chunkInfo || `${idx + 1} of ${chunks.length}`}</td>
+                                  <td className="doc-page-info">{doc.pageInfo || '-'}</td>
+                                  <td className="doc-content" title={doc.content} style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '13px' }}>
+                                    {doc.content.substring(0, 100)}...
+                                  </td>
+                                  <td>
+                                    <span style={{ 
+                                      color: doc.syncStatus === 'synced' ? '#10b981' : '#f59e0b',
+                                      fontSize: '13px'
+                                    }}>
+                                      {doc.syncStatus === 'synced' ? 'Synced' : 'Orphaned'}
+                                    </span>
+                                  </td>
+                                  <td style={{ fontSize: '12px', color: 'var(--admin-text-muted)' }}>
+                                    {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : '-'}
+                                  </td>
+                                  <td>
+                                    <button 
+                                      className="icon-action-btn" 
+                                      title="View this chunk"
+                                      onClick={() => handleViewDocument(doc)}
+                                      style={{ fontSize: '12px' }}
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                      </svg>
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                              {/* Load More Button */}
+                              {(() => {
+                                const loadedCount = loadedChunkCounts.get(fileName) || chunks.length;
+                                const totalCount = totalChunkCounts.get(fileName) || fileSummary.chunkCount;
+                                const hasMore = loadedCount < totalCount;
+                                
+                                return hasMore && (
+                                  <tr>
+                                    <td colSpan={8} style={{ paddingLeft: '40px', padding: '16px', textAlign: 'center' }}>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          loadMoreChunks(fileName);
+                                        }}
+                                        disabled={isLoadingChunks}
+                                        style={{
+                                          padding: '8px 16px',
+                                          backgroundColor: 'var(--admin-primary)',
+                                          color: 'white',
+                                          border: 'none',
+                                          borderRadius: '6px',
+                                          cursor: isLoadingChunks ? 'not-allowed' : 'pointer',
+                                          fontSize: '14px',
+                                          fontWeight: '500',
+                                          opacity: isLoadingChunks ? 0.6 : 1
+                                        }}
+                                      >
+                                        {isLoadingChunks ? (
+                                          <>Loading...</>
+                                        ) : (
+                                          <>Load more (showing {loadedCount} of {totalCount} chunks)</>
+                                        )}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })()}
+                            </>
+                          ) : (
+                            <tr>
+                              <td colSpan={8} style={{ paddingLeft: '40px', textAlign: 'center', padding: '20px', color: '#666' }}>
+                                No chunks loaded
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      )}
                     </React.Fragment>
                   );
                 })

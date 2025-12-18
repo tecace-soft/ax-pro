@@ -6,6 +6,7 @@ import { IconSettings, IconX, IconDatabase, IconSearch } from '../../ui/icons';
 import { getSession } from '../../services/auth';
 import { defaultSupabase } from '../../services/groupService';
 import { updateGroupChunkingOptions, updateGroupTopK } from '../../services/groupService';
+import { getGroupIdFromUrl } from '../../utils/navigation';
 import { 
   uploadFilesToSupabase,
   fetchFilesFromSupabase,
@@ -34,6 +35,8 @@ const FileLibrary: React.FC = () => {
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<string>('');
+  const [loadingProgress, setLoadingProgress] = useState<{ current: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' | 'warning' | 'info' }>>([]);
@@ -46,7 +49,6 @@ const FileLibrary: React.FC = () => {
   // Load pollingFiles and request times from localStorage on mount
   const getStoredPollingFiles = (): Set<string> => {
     try {
-      const { getGroupIdFromUrl } = require('../../utils/navigation');
       const groupId = getGroupIdFromUrl();
       if (!groupId) return new Set();
       
@@ -63,7 +65,6 @@ const FileLibrary: React.FC = () => {
 
   const getStoredRequestTimes = (): Map<string, string> => {
     try {
-      const { getGroupIdFromUrl } = require('../../utils/navigation');
       const groupId = getGroupIdFromUrl();
       if (!groupId) return new Map();
       
@@ -78,13 +79,18 @@ const FileLibrary: React.FC = () => {
     return new Map();
   };
 
-  const [pollingFiles, setPollingFiles] = useState<Set<string>>(getStoredPollingFiles());
+  // Initialize pollingFiles from localStorage, but we'll verify they're still indexing
+  const [pollingFiles, setPollingFiles] = useState<Set<string>>(() => {
+    const stored = getStoredPollingFiles();
+    // Don't restore pollingFiles on mount - user must explicitly start indexing
+    // They'll be restored when files are loaded and verified
+    return new Set();
+  });
   const [indexRequestTimes, setIndexRequestTimes] = useState<Map<string, string>>(getStoredRequestTimes());
   
   // Save pollingFiles to localStorage whenever it changes
   useEffect(() => {
     try {
-      const { getGroupIdFromUrl } = require('../../utils/navigation');
       const groupId = getGroupIdFromUrl();
       if (!groupId) return;
       
@@ -98,7 +104,6 @@ const FileLibrary: React.FC = () => {
   // Save indexRequestTimes to localStorage whenever it changes
   useEffect(() => {
     try {
-      const { getGroupIdFromUrl } = require('../../utils/navigation');
       const groupId = getGroupIdFromUrl();
       if (!groupId) return;
       
@@ -116,7 +121,7 @@ const FileLibrary: React.FC = () => {
   const [topK, setTopK] = useState<string>('');
   const [isLoadingChunking, setIsLoadingChunking] = useState(false);
   const [isSavingChunking, setIsSavingChunking] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true); // Auto-refresh enabled by default
+  const [autoRefresh, setAutoRefresh] = useState(false); // Auto-refresh disabled by default (enabled when user clicks Index)
   const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Docling Parser Options
@@ -231,6 +236,7 @@ const FileLibrary: React.FC = () => {
   const refreshSyncStatus = async () => {
     console.log('🔄 Refreshing sync status for all files...');
     setIsLoading(true);
+    setLoadingStatus('Refreshing sync status...');
     
     try {
       // Reload files to get updated sync status
@@ -239,60 +245,85 @@ const FileLibrary: React.FC = () => {
     } catch (error) {
       console.error('❌ Error refreshing sync status:', error);
       setError('Failed to refresh sync status');
+      setLoadingStatus('');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch files on component mount and restore index_started status
+  // Fetch files on component mount
   useEffect(() => {
-    const loadAndRestore = async () => {
-      await loadFiles();
-      // After loading files, restore index_started status for files in pollingFiles
-      // Also check if any files in pollingFiles are already synced (completed)
-      if (pollingFiles.size > 0) {
-        const filesToRemove: string[] = [];
+    loadFiles();
+  }, [storageType]);
+  
+  // Restore pollingFiles from localStorage AFTER uploadedFiles are loaded
+  useEffect(() => {
+    if (uploadedFiles.length === 0) return; // Wait for files to load
+    
+    // Restore pollingFiles from localStorage ONLY if files are actually still indexing
+    const storedPollingFiles = getStoredPollingFiles();
+    if (storedPollingFiles.size > 0) {
+      console.log(`📋 Found ${storedPollingFiles.size} files in localStorage pollingFiles - verifying status...`);
+      
+      // Check which files are still actually indexing (not synced)
+      const stillIndexing = new Set<string>();
+      storedPollingFiles.forEach(fileName => {
+        const file = uploadedFiles.find(f => f.name === fileName);
+        if (file && file.syncStatus !== 'synced') {
+          stillIndexing.add(fileName);
+        }
+      });
+      
+      if (stillIndexing.size > 0) {
+        console.log(`✅ Restoring ${stillIndexing.size} files that are still indexing`);
+        setPollingFiles(stillIndexing);
+        
+        // Restore index_started status for these files
         setUploadedFiles(prev => prev.map(file => {
-          if (pollingFiles.has(file.name)) {
-            // If file is already synced, remove from pollingFiles
-            if (file.syncStatus === 'synced') {
-              filesToRemove.push(file.name);
-              return file;
-            }
-            // Otherwise, restore index_started status
-            if (file.syncStatus === 'pending') {
-              const requestTime = indexRequestTimes.get(file.name);
-              return { 
-                ...file, 
-                syncStatus: 'index_started' as const,
-                indexRequestedAt: requestTime
-              };
-            }
+          if (stillIndexing.has(file.name) && file.syncStatus === 'pending') {
+            const requestTime = indexRequestTimes.get(file.name);
+            return { 
+              ...file, 
+              syncStatus: 'index_started' as const,
+              indexRequestedAt: requestTime
+            };
           }
           return file;
         }));
-        
-        // Remove completed files from pollingFiles
-        if (filesToRemove.length > 0) {
-          setPollingFiles(prev => {
-            const newSet = new Set(prev);
-            filesToRemove.forEach(fileName => newSet.delete(fileName));
-            return newSet;
-          });
+      } else {
+        console.log(`🧹 All stored pollingFiles are already completed - clearing`);
+        // Clear localStorage if all files are completed
+        try {
+          const groupId = getGroupIdFromUrl();
+          if (groupId) {
+            localStorage.removeItem(`pollingFiles_${groupId}`);
+          }
+        } catch (error) {
+          console.warn('Failed to clear pollingFiles from localStorage:', error);
         }
       }
-    };
-    loadAndRestore();
-  }, [storageType]);
+    }
+  }, [uploadedFiles]); // Run when uploadedFiles changes
 
-  // Auto-refresh every 15 seconds
+  // Auto-refresh every 15 seconds (only when there are files being indexed)
   useEffect(() => {
-    if (autoRefresh) {
-      // Clear any existing interval
-      if (autoRefreshIntervalRef.current) {
-        clearInterval(autoRefreshIntervalRef.current);
-      }
-      
+    // CRITICAL: Always clear interval first to prevent stale intervals
+    if (autoRefreshIntervalRef.current) {
+      console.log('🧹 Clearing existing auto-refresh interval');
+      clearInterval(autoRefreshIntervalRef.current);
+      autoRefreshIntervalRef.current = null;
+    }
+    
+    // Only auto-refresh if enabled AND there are files being indexed
+    const hasIndexingFiles = pollingFiles.size > 0 || Object.keys(indexingStatus).length > 0;
+    
+    console.log('🔍 Auto-refresh check:', { autoRefresh, hasIndexingFiles, pollingFilesSize: pollingFiles.size, indexingStatusKeys: Object.keys(indexingStatus).length });
+    
+    // IMPORTANT: Only refresh if BOTH conditions are met:
+    // 1. autoRefresh is explicitly enabled (user clicked Index button)
+    // 2. There are actually files being indexed
+    if (autoRefresh && hasIndexingFiles) {
+      console.log('🔄 Starting auto-refresh interval (15s)');
       // Set up new interval
       autoRefreshIntervalRef.current = setInterval(() => {
         console.log('🔄 Auto-refreshing file list...');
@@ -301,17 +332,81 @@ const FileLibrary: React.FC = () => {
       
       return () => {
         if (autoRefreshIntervalRef.current) {
+          console.log('🧹 Cleaning up auto-refresh interval (unmount)');
           clearInterval(autoRefreshIntervalRef.current);
+          autoRefreshIntervalRef.current = null;
         }
       };
     } else {
-      // Clear interval if auto-refresh is disabled
-      if (autoRefreshIntervalRef.current) {
-        clearInterval(autoRefreshIntervalRef.current);
-        autoRefreshIntervalRef.current = null;
+      // Auto-disable if no files are being indexed (even if autoRefresh was true)
+      if (autoRefresh && !hasIndexingFiles) {
+        console.log('🔄 Auto-disabling refresh: no files being indexed');
+        setAutoRefresh(false);
+      } else if (!autoRefresh) {
+        console.log('🔄 Auto-refresh is disabled - no interval will be created');
+      } else {
+        console.log('🔄 No indexing files - no interval will be created');
       }
     }
-  }, [autoRefresh]);
+  }, [autoRefresh, pollingFiles, indexingStatus]);
+  
+  // Clean up stale pollingFiles on mount (files that are already synced)
+  // This runs after files are loaded to remove completed files from pollingFiles
+  useEffect(() => {
+    // Check if any files in pollingFiles are already synced and remove them
+    if (pollingFiles.size > 0 && uploadedFiles.length > 0) {
+      const filesToRemove: string[] = [];
+      uploadedFiles.forEach(file => {
+        if (pollingFiles.has(file.name) && file.syncStatus === 'synced') {
+          filesToRemove.push(file.name);
+        }
+      });
+      
+      if (filesToRemove.length > 0) {
+        console.log(`🧹 Cleaning up ${filesToRemove.length} completed files from pollingFiles`);
+        setPollingFiles(prev => {
+          const newSet = new Set(prev);
+          filesToRemove.forEach(fileName => newSet.delete(fileName));
+          return newSet;
+        });
+        
+        // Also clean up indexingStatus
+        setIndexingStatus(prev => {
+          const newStatus = { ...prev };
+          filesToRemove.forEach(fileName => delete newStatus[fileName]);
+          return newStatus;
+        });
+      }
+    }
+  }, [uploadedFiles, pollingFiles]);
+  
+  // CRITICAL: Ensure autoRefresh is OFF on mount and clear ALL intervals
+  useEffect(() => {
+    console.log('🚀 Component mount - initializing...');
+    
+    // On mount, immediately clear any existing interval (CRITICAL)
+    if (autoRefreshIntervalRef.current) {
+      console.log('🧹 FORCE CLEAR: Clearing stale auto-refresh interval on mount');
+      clearInterval(autoRefreshIntervalRef.current);
+      autoRefreshIntervalRef.current = null;
+    }
+    
+    // Force autoRefresh to false on mount (user must explicitly enable it)
+    console.log('🔄 FORCE SET: Setting auto-refresh to false on mount');
+    setAutoRefresh(false);
+    
+    // Clear pollingFiles on mount (will be restored only if files are actually indexing)
+    if (pollingFiles.size > 0) {
+      console.log(`🧹 Clearing ${pollingFiles.size} files from pollingFiles on mount - will restore if needed`);
+      setPollingFiles(new Set());
+    }
+    
+    // Clear indexingStatus on mount
+    if (Object.keys(indexingStatus).length > 0) {
+      console.log(`🧹 Clearing ${Object.keys(indexingStatus).length} entries from indexingStatus on mount`);
+      setIndexingStatus({});
+    }
+  }, []); // Run only on mount
 
   // Load options when modals open
   useEffect(() => {
@@ -520,7 +615,6 @@ const FileLibrary: React.FC = () => {
               
               // Update localStorage when polling stops
               try {
-                const { getGroupIdFromUrl } = require('../../utils/navigation');
                 const groupId = getGroupIdFromUrl();
                 if (groupId) {
                   const filesArray = Array.from(newSet);
@@ -532,6 +626,15 @@ const FileLibrary: React.FC = () => {
               
               return newSet;
             });
+            
+            // Remove from indexingStatus after a delay (to show final status briefly)
+            setTimeout(() => {
+              setIndexingStatus(prev => {
+                const newStatus = { ...prev };
+                delete newStatus[fileName];
+                return newStatus;
+              });
+            }, 5000); // Keep status visible for 5 seconds after completion
             
             // Update syncStatus when indexing completes
             if (status.status === 'completed') {
@@ -580,9 +683,15 @@ const FileLibrary: React.FC = () => {
   const loadFiles = async () => {
     setIsLoading(true);
     setError(null);
+    setLoadingStatus('Fetching files from database...');
+    setLoadingProgress(null);
     
     try {
-      const response = await fetchFilesFromSupabase();
+      const response = await fetchFilesFromSupabase((current, total, status) => {
+        setLoadingStatus(status);
+        setLoadingProgress({ current, total });
+      });
+      
       if (response.success) {
         // Preserve 'index_started' status for files that are currently being polled
         setUploadedFiles(prevFiles => {
@@ -610,14 +719,26 @@ const FileLibrary: React.FC = () => {
           });
           return newFiles;
         });
+        setLoadingStatus(`Loaded ${response.files.length} files`);
+        setLoadingProgress({ current: response.files.length, total: response.files.length });
         console.log(`✅ Loaded ${response.files.length} files from Supabase Storage`);
+        
+        // Clear status after a brief moment
+        setTimeout(() => {
+          setLoadingStatus('');
+          setLoadingProgress(null);
+        }, 1000);
       } else {
         setError(response.message || 'Failed to load files from Supabase');
+        setLoadingStatus('');
+        setLoadingProgress(null);
         console.error('Failed to load files:', response.message);
       }
     } catch (err) {
       const errorMessage = 'Failed to connect to Supabase Storage. Please check your configuration.';
       setError(errorMessage);
+      setLoadingStatus('');
+      setLoadingProgress(null);
       console.error('Error loading files:', err);
     } finally {
       setIsLoading(false);
@@ -778,6 +899,12 @@ const FileLibrary: React.FC = () => {
       console.log('📋 Index result:', result);
       
       if (result.success) {
+        // Enable auto-refresh when user clicks Index button
+        if (!autoRefresh) {
+          console.log('🔄 Enabling auto-refresh because user clicked Index button');
+          setAutoRefresh(true);
+        }
+        
         // Save request time
         const requestTime = new Date().toISOString();
         setIndexRequestTimes(prev => {
@@ -1129,6 +1256,80 @@ const FileLibrary: React.FC = () => {
         </div>
       </div>
 
+      {/* File Statistics */}
+      {uploadedFiles.length > 0 && (
+        <div style={{
+          backgroundColor: 'var(--bg-secondary, #2a2a2a)',
+          border: '1px solid var(--border, #404040)',
+          borderRadius: '6px',
+          padding: '12px 16px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            fontWeight: '600',
+            fontSize: '14px',
+            color: 'var(--text, #e5e7eb)'
+          }}>
+            <span>📊 Total:</span>
+            <span style={{ color: 'var(--admin-primary)' }}>{uploadedFiles.length}</span>
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            fontSize: '13px'
+          }}>
+            <span style={{ color: '#10b981', fontWeight: '500' }}>✓ Synced:</span>
+            <span style={{ color: '#10b981' }}>{uploadedFiles.filter(f => f.syncStatus === 'synced').length}</span>
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            fontSize: '13px'
+          }}>
+            <span style={{ color: '#3b82f6', fontWeight: '500' }}>⏳ Indexing:</span>
+            <span style={{ color: '#3b82f6' }}>{uploadedFiles.filter(f => f.syncStatus === 'index_started').length}</span>
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            fontSize: '13px'
+          }}>
+            <span style={{ color: '#f59e0b', fontWeight: '500' }}>▲ Not Indexed:</span>
+            <span style={{ color: '#f59e0b' }}>{uploadedFiles.filter(f => f.syncStatus === 'pending' || f.syncStatus === 'not_indexed').length}</span>
+          </div>
+          {uploadedFiles.filter(f => f.syncStatus === 'error').length > 0 && (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              fontSize: '13px'
+            }}>
+              <span style={{ color: '#ef4444', fontWeight: '500' }}>❌ Error:</span>
+              <span style={{ color: '#ef4444' }}>{uploadedFiles.filter(f => f.syncStatus === 'error').length}</span>
+            </div>
+          )}
+          {searchQuery && (
+            <div style={{ 
+              marginLeft: 'auto',
+              fontSize: '12px',
+              color: 'var(--text-muted, #9ca3af)'
+            }}>
+              Showing {filteredAndSortedFiles.length} of {uploadedFiles.length}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* File List Controls */}
       <div className="fl-controls">
         <div className="fl-search">
@@ -1156,8 +1357,11 @@ const FileLibrary: React.FC = () => {
             </button>
           )}
           <button className="refresh-btn" onClick={handleRefresh} disabled={isLoading}>
-            <span className="refresh-icon">↻</span>
-            {isLoading ? t('knowledge.loading') || 'Loading...' : t('knowledge.refresh')}
+            <span className="refresh-icon" style={{ 
+              animation: isLoading ? 'spin 1s linear infinite' : 'none',
+              display: 'inline-block'
+            }}>↻</span>
+            {isLoading ? (loadingStatus || t('knowledge.loading') || 'Loading...') : t('knowledge.refresh')}
           </button>
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
@@ -1209,9 +1413,84 @@ const FileLibrary: React.FC = () => {
         </div>
       )}
 
+      {/* Loading Status Indicator */}
+      {isLoading && loadingStatus && (
+        <div style={{
+          backgroundColor: 'var(--bg-secondary, #2a2a2a)',
+          border: '1px solid var(--border, #404040)',
+          borderRadius: '6px',
+          padding: '16px',
+          marginBottom: '16px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: loadingProgress ? '8px' : '0'
+          }}>
+            <div className="spinner" style={{
+              width: '20px',
+              height: '20px',
+              border: '2px solid rgba(59, 230, 255, 0.2)',
+              borderTop: '2px solid #3be6ff',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              flexShrink: 0
+            }}></div>
+            <span style={{ 
+              flex: 1, 
+              fontWeight: '500',
+              fontSize: '14px',
+              color: 'var(--text, #e5e7eb)'
+            }}>
+              {loadingStatus}
+            </span>
+            {loadingProgress && loadingProgress.total > 0 && (
+              <span style={{ 
+                color: 'var(--admin-primary)',
+                fontWeight: '600',
+                fontSize: '14px',
+                whiteSpace: 'nowrap'
+              }}>
+                {Math.round((loadingProgress.current / loadingProgress.total) * 100)}%
+              </span>
+            )}
+          </div>
+          {loadingProgress && loadingProgress.total > 0 && (
+            <div style={{
+              marginTop: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '12px',
+              color: 'var(--text-muted, #9ca3af)'
+            }}>
+              <div style={{
+                flex: 1,
+                height: '6px',
+                backgroundColor: 'var(--border, #404040)',
+                borderRadius: '3px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${Math.min(100, (loadingProgress.current / loadingProgress.total) * 100)}%`,
+                  backgroundColor: 'var(--admin-primary)',
+                  transition: 'width 0.3s ease',
+                  borderRadius: '3px'
+                }}></div>
+              </div>
+              <span style={{ whiteSpace: 'nowrap' }}>
+                {loadingProgress.current.toLocaleString()} / {loadingProgress.total.toLocaleString()} files
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* File List Table */}
       <div className="fl-table-container">
-        {isLoading ? (
+        {isLoading && !loadingStatus ? (
           <div className="loading-state" style={{ 
             textAlign: 'center', 
             padding: '40px', 
@@ -1226,7 +1505,7 @@ const FileLibrary: React.FC = () => {
               animation: 'spin 1s linear infinite',
               margin: '0 auto 16px'
             }}></div>
-            Loading files from n8n...
+            Loading files...
           </div>
         ) : (
           <table className="fl-table" style={{ width: '100%', minWidth: '900px', tableLayout: 'fixed' }}>
@@ -1249,7 +1528,23 @@ const FileLibrary: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredAndSortedFiles.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                      <div className="spinner" style={{
+                        width: '24px',
+                        height: '24px',
+                        border: '2px solid rgba(59, 230, 255, 0.2)',
+                        borderTop: '2px solid #3be6ff',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                      }}></div>
+                      <span>{loadingStatus || 'Loading files...'}</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredAndSortedFiles.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
                     {error ? 'Failed to load files' : 'No files found. Upload some files to get started.'}

@@ -587,7 +587,9 @@ export async function uploadSingleFileToSupabase(file: File): Promise<FileUpload
 /**
  * Fetch list of files from Supabase Storage, filtered by group_id
  */
-export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
+export async function fetchFilesFromSupabase(
+  onProgress?: (current: number, total: number, status: string) => void
+): Promise<FileListResponse> {
   try {
     console.log('🔍 [fetchFilesFromSupabase] Starting file fetch...');
     const supabase = getSupabaseClient();
@@ -668,7 +670,12 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
       };
     }
 
-    console.log(`✅ [fetchFilesFromSupabase] Found ${fileRecords?.length || 0} files in database for group ${groupId}`);
+    const totalFiles = fileRecords?.length || 0;
+    console.log(`✅ [fetchFilesFromSupabase] Found ${totalFiles} files in database for group ${groupId}`);
+
+    if (onProgress) {
+      onProgress(0, totalFiles, `Found ${totalFiles} files. Checking sync status...`);
+    }
 
     // Transform database file records to RAGFile format
     const files: RAGFile[] = (fileRecords || []).map((file: any) => ({
@@ -687,19 +694,35 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
     const filesToCheck = files.filter(f => f.syncStatus !== 'synced');
     
     if (filesToCheck.length > 0) {
-      console.log(`🔍 Checking sync status for ${filesToCheck.length} files...`);
+      console.log(`🔍 Checking sync status for ${filesToCheck.length} files (optimized query)...`);
       try {
-        // Fetch indexed document filenames for this group using pagination
-        let allDocMetas: any[] = [];
+        // OPTIMIZED: Fetch only unique fileNames from documents (much faster than fetching all metadata)
+        // Use a more efficient approach: get distinct fileName values
+        let allFileNames = new Set<string>();
         let hasMore = true;
         let page = 0;
         const pageSize = 1000;
+        let totalChunksChecked = 0;
+        
+        // Get total count for progress tracking
+        const { count: totalChunksCount } = await supabase
+          .from('documents')
+          .select('*', { count: 'exact', head: true })
+          .eq('metadata->>groupId', groupId)
+          .not('metadata->>fileName', 'is', null);
+        
+        const totalChunks = totalChunksCount || 0;
+        
+        if (onProgress) {
+          onProgress(0, totalFiles, `Scanning ${totalChunks.toLocaleString()} chunks for indexed files...`);
+        }
       
         while (hasMore) {
           const { data: pageData, error: pageError } = await supabase
             .from('documents')
-            .select('metadata')
-            .eq('metadata->>groupId', groupId) // Filter by group_id in metadata
+            .select('metadata->>fileName')
+            .eq('metadata->>groupId', groupId)
+            .not('metadata->>fileName', 'is', null)
             .range(page * pageSize, (page + 1) * pageSize - 1);
         
           if (pageError) {
@@ -708,113 +731,86 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
           }
           
           if (pageData && pageData.length > 0) {
-            allDocMetas = [...allDocMetas, ...pageData];
+            pageData.forEach((row: any) => {
+              const fileName = row.fileName;
+              if (fileName && typeof fileName === 'string') {
+                allFileNames.add(fileName.toLowerCase().trim());
+              }
+            });
+            totalChunksChecked += pageData.length;
             hasMore = pageData.length === pageSize;
             page++;
+            
+            // Update progress
+            if (onProgress && totalChunks > 0) {
+              const percentage = Math.round((totalChunksChecked / totalChunks) * 100);
+              onProgress(
+                Math.min(totalFiles, Math.round((totalChunksChecked / totalChunks) * totalFiles)),
+                totalFiles,
+                `Scanning chunks... ${percentage}% (${totalChunksChecked.toLocaleString()} / ${totalChunks.toLocaleString()} chunks)`
+              );
+            }
+            
+            if (page % 10 === 0) {
+              console.log(`📄 Checked ${page} pages: ${totalChunksChecked} chunks, ${allFileNames.size} unique files`);
+            }
           } else {
             hasMore = false;
           }
         }
         
-        console.log(`📊 Total documents fetched for group ${groupId}: ${allDocMetas.length} (${page} pages)`);
-
-      const indexedNameSet = new Set<string>();
-      const indexedNameMap = new Map<string, string>(); // normalized -> original
-      
-      if (allDocMetas && allDocMetas.length > 0) {
-        console.log(`📋 First document metadata sample:`, allDocMetas[0]?.metadata);
+        console.log(`📊 Checked ${totalChunksChecked} chunks, found ${allFileNames.size} unique indexed files`);
         
-        for (const row of allDocMetas) {
-          const metadata = row.metadata || {};
-          
-          // Log raw metadata for Badillo file
-          if (JSON.stringify(metadata).toLowerCase().includes('badillo')) {
-            console.log(`🔍 RAW Badillo metadata found:`, metadata);
-            console.log(`   Type: ${typeof metadata}`);
-            console.log(`   Keys:`, Object.keys(metadata));
-          }
-          
-          const metaName: string | undefined = metadata.fileName;
-          if (metaName) {
-            const normalized = metaName.toLowerCase().trim();
-            indexedNameSet.add(normalized);
-            indexedNameMap.set(normalized, metaName);
-            
-            // Debug: Log Badillo file if found
-            if (metaName.toLowerCase().includes('badillo')) {
-              console.log(`🔍 Found Badillo file in DB:`, {
-                original: metaName,
-                normalized: normalized,
-                metadata: metadata
-              });
-            }
-            
-            // Also add variants for better matching
-            const variants = [
-              normalized.replace(/\s+/g, '_'),
-              normalized.replace(/_+/g, ' '),
-              normalized.replace(/[^\x00-\x7F]/g, ''),
-            ];
-            variants.forEach(v => {
-              if (v !== normalized) {
-                indexedNameSet.add(v);
-                indexedNameMap.set(v, metaName);
-              }
-            });
-          }
+        if (onProgress) {
+          onProgress(totalFiles, totalFiles, `Matching ${totalFiles} files with indexed chunks...`);
         }
-      }
-      console.log(`[SyncCheck] Indexed filenames count: ${indexedNameSet.size}`);
-      console.log(`[SyncCheck] Unique documents: ${indexedNameMap.size}`);
-      const allIndexedFiles = Array.from(new Set(indexedNameMap.values()));
-      console.log(`[SyncCheck] ALL indexed files (${allIndexedFiles.length}):`, allIndexedFiles);
+
+      // Normalize file names for comparison (handle URL encoding, spaces, etc.)
+      const normalizeFileName = (name: string): string => {
+        try {
+          // Try URL decoding first
+          let decoded = decodeURIComponent(name);
+          // If decoding didn't change anything, try the original
+          if (decoded === name) {
+            decoded = name;
+          }
+          // Normalize: lowercase, trim, replace multiple spaces with single space
+          return decoded.toLowerCase().trim().replace(/\s+/g, ' ');
+        } catch (e) {
+          // If decoding fails, just normalize the original
+          return name.toLowerCase().trim().replace(/\s+/g, ' ');
+        }
+      };
       
-      // Debug: Show all normalized variants we're checking against
-      const badilloVariants = Array.from(indexedNameSet).filter(name => name.includes('badillo'));
-      if (badilloVariants.length > 0) {
-        console.log(`🔍 All Badillo variants in indexedNameSet:`, badilloVariants);
-      } else {
-        console.warn(`⚠️ No Badillo file found in ${allDocMetas?.length || 0} indexed documents!`);
-        console.log(`📋 Checking first 5 metadata entries:`, allDocMetas?.slice(0, 5).map(r => r.metadata));
-      }
+      // Normalize all indexed file names
+      const normalizedIndexedNames = new Set<string>();
+      allFileNames.forEach(name => {
+        normalizedIndexedNames.add(normalizeFileName(name));
+      });
+      
+      console.log(`📋 Normalized indexed file names: ${normalizedIndexedNames.size} unique files`);
+      console.log(`📋 Sample indexed names:`, Array.from(normalizedIndexedNames).slice(0, 5));
 
       // Update sync status for each file
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const fileName = file.name.toLowerCase().trim();
+        const normalizedFileName = normalizeFileName(file.name);
         
-        // Try multiple normalization strategies
-        const normalizedVariants = [
-          fileName,
-          fileName.replace(/\s+/g, ' '), // normalize multiple spaces
-          fileName.replace(/\s+/g, '_'), // spaces to underscores
-          fileName.replace(/_+/g, ' '), // underscores to spaces
-          fileName.replace(/[^\x00-\x7F]/g, ''), // remove non-ASCII
-          fileName.replace(/\s+/g, '').replace(/_+/g, ''), // remove all whitespace/underscores
-        ];
-        
-        // Also try URL encoded/decoded versions
-        try {
-          normalizedVariants.push(decodeURIComponent(fileName));
-          normalizedVariants.push(encodeURIComponent(fileName).toLowerCase());
-        } catch (e) {
-          // Ignore encoding errors
+        // Update progress
+        if (onProgress && ((i + 1) % 5 === 0 || i === files.length - 1)) {
+          const percentage = Math.round(((i + 1) / files.length) * 100);
+          onProgress(
+            i + 1,
+            files.length,
+            `Checking sync status... ${percentage}% (${i + 1} / ${files.length} files)`
+          );
         }
         
-        let isIndexed = false;
-        let matchedVariant = '';
-        
-        for (const variant of normalizedVariants) {
-          if (indexedNameSet.has(variant)) {
-            isIndexed = true;
-            matchedVariant = variant;
-            break;
-          }
-        }
+        // Check if normalized file name matches
+        const isIndexed = normalizedIndexedNames.has(normalizedFileName);
         
         if (isIndexed) {
           file.syncStatus = 'synced';
-          console.log(`✅ File "${file.name}" is SYNCED (matched via: "${matchedVariant}")`);
           
           // Update database record to mark as indexed
           const fileRecord = fileRecords?.find((fr: any) => fr.file_name === file.name);
@@ -828,26 +824,30 @@ export async function fetchFilesFromSupabase(): Promise<FileListResponse> {
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', fileRecord.id);
-              console.log(`✅ Updated database record for "${file.name}"`);
             } catch (updateError) {
               console.warn('⚠️ Failed to update file record:', updateError);
             }
           }
         } else {
           file.syncStatus = 'pending';
-          console.log(`⏳ File "${file.name}" is NOT INDEXED`);
-          console.log(`   Storage filename: "${file.name}"`);
-          console.log(`   Tried variants (${normalizedVariants.length}):`, normalizedVariants.slice(0, 5));
-          console.log(`   Sample indexed files:`, Array.from(new Set(indexedNameMap.values())).slice(0, 5));
           
-          // Try to find close matches
-          const closeMatches = Array.from(new Set(indexedNameMap.values()))
-            .filter(indexed => 
-              indexed.toLowerCase().includes(fileName.substring(0, 20).toLowerCase()) ||
-              fileName.includes(indexed.substring(0, 20).toLowerCase())
-            );
-          if (closeMatches.length > 0) {
-            console.log(`   🔍 Possible matches:`, closeMatches);
+          // Debug: log mismatches to help identify the issue
+          if (i < 5) { // Log first 5 mismatches
+            const closeMatches = Array.from(normalizedIndexedNames).filter(indexedName => {
+              const fileBase = normalizedFileName.replace(/\.[^.]+$/, '');
+              const indexedBase = indexedName.replace(/\.[^.]+$/, '');
+              return fileBase === indexedBase || 
+                     fileBase.includes(indexedBase.substring(0, 20)) ||
+                     indexedBase.includes(fileBase.substring(0, 20));
+            });
+            
+            if (closeMatches.length > 0) {
+              console.log(`⚠️ File mismatch (close matches found):`, {
+                storage: file.name,
+                normalized: normalizedFileName,
+                closeMatches: closeMatches.slice(0, 3)
+              });
+            }
           }
         }
       }
@@ -1033,8 +1033,320 @@ export interface VectorDocument {
 }
 
 /**
+ * Fetch file summaries (fileName + chunk count) without fetching all chunk content
+ * This is much faster for initial load
+ */
+export interface FileSummary {
+  fileName: string;
+  chunkCount: number;
+  firstChunkId?: number;
+  firstChunkCreatedAt?: string;
+  syncStatus?: 'synced' | 'orphaned';
+}
+
+export async function fetchFileSummaries(
+  onProgress?: (current: number, total: number, status: string) => void
+): Promise<{ success: boolean; files: FileSummary[]; total: number; message?: string }> {
+  try {
+    console.log(`📋 Fetching file summaries (fast mode)...`);
+    const supabase = getSupabaseClient();
+    
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
+    
+    if (!groupId) {
+      return {
+        success: false,
+        files: [],
+        total: 0,
+        message: 'No group selected.',
+      };
+    }
+
+    // Get total count
+    const { count, error: countError } = await supabase
+      .from('documents')
+      .select('*', { count: 'exact', head: true })
+      .eq('metadata->>groupId', groupId);
+    
+    if (countError) {
+      console.error('Error getting count:', countError);
+      return { success: false, files: [], total: 0, message: countError.message };
+    }
+
+    // Fetch only metadata (no content) to get file summaries
+    let allMetas: any[] = [];
+    let hasMore = true;
+    let page = 0;
+    const pageSize = 1000;
+    
+    // Get total count for progress tracking
+    const totalCount = count || 0;
+    
+    if (onProgress) {
+      onProgress(0, totalCount, 'Fetching document metadata...');
+    }
+    
+    while (hasMore) {
+      const { data: pageData, error: pageError } = await supabase
+        .from('documents')
+        .select('id, metadata, created_at')
+        .eq('metadata->>groupId', groupId)
+        .order('id', { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+      
+      if (pageError) {
+        console.error('Error fetching page:', pageError);
+        break;
+      }
+      
+      if (pageData && pageData.length > 0) {
+        allMetas = [...allMetas, ...pageData];
+        hasMore = pageData.length === pageSize;
+        page++;
+        
+        // Update progress
+        if (onProgress) {
+          const percentage = totalCount > 0 ? Math.round((allMetas.length / totalCount) * 100) : 0;
+          onProgress(allMetas.length, totalCount, `Processing metadata... ${percentage}%`);
+        }
+        
+        // Log progress every 10 pages
+        if (page % 10 === 0) {
+          console.log(`📄 Fetched ${page} pages: ${allMetas.length.toLocaleString()} / ${totalCount.toLocaleString()} metadata records (${Math.round((allMetas.length / totalCount) * 100)}%)`);
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+    
+    if (onProgress) {
+      onProgress(allMetas.length, totalCount, 'Grouping by file...');
+    }
+    
+    console.log(`✅ Fetched ${allMetas.length.toLocaleString()} metadata records`);
+    
+    if (onProgress) {
+      onProgress(allMetas.length, totalCount, 'Grouping by file...');
+    }
+    
+    // Group by fileName and count chunks
+    const fileMap = new Map<string, { count: number; firstChunkId?: number; firstChunkCreatedAt?: string }>();
+    
+    let processedCount = 0;
+    for (const doc of allMetas) {
+      processedCount++;
+      if (onProgress && processedCount % 1000 === 0) {
+        onProgress(allMetas.length, totalCount, `Grouping by file... ${processedCount.toLocaleString()} / ${allMetas.length.toLocaleString()}`);
+      }
+      const meta = doc.metadata || {};
+      const fileName = meta.fileName || 'Unknown';
+      
+      if (!fileMap.has(fileName)) {
+        fileMap.set(fileName, { 
+          count: 0, 
+          firstChunkId: doc.id,
+          firstChunkCreatedAt: doc.created_at 
+        });
+      }
+      
+      const entry = fileMap.get(fileName)!;
+      entry.count++;
+      // Keep the first (most recent) chunk's ID and date
+      if (!entry.firstChunkId || (doc.created_at && doc.created_at > (entry.firstChunkCreatedAt || ''))) {
+        entry.firstChunkId = doc.id;
+        entry.firstChunkCreatedAt = doc.created_at;
+      }
+    }
+    
+    if (onProgress) {
+      onProgress(allMetas.length, totalCount, 'Checking sync status...');
+    }
+    
+    // Get list of files from files table to check sync status (optimized - direct query)
+    const { data: fileRecords, error: filesError } = await supabase
+      .from('files')
+      .select('file_name')
+      .eq('group_id', groupId);
+    
+    // Normalize file names for comparison (handle URL encoding, spaces, etc.)
+    const normalizeFileName = (name: string): string => {
+      try {
+        // Try URL decoding first
+        let decoded = decodeURIComponent(name);
+        // If decoding didn't change anything, try the original
+        if (decoded === name) {
+          decoded = name;
+        }
+        // Normalize: lowercase, trim, replace multiple spaces with single space
+        return decoded.toLowerCase().trim().replace(/\s+/g, ' ');
+      } catch (e) {
+        // If decoding fails, just normalize the original
+        return name.toLowerCase().trim().replace(/\s+/g, ' ');
+      }
+    };
+    
+    const fileNames = new Set<string>();
+    const fileNamesOriginal = new Map<string, string>(); // normalized -> original
+    
+    if (!filesError && fileRecords) {
+      fileRecords.forEach((fr: any) => {
+        if (fr.file_name) {
+          const normalized = normalizeFileName(fr.file_name);
+          fileNames.add(normalized);
+          // Store original for debugging
+          if (!fileNamesOriginal.has(normalized)) {
+            fileNamesOriginal.set(normalized, fr.file_name);
+          }
+        }
+      });
+    }
+    
+    console.log(`📋 Found ${fileNames.size} files in storage for sync status check`);
+    console.log(`📋 Sample storage file names:`, Array.from(fileNames).slice(0, 5));
+    
+    // Convert to FileSummary array with improved matching
+    const files: FileSummary[] = Array.from(fileMap.entries()).map(([fileName, data]) => {
+      // Normalize the fileName from metadata
+      const normalizedMetadataName = normalizeFileName(fileName);
+      
+      // Check if it matches
+      const isSynced = fileNames.has(normalizedMetadataName);
+      
+      // Debug logging for mismatches
+      if (!isSynced) {
+        // Try to find close matches
+        const closeMatches = Array.from(fileNames).filter(storageName => {
+          // Check if they're similar (same base name)
+          const metaBase = normalizedMetadataName.replace(/\.[^.]+$/, '');
+          const storageBase = storageName.replace(/\.[^.]+$/, '');
+          return metaBase === storageBase || 
+                 metaBase.includes(storageBase.substring(0, 20)) ||
+                 storageBase.includes(metaBase.substring(0, 20));
+        });
+        
+        if (closeMatches.length > 0) {
+          console.log(`⚠️ File name mismatch:`, {
+            metadata: fileName,
+            normalized: normalizedMetadataName,
+            closeMatches: closeMatches.slice(0, 3),
+            storageOriginals: closeMatches.map(m => fileNamesOriginal.get(m)).filter(Boolean)
+          });
+        }
+      }
+      
+      return {
+        fileName,
+        chunkCount: data.count,
+        firstChunkId: data.firstChunkId,
+        firstChunkCreatedAt: data.firstChunkCreatedAt,
+        syncStatus: isSynced ? 'synced' : 'orphaned'
+      };
+    });
+    
+    console.log(`📊 Found ${files.length} unique files with ${allMetas.length} total chunks`);
+    
+    return {
+      success: true,
+      files,
+      total: count || 0,
+      message: 'File summaries fetched successfully',
+    };
+  } catch (error: any) {
+    console.error('Error fetching file summaries:', error);
+    return {
+      success: false,
+      files: [],
+      total: 0,
+      message: error.message || 'Failed to fetch file summaries',
+    };
+  }
+}
+
+/**
+ * Fetch chunks for a specific fileName (lazy loading when file is expanded)
+ * @param fileName - The name of the file to fetch chunks for
+ * @param limit - Maximum number of chunks to fetch (default: 10)
+ * @param offset - Number of chunks to skip (default: 0)
+ */
+export async function fetchChunksForFile(
+  fileName: string,
+  limit: number = 10,
+  offset: number = 0
+): Promise<{ success: boolean; documents: VectorDocument[]; total?: number; message?: string }> {
+  try {
+    console.log(`📄 Fetching chunks for file: ${fileName} (limit: ${limit}, offset: ${offset})`);
+    const supabase = getSupabaseClient();
+    
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
+    
+    if (!groupId) {
+      return {
+        success: false,
+        documents: [],
+        message: 'No group selected.',
+      };
+    }
+
+    // Get total count for this file
+    const { count, error: countError } = await supabase
+      .from('documents')
+      .select('*', { count: 'exact', head: true })
+      .eq('metadata->>groupId', groupId)
+      .eq('metadata->>fileName', fileName);
+    
+    if (countError) {
+      console.error('Error getting chunk count:', countError);
+    }
+
+    // Fetch chunks for this specific file with pagination
+    const { data, error } = await supabase
+      .from('documents')
+      .select('id, content, metadata, created_at')
+      .eq('metadata->>groupId', groupId)
+      .eq('metadata->>fileName', fileName)
+      .order('id', { ascending: true })
+      .range(offset, offset + limit - 1);
+    
+    if (error) {
+      console.error('Error fetching chunks:', error);
+      return {
+        success: false,
+        documents: [],
+        message: error.message,
+      };
+    }
+    
+    const documents: VectorDocument[] = (data || []).map((doc: any) => ({
+      id: doc.id,
+      content: doc.content,
+      metadata: doc.metadata || {},
+      embedding: undefined,
+    }));
+    
+    console.log(`✅ Fetched ${documents.length} chunks for ${fileName} (${offset + documents.length} / ${count || '?'} total)`);
+    
+    return {
+      success: true,
+      documents,
+      total: count || undefined,
+      message: 'Chunks fetched successfully',
+    };
+  } catch (error: any) {
+    console.error('Error fetching chunks for file:', error);
+    return {
+      success: false,
+      documents: [],
+      message: error.message || 'Failed to fetch chunks',
+    };
+  }
+}
+
+/**
  * Fetch all documents from Supabase documents table, filtered by groupId
  * Note: This function now fetches ALL documents for the group (not paginated) to ensure we get all unique files
+ * @deprecated Use fetchFileSummaries() + fetchChunksForFile() for better performance
  */
 export async function fetchVectorDocuments(limit: number = 50, offset: number = 0): Promise<{ success: boolean; documents: VectorDocument[]; total: number; message?: string }> {
   try {
@@ -1121,8 +1433,12 @@ export async function fetchVectorDocuments(limit: number = 50, offset: number = 
     }, {} as Record<string, number>);
     console.log(`📊 Documents per file:`, fileDistribution);
     
-    // Apply pagination to the results (for backward compatibility with existing code)
-    const paginatedData = allData.slice(offset, offset + limit);
+    // If limit is >= 10000, treat it as "fetch all" and return all documents
+    // Otherwise, apply pagination for backward compatibility
+    const shouldReturnAll = limit >= 10000;
+    const paginatedData = shouldReturnAll ? allData : allData.slice(offset, offset + limit);
+    
+    console.log(`📦 Returning ${paginatedData.length} documents (${shouldReturnAll ? 'all' : `paginated: offset=${offset}, limit=${limit}`})`);
     
     return {
       success: true,
