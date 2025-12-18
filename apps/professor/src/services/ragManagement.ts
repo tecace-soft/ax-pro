@@ -717,60 +717,99 @@ export async function fetchFilesFromSupabase(
           onProgress(0, totalFiles, `Scanning ${totalChunks.toLocaleString()} chunks for indexed files...`);
         }
       
-        while (hasMore) {
-          const { data: pageData, error: pageError } = await supabase
-            .from('documents')
-            .select('metadata->>fileName')
-            .eq('metadata->>groupId', groupId)
-            .not('metadata->>fileName', 'is', null)
-            .range(page * pageSize, (page + 1) * pageSize - 1);
+        // Fetch all indexed file names with retry logic to ensure consistency
+        let retryCount = 0;
+        const maxRetries = 3;
+        let allPagesLoaded = false;
         
-          if (pageError) {
-            console.warn(`⚠️ Error fetching page ${page}:`, pageError);
-            break;
+        while (!allPagesLoaded && retryCount < maxRetries) {
+          // Reset for retry
+          if (retryCount > 0) {
+            console.log(`🔄 Retrying to fetch all indexed files (attempt ${retryCount + 1}/${maxRetries})...`);
+            allFileNames.clear();
+            page = 0;
+            totalChunksChecked = 0;
+            hasMore = true;
           }
           
-          if (pageData && pageData.length > 0) {
-            pageData.forEach((row: any) => {
-              const fileName = row.fileName;
-              if (fileName && typeof fileName === 'string') {
-                allFileNames.add(fileName.toLowerCase().trim());
+          while (hasMore) {
+            const { data: pageData, error: pageError } = await supabase
+              .from('documents')
+              .select('metadata->>fileName')
+              .eq('metadata->>groupId', groupId)
+              .not('metadata->>fileName', 'is', null)
+              .order('id', { ascending: true }) // Add ordering for consistency
+              .range(page * pageSize, (page + 1) * pageSize - 1);
+          
+            if (pageError) {
+              console.warn(`⚠️ Error fetching page ${page}:`, pageError);
+              // Don't break on error, try to continue or retry
+              if (retryCount < maxRetries - 1) {
+                retryCount++;
+                break; // Break inner loop to retry
+              } else {
+                console.error(`❌ Failed to fetch all pages after ${maxRetries} attempts`);
+                break;
               }
-            });
-            totalChunksChecked += pageData.length;
-            hasMore = pageData.length === pageSize;
-            page++;
-            
-            // Update progress
-            if (onProgress && totalChunks > 0) {
-              const percentage = Math.round((totalChunksChecked / totalChunks) * 100);
-              onProgress(
-                Math.min(totalFiles, Math.round((totalChunksChecked / totalChunks) * totalFiles)),
-                totalFiles,
-                `Scanning chunks... ${percentage}% (${totalChunksChecked.toLocaleString()} / ${totalChunks.toLocaleString()} chunks)`
-              );
             }
             
-            if (page % 10 === 0) {
-              console.log(`📄 Checked ${page} pages: ${totalChunksChecked} chunks, ${allFileNames.size} unique files`);
+            if (pageData && pageData.length > 0) {
+              pageData.forEach((row: any) => {
+                const fileName = row.fileName;
+                if (fileName && typeof fileName === 'string') {
+                  // Store raw fileName first, will normalize later
+                  allFileNames.add(fileName);
+                }
+              });
+              totalChunksChecked += pageData.length;
+              hasMore = pageData.length === pageSize;
+              page++;
+              
+              // Update progress
+              if (onProgress && totalChunks > 0) {
+                const percentage = Math.round((totalChunksChecked / totalChunks) * 100);
+                onProgress(
+                  Math.min(totalFiles, Math.round((totalChunksChecked / totalChunks) * totalFiles)),
+                  totalFiles,
+                  `Scanning chunks... ${percentage}% (${totalChunksChecked.toLocaleString()} / ${totalChunks.toLocaleString()} chunks)`
+                );
+              }
+              
+              if (page % 10 === 0) {
+                console.log(`📄 Checked ${page} pages: ${totalChunksChecked} chunks, ${allFileNames.size} unique files`);
+              }
+            } else {
+              hasMore = false;
             }
+          }
+          
+          // Verify we got all chunks
+          if (totalChunksChecked >= totalChunks || !hasMore) {
+            allPagesLoaded = true;
+            console.log(`✅ All pages loaded: ${totalChunksChecked} chunks checked, ${allFileNames.size} unique files found`);
           } else {
-            hasMore = false;
+            retryCount++;
+            if (retryCount < maxRetries) {
+              console.warn(`⚠️ Incomplete data: expected ${totalChunks} chunks, got ${totalChunksChecked}. Retrying...`);
+              // Small delay before retry
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
           }
         }
         
-        console.log(`📊 Checked ${totalChunksChecked} chunks, found ${allFileNames.size} unique indexed files`);
+        console.log(`📊 Final: Checked ${totalChunksChecked} chunks, found ${allFileNames.size} unique indexed files (before normalization)`);
         
         if (onProgress) {
           onProgress(totalFiles, totalFiles, `Matching ${totalFiles} files with indexed chunks...`);
         }
 
       // Normalize file names for comparison (handle URL encoding, spaces, etc.)
+      // IMPORTANT: This function must be identical to the one in fetchFileSummaries
       const normalizeFileName = (name: string): string => {
         try {
           // Try URL decoding first
           let decoded = decodeURIComponent(name);
-          // If decoding didn't change anything, try the original
+          // If decoding didn't change anything, use the original
           if (decoded === name) {
             decoded = name;
           }
@@ -782,15 +821,23 @@ export async function fetchFilesFromSupabase(
         }
       };
       
-      // Normalize all indexed file names
+      // Normalize all indexed file names (ensure we have all before comparing)
       const normalizedIndexedNames = new Set<string>();
+      const normalizationMap = new Map<string, string>(); // original -> normalized for debugging
+      
       allFileNames.forEach(name => {
-        normalizedIndexedNames.add(normalizeFileName(name));
+        const normalized = normalizeFileName(name);
+        normalizedIndexedNames.add(normalized);
+        normalizationMap.set(name, normalized);
       });
       
-      console.log(`📋 Normalized indexed file names: ${normalizedIndexedNames.size} unique files`);
+      console.log(`📋 After normalization: ${normalizedIndexedNames.size} unique indexed files (from ${allFileNames.size} raw names)`);
       console.log(`📋 Sample indexed names:`, Array.from(normalizedIndexedNames).slice(0, 5));
 
+      // Count synced files for debugging
+      let syncedCount = 0;
+      let pendingCount = 0;
+      
       // Update sync status for each file
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -811,6 +858,7 @@ export async function fetchFilesFromSupabase(
         
         if (isIndexed) {
           file.syncStatus = 'synced';
+          syncedCount++;
           
           // Update database record to mark as indexed
           const fileRecord = fileRecords?.find((fr: any) => fr.file_name === file.name);
@@ -830,9 +878,10 @@ export async function fetchFilesFromSupabase(
           }
         } else {
           file.syncStatus = 'pending';
+          pendingCount++;
           
           // Debug: log mismatches to help identify the issue
-          if (i < 5) { // Log first 5 mismatches
+          if (i < 10) { // Log first 10 mismatches
             const closeMatches = Array.from(normalizedIndexedNames).filter(indexedName => {
               const fileBase = normalizedFileName.replace(/\.[^.]+$/, '');
               const indexedBase = indexedName.replace(/\.[^.]+$/, '');
@@ -842,15 +891,22 @@ export async function fetchFilesFromSupabase(
             });
             
             if (closeMatches.length > 0) {
-              console.log(`⚠️ File mismatch (close matches found):`, {
+              console.log(`⚠️ [FileLibrary] File mismatch (close matches found):`, {
                 storage: file.name,
                 normalized: normalizedFileName,
                 closeMatches: closeMatches.slice(0, 3)
+              });
+            } else {
+              console.log(`⚠️ [FileLibrary] File not indexed:`, {
+                storage: file.name,
+                normalized: normalizedFileName
               });
             }
           }
         }
       }
+      
+      console.log(`📊 [FileLibrary] Sync status summary: ${syncedCount} synced, ${pendingCount} pending out of ${files.length} total files`);
       } catch (syncError) {
         console.warn('⚠️ Error during sync status calculation:', syncError);
         for (let i = 0; i < files.length; i++) {
@@ -1075,9 +1131,13 @@ export async function fetchFileSummaries(
     }
 
     // Fetch only metadata (no content) to get file summaries
+    // Use retry logic to ensure we get all data consistently
     let allMetas: any[] = [];
-    let hasMore = true;
+    let retryCount = 0;
+    const maxRetries = 3;
+    let allPagesLoaded = false;
     let page = 0;
+    let hasMore = true;
     const pageSize = 1000;
     
     // Get total count for progress tracking
@@ -1087,36 +1147,65 @@ export async function fetchFileSummaries(
       onProgress(0, totalCount, 'Fetching document metadata...');
     }
     
-    while (hasMore) {
-      const { data: pageData, error: pageError } = await supabase
-        .from('documents')
-        .select('id, metadata, created_at')
-        .eq('metadata->>groupId', groupId)
-        .order('id', { ascending: false })
-        .range(page * pageSize, (page + 1) * pageSize - 1);
-      
-      if (pageError) {
-        console.error('Error fetching page:', pageError);
-        break;
+    while (!allPagesLoaded && retryCount < maxRetries) {
+      // Reset for retry
+      if (retryCount > 0) {
+        console.log(`🔄 [KnowledgeIndex] Retrying to fetch all metadata (attempt ${retryCount + 1}/${maxRetries})...`);
+        allMetas = [];
+        page = 0;
+        hasMore = true;
       }
       
-      if (pageData && pageData.length > 0) {
-        allMetas = [...allMetas, ...pageData];
-        hasMore = pageData.length === pageSize;
-        page++;
+      while (hasMore) {
+        const { data: pageData, error: pageError } = await supabase
+          .from('documents')
+          .select('id, metadata, created_at')
+          .eq('metadata->>groupId', groupId)
+          .order('id', { ascending: false }) // Consistent ordering
+          .range(page * pageSize, (page + 1) * pageSize - 1);
         
-        // Update progress
-        if (onProgress) {
-          const percentage = totalCount > 0 ? Math.round((allMetas.length / totalCount) * 100) : 0;
-          onProgress(allMetas.length, totalCount, `Processing metadata... ${percentage}%`);
+        if (pageError) {
+          console.error('Error fetching page:', pageError);
+          if (retryCount < maxRetries - 1) {
+            retryCount++;
+            break; // Break inner loop to retry
+          } else {
+            console.error(`❌ [KnowledgeIndex] Failed to fetch all pages after ${maxRetries} attempts`);
+            break;
+          }
         }
         
-        // Log progress every 10 pages
-        if (page % 10 === 0) {
-          console.log(`📄 Fetched ${page} pages: ${allMetas.length.toLocaleString()} / ${totalCount.toLocaleString()} metadata records (${Math.round((allMetas.length / totalCount) * 100)}%)`);
+        if (pageData && pageData.length > 0) {
+          allMetas = [...allMetas, ...pageData];
+          hasMore = pageData.length === pageSize;
+          page++;
+          
+          // Update progress
+          if (onProgress) {
+            const percentage = totalCount > 0 ? Math.round((allMetas.length / totalCount) * 100) : 0;
+            onProgress(allMetas.length, totalCount, `Processing metadata... ${percentage}%`);
+          }
+          
+          // Log progress every 10 pages
+          if (page % 10 === 0) {
+            console.log(`📄 [KnowledgeIndex] Fetched ${page} pages: ${allMetas.length.toLocaleString()} / ${totalCount.toLocaleString()} metadata records (${Math.round((allMetas.length / totalCount) * 100)}%)`);
+          }
+        } else {
+          hasMore = false;
         }
+      }
+      
+      // Verify we got all chunks
+      if (allMetas.length >= totalCount || !hasMore) {
+        allPagesLoaded = true;
+        console.log(`✅ [KnowledgeIndex] All pages loaded: ${allMetas.length.toLocaleString()} metadata records`);
       } else {
-        hasMore = false;
+        retryCount++;
+        if (retryCount < maxRetries) {
+          console.warn(`⚠️ [KnowledgeIndex] Incomplete data: expected ${totalCount} records, got ${allMetas.length}. Retrying...`);
+          // Small delay before retry
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
     }
     
@@ -1202,8 +1291,12 @@ export async function fetchFileSummaries(
       });
     }
     
-    console.log(`📋 Found ${fileNames.size} files in storage for sync status check`);
-    console.log(`📋 Sample storage file names:`, Array.from(fileNames).slice(0, 5));
+    console.log(`📋 [KnowledgeIndex] Found ${fileNames.size} files in storage for sync status check`);
+    console.log(`📋 [KnowledgeIndex] Sample storage file names:`, Array.from(fileNames).slice(0, 5));
+    
+    // Count synced vs orphaned for debugging
+    let syncedCount = 0;
+    let orphanedCount = 0;
     
     // Convert to FileSummary array with improved matching
     const files: FileSummary[] = Array.from(fileMap.entries()).map(([fileName, data]) => {
@@ -1213,8 +1306,12 @@ export async function fetchFileSummaries(
       // Check if it matches
       const isSynced = fileNames.has(normalizedMetadataName);
       
-      // Debug logging for mismatches
-      if (!isSynced) {
+      if (isSynced) {
+        syncedCount++;
+      } else {
+        orphanedCount++;
+        
+        // Debug logging for mismatches
         // Try to find close matches
         const closeMatches = Array.from(fileNames).filter(storageName => {
           // Check if they're similar (same base name)
@@ -1226,11 +1323,16 @@ export async function fetchFileSummaries(
         });
         
         if (closeMatches.length > 0) {
-          console.log(`⚠️ File name mismatch:`, {
+          console.log(`⚠️ [KnowledgeIndex] File name mismatch (close matches found):`, {
             metadata: fileName,
             normalized: normalizedMetadataName,
             closeMatches: closeMatches.slice(0, 3),
             storageOriginals: closeMatches.map(m => fileNamesOriginal.get(m)).filter(Boolean)
+          });
+        } else {
+          console.log(`⚠️ [KnowledgeIndex] Orphaned file (no match in storage):`, {
+            metadata: fileName,
+            normalized: normalizedMetadataName
           });
         }
       }
@@ -1244,7 +1346,8 @@ export async function fetchFileSummaries(
       };
     });
     
-    console.log(`📊 Found ${files.length} unique files with ${allMetas.length} total chunks`);
+    console.log(`📊 [KnowledgeIndex] Found ${files.length} unique files with ${allMetas.length} total chunks`);
+    console.log(`📊 [KnowledgeIndex] Sync status summary: ${syncedCount} synced, ${orphanedCount} orphaned`);
     
     return {
       success: true,
