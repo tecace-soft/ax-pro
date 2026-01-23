@@ -3,7 +3,7 @@ import { getSupabaseClient } from './supabaseUserSpecific';
 
 // RAG Management API configuration
 const N8N_BASE_URL = (import.meta as any).env?.VITE_N8N_BASE_URL || 'https://n8n.srv1153481.hstgr.cloud';
-const UPLOAD_WEBHOOK_ID = (import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID || '30de76ac-a5bf-41a4-a151-ee9f8ec5c19a';
+const UPLOAD_WEBHOOK_ID = (import.meta as any).env?.VITE_N8N_UPLOAD_WEBHOOK_ID || '8f9c95ef-1cf4-4310-820b-9d5fe26ac3bc';
 
 // n8n webhook endpoints for different operations
 const ENDPOINTS = {
@@ -1627,7 +1627,7 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     const session = getSession();
     
     // Hardcoded universal endpoint for document indexing (same for all users)
-    const INDEXING_WEBHOOK_URL = 'https://n8n.srv1153481.hstgr.cloud/webhook/30de76ac-a5bf-41a4-a151-ee9f8ec5c19a';
+    const INDEXING_WEBHOOK_URL = 'https://n8n.srv1153481.hstgr.cloud/webhook/8f9c95ef-1cf4-4310-820b-9d5fe26ac3bc';
     const n8nWebhookUrl = INDEXING_WEBHOOK_URL;
     
     console.log(`🔧 Webhook mode: UNIVERSAL (hardcoded)`);

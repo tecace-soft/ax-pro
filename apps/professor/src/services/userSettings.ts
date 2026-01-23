@@ -33,7 +33,7 @@ const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
   n8nConfigs: [{
     id: 'default_webhook',
     name: 'Default Webhook',
-    webhookUrl: 'https://n8n.srv1153481.hstgr.cloud/webhook/db3d9fbd-73bd-444a-a689-842446fffdd9',
+    webhookUrl: 'https://n8n.srv1153481.hstgr.cloud/webhook/bdf7e8e7-8592-4518-a4ee-335c235ff94b',
     isActive: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -52,7 +52,7 @@ const ADMIN_SETTINGS: Partial<UserSettings> = {
   n8nConfigs: [{
     id: 'admin_default',
     name: 'Admin Default Webhook',
-    webhookUrl: 'https://n8n.srv1153481.hstgr.cloud/webhook/db3d9fbd-73bd-444a-a689-842446fffdd9',
+    webhookUrl: 'https://n8n.srv1153481.hstgr.cloud/webhook/bdf7e8e7-8592-4518-a4ee-335c235ff94b',
     isActive: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()

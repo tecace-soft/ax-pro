@@ -45,7 +45,7 @@ export const migrateToUserSettings = (): void => {
       n8nConfigs: [{
         id: 'universal_default',
         name: 'Universal Default Webhook (Admin)',
-        webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/db3d9fbd-73bd-444a-a689-842446fffdd9',
+        webhookUrl: 'https://n8n.srv978041.hstgr.cloud/webhook/bdf7e8e7-8592-4518-a4ee-335c235ff94b',
         isActive: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
