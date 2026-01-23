@@ -310,37 +310,33 @@ const ChatShell: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {groupRole === 'admin' && (
-                <>
-                  <button
-                    onClick={() => navigate(withGroupParam('/admin/dashboard'))}
-                    className="p-2 rounded-md border transition-colors"
-                    style={{
-                      borderColor: 'var(--border)',
-                      color: 'var(--text)'
-                    }}
-                    title={t('ui.dashboard')}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="3" width="7" height="7"></rect>
-                      <rect x="14" y="3" width="7" height="7"></rect>
-                      <rect x="14" y="14" width="7" height="7"></rect>
-                      <rect x="3" y="14" width="7" height="7"></rect>
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => navigate(withGroupParam('/settings'))}
-                    className="p-2 rounded-md border transition-colors"
-                    style={{
-                      borderColor: 'var(--border)',
-                      color: 'var(--text)'
-                    }}
-                    title={t('ui.settings')}
-                  >
-                    <IconSettings size={16} />
-                  </button>
-                </>
-              )}
+              <button
+                onClick={() => navigate(withGroupParam('/admin/dashboard'))}
+                className="p-2 rounded-md border transition-colors"
+                style={{
+                  borderColor: 'var(--border)',
+                  color: 'var(--text)'
+                }}
+                title={t('ui.dashboard')}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </button>
+              <button
+                onClick={() => navigate(withGroupParam('/settings'))}
+                className="p-2 rounded-md border transition-colors"
+                style={{
+                  borderColor: 'var(--border)',
+                  color: 'var(--text)'
+                }}
+                title={t('ui.settings')}
+              >
+                <IconSettings size={16} />
+              </button>
               <button
                 onClick={handleLogout}
                 className="text-sm link"
