@@ -498,6 +498,10 @@ app.get('/session', async (req, res) => {
   // Set cache prevention headers
   res.setHeader('Cache-Control', 'no-store');
   
+  // Get groupId from query string
+  const groupId = req.query.groupId as string | undefined;
+  console.log('ChatKit /session groupId:', groupId || 'not provided');
+  
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   const WORKFLOW_ID = process.env.WORKFLOW_ID;
   
@@ -721,8 +725,13 @@ app.get('/chat', (req, res) => {
         
         // If no valid cache, fetch new session
         if (!clientSecret) {
-          console.log('Fetching new session from /session');
-          const response = await fetch('/session', {
+          // Get groupId from URL query string
+          const params = new URLSearchParams(window.location.search);
+          const groupId = params.get('groupId') || 'default';
+          const sessionUrl = \`/session?groupId=\${encodeURIComponent(groupId)}\`;
+          
+          console.log('Fetching new session from /session with groupId:', groupId);
+          const response = await fetch(sessionUrl, {
             method: 'GET',
             credentials: 'same-origin'
           });
@@ -761,7 +770,12 @@ app.get('/chat', (req, res) => {
               }
               
               // Otherwise, fetch a new one
-              const response = await fetch('/session', {
+              // Get groupId from URL query string
+              const params = new URLSearchParams(window.location.search);
+              const groupId = params.get('groupId') || 'default';
+              const sessionUrl = \`/session?groupId=\${encodeURIComponent(groupId)}\`;
+              
+              const response = await fetch(sessionUrl, {
                 method: 'GET',
                 credentials: 'same-origin'
               });
