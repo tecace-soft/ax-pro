@@ -487,11 +487,187 @@ app.post('/api/messages/:id/feedback', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// ChatKit embed endpoints
+// GET /session - Creates a ChatKit session and returns client_secret
+app.get('/session', async (req, res) => {
+  // Set cache prevention headers
+  res.setHeader('Cache-Control', 'no-store');
+  
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const WORKFLOW_ID = process.env.WORKFLOW_ID;
+  
+  // Validate required environment variables
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+  }
+  
+  if (!WORKFLOW_ID) {
+    return res.status(500).json({ error: 'WORKFLOW_ID environment variable is not set' });
+  }
+  
+  try {
+    // Call OpenAI ChatKit session create endpoint
+    const response = await fetch('https://api.openai.com/v1/chatkit/sessions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'chatkit_beta=v1',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        workflow: { id: WORKFLOW_ID },
+        user: `user_${Date.now()}`
+      })
+    });
+    
+    const data = await response.json();
+    
+    // If OpenAI returns non-2xx, forward the status and error
+    if (!response.ok) {
+      return res.status(response.status).json({ 
+        error: data.error?.message || data.error || 'Failed to create ChatKit session',
+        details: data 
+      });
+    }
+    
+    // Return client_secret
+    res.json({ client_secret: data.client_secret });
+  } catch (error: any) {
+    console.error('Error creating ChatKit session:', error);
+    res.status(500).json({ 
+      error: 'Internal server error while creating ChatKit session',
+      message: error.message 
+    });
+  }
 });
 
-// Serve static frontend in production
+// GET /chat - Returns HTML page that initializes ChatKit UI
+app.get('/chat', (req, res) => {
+  // Set headers to allow iframe embedding
+  // Note: For cross-site iframe support, we avoid X-Frame-Options: DENY
+  // CSP frame-ancestors can be configured later for allowlist
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  
+  res.send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatKit Embed</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+    }
+    .container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #666;
+    }
+    .error {
+      padding: 20px;
+      background: #fee;
+      color: #c00;
+      border: 1px solid #fcc;
+      margin: 20px;
+      border-radius: 4px;
+    }
+    .test-info {
+      padding: 10px;
+      background: #e3f2fd;
+      color: #1976d2;
+      font-size: 12px;
+      border-bottom: 1px solid #bbdefb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loading" class="loading">
+      <p>Loading ChatKit session...</p>
+    </div>
+    <div id="error" style="display: none;"></div>
+    <div id="chatkit-container" style="display: none; flex: 1;"></div>
+  </div>
+  
+  <script>
+    (async function() {
+      const loadingEl = document.getElementById('loading');
+      const errorEl = document.getElementById('error');
+      const containerEl = document.getElementById('chatkit-container');
+      
+      try {
+        // Fetch session from same origin
+        const response = await fetch('/session', {
+          method: 'GET',
+          credentials: 'same-origin'
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || \`Failed to fetch session: \${response.status}\`);
+        }
+        
+        const data = await response.json();
+        const clientSecret = data.client_secret;
+        
+        if (!clientSecret) {
+          throw new Error('No client_secret received from session endpoint');
+        }
+        
+        // Hide loading, show container
+        loadingEl.style.display = 'none';
+        containerEl.style.display = 'flex';
+        
+        // TODO: Initialize ChatKit UI here when ChatKit SDK is available
+        // For now, show a test page that confirms session was created
+        containerEl.innerHTML = \`
+          <div style="padding: 20px; text-align: center;">
+            <h2>Session OK</h2>
+            <p style="color: #666; font-size: 14px;">
+              ChatKit session created successfully.
+            </p>
+            <p style="color: #999; font-size: 12px; margin-top: 20px;">
+              Client secret received (not displayed for security).
+            </p>
+            <p style="color: #999; font-size: 11px; margin-top: 10px;">
+              ChatKit UI integration pending.
+            </p>
+          </div>
+        \`;
+        
+        // Log to console for debugging (but NOT the secret)
+        console.log('ChatKit session created successfully');
+        console.log('Client secret length:', clientSecret ? clientSecret.length : 0);
+        
+      } catch (error) {
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'block';
+        errorEl.className = 'error';
+        errorEl.textContent = \`Error: \${error.message}\`;
+        console.error('Failed to initialize ChatKit:', error);
+      }
+    })();
+  </script>
+</body>
+</html>
+  `);
+});
+
+// Serve static frontend in production (must be after specific routes like /chat and /session)
 try {
   app.use(express.static(distDir));
   // SPA fallback to index.html
@@ -499,3 +675,7 @@ try {
     res.sendFile(path.join(distDir, 'index.html'));
   });
 } catch {}
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

@@ -42,7 +42,20 @@ A production-ready React + TypeScript chat application with Teams-like interface
    npm install
    ```
 
-2. Start both frontend and backend:
+2. Set up environment variables (optional, required for ChatKit embed):
+   ```bash
+   # For ChatKit embed endpoints (/session and /chat)
+   export OPENAI_API_KEY=your_openai_api_key_here
+   export WORKFLOW_ID=your_workflow_id_here
+   ```
+   
+   Or create a `.env` file in the project root:
+   ```
+   OPENAI_API_KEY=your_openai_api_key_here
+   WORKFLOW_ID=your_workflow_id_here
+   ```
+
+3. Start both frontend and backend:
    ```bash
    npm run dev:full
    ```
@@ -56,7 +69,7 @@ A production-ready React + TypeScript chat application with Teams-like interface
    npm run dev
    ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## 🚀 Quick Start (Development)
 
@@ -197,6 +210,90 @@ The app uses CSS variables for dynamic theming:
 - **Request Format**: Structured JSON payloads for n8n workflows
 - **Response Handling**: Parse n8n responses with citations and content
 - **Error Handling**: Graceful fallback when webhooks fail
+
+## 🎯 ChatKit Embed Endpoints
+
+### Overview
+The app provides embed-ready endpoints for integrating OpenAI ChatKit into external websites via iframes.
+
+### Required Environment Variables
+- **OPENAI_API_KEY**: Your OpenAI API key (never exposed to client)
+- **WORKFLOW_ID**: Your ChatKit workflow ID
+
+### Setting Environment Variables in Render
+1. Go to your Render dashboard
+2. Select your service
+3. Navigate to "Environment" tab
+4. Add the following environment variables:
+   - `OPENAI_API_KEY`: Your OpenAI API key
+   - `WORKFLOW_ID`: Your ChatKit workflow ID
+5. Save and redeploy
+
+### Endpoints
+
+#### GET /session
+Creates a ChatKit session and returns a `client_secret` for initializing the ChatKit UI.
+
+**Response:**
+```json
+{
+  "client_secret": "<session_client_secret>"
+}
+```
+
+**Error Handling:**
+- Returns 500 if environment variables are missing
+- Forwards OpenAI API errors with original status code
+- Includes error details in response body
+
+**Security:**
+- `OPENAI_API_KEY` is never exposed to the client
+- Cache-Control: no-store header prevents caching
+
+**Test URL:**
+- Local: `http://localhost:3001/session`
+- Production: `https://<your-render-domain>/session`
+
+#### GET /chat
+Returns an HTML page that:
+1. Fetches `/session` (same origin) to get `client_secret`
+2. Initializes ChatKit UI using the workflow/session `client_secret`
+
+**Features:**
+- Iframe-ready (no X-Frame-Options: DENY)
+- Same-origin session fetching
+- Error handling with user-friendly messages
+- Loading states during session creation
+
+**Test URL:**
+- Local: `http://localhost:3001/chat`
+- Production: `https://<your-render-domain>/chat`
+
+### Verification Steps
+
+1. **Verify /session endpoint:**
+   ```bash
+   curl https://<your-render-domain>/session
+   ```
+   Should return: `{"client_secret":"..."}`
+
+2. **Verify /chat page:**
+   - Open `https://<your-render-domain>/chat` in browser
+   - Should load and display "Session OK" message
+   - Check browser console for "ChatKit session created successfully"
+   - No errors should appear
+
+3. **Test iframe embedding:**
+   ```html
+   <iframe src="https://<your-render-domain>/chat" width="100%" height="600"></iframe>
+   ```
+   The page should load successfully within the iframe.
+
+### Security Notes
+- `/session` is same-origin only (no CORS headers for cross-origin)
+- `/chat` is designed for iframe embedding (no X-Frame-Options: DENY)
+- CSP frame-ancestors can be configured later for allowlist
+- API keys are never logged or exposed to client-side code
 
 ## 📝 Markdown Support
 
