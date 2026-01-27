@@ -1,3 +1,8 @@
+// Note: To load .env file locally, install dotenv and uncomment the line below:
+// import 'dotenv/config';
+// For production (Render), environment variables are set directly in the dashboard
+// For local testing without dotenv, export variables: export OPENAI_API_KEY=... export WORKFLOW_ID=...
+
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -67,7 +72,7 @@ const demoUsers = [
 const sessions_store: Map<string, string> = new Map(); // sessionId -> userId
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || process.env.SERVER_PORT || 3001;
 
 // Resolve paths for serving the frontend build in production
 const __filename = fileURLToPath(import.meta.url);
@@ -557,17 +562,22 @@ app.get('/chat', (req, res) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ChatKit Embed</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       background: #f5f5f5;
+      overflow: hidden;
     }
     .container {
       width: 100%;
       height: 100vh;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
     .loading {
       display: flex;
@@ -576,6 +586,10 @@ app.get('/chat', (req, res) => {
       justify-content: center;
       height: 100vh;
       color: #666;
+      background: #fff;
+    }
+    .loading.hidden {
+      display: none;
     }
     .error {
       padding: 20px;
@@ -584,23 +598,38 @@ app.get('/chat', (req, res) => {
       border: 1px solid #fcc;
       margin: 20px;
       border-radius: 4px;
+      display: none;
     }
-    .test-info {
-      padding: 10px;
-      background: #e3f2fd;
-      color: #1976d2;
-      font-size: 12px;
-      border-bottom: 1px solid #bbdefb;
+    .error.visible {
+      display: block;
+    }
+    #chatkit-container {
+      width: 100%;
+      height: 100vh;
+      flex: 1;
+      display: none;
+    }
+    #chatkit-container.visible {
+      display: block;
+    }
+    openai-chatkit {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
   </style>
+  <!-- Load ChatKit SDK -->
+  <script src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"></script>
 </head>
 <body>
   <div class="container">
     <div id="loading" class="loading">
-      <p>Loading ChatKit session...</p>
+      <p>Loading ChatKit...</p>
     </div>
-    <div id="error" style="display: none;"></div>
-    <div id="chatkit-container" style="display: none; flex: 1;"></div>
+    <div id="error" class="error"></div>
+    <div id="chatkit-container">
+      <openai-chatkit id="my-chat"></openai-chatkit>
+    </div>
   </div>
   
   <script>
@@ -609,56 +638,124 @@ app.get('/chat', (req, res) => {
       const errorEl = document.getElementById('error');
       const containerEl = document.getElementById('chatkit-container');
       
+      // Check if ChatKit is loaded
+      if (typeof window.chatkit === 'undefined') {
+        showError('ChatKit SDK failed to load. Please refresh the page.');
+        return;
+      }
+      
       try {
-        // Fetch session from same origin
-        const response = await fetch('/session', {
-          method: 'GET',
-          credentials: 'same-origin'
+        // Try to get cached client_secret from localStorage
+        const CACHE_KEY = 'chatkit_client_secret';
+        const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour
+        let clientSecret = null;
+        let cachedData = null;
+        
+        try {
+          const cached = localStorage.getItem(CACHE_KEY);
+          if (cached) {
+            cachedData = JSON.parse(cached);
+            const now = Date.now();
+            // Use cached secret if it's not expired
+            if (cachedData && cachedData.expiresAt > now && cachedData.client_secret) {
+              clientSecret = cachedData.client_secret;
+              console.log('Using cached client_secret');
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to read from localStorage:', e);
+        }
+        
+        // If no valid cache, fetch new session
+        if (!clientSecret) {
+          console.log('Fetching new session from /session');
+          const response = await fetch('/session', {
+            method: 'GET',
+            credentials: 'same-origin'
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || \`Failed to fetch session: \${response.status}\`);
+          }
+          
+          const data = await response.json();
+          clientSecret = data.client_secret;
+          
+          if (!clientSecret) {
+            throw new Error('No client_secret received from session endpoint');
+          }
+          
+          // Cache the client_secret
+          try {
+            const cacheData = {
+              client_secret: clientSecret,
+              expiresAt: Date.now() + CACHE_EXPIRY
+            };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+          } catch (e) {
+            console.warn('Failed to cache client_secret:', e);
+          }
+        }
+        
+        // Initialize ChatKit with the client_secret
+        window.chatkit.setOptions({
+          api: {
+            async getClientSecret() {
+              // If we have a cached secret, return it
+              if (clientSecret) {
+                return clientSecret;
+              }
+              
+              // Otherwise, fetch a new one
+              const response = await fetch('/session', {
+                method: 'GET',
+                credentials: 'same-origin'
+              });
+              
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || \`Failed to fetch session: \${response.status}\`);
+              }
+              
+              const data = await response.json();
+              const newSecret = data.client_secret;
+              
+              if (!newSecret) {
+                throw new Error('No client_secret received from session endpoint');
+              }
+              
+              // Cache the new secret
+              try {
+                const cacheData = {
+                  client_secret: newSecret,
+                  expiresAt: Date.now() + CACHE_EXPIRY
+                };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+              } catch (e) {
+                console.warn('Failed to cache client_secret:', e);
+              }
+              
+              return newSecret;
+            }
+          }
         });
         
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || \`Failed to fetch session: \${response.status}\`);
-        }
+        // Hide loading, show ChatKit UI
+        loadingEl.classList.add('hidden');
+        containerEl.classList.add('visible');
         
-        const data = await response.json();
-        const clientSecret = data.client_secret;
-        
-        if (!clientSecret) {
-          throw new Error('No client_secret received from session endpoint');
-        }
-        
-        // Hide loading, show container
-        loadingEl.style.display = 'none';
-        containerEl.style.display = 'flex';
-        
-        // TODO: Initialize ChatKit UI here when ChatKit SDK is available
-        // For now, show a test page that confirms session was created
-        containerEl.innerHTML = \`
-          <div style="padding: 20px; text-align: center;">
-            <h2>Session OK</h2>
-            <p style="color: #666; font-size: 14px;">
-              ChatKit session created successfully.
-            </p>
-            <p style="color: #999; font-size: 12px; margin-top: 20px;">
-              Client secret received (not displayed for security).
-            </p>
-            <p style="color: #999; font-size: 11px; margin-top: 10px;">
-              ChatKit UI integration pending.
-            </p>
-          </div>
-        \`;
-        
-        // Log to console for debugging (but NOT the secret)
-        console.log('ChatKit session created successfully');
-        console.log('Client secret length:', clientSecret ? clientSecret.length : 0);
+        console.log('ChatKit initialized successfully');
         
       } catch (error) {
-        loadingEl.style.display = 'none';
-        errorEl.style.display = 'block';
-        errorEl.className = 'error';
-        errorEl.textContent = \`Error: \${error.message}\`;
+        showError(\`Error: \${error.message}\`);
         console.error('Failed to initialize ChatKit:', error);
+      }
+      
+      function showError(message) {
+        loadingEl.classList.add('hidden');
+        errorEl.textContent = message;
+        errorEl.classList.add('visible');
       }
     })();
   </script>
