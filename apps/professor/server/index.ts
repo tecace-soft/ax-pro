@@ -618,8 +618,6 @@ app.get('/chat', (req, res) => {
       display: block;
     }
   </style>
-  <!-- Load ChatKit SDK -->
-  <script src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"></script>
 </head>
 <body>
   <div class="container">
@@ -632,19 +630,74 @@ app.get('/chat', (req, res) => {
     </div>
   </div>
   
+  <!-- Load ChatKit SDK dynamically and wait for it to be ready -->
   <script>
     (async function() {
       const loadingEl = document.getElementById('loading');
       const errorEl = document.getElementById('error');
       const containerEl = document.getElementById('chatkit-container');
       
-      // Check if ChatKit is loaded
-      if (typeof window.chatkit === 'undefined') {
-        showError('ChatKit SDK failed to load. Please refresh the page.');
-        return;
+      function showError(message) {
+        loadingEl.classList.add('hidden');
+        errorEl.textContent = message;
+        errorEl.classList.add('visible');
+      }
+      
+      // Dynamically load ChatKit SDK
+      function loadChatKitScript() {
+        return new Promise((resolve, reject) => {
+          // Check if custom element is already defined
+          if (customElements.get('openai-chatkit')) {
+            console.log('ChatKit custom element already registered');
+            resolve();
+            return;
+          }
+          
+          const script = document.createElement('script');
+          script.src = 'https://cdn.platform.openai.com/deployments/chatkit/chatkit.js';
+          script.async = true;
+          
+          script.onload = () => {
+            console.log('ChatKit script loaded, waiting for custom element...');
+            // Wait for openai-chatkit custom element to be registered
+            let attempts = 0;
+            const maxAttempts = 100; // 10 seconds max
+            const checkInterval = setInterval(() => {
+              attempts++;
+              if (customElements.get('openai-chatkit')) {
+                clearInterval(checkInterval);
+                console.log('openai-chatkit custom element is now registered');
+                resolve();
+              } else if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                console.error('openai-chatkit still not registered after', attempts, 'attempts');
+                reject(new Error('ChatKit SDK script loaded but openai-chatkit custom element is not registered after 10 seconds'));
+              }
+            }, 100);
+          };
+          
+          script.onerror = (error) => {
+            console.error('Failed to load ChatKit SDK script:', error);
+            reject(new Error('Failed to load ChatKit SDK script from CDN'));
+          };
+          
+          console.log('Appending ChatKit script to head...');
+          document.head.appendChild(script);
+        });
       }
       
       try {
+        // Load ChatKit SDK
+        console.log('Loading ChatKit SDK...');
+        await loadChatKitScript();
+        console.log('ChatKit SDK loaded, custom element registered:', !!customElements.get('openai-chatkit'));
+        
+        // Get the chatkit element
+        const chatkitEl = document.getElementById('my-chat');
+        if (!chatkitEl) {
+          throw new Error('ChatKit element not found');
+        }
+        
         // Try to get cached client_secret from localStorage
         const CACHE_KEY = 'chatkit_client_secret';
         const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour
@@ -699,7 +752,7 @@ app.get('/chat', (req, res) => {
         }
         
         // Initialize ChatKit with the client_secret
-        window.chatkit.setOptions({
+        chatkitEl.setOptions({
           api: {
             async getClientSecret() {
               // If we have a cached secret, return it
@@ -750,12 +803,6 @@ app.get('/chat', (req, res) => {
       } catch (error) {
         showError(\`Error: \${error.message}\`);
         console.error('Failed to initialize ChatKit:', error);
-      }
-      
-      function showError(message) {
-        loadingEl.classList.add('hidden');
-        errorEl.textContent = message;
-        errorEl.classList.add('visible');
       }
     })();
   </script>
