@@ -1,3 +1,8 @@
+// Note: To load .env file locally, install dotenv and uncomment the line below:
+// import 'dotenv/config';
+// For production (Render), environment variables are set directly in the dashboard
+// For local testing without dotenv, export variables: export OPENAI_API_KEY=... export WORKFLOW_ID=...
+
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -67,7 +72,7 @@ const demoUsers = [
 const sessions_store: Map<string, string> = new Map(); // sessionId -> userId
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || process.env.SERVER_PORT || 3001;
 
 // Resolve paths for serving the frontend build in production
 const __filename = fileURLToPath(import.meta.url);
@@ -487,11 +492,340 @@ app.post('/api/messages/:id/feedback', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// ChatKit embed endpoints
+// GET /session - Creates a ChatKit session and returns client_secret
+app.get('/session', async (req, res) => {
+  // Set cache prevention headers
+  res.setHeader('Cache-Control', 'no-store');
+  
+  // Get groupId from query string
+  const groupId = req.query.groupId as string | undefined;
+  console.log('ChatKit /session groupId:', groupId || 'not provided');
+  
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const WORKFLOW_ID = process.env.WORKFLOW_ID;
+  
+  // Validate required environment variables
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+  }
+  
+  if (!WORKFLOW_ID) {
+    return res.status(500).json({ error: 'WORKFLOW_ID environment variable is not set' });
+  }
+  
+  try {
+    // Call OpenAI ChatKit session create endpoint
+    const response = await fetch('https://api.openai.com/v1/chatkit/sessions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'chatkit_beta=v1',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        workflow: { id: WORKFLOW_ID },
+        user: `user_${Date.now()}`
+      })
+    });
+    
+    const data = await response.json();
+    
+    // If OpenAI returns non-2xx, forward the status and error
+    if (!response.ok) {
+      return res.status(response.status).json({ 
+        error: data.error?.message || data.error || 'Failed to create ChatKit session',
+        details: data 
+      });
+    }
+    
+    // Return client_secret
+    res.json({ client_secret: data.client_secret });
+  } catch (error: any) {
+    console.error('Error creating ChatKit session:', error);
+    res.status(500).json({ 
+      error: 'Internal server error while creating ChatKit session',
+      message: error.message 
+    });
+  }
 });
 
-// Serve static frontend in production
+// GET /chat - Returns HTML page that initializes ChatKit UI
+app.get('/chat', (req, res) => {
+  // Set headers to allow iframe embedding
+  // Note: For cross-site iframe support, we avoid X-Frame-Options: DENY
+  // CSP frame-ancestors can be configured later for allowlist
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  
+  res.send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatKit Embed</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      overflow: hidden;
+    }
+    .container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #666;
+      background: #fff;
+    }
+    .loading.hidden {
+      display: none;
+    }
+    .error {
+      padding: 20px;
+      background: #fee;
+      color: #c00;
+      border: 1px solid #fcc;
+      margin: 20px;
+      border-radius: 4px;
+      display: none;
+    }
+    .error.visible {
+      display: block;
+    }
+    #chatkit-container {
+      width: 100%;
+      height: 100vh;
+      flex: 1;
+      display: none;
+    }
+    #chatkit-container.visible {
+      display: block;
+    }
+    openai-chatkit {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loading" class="loading">
+      <p>Loading ChatKit...</p>
+    </div>
+    <div id="error" class="error"></div>
+    <div id="chatkit-container">
+      <openai-chatkit id="my-chat"></openai-chatkit>
+    </div>
+  </div>
+  
+  <!-- Load ChatKit SDK dynamically and wait for it to be ready -->
+  <script>
+    (async function() {
+      const loadingEl = document.getElementById('loading');
+      const errorEl = document.getElementById('error');
+      const containerEl = document.getElementById('chatkit-container');
+      
+      function showError(message) {
+        loadingEl.classList.add('hidden');
+        errorEl.textContent = message;
+        errorEl.classList.add('visible');
+      }
+      
+      // Dynamically load ChatKit SDK
+      function loadChatKitScript() {
+        return new Promise((resolve, reject) => {
+          // Check if custom element is already defined
+          if (customElements.get('openai-chatkit')) {
+            console.log('ChatKit custom element already registered');
+            resolve();
+            return;
+          }
+          
+          const script = document.createElement('script');
+          script.src = 'https://cdn.platform.openai.com/deployments/chatkit/chatkit.js';
+          script.async = true;
+          
+          script.onload = () => {
+            console.log('ChatKit script loaded, waiting for custom element...');
+            // Wait for openai-chatkit custom element to be registered
+            let attempts = 0;
+            const maxAttempts = 100; // 10 seconds max
+            const checkInterval = setInterval(() => {
+              attempts++;
+              if (customElements.get('openai-chatkit')) {
+                clearInterval(checkInterval);
+                console.log('openai-chatkit custom element is now registered');
+                resolve();
+              } else if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                console.error('openai-chatkit still not registered after', attempts, 'attempts');
+                reject(new Error('ChatKit SDK script loaded but openai-chatkit custom element is not registered after 10 seconds'));
+              }
+            }, 100);
+          };
+          
+          script.onerror = (error) => {
+            console.error('Failed to load ChatKit SDK script:', error);
+            reject(new Error('Failed to load ChatKit SDK script from CDN'));
+          };
+          
+          console.log('Appending ChatKit script to head...');
+          document.head.appendChild(script);
+        });
+      }
+      
+      try {
+        // Load ChatKit SDK
+        console.log('Loading ChatKit SDK...');
+        await loadChatKitScript();
+        console.log('ChatKit SDK loaded, custom element registered:', !!customElements.get('openai-chatkit'));
+        
+        // Get the chatkit element
+        const chatkitEl = document.getElementById('my-chat');
+        if (!chatkitEl) {
+          throw new Error('ChatKit element not found');
+        }
+        
+        // Try to get cached client_secret from localStorage
+        const CACHE_KEY = 'chatkit_client_secret';
+        const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour
+        let clientSecret = null;
+        let cachedData = null;
+        
+        try {
+          const cached = localStorage.getItem(CACHE_KEY);
+          if (cached) {
+            cachedData = JSON.parse(cached);
+            const now = Date.now();
+            // Use cached secret if it's not expired
+            if (cachedData && cachedData.expiresAt > now && cachedData.client_secret) {
+              clientSecret = cachedData.client_secret;
+              console.log('Using cached client_secret');
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to read from localStorage:', e);
+        }
+        
+        // If no valid cache, fetch new session
+        if (!clientSecret) {
+          // Get groupId from URL query string
+          const params = new URLSearchParams(window.location.search);
+          const groupId = params.get('groupId') || 'default';
+          const sessionUrl = \`/session?groupId=\${encodeURIComponent(groupId)}\`;
+          
+          console.log('Fetching new session from /session with groupId:', groupId);
+          const response = await fetch(sessionUrl, {
+            method: 'GET',
+            credentials: 'same-origin'
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || \`Failed to fetch session: \${response.status}\`);
+          }
+          
+          const data = await response.json();
+          clientSecret = data.client_secret;
+          
+          if (!clientSecret) {
+            throw new Error('No client_secret received from session endpoint');
+          }
+          
+          // Cache the client_secret
+          try {
+            const cacheData = {
+              client_secret: clientSecret,
+              expiresAt: Date.now() + CACHE_EXPIRY
+            };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+          } catch (e) {
+            console.warn('Failed to cache client_secret:', e);
+          }
+        }
+        
+        // Initialize ChatKit with the client_secret
+        chatkitEl.setOptions({
+          api: {
+            async getClientSecret() {
+              // If we have a cached secret, return it
+              if (clientSecret) {
+                return clientSecret;
+              }
+              
+              // Otherwise, fetch a new one
+              // Get groupId from URL query string
+              const params = new URLSearchParams(window.location.search);
+              const groupId = params.get('groupId') || 'default';
+              const sessionUrl = \`/session?groupId=\${encodeURIComponent(groupId)}\`;
+              
+              const response = await fetch(sessionUrl, {
+                method: 'GET',
+                credentials: 'same-origin'
+              });
+              
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || \`Failed to fetch session: \${response.status}\`);
+              }
+              
+              const data = await response.json();
+              const newSecret = data.client_secret;
+              
+              if (!newSecret) {
+                throw new Error('No client_secret received from session endpoint');
+              }
+              
+              // Cache the new secret
+              try {
+                const cacheData = {
+                  client_secret: newSecret,
+                  expiresAt: Date.now() + CACHE_EXPIRY
+                };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+              } catch (e) {
+                console.warn('Failed to cache client_secret:', e);
+              }
+              
+              return newSecret;
+            }
+          }
+        });
+        
+        // Hide loading, show ChatKit UI
+        loadingEl.classList.add('hidden');
+        containerEl.classList.add('visible');
+        
+        console.log('ChatKit initialized successfully');
+        
+      } catch (error) {
+        showError(\`Error: \${error.message}\`);
+        console.error('Failed to initialize ChatKit:', error);
+      }
+    })();
+  </script>
+</body>
+</html>
+  `);
+});
+
+// Serve static frontend in production (must be after specific routes like /chat and /session)
 try {
   app.use(express.static(distDir));
   // SPA fallback to index.html
@@ -499,3 +833,7 @@ try {
     res.sendFile(path.join(distDir, 'index.html'));
   });
 } catch {}
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
