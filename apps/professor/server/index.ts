@@ -587,6 +587,21 @@ app.get('/chatkit', (req, res) => {
       const errorEl = document.getElementById('error');
       const containerEl = document.getElementById('chatkit-container');
       
+      // Parse query parameters once for group-scoped behavior
+      const initialParams = new URLSearchParams(window.location.search);
+      let initialGroupId = initialParams.get('groupId') || 'default';
+      if (!initialGroupId || initialGroupId.length > 256) {
+        initialGroupId = 'default';
+      }
+      const initialForceNew =
+        initialParams.get('forceNew') === '1' ||
+        initialParams.get('forceNew') === 'true';
+      
+      console.log('ChatKit embed params (initial):', {
+        groupId: initialGroupId,
+        forceNew: initialForceNew
+      });
+      
       function showError(message) {
         loadingEl.classList.add('hidden');
         errorEl.textContent = message;
@@ -648,8 +663,9 @@ app.get('/chatkit', (req, res) => {
           throw new Error('ChatKit element not found');
         }
         
-        // Try to get cached client_secret from localStorage
-        const CACHE_KEY = 'chatkit_client_secret';
+        // Try to get cached client_secret from localStorage (scoped per groupId)
+        const CACHE_PREFIX = 'chatkit_client_secret:';
+        const CACHE_KEY = `${CACHE_PREFIX}${initialGroupId}`;
         const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour
         let clientSecret = null;
         let cachedData = null;
@@ -773,13 +789,32 @@ app.get('/chatkit', (req, res) => {
 
 // GET /session - Creates a ChatKit session and returns client_secret
 app.get('/session', async (req, res) => {
-  // Set cache prevention headers
-  res.setHeader('Cache-Control', 'no-store');
+  // Set cache prevention headers (explicitly non-cacheable)
+  res.setHeader(
+    'Cache-Control',
+    'no-store, no-cache, must-revalidate, proxy-revalidate'
+  );
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
   
   // Get groupId from query string (for future multi-bot routing)
   const rawGroupId = typeof req.query.groupId === 'string' ? req.query.groupId : undefined;
   const groupId = rawGroupId && rawGroupId.length <= 256 ? rawGroupId : 'default';
-  console.log('ChatKit /session groupId:', groupId, '| raw:', rawGroupId || 'not provided');
+  const rawForceNew =
+    typeof req.query.forceNew === 'string' ? req.query.forceNew : undefined;
+  const forceNew =
+    rawForceNew === '1' || rawForceNew === 'true' ? true : false;
+  console.log(
+    'ChatKit /session groupId:',
+    groupId,
+    '| rawGroupId:',
+    rawGroupId || 'not provided',
+    '| forceNew:',
+    forceNew,
+    '| rawForceNew:',
+    rawForceNew || 'not provided'
+  );
   
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   const WORKFLOW_ID = process.env.WORKFLOW_ID;
@@ -818,8 +853,8 @@ app.get('/session', async (req, res) => {
       });
     }
     
-    // Return client_secret
-    res.json({ client_secret: data.client_secret });
+    // Return client_secret (also echo groupId for debugging)
+    res.json({ client_secret: data.client_secret, groupId });
   } catch (error: any) {
     console.error('Error creating ChatKit session:', error);
     res.status(500).json({ 
