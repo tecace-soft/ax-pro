@@ -455,26 +455,52 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                   ),
                   
                   // Links
-                  a: ({ href, children }) => (
-                    <a 
-                      href={href} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      style={{
-                        color: isUser ? '#90caf9' : '#3b82f6',
-                        textDecoration: 'underline',
-                        textUnderlineOffset: '2px'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.opacity = '0.8';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.opacity = '1';
-                      }}
-                    >
-                      {children}
-                    </a>
-                  ),
+                  a: ({ href, children }) => {
+                    if (!href) {
+                      return <>{children}</>;
+                    }
+
+                    // Flatten children to plain text to detect trailing particles/punctuation
+                    const rawText = React.Children.toArray(children)
+                      .map((child: any) =>
+                        typeof child === 'string'
+                          ? child
+                          : (child?.props?.children ?? '')
+                      )
+                      .join('');
+
+                    // Split into [urlPart][suffix], where suffix is anything that's clearly not part of URL
+                    const match = rawText.match(/^(.+?)([^A-Za-z0-9/_#?&=%.:-]+)$/);
+                    const urlText = match ? match[1] : rawText;
+                    const suffix = match ? match[2] : '';
+
+                    // Clean href similarly so trailing )나 조사가 링크에 안 묶이도록
+                    const safeHref = href.replace(/[^A-Za-z0-9/_#?&=%.:-]+$/g, '');
+
+                    return (
+                      <>
+                        <a
+                          href={safeHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: isUser ? '#90caf9' : '#3b82f6',
+                            textDecoration: 'underline',
+                            textUnderlineOffset: '2px'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.opacity = '0.8';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.opacity = '1';
+                          }}
+                        >
+                          {urlText}
+                        </a>
+                        {suffix && <span>{suffix}</span>}
+                      </>
+                    );
+                  },
                   
                   // Images
                   img: ({ src, alt }) => (
