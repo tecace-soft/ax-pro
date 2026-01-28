@@ -265,9 +265,14 @@ Returns an HTML page that:
 - Error handling with user-friendly messages
 - Loading states during session creation
 
-**Test URL:**
-- Local: `http://localhost:3001/chatkit`
-- Production: `https://<your-render-domain>/chatkit`
+**Test URLs:**
+- Local basic: `http://localhost:3001/chatkit?groupId=hr-bot-1`
+- Local force new session: `http://localhost:3001/chatkit?groupId=hr-bot-1&forceNew=1`
+- Production basic: `https://<your-render-domain>/chatkit?groupId=hr-bot-1`
+- Production force new session: `https://<your-render-domain>/chatkit?groupId=hr-bot-1&forceNew=1`
+
+> Note: `client_secret` values are cached per group using the key pattern  
+> `chatkit_client_secret:<groupId>`.
 
 ### Verification Steps
 
