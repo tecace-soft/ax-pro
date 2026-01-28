@@ -550,8 +550,8 @@ app.get('/session', async (req, res) => {
   }
 });
 
-// GET /chat - Returns HTML page that initializes ChatKit UI
-app.get('/chat', (req, res) => {
+// GET /chatkit - Returns HTML page that initializes ChatKit UI
+app.get('/chatkit', (req, res) => {
   // Set headers to allow iframe embedding
   // Note: For cross-site iframe support, we avoid X-Frame-Options: DENY
   // CSP frame-ancestors can be configured later for allowlist
@@ -825,7 +825,7 @@ app.get('/chat', (req, res) => {
   `);
 });
 
-// Serve static frontend in production (must be after specific routes like /chat and /session)
+// Serve static frontend in production (must be after specific routes like /chatkit and /session)
 try {
   app.use(express.static(distDir));
   // SPA fallback to index.html
