@@ -665,7 +665,7 @@ app.get('/chatkit', (req, res) => {
         
         // Try to get cached client_secret from localStorage (scoped per groupId)
         const CACHE_PREFIX = 'chatkit_client_secret:';
-        const CACHE_KEY = `${CACHE_PREFIX}${initialGroupId}`;
+        const CACHE_KEY = CACHE_PREFIX + initialGroupId;
         const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour
         let clientSecret = null;
         let cachedData = null;
