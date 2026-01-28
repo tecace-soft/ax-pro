@@ -493,63 +493,6 @@ app.post('/api/messages/:id/feedback', requireAuth, (req, res) => {
 });
 
 // ChatKit embed endpoints
-// GET /session - Creates a ChatKit session and returns client_secret
-app.get('/session', async (req, res) => {
-  // Set cache prevention headers
-  res.setHeader('Cache-Control', 'no-store');
-  
-  // Get groupId from query string
-  const groupId = req.query.groupId as string | undefined;
-  console.log('ChatKit /session groupId:', groupId || 'not provided');
-  
-  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-  const WORKFLOW_ID = process.env.WORKFLOW_ID;
-  
-  // Validate required environment variables
-  if (!OPENAI_API_KEY) {
-    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
-  }
-  
-  if (!WORKFLOW_ID) {
-    return res.status(500).json({ error: 'WORKFLOW_ID environment variable is not set' });
-  }
-  
-  try {
-    // Call OpenAI ChatKit session create endpoint
-    const response = await fetch('https://api.openai.com/v1/chatkit/sessions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'chatkit_beta=v1',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        workflow: { id: WORKFLOW_ID },
-        user: `user_${Date.now()}`
-      })
-    });
-    
-    const data = await response.json();
-    
-    // If OpenAI returns non-2xx, forward the status and error
-    if (!response.ok) {
-      return res.status(response.status).json({ 
-        error: data.error?.message || data.error || 'Failed to create ChatKit session',
-        details: data 
-      });
-    }
-    
-    // Return client_secret
-    res.json({ client_secret: data.client_secret });
-  } catch (error: any) {
-    console.error('Error creating ChatKit session:', error);
-    res.status(500).json({ 
-      error: 'Internal server error while creating ChatKit session',
-      message: error.message 
-    });
-  }
-});
-
 // GET /chatkit - Returns HTML page that initializes ChatKit UI
 app.get('/chatkit', (req, res) => {
   // Set headers to allow iframe embedding
@@ -825,11 +768,107 @@ app.get('/chatkit', (req, res) => {
   `);
 });
 
+// GET /session - Creates a ChatKit session and returns client_secret
+app.get('/session', async (req, res) => {
+  // Set cache prevention headers
+  res.setHeader('Cache-Control', 'no-store');
+  
+  // Get groupId from query string (for future multi-bot routing)
+  const rawGroupId = typeof req.query.groupId === 'string' ? req.query.groupId : undefined;
+  const groupId = rawGroupId && rawGroupId.length <= 256 ? rawGroupId : 'default';
+  console.log('ChatKit /session groupId:', groupId, '| raw:', rawGroupId || 'not provided');
+  
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const WORKFLOW_ID = process.env.WORKFLOW_ID;
+  
+  // Validate required environment variables
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+  }
+  
+  if (!WORKFLOW_ID) {
+    return res.status(500).json({ error: 'WORKFLOW_ID environment variable is not set' });
+  }
+  
+  try {
+    // Call OpenAI ChatKit session create endpoint
+    const response = await fetch('https://api.openai.com/v1/chatkit/sessions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'chatkit_beta=v1',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        workflow: { id: WORKFLOW_ID },
+        user: `user_${Date.now()}`
+      })
+    });
+    
+    const data = await response.json();
+    
+    // If OpenAI returns non-2xx, forward the status and error
+    if (!response.ok) {
+      return res.status(response.status).json({ 
+        error: data.error?.message || data.error || 'Failed to create ChatKit session',
+        details: data 
+      });
+    }
+    
+    // Return client_secret
+    res.json({ client_secret: data.client_secret });
+  } catch (error: any) {
+    console.error('Error creating ChatKit session:', error);
+    res.status(500).json({ 
+      error: 'Internal server error while creating ChatKit session',
+      message: error.message 
+    });
+  }
+});
+
+// Diagnostics routes
+app.get('/__ping', (_req, res) => {
+  res.type('text/plain').send('pong');
+});
+
+app.get('/__routes', (_req, res) => {
+  const routes: string[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (app as any)._router.stack.forEach((layer: any) => {
+    if (layer.route && layer.route.path) {
+      const methods = Object.keys(layer.route.methods)
+        .filter((m) => layer.route.methods[m])
+        .map((m) => m.toUpperCase());
+      methods.forEach((m) => routes.push(`${m} ${layer.route.path}`));
+    }
+  });
+  res.json({ routes });
+});
+
 // Serve static frontend in production (must be after specific routes like /chatkit and /session)
 try {
   app.use(express.static(distDir));
-  // SPA fallback to index.html
-  app.get('*', (_, res) => {
+  // SPA fallback to index.html for non-API, HTML-accepting routes
+  app.get('*', (req, res, next) => {
+    const accept = req.headers.accept || '';
+    const pathOnly = req.path || '';
+
+    // Skip fallback for:
+    // - API / diagnostics / ChatKit endpoints
+    if (
+      pathOnly.startsWith('/api') ||
+      pathOnly.startsWith('/__') ||
+      pathOnly.startsWith('/session') ||
+      pathOnly.startsWith('/chatkit')
+    ) {
+      return next();
+    }
+
+    // Only handle HTML navigations
+    if (!accept.includes('text/html')) {
+      return next();
+    }
+
     res.sendFile(path.join(distDir, 'index.html'));
   });
 } catch {}
