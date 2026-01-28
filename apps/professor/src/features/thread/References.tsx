@@ -95,20 +95,42 @@ const References: React.FC<ReferencesProps> = ({ citations }) => {
                         em: ({ children }) => (
                           <em style={{ fontStyle: 'italic' }}>{children}</em>
                         ),
-                        a: ({ href, children }) => (
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              color: 'var(--link-color, #3b82f6)',
-                              textDecoration: 'underline',
-                              textUnderlineOffset: '2px'
-                            }}
-                          >
-                            {children}
-                          </a>
-                        ),
+                        a: ({ href, children }) => {
+                          if (!href) {
+                            return <>{children}</>;
+                          }
+
+                          const rawText = React.Children.toArray(children)
+                            .map((child: any) =>
+                              typeof child === 'string'
+                                ? child
+                                : (child?.props?.children ?? '')
+                            )
+                            .join('');
+
+                          const match = rawText.match(/^(.+?)([^A-Za-z0-9/_#?&=%.:-]+)$/);
+                          const urlText = match ? match[1] : rawText;
+                          const suffix = match ? match[2] : '';
+                          const safeHref = href.replace(/[^A-Za-z0-9/_#?&=%.:-]+$/g, '');
+
+                          return (
+                            <>
+                              <a
+                                href={safeHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: 'var(--link-color, #3b82f6)',
+                                  textDecoration: 'underline',
+                                  textUnderlineOffset: '2px'
+                                }}
+                              >
+                                {urlText}
+                              </a>
+                              {suffix && <span>{suffix}</span>}
+                            </>
+                          );
+                        },
                         ul: ({ children }) => (
                           <ul style={{ margin: '4px 0', paddingLeft: '20px', listStyleType: 'disc' }}>
                             {children}

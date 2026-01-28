@@ -42,7 +42,7 @@ A production-ready React + TypeScript chat application with Teams-like interface
    npm install
    ```
 
-2. Set up environment variables (optional, required for ChatKit embed):
+2. Set up environment variables (optional, required for ChatKit embed `/session` + `/chatkit`):
    ```bash
    # For ChatKit embed endpoints (/session and /chat)
    export OPENAI_API_KEY=your_openai_api_key_here
@@ -229,7 +229,7 @@ The app provides embed-ready endpoints for integrating OpenAI ChatKit into exter
    - `WORKFLOW_ID`: Your ChatKit workflow ID
 5. Save and redeploy
 
-### Endpoints
+### Endpoints (ChatKit test UI)
 
 #### GET /session
 Creates a ChatKit session and returns a `client_secret` for initializing the ChatKit UI.
@@ -254,7 +254,7 @@ Creates a ChatKit session and returns a `client_secret` for initializing the Cha
 - Local: `http://localhost:3001/session`
 - Production: `https://<your-render-domain>/session`
 
-#### GET /chat
+#### GET /chatkit
 Returns an HTML page that:
 1. Fetches `/session` (same origin) to get `client_secret`
 2. Initializes ChatKit UI using the workflow/session `client_secret`
@@ -266,8 +266,8 @@ Returns an HTML page that:
 - Loading states during session creation
 
 **Test URL:**
-- Local: `http://localhost:3001/chat`
-- Production: `https://<your-render-domain>/chat`
+- Local: `http://localhost:3001/chatkit`
+- Production: `https://<your-render-domain>/chatkit`
 
 ### Verification Steps
 
@@ -277,15 +277,15 @@ Returns an HTML page that:
    ```
    Should return: `{"client_secret":"..."}`
 
-2. **Verify /chat page:**
-   - Open `https://<your-render-domain>/chat` in browser
+2. **Verify /chatkit page:**
+   - Open `https://<your-render-domain>/chatkit` in browser
    - Should load and display "Session OK" message
    - Check browser console for "ChatKit session created successfully"
    - No errors should appear
 
-3. **Test iframe embedding:**
+3. **Test iframe embedding (`/chatkit` ChatKit test UI, supports `?groupId=` query param):**
    ```html
-   <iframe src="https://<your-render-domain>/chat" width="100%" height="600"></iframe>
+   <iframe src="https://<your-render-domain>/chatkit?groupId=my-bot-id" width="100%" height="600"></iframe>
    ```
    The page should load successfully within the iframe.
 
