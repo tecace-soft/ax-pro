@@ -1,7 +1,10 @@
-// Note: To load .env file locally, install dotenv and uncomment the line below:
-// import 'dotenv/config';
-// For production (Render), environment variables are set directly in the dashboard
-// For local testing without dotenv, export variables: export OPENAI_API_KEY=... export WORKFLOW_ID=...
+// Load .env for local development.
+// In production (Render), environment variables are provided by the platform.
+import dotenv from 'dotenv';
+if (process.env.NODE_ENV !== 'production') {
+  // In dev, prefer .env over any stale shell export (e.g. OPENAI_API_KEY=test)
+  dotenv.config({ override: true });
+}
 
 import express from 'express';
 import cors from 'cors';
