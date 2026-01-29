@@ -553,6 +553,20 @@ app.get('/chatkit', (req, res) => {
     .error.visible {
       display: block;
     }
+    .error .refresh-btn {
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: #c00;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .loading, .error {
+      z-index: 10;
+      position: relative;
+    }
     #chatkit-container {
       width: 100%;
       height: 100vh;
@@ -572,7 +586,7 @@ app.get('/chatkit', (req, res) => {
 <body>
   <div class="container">
     <div id="loading" class="loading">
-      <p>Loading ChatKit...</p>
+      <p>Loading chat…</p>
     </div>
     <div id="error" class="error"></div>
     <div id="chatkit-container">
@@ -586,199 +600,206 @@ app.get('/chatkit', (req, res) => {
       const loadingEl = document.getElementById('loading');
       const errorEl = document.getElementById('error');
       const containerEl = document.getElementById('chatkit-container');
-      
-      // Parse query parameters once for group-scoped behavior
-      const initialParams = new URLSearchParams(window.location.search);
-      let initialGroupId = initialParams.get('groupId') || 'default';
-      if (!initialGroupId || initialGroupId.length > 256) {
-        initialGroupId = 'default';
+      const RECOVERY_FLAG = 'chatkit_401_recovered';
+      const CACHE_TTL_MS = 55 * 60 * 1000;
+
+      function parseParams() {
+        const params = new URLSearchParams(window.location.search);
+        let groupId = params.get('groupId') || 'default';
+        if (!groupId || groupId.length > 256) groupId = 'default';
+        const forceNew = params.get('forceNew') === '1' || params.get('forceNew') === 'true';
+        return { groupId, forceNew };
       }
-      const initialForceNew =
-        initialParams.get('forceNew') === '1' ||
-        initialParams.get('forceNew') === 'true';
-      
-      console.log('ChatKit embed params (initial):', {
-        groupId: initialGroupId,
-        forceNew: initialForceNew
-      });
-      
-      function showError(message) {
-        loadingEl.classList.add('hidden');
-        errorEl.textContent = message;
+
+      function cacheKey(groupId) {
+        return 'ck_client_secret:' + (groupId || 'default');
+      }
+
+      function loadCachedSecret(groupId) {
+        try {
+          const raw = localStorage.getItem(cacheKey(groupId));
+          if (!raw) return null;
+          const data = JSON.parse(raw);
+          const now = Date.now();
+          if (!data.client_secret) return null;
+          if (data.createdAt && (now - data.createdAt) > CACHE_TTL_MS) return null;
+          if (data.expiresAt && data.expiresAt < now) return null;
+          return data.client_secret;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function saveCachedSecret(groupId, secret) {
+        try {
+          const now = Date.now();
+          localStorage.setItem(cacheKey(groupId), JSON.stringify({
+            client_secret: secret,
+            createdAt: now,
+            expiresAt: now + CACHE_TTL_MS
+          }));
+        } catch (e) {}
+      }
+
+      function clearCachedSecret(groupId) {
+        try {
+          localStorage.removeItem(cacheKey(groupId));
+        } catch (e) {}
+      }
+
+      async function createSession(opts) {
+        const q = new URLSearchParams({ groupId: opts.groupId });
+        if (opts.forceNew) q.set('forceNew', '1');
+        const url = '/session?' + q.toString();
+        const res = await fetch(url, { method: 'GET', credentials: 'same-origin' });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'session ' + res.status);
+        }
+        const data = await res.json();
+        if (!data.client_secret) throw new Error('No client_secret');
+        return data.client_secret;
+      }
+
+      function showLoading() {
+        if (errorEl) errorEl.classList.remove('visible');
+        if (loadingEl) loadingEl.classList.remove('hidden');
+        if (containerEl) containerEl.classList.remove('visible');
+      }
+
+      function showError(msg, withRefresh) {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (containerEl) containerEl.classList.remove('visible');
+        if (!errorEl) return;
+        errorEl.innerHTML = '';
+        errorEl.appendChild(document.createTextNode(msg || 'Session expired. Refresh.'));
+        if (withRefresh) {
+          var btn = document.createElement('button');
+          btn.className = 'refresh-btn';
+          btn.textContent = 'Refresh';
+          btn.onclick = function() { location.reload(); };
+          errorEl.appendChild(btn);
+        }
         errorEl.classList.add('visible');
       }
-      
-      // Dynamically load ChatKit SDK
+
+      function showChat() {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (errorEl) errorEl.classList.remove('visible');
+        if (containerEl) containerEl.classList.add('visible');
+      }
+
+      var bootParams = parseParams();
+      console.log('ChatKit boot params', { groupId: bootParams.groupId, forceNew: bootParams.forceNew });
+
+      if (bootParams.forceNew) {
+        clearCachedSecret(bootParams.groupId);
+        console.log('forceNew=1: cleared cache, creating session');
+      }
+
+      var currentGroupId = bootParams.groupId;
+      var currentSecret = loadCachedSecret(currentGroupId);
+      if (currentSecret) {
+        console.log('using cache for groupId=' + currentGroupId);
+      } else {
+        console.log('creating session for groupId=' + currentGroupId);
+        try {
+          currentSecret = await createSession({ groupId: currentGroupId, forceNew: bootParams.forceNew });
+          saveCachedSecret(currentGroupId, currentSecret);
+        } catch (e) {
+          showError('Error: ' + e.message);
+          console.error('Failed to create session', e);
+          return;
+        }
+      }
+
+      var originalFetch = window.fetch;
+      window.fetch = function() {
+        var p = originalFetch.apply(this, arguments);
+        return p.then(function(res) {
+          if (res.status === 401 && window.__chatkitOn401) {
+            window.__chatkitOn401(res);
+          }
+          return res;
+        });
+      };
+
+      window.__chatkitOn401 = async function(res) {
+        var recovered = sessionStorage.getItem(RECOVERY_FLAG);
+        if (recovered) {
+          console.log('give up after retry');
+          showError('Session expired. Refresh.', true);
+          return;
+        }
+        console.log('on 401 -> recovering (retry 1)');
+        showLoading();
+        clearCachedSecret(currentGroupId);
+        try {
+          var newSecret = await createSession({ groupId: currentGroupId, forceNew: true });
+          saveCachedSecret(currentGroupId, newSecret);
+          sessionStorage.setItem(RECOVERY_FLAG, '1');
+          location.reload();
+        } catch (e) {
+          console.error('Recovery failed', e);
+          showError('Session expired. Refresh.', true);
+        }
+      };
+
       function loadChatKitScript() {
-        return new Promise((resolve, reject) => {
-          // Check if custom element is already defined
+        return new Promise(function(resolve, reject) {
           if (customElements.get('openai-chatkit')) {
-            console.log('ChatKit custom element already registered');
             resolve();
             return;
           }
-          
-          const script = document.createElement('script');
-          script.src = 'https://cdn.platform.openai.com/deployments/chatkit/chatkit.js';
-          script.async = true;
-          
-          script.onload = () => {
-            console.log('ChatKit script loaded, waiting for custom element...');
-            // Wait for openai-chatkit custom element to be registered
-            let attempts = 0;
-            const maxAttempts = 100; // 10 seconds max
-            const checkInterval = setInterval(() => {
-              attempts++;
+          var s = document.createElement('script');
+          s.src = 'https://cdn.platform.openai.com/deployments/chatkit/chatkit.js';
+          s.async = true;
+          s.onload = function() {
+            var n = 0;
+            var iv = setInterval(function() {
+              n++;
               if (customElements.get('openai-chatkit')) {
-                clearInterval(checkInterval);
-                console.log('openai-chatkit custom element is now registered');
+                clearInterval(iv);
                 resolve();
-              } else if (attempts >= maxAttempts) {
-                clearInterval(checkInterval);
-                console.error('openai-chatkit still not registered after', attempts, 'attempts');
-                reject(new Error('ChatKit SDK script loaded but openai-chatkit custom element is not registered after 10 seconds'));
+              } else if (n >= 100) {
+                clearInterval(iv);
+                reject(new Error('openai-chatkit not registered'));
               }
             }, 100);
           };
-          
-          script.onerror = (error) => {
-            console.error('Failed to load ChatKit SDK script:', error);
-            reject(new Error('Failed to load ChatKit SDK script from CDN'));
-          };
-          
-          console.log('Appending ChatKit script to head...');
-          document.head.appendChild(script);
+          s.onerror = function() { reject(new Error('ChatKit script load failed')); };
+          document.head.appendChild(s);
         });
       }
-      
+
       try {
-        // Load ChatKit SDK
-        console.log('Loading ChatKit SDK...');
         await loadChatKitScript();
-        console.log('ChatKit SDK loaded, custom element registered:', !!customElements.get('openai-chatkit'));
-        
-        // Get the chatkit element
-        const chatkitEl = document.getElementById('my-chat');
+        var chatkitEl = document.getElementById('my-chat');
         if (!chatkitEl) {
-          throw new Error('ChatKit element not found');
+          showError('ChatKit element not found');
+          return;
         }
-        
-        // Try to get cached client_secret from localStorage (scoped per groupId)
-        const CACHE_PREFIX = 'chatkit_client_secret:';
-        const CACHE_KEY = CACHE_PREFIX + initialGroupId;
-        const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour
-        let clientSecret = null;
-        let cachedData = null;
-        
-        try {
-          const cached = localStorage.getItem(CACHE_KEY);
-          if (cached) {
-            cachedData = JSON.parse(cached);
-            const now = Date.now();
-            // Use cached secret if it's not expired
-            if (cachedData && cachedData.expiresAt > now && cachedData.client_secret) {
-              clientSecret = cachedData.client_secret;
-              console.log('Using cached client_secret');
-            }
-          }
-        } catch (e) {
-          console.warn('Failed to read from localStorage:', e);
-        }
-        
-        // If no valid cache, fetch new session
-        if (!clientSecret) {
-          // Get groupId from URL query string
-          const params = new URLSearchParams(window.location.search);
-          const groupId = params.get('groupId') || 'default';
-          const sessionUrl = \`/session?groupId=\${encodeURIComponent(groupId)}\`;
-          
-          console.log('Fetching new session from /session with groupId:', groupId);
-          const response = await fetch(sessionUrl, {
-            method: 'GET',
-            credentials: 'same-origin'
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || \`Failed to fetch session: \${response.status}\`);
-          }
-          
-          const data = await response.json();
-          clientSecret = data.client_secret;
-          
-          if (!clientSecret) {
-            throw new Error('No client_secret received from session endpoint');
-          }
-          
-          // Cache the client_secret
-          try {
-            const cacheData = {
-              client_secret: clientSecret,
-              expiresAt: Date.now() + CACHE_EXPIRY
-            };
-            localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-          } catch (e) {
-            console.warn('Failed to cache client_secret:', e);
-          }
-        }
-        
-        // Initialize ChatKit with the client_secret
+
         chatkitEl.setOptions({
           api: {
-            async getClientSecret() {
-              // If we have a cached secret, return it
-              if (clientSecret) {
-                return clientSecret;
-              }
-              
-              // Otherwise, fetch a new one
-              // Get groupId from URL query string
-              const params = new URLSearchParams(window.location.search);
-              const groupId = params.get('groupId') || 'default';
-              const sessionUrl = \`/session?groupId=\${encodeURIComponent(groupId)}\`;
-              
-              const response = await fetch(sessionUrl, {
-                method: 'GET',
-                credentials: 'same-origin'
-              });
-              
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || \`Failed to fetch session: \${response.status}\`);
-              }
-              
-              const data = await response.json();
-              const newSecret = data.client_secret;
-              
-              if (!newSecret) {
-                throw new Error('No client_secret received from session endpoint');
-              }
-              
-              // Cache the new secret
-              try {
-                const cacheData = {
-                  client_secret: newSecret,
-                  expiresAt: Date.now() + CACHE_EXPIRY
-                };
-                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-              } catch (e) {
-                console.warn('Failed to cache client_secret:', e);
-              }
-              
-              return newSecret;
+            getClientSecret: async function() {
+              var params = parseParams();
+              var gid = params.groupId;
+              var secret = loadCachedSecret(gid);
+              if (secret) return secret;
+              secret = await createSession({ groupId: gid, forceNew: false });
+              saveCachedSecret(gid, secret);
+              return secret;
             }
           }
         });
-        
-        // Hide loading, show ChatKit UI
-        loadingEl.classList.add('hidden');
-        containerEl.classList.add('visible');
-        
+
+        sessionStorage.removeItem(RECOVERY_FLAG);
+        showChat();
         console.log('ChatKit initialized successfully');
-        
-      } catch (error) {
-        showError(\`Error: \${error.message}\`);
-        console.error('Failed to initialize ChatKit:', error);
+      } catch (err) {
+        showError('Error: ' + err.message, true);
+        console.error('Failed to initialize ChatKit', err);
       }
     })();
   </script>
