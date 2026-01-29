@@ -798,9 +798,9 @@ app.get('/session', async (req, res) => {
   res.setHeader('Expires', '0');
   res.setHeader('Surrogate-Control', 'no-store');
   
-  // Get groupId from query string (for future multi-bot routing)
+  // Parse groupId from query; use lowercase variable for workflow state_variables (key: groupid)
   const rawGroupId = typeof req.query.groupId === 'string' ? req.query.groupId : undefined;
-  const groupId = rawGroupId && rawGroupId.length <= 256 ? rawGroupId : 'default';
+  const groupid = rawGroupId && rawGroupId.length <= 256 ? rawGroupId : 'default';
   const rawForceNew =
     typeof req.query.forceNew === 'string' ? req.query.forceNew : undefined;
   const forceNew =
@@ -809,7 +809,7 @@ app.get('/session', async (req, res) => {
   console.log('[ChatKit /session]', {
     hostname: req.hostname,
     ip: req.ip,
-    groupId,
+    groupid,
     forceNew
   });
   
@@ -825,13 +825,13 @@ app.get('/session', async (req, res) => {
     return res.status(500).json({ error: 'WORKFLOW_ID environment variable is not set' });
   }
 
-  console.log('[ChatKit /session] creating session', { groupId });
+  console.log('[ChatKit /session] creating session', { groupid });
 
   try {
     const payload = {
       workflow: {
         id: WORKFLOW_ID,
-        state_variables: { groupId }
+        state_variables: { groupid }
       },
       user: `user_${Date.now()}`
     };
@@ -855,8 +855,8 @@ app.get('/session', async (req, res) => {
       });
     }
     
-    // Return client_secret (also echo groupId for debugging)
-    res.json({ client_secret: data.client_secret, groupId });
+    // Return client_secret and groupId (API shape unchanged for frontend)
+    res.json({ client_secret: data.client_secret, groupId: groupid });
   } catch (error: any) {
     console.error('Error creating ChatKit session:', error);
     res.status(500).json({ 
