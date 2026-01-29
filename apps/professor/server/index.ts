@@ -805,16 +805,13 @@ app.get('/session', async (req, res) => {
     typeof req.query.forceNew === 'string' ? req.query.forceNew : undefined;
   const forceNew =
     rawForceNew === '1' || rawForceNew === 'true' ? true : false;
-  console.log(
-    'ChatKit /session groupId:',
+  // Audit log only: no API key, no client_secret value
+  console.log('[ChatKit /session]', {
+    hostname: req.hostname,
+    ip: req.ip,
     groupId,
-    '| rawGroupId:',
-    rawGroupId || 'not provided',
-    '| forceNew:',
-    forceNew,
-    '| rawForceNew:',
-    rawForceNew || 'not provided'
-  );
+    forceNew
+  });
   
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   const WORKFLOW_ID = process.env.WORKFLOW_ID;
@@ -827,9 +824,17 @@ app.get('/session', async (req, res) => {
   if (!WORKFLOW_ID) {
     return res.status(500).json({ error: 'WORKFLOW_ID environment variable is not set' });
   }
-  
+
+  console.log('[ChatKit /session] creating session', { groupId });
+
   try {
-    // Call OpenAI ChatKit session create endpoint
+    const payload = {
+      workflow: {
+        id: WORKFLOW_ID,
+        state_variables: { groupId }
+      },
+      user: `user_${Date.now()}`
+    };
     const response = await fetch('https://api.openai.com/v1/chatkit/sessions', {
       method: 'POST',
       headers: {
@@ -837,10 +842,7 @@ app.get('/session', async (req, res) => {
         'OpenAI-Beta': 'chatkit_beta=v1',
         'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
-      body: JSON.stringify({
-        workflow: { id: WORKFLOW_ID },
-        user: `user_${Date.now()}`
-      })
+      body: JSON.stringify(payload)
     });
     
     const data = await response.json();
