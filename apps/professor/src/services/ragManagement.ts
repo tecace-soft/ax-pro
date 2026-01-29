@@ -526,6 +526,109 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
       const session = getSession();
       const groupId = getGroupIdFromUrl();
       
+      // Check if OpenAI Chat is enabled for this group
+      let openaiFileId: string | null = null;
+      if (groupId) {
+        try {
+          console.log(`🔍 [OpenAI Upload] Checking openai_chat setting for group: ${groupId}`);
+          const { defaultSupabase } = await import('./groupService');
+          const { data: groupData, error: groupError } = await defaultSupabase
+            .from('group')
+            .select('openai_chat')
+            .eq('group_id', groupId)
+            .single();
+          
+          if (groupError) {
+            console.warn(`⚠️ [OpenAI Upload] Error fetching group data:`, groupError);
+          } else {
+            console.log(`📊 [OpenAI Upload] Group openai_chat setting: ${groupData?.openai_chat}`);
+          }
+          
+          if (!groupError && groupData && groupData.openai_chat === true) {
+            console.log('🔧 [OpenAI Upload] OpenAI Chat enabled for group, starting upload to OpenAI...');
+            console.log(`📁 [OpenAI Upload] File details:`, {
+              fileName: file.name,
+              fileSize: file.size,
+              fileType: file.type,
+              originalName: file.name
+            });
+            
+            // Upload to OpenAI API
+            try {
+              const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
+              if (!openaiApiKey) {
+                console.error('❌ [OpenAI Upload] OPENAI_API_KEY not found in environment variables');
+                console.log('💡 [OpenAI Upload] Make sure VITE_OPENAI_API_KEY is set in your .env file');
+              } else {
+                console.log(`🔑 [OpenAI Upload] API key found (length: ${openaiApiKey.length} chars)`);
+                
+                const formData = new FormData();
+                formData.append('purpose', 'assistants');
+                formData.append('file', file); // Use original file for OpenAI
+                
+                console.log(`📤 [OpenAI Upload] Sending request to OpenAI API...`);
+                console.log(`🌐 [OpenAI Upload] Endpoint: https://api.openai.com/v1/files`);
+                console.log(`📋 [OpenAI Upload] Purpose: assistants`);
+                
+                const startTime = Date.now();
+                const openaiResponse = await fetch('https://api.openai.com/v1/files', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${openaiApiKey}`,
+                  },
+                  body: formData,
+                });
+                const duration = Date.now() - startTime;
+                
+                console.log(`⏱️ [OpenAI Upload] Request completed in ${duration}ms`);
+                console.log(`📊 [OpenAI Upload] Response status: ${openaiResponse.status} ${openaiResponse.statusText}`);
+                console.log(`📋 [OpenAI Upload] Response headers:`, Object.fromEntries(openaiResponse.headers.entries()));
+                
+                if (openaiResponse.ok) {
+                  const openaiData = await openaiResponse.json();
+                  console.log(`✅ [OpenAI Upload] Success! Response data:`, {
+                    id: openaiData.id,
+                    object: openaiData.object,
+                    bytes: openaiData.bytes,
+                    createdAt: openaiData.created_at,
+                    filename: openaiData.filename,
+                    purpose: openaiData.purpose
+                  });
+                  openaiFileId = openaiData.id;
+                  console.log(`💾 [OpenAI Upload] OpenAI file ID to be saved: ${openaiFileId}`);
+                } else {
+                  const errorText = await openaiResponse.text();
+                  let errorData;
+                  try {
+                    errorData = JSON.parse(errorText);
+                  } catch {
+                    errorData = { error: errorText || 'Unknown error' };
+                  }
+                  console.error('❌ [OpenAI Upload] Failed to upload to OpenAI');
+                  console.error(`📊 [OpenAI Upload] Status: ${openaiResponse.status} ${openaiResponse.statusText}`);
+                  console.error(`📋 [OpenAI Upload] Error response:`, errorData);
+                  // Don't fail the entire upload if OpenAI upload fails
+                }
+              }
+            } catch (openaiError: any) {
+              console.error('❌ [OpenAI Upload] Exception during OpenAI upload:', openaiError);
+              console.error(`📊 [OpenAI Upload] Error type: ${openaiError?.constructor?.name || 'Unknown'}`);
+              console.error(`📋 [OpenAI Upload] Error message: ${openaiError?.message || 'No message'}`);
+              console.error(`📋 [OpenAI Upload] Error stack:`, openaiError?.stack);
+              // Don't fail the entire upload if OpenAI upload fails
+            }
+          } else {
+            console.log(`ℹ️ [OpenAI Upload] OpenAI Chat disabled or not set for group, skipping OpenAI upload`);
+          }
+        } catch (error) {
+          console.warn('⚠️ [OpenAI Upload] Error checking group openai_chat setting:', error);
+          console.warn(`📊 [OpenAI Upload] Error details:`, error);
+          // Continue with normal upload if check fails
+        }
+      } else {
+        console.log(`ℹ️ [OpenAI Upload] No group_id found, skipping OpenAI upload check`);
+      }
+      
       if (groupId && session?.userId) {
         try {
           const { error: dbError } = await supabase
@@ -537,7 +640,8 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
               file_path: filePath,
               file_size: file.size,
               file_type: contentType, // Use the determined content type (text/markdown for .txt files)
-              is_indexed: false
+              is_indexed: false,
+              openai_file_id: openaiFileId
             }]);
           
           if (dbError) {
@@ -545,6 +649,9 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
             // Don't fail the upload if DB insert fails
           } else {
             console.log('✅ File metadata saved to database with group_id:', groupId);
+            if (openaiFileId) {
+              console.log('✅ OpenAI file ID saved to database:', openaiFileId);
+            }
           }
         } catch (dbErr) {
           console.warn('⚠️ Error saving file metadata:', dbErr);
@@ -618,6 +725,31 @@ export async function fetchFilesFromSupabase(
       };
     }
 
+    // Check group settings to see if OpenAI Chat is enabled and get vector_store_id
+    let openaiChat = false;
+    let vectorStoreId: string | null = null;
+    try {
+      const { defaultSupabase } = await import('./groupService');
+      const { data: groupData, error: groupError } = await defaultSupabase
+        .from('group')
+        .select('openai_chat, vector_store_id')
+        .eq('group_id', groupId)
+        .single();
+
+      if (groupError) {
+        console.warn('⚠️ [fetchFilesFromSupabase] Error fetching group data for OpenAI settings:', groupError);
+      } else if (groupData) {
+        openaiChat = groupData.openai_chat === true;
+        vectorStoreId = groupData.vector_store_id || null;
+        console.log('📊 [fetchFilesFromSupabase] Group settings:', {
+          openai_chat: openaiChat,
+          vector_store_id: vectorStoreId,
+        });
+      }
+    } catch (groupError) {
+      console.warn('⚠️ [fetchFilesFromSupabase] Failed to load group OpenAI settings:', groupError);
+    }
+
     console.log(`🔍 [fetchFilesFromSupabase] Querying files table for group_id: ${groupId}`);
     
     // Query files table filtered by group_id
@@ -689,13 +821,112 @@ export async function fetchFilesFromSupabase(
       syncStatus: file.is_indexed ? 'synced' : 'pending',
     }));
 
-    // Check sync status for each file by comparing with indexed documents
-    // Only check files that aren't already marked as indexed
+    // Only check sync status for files that aren't already marked as indexed
     const filesToCheck = files.filter(f => f.syncStatus !== 'synced');
     
     if (filesToCheck.length > 0) {
-      console.log(`🔍 Checking sync status for ${filesToCheck.length} files (optimized query)...`);
-      try {
+      console.log(`🔍 [fetchFilesFromSupabase] Checking sync status for ${filesToCheck.length} files...`);
+
+      // If OpenAI Chat is enabled for this group, use OpenAI vector store to determine sync status
+      if (openaiChat && vectorStoreId) {
+        console.log('🔧 [fetchFilesFromSupabase] Using OpenAI vector store to determine sync status');
+
+        try {
+          const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
+          if (!openaiApiKey) {
+            console.error('❌ [fetchFilesFromSupabase] VITE_OPENAI_API_KEY not configured; cannot check OpenAI sync status');
+          } else {
+            const listUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
+            console.log('🌐 [fetchFilesFromSupabase] Fetching files from OpenAI vector store:', listUrl);
+
+            const response = await fetch(listUrl, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${openaiApiKey}`,
+              },
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error('❌ [fetchFilesFromSupabase] Failed to list OpenAI vector store files:', {
+                status: response.status,
+                statusText: response.statusText,
+                body: errorText,
+              });
+            } else {
+              const data = await response.json();
+              const filesArray: any[] = Array.isArray(data?.data) ? data.data : [];
+              const indexedIds = new Set<string>(
+                filesArray
+                  .map((f: any) => f?.id)
+                  .filter((id: any) => typeof id === 'string' && id.length > 0)
+              );
+
+              console.log(`📊 [fetchFilesFromSupabase] OpenAI vector store contains ${indexedIds.size} files`);
+
+              // Build a map of file_name -> DB record to access openai_file_id
+              const fileRecordMap = new Map<string, any>();
+              (fileRecords || []).forEach((fr: any) => {
+                if (fr.file_name) {
+                  fileRecordMap.set(fr.file_name, fr);
+                }
+              });
+
+              let syncedCount = 0;
+              let pendingCount = 0;
+
+              for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                // Progress updates
+                if (onProgress && ((i + 1) % 5 === 0 || i === files.length - 1)) {
+                  const percentage = Math.round(((i + 1) / files.length) * 100);
+                  onProgress(
+                    i + 1,
+                    files.length,
+                    `Checking OpenAI sync status... ${percentage}% (${i + 1} / ${files.length} files)`
+                  );
+                }
+
+                const record = fileRecordMap.get(file.name);
+                const openaiFileId = record?.openai_file_id as string | null | undefined;
+
+                if (openaiFileId && indexedIds.has(openaiFileId)) {
+                  file.syncStatus = 'synced';
+                  syncedCount++;
+
+                  // Update database record to mark as indexed
+                  if (record && !record.is_indexed) {
+                    try {
+                      await supabase
+                        .from('files')
+                        .update({
+                          is_indexed: true,
+                          indexed_at: new Date().toISOString(),
+                          updated_at: new Date().toISOString(),
+                        })
+                        .eq('id', record.id);
+                    } catch (updateError) {
+                      console.warn('⚠️ [fetchFilesFromSupabase] Failed to update file record for OpenAI sync:', updateError);
+                    }
+                  }
+                } else if (file.syncStatus !== 'synced') {
+                  // Only mark as pending if not already synced
+                  file.syncStatus = 'pending';
+                  pendingCount++;
+                }
+              }
+
+              console.log(`📊 [fetchFilesFromSupabase] OpenAI sync summary: ${syncedCount} synced, ${pendingCount} pending out of ${files.length} files`);
+            }
+          }
+        } catch (openaiError) {
+          console.warn('⚠️ [fetchFilesFromSupabase] Error while checking OpenAI sync status:', openaiError);
+          // If OpenAI check fails, leave existing syncStatus values (based on is_indexed) as-is
+        }
+      } else {
+        // Existing sync status logic using Supabase documents (n8n / Azure RAG flow)
+        console.log('🔧 [fetchFilesFromSupabase] Using Supabase documents to determine sync status');
+        try {
         // OPTIMIZED: Fetch only unique fileNames from documents (much faster than fetching all metadata)
         // Use a more efficient approach: get distinct fileName values
         let allFileNames = new Set<string>();
@@ -913,6 +1144,7 @@ export async function fetchFilesFromSupabase(
           files[i].syncStatus = 'error';
         }
       }
+      } // end Supabase-documents branch
     }
 
     console.log(`✅ [fetchFilesFromSupabase] Successfully returning ${files.length} files`);
@@ -942,7 +1174,7 @@ export async function fetchFilesFromSupabase(
  */
 export async function deleteFileFromSupabase(fileName: string): Promise<{ success: boolean; message: string }> {
   try {
-    console.log(`Deleting file from Supabase Storage: ${fileName}`);
+    console.log(`🗑️ [Delete] Starting deletion process for file: ${fileName}`);
     const supabase = getSupabaseClient();
     
     // Get group_id from URL to delete the correct database record
@@ -953,20 +1185,185 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
 
     const filePath = `files/${fileName}`;
 
-    // Delete from storage
+    // Check if OpenAI Chat is enabled and get necessary IDs before deletion
+    let openaiFileId: string | null = null;
+    let vectorStoreId: string | undefined;
+    let openaiChatEnabled = false;
+
+    if (groupId) {
+      try {
+        console.log(`🔍 [Delete] Checking openai_chat setting for group: ${groupId}`);
+        const { defaultSupabase } = await import('./groupService');
+        
+        // Fetch file data to get openai_file_id
+        const { data: fileData, error: fileError } = await supabase
+          .from('files')
+          .select('openai_file_id')
+          .eq('file_name', fileName)
+          .eq('group_id', groupId)
+          .maybeSingle();
+
+        if (fileError) {
+          console.warn(`⚠️ [Delete] Error fetching file data:`, fileError);
+        } else if (fileData) {
+          openaiFileId = fileData.openai_file_id || null;
+          console.log(`📁 [Delete] File's openai_file_id: ${openaiFileId || 'null'}`);
+        }
+
+        // Fetch group data to get openai_chat and vector_store_id
+        const { data: groupData, error: groupError } = await defaultSupabase
+          .from('group')
+          .select('openai_chat, vector_store_id')
+          .eq('group_id', groupId)
+          .single();
+
+        if (groupError) {
+          console.warn(`⚠️ [Delete] Error fetching group data:`, groupError);
+        } else if (groupData) {
+          openaiChatEnabled = groupData.openai_chat === true;
+          vectorStoreId = groupData.vector_store_id || undefined;
+          console.log(`📊 [Delete] Group ${groupId} openai_chat setting: ${openaiChatEnabled}`);
+          if (openaiChatEnabled && vectorStoreId) {
+            console.log(`📦 [Delete] Group's vector_store_id: ${vectorStoreId}`);
+          }
+        }
+
+        // If OpenAI Chat is enabled, delete from OpenAI first
+        if (openaiChatEnabled && openaiFileId && vectorStoreId) {
+          console.log('🔧 [Delete] OpenAI Chat enabled, starting OpenAI deletion process...');
+          
+          try {
+            const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
+            if (!openaiApiKey) {
+              console.error('❌ [Delete] OPENAI_API_KEY not found in environment variables');
+              console.log('💡 [Delete] Make sure VITE_OPENAI_API_KEY is set in your .env file');
+            } else {
+              console.log(`🔑 [Delete] API key found (length: ${openaiApiKey.length} chars)`);
+
+              // Step 1: List files in vector store to find the vector store file entry
+              const listFilesUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
+              console.log(`📤 [Delete] Listing files in OpenAI vector store...`);
+              console.log(`🌐 [Delete] Endpoint: ${listFilesUrl}`);
+
+              const listFilesResponse = await fetch(listFilesUrl, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${openaiApiKey}`,
+                },
+              });
+
+              let vectorStoreFileId: string | null = null;
+
+              if (listFilesResponse.ok) {
+                const listFilesData = await listFilesResponse.json();
+                const files = listFilesData?.data || [];
+                console.log(`📋 [Delete] Found ${files.length} file(s) in vector store`);
+
+                // Find the file that matches our openai_file_id
+                // The file object in the vector store has an 'id' field that should match openai_file_id
+                const matchingFile = files.find((f: any) => f.id === openaiFileId || f.file_id === openaiFileId);
+                
+                if (matchingFile) {
+                  vectorStoreFileId = matchingFile.id;
+                  console.log(`✅ [Delete] Found matching file in vector store with ID: ${vectorStoreFileId}`);
+                } else {
+                  console.warn(`⚠️ [Delete] File with openai_file_id ${openaiFileId} not found in vector store`);
+                }
+              } else {
+                const errorData = await listFilesResponse.json().catch(() => ({ error: 'Unknown error' }));
+                console.warn('⚠️ [Delete] Failed to list files from vector store:', errorData);
+              }
+
+              // Step 2: Remove file from OpenAI vector store (if found)
+              if (vectorStoreFileId) {
+                const removeFromVectorStoreUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files/${vectorStoreFileId}`;
+                console.log(`📤 [Delete] Removing file from OpenAI vector store...`);
+                console.log(`🌐 [Delete] Endpoint: ${removeFromVectorStoreUrl}`);
+
+                const removeFromVectorStoreResponse = await fetch(removeFromVectorStoreUrl, {
+                  method: 'DELETE',
+                  headers: {
+                    'Authorization': `Bearer ${openaiApiKey}`,
+                  },
+                });
+
+                console.log(`📊 [Delete] Vector store removal response: ${removeFromVectorStoreResponse.status} ${removeFromVectorStoreResponse.statusText}`);
+
+                if (removeFromVectorStoreResponse.ok) {
+                  const removeData = await removeFromVectorStoreResponse.json().catch(() => ({}));
+                  console.log('✅ [Delete] File removed from OpenAI vector store successfully:', removeData);
+                } else {
+                  const errorData = await removeFromVectorStoreResponse.json().catch(() => ({ error: 'Unknown error' }));
+                  console.warn('⚠️ [Delete] Failed to remove file from OpenAI vector store:', errorData);
+                  // Continue with deletion even if this fails
+                }
+              } else {
+                console.log(`ℹ️ [Delete] File not found in vector store, skipping vector store removal`);
+              }
+
+              // Step 3: Delete file from OpenAI
+              const deleteFileUrl = `https://api.openai.com/v1/files/${openaiFileId}`;
+              console.log(`📤 [Delete] Deleting file from OpenAI...`);
+              console.log(`🌐 [Delete] Endpoint: ${deleteFileUrl}`);
+
+              const deleteFileResponse = await fetch(deleteFileUrl, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${openaiApiKey}`,
+                },
+              });
+
+              console.log(`📊 [Delete] File deletion response: ${deleteFileResponse.status} ${deleteFileResponse.statusText}`);
+
+              if (deleteFileResponse.ok) {
+                const deleteData = await deleteFileResponse.json().catch(() => ({}));
+                console.log('✅ [Delete] File deleted from OpenAI successfully:', deleteData);
+              } else {
+                const errorData = await deleteFileResponse.json().catch(() => ({ error: 'Unknown error' }));
+                console.warn('⚠️ [Delete] Failed to delete file from OpenAI:', errorData);
+                // Continue with Supabase deletion even if this fails
+              }
+            }
+          } catch (openaiError: any) {
+            console.error('❌ [Delete] Exception during OpenAI deletion:', openaiError);
+            console.error(`📊 [Delete] Error type: ${openaiError?.constructor?.name || 'Unknown'}`);
+            console.error(`📋 [Delete] Error message: ${openaiError?.message || 'No message'}`);
+            console.error(`📋 [Delete] Error stack:`, openaiError?.stack);
+            // Continue with Supabase deletion even if OpenAI deletion fails
+          }
+        } else {
+          if (!openaiChatEnabled) {
+            console.log(`ℹ️ [Delete] OpenAI Chat disabled for group, skipping OpenAI deletion`);
+          } else if (!openaiFileId) {
+            console.log(`ℹ️ [Delete] File does not have openai_file_id, skipping OpenAI deletion`);
+          } else if (!vectorStoreId) {
+            console.log(`ℹ️ [Delete] Group does not have vector_store_id, skipping OpenAI deletion`);
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ [Delete] Error checking group openai_chat setting:', error);
+        // Continue with normal Supabase deletion if check fails
+      }
+    } else {
+      console.log(`ℹ️ [Delete] No group_id found, skipping OpenAI deletion check`);
+    }
+
+    // Step 3: Delete from Supabase storage
+    console.log(`🗑️ [Delete] Deleting file from Supabase Storage: ${filePath}`);
     const { error } = await supabase.storage
       .from(SUPABASE_BUCKET)
       .remove([filePath]);
 
     if (error) {
-      console.error('Supabase delete error:', error);
+      console.error('❌ [Delete] Supabase storage delete error:', error);
       return {
         success: false,
         message: error.message,
       };
     }
+    console.log('✅ [Delete] File deleted from Supabase Storage');
 
-    // Delete from database table if group_id is available
+    // Step 4: Delete from database table if group_id is available
     if (groupId) {
       try {
         const { error: dbError } = await supabase
@@ -976,18 +1373,18 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
           .eq('group_id', groupId);
         
         if (dbError) {
-          console.warn('⚠️ Failed to delete file record from database:', dbError);
+          console.warn('⚠️ [Delete] Failed to delete file record from database:', dbError);
           // Don't fail if DB delete fails (file already deleted from storage)
         } else {
-          console.log('✅ File record deleted from database');
+          console.log('✅ [Delete] File record deleted from database');
         }
       } catch (dbErr) {
-        console.warn('⚠️ Error deleting file record:', dbErr);
+        console.warn('⚠️ [Delete] Error deleting file record:', dbErr);
         // Don't fail if DB delete fails
       }
     }
 
-    console.log('File deleted successfully from Supabase');
+    console.log('✅ [Delete] File deleted successfully from all systems');
 
     return {
       success: true,
@@ -995,7 +1392,7 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
     };
 
   } catch (error: any) {
-    console.error('Error deleting file from Supabase:', error);
+    console.error('❌ [Delete] Error deleting file:', error);
     return {
       success: false,
       message: error.message || 'Failed to delete file',
@@ -1562,24 +1959,161 @@ export async function fetchVectorDocuments(limit: number = 50, offset: number = 
 }
 
 /**
- * Send file to n8n for indexing
+ * Send file to n8n for indexing or OpenAI vector store
  */
 export async function indexFileToVector(fileName: string): Promise<{ success: boolean; message: string; workflowId?: string; estimatedTime?: string }> {
   try {
     const supabase = getSupabaseClient();
     
+    // Get group_id from URL first to check openai_chat setting
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const { getSession } = await import('./auth');
+    const groupIdFromSession = getGroupIdFromUrl();
+    const session = getSession();
+    
+    if (!groupIdFromSession) {
+      return {
+        success: false,
+        message: 'No group selected. Please select a group first.',
+      };
+    }
+    
+    // Check if OpenAI Chat is enabled for this group and get vector_store_id
+    let openaiChat: boolean = false;
+    let vectorStoreId: string | null = null;
+    try {
+      const { defaultSupabase } = await import('./groupService');
+      const { data: groupData, error: groupError } = await defaultSupabase
+        .from('group')
+        .select('openai_chat, vector_store_id')
+        .eq('group_id', groupIdFromSession)
+        .single();
+      
+      if (groupError) {
+        console.warn(`⚠️ [Index] Error fetching group data:`, groupError);
+      } else {
+        openaiChat = groupData?.openai_chat === true;
+        vectorStoreId = groupData?.vector_store_id || null;
+        console.log(`📊 [Index] Group ${groupIdFromSession} openai_chat setting: ${openaiChat}`);
+        console.log(`📊 [Index] Group ${groupIdFromSession} vector_store_id: ${vectorStoreId}`);
+      }
+    } catch (error) {
+      console.warn(`⚠️ [Index] Error checking group openai_chat setting:`, error);
+    }
+    
+    // If OpenAI Chat is enabled, use OpenAI vector store API
+    if (openaiChat) {
+      console.log(`🔧 [Index] OpenAI Chat enabled, using OpenAI vector store API`);
+      
+      // Fetch the file's openai_file_id from the files table
+      const { data: fileData, error: fileError } = await supabase
+        .from('files')
+        .select('openai_file_id')
+        .eq('file_name', fileName)
+        .eq('group_id', groupIdFromSession)
+        .single();
+      
+      if (fileError || !fileData) {
+        console.error(`❌ [Index] Error fetching file data:`, fileError);
+        return {
+          success: false,
+          message: `File not found in database or missing OpenAI file ID. Please ensure the file was uploaded with OpenAI Chat enabled.`,
+        };
+      }
+      
+      const openaiFileId = fileData.openai_file_id;
+      if (!openaiFileId) {
+        console.error(`❌ [Index] File ${fileName} does not have an openai_file_id`);
+        return {
+          success: false,
+          message: `File does not have an OpenAI file ID. Please re-upload the file with OpenAI Chat enabled.`,
+        };
+      }
+      
+      console.log(`📁 [Index] Found OpenAI file ID: ${openaiFileId} for file: ${fileName}`);
+      
+      // Make API call to add file to OpenAI vector store
+      const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        console.error('❌ [Index] OPENAI_API_KEY not found in environment variables');
+        return {
+          success: false,
+          message: 'OpenAI API key not configured. Please set VITE_OPENAI_API_KEY in your .env file.',
+        };
+      }
+      
+      // Get vector_store_id from group data
+      if (!vectorStoreId) {
+        console.error(`❌ [Index] Group ${groupIdFromSession} does not have a vector_store_id`);
+        return {
+          success: false,
+          message: `Group does not have a vector store ID. Please ensure the group was created with OpenAI Chat enabled.`,
+        };
+      }
+      
+      const openaiUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
+      
+      console.log(`📤 [Index] Adding file to OpenAI vector store...`);
+      console.log(`🌐 [Index] Endpoint: ${openaiUrl}`);
+      console.log(`📋 [Index] File ID: ${openaiFileId}`);
+      
+      const startTime = Date.now();
+      try {
+        const response = await fetch(openaiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            file_id: openaiFileId
+          }),
+        });
+        
+        const duration = Date.now() - startTime;
+        console.log(`⏱️ [Index] Request completed in ${duration}ms`);
+        console.log(`📊 [Index] Response status: ${response.status} ${response.statusText}`);
+        
+        if (response.ok) {
+          const responseData = await response.json();
+          console.log(`✅ [Index] File added to OpenAI vector store successfully:`, responseData);
+          
+          return {
+            success: true,
+            message: `File added to OpenAI vector store successfully.`,
+          };
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error(`❌ [Index] Failed to add file to OpenAI vector store:`, errorData);
+          return {
+            success: false,
+            message: `Failed to add file to OpenAI vector store: ${errorData.error?.message || 'Unknown error'}`,
+          };
+        }
+      } catch (openaiError: any) {
+        console.error(`❌ [Index] Exception during OpenAI vector store API call:`, openaiError);
+        return {
+          success: false,
+          message: `Error adding file to OpenAI vector store: ${openaiError?.message || 'Unknown error'}`,
+        };
+      }
+    }
+    
+    // If OpenAI Chat is disabled, use the existing n8n webhook flow
+    console.log(`🔧 [Index] OpenAI Chat disabled, using n8n webhook flow`);
+    
     // Get signed URL for the file
     const filePath = `files/${fileName}`;
-    console.log(`🔍 Requesting signed URL for: ${filePath}`);
+    console.log(`🔍 [Index] Requesting signed URL for: ${filePath}`);
     
     const { data: urlData, error: urlError } = await supabase.storage
       .from(SUPABASE_BUCKET)
       .createSignedUrl(filePath, 3600); // 1 hour
       
-    console.log(`🔍 Signed URL response:`, { urlData, urlError });
+    console.log(`🔍 [Index] Signed URL response:`, { urlData, urlError });
 
     if (urlError || !urlData?.signedUrl) {
-      console.error('Error getting file URL:', urlError);
+      console.error('❌ [Index] Error getting file URL:', urlError);
       return {
         success: false,
         message: 'Failed to get file URL',
@@ -1590,9 +2124,9 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     const { data: publicUrlData } = supabase.storage
       .from(SUPABASE_BUCKET)
       .getPublicUrl(filePath);
-    console.log(`🔍 Public URL for comparison:`, publicUrlData);
+    console.log(`🔍 [Index] Public URL for comparison:`, publicUrlData);
 
-    console.log(`📤 Sending file to n8n for indexing: ${fileName}`);
+    console.log(`📤 [Index] Sending file to n8n for indexing: ${fileName}`);
     
     // Ensure we have a full URL for n8n
     let fullFileUrl = urlData.signedUrl;
@@ -1604,38 +2138,31 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       if (urlData.signedUrl.startsWith('/object/')) {
         // Format: /object/sign/bucket/path?token=...
         fullFileUrl = `${supabaseUrl}/storage/v1${urlData.signedUrl}`;
-        console.log(`🔧 Converted relative URL to full URL`);
+        console.log(`🔧 [Index] Converted relative URL to full URL`);
       } else if (urlData.signedUrl.startsWith('/storage/')) {
         // Format: /storage/v1/object/sign/bucket/path?token=...
         fullFileUrl = `${supabaseUrl}${urlData.signedUrl}`;
-        console.log(`🔧 Converted /storage/ URL to full URL`);
+        console.log(`🔧 [Index] Converted /storage/ URL to full URL`);
       } else {
         // Fallback: assume it needs the full path
         fullFileUrl = `${supabaseUrl}/storage/v1/object/sign/${SUPABASE_BUCKET}/${filePath}?token=${urlData.signedUrl.split('token=')[1] || ''}`;
-        console.log(`🔧 Used fallback URL construction`);
+        console.log(`🔧 [Index] Used fallback URL construction`);
       }
     } else {
-      console.log(`✅ URL already full, no conversion needed`);
+      console.log(`✅ [Index] URL already full, no conversion needed`);
     }
     
-    console.log(`🔗 FINAL URL SENT TO N8N: ${fullFileUrl}`);
-    console.log(`⏰ Request time: ${new Date().toISOString()}`);
+    console.log(`🔗 [Index] FINAL URL SENT TO N8N: ${fullFileUrl}`);
+    console.log(`⏰ [Index] Request time: ${new Date().toISOString()}`);
 
     // Send to n8n webhook - UNIVERSAL ENDPOINT (hardcoded)
-    // Get current user for group context
-    const { getSession } = await import('./auth');
-    const session = getSession();
-    
     // Hardcoded universal endpoint for document indexing (same for all users)
     const INDEXING_WEBHOOK_URL = 'https://n8n.srv1153481.hstgr.cloud/webhook/8f9c95ef-1cf4-4310-820b-9d5fe26ac3bc';
     const n8nWebhookUrl = INDEXING_WEBHOOK_URL;
     
-    console.log(`🔧 Webhook mode: UNIVERSAL (hardcoded)`);
-    console.log(`🌐 Using webhook: ${n8nWebhookUrl}`);
-    console.log(`👤 User: ${session?.email || 'Unknown'} (${session?.userId || 'Unknown'})`);
-
-    const { getGroupIdFromUrl } = await import('../utils/navigation');
-    const groupIdFromSession = getGroupIdFromUrl();
+    console.log(`🔧 [Index] Webhook mode: UNIVERSAL (hardcoded)`);
+    console.log(`🌐 [Index] Using webhook: ${n8nWebhookUrl}`);
+    console.log(`👤 [Index] User: ${session?.email || 'Unknown'} (${session?.userId || 'Unknown'})`);
     
     // Fetch group data to get chunking options
     let chunkingOptions: { chunk_size: number; chunk_overlap: number } | undefined;
@@ -1657,15 +2184,15 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
               chunk_size: Number(chunkSize),
               chunk_overlap: Number(chunkOverlap)
             };
-            console.log(`📊 Using chunking options from group:`, chunkingOptions);
+            console.log(`📊 [Index] Using chunking options from group:`, chunkingOptions);
           } else {
-            console.warn(`⚠️ Group ${groupIdFromSession} has missing chunk_size or chunk_overlap values`);
+            console.warn(`⚠️ [Index] Group ${groupIdFromSession} has missing chunk_size or chunk_overlap values`);
           }
         } else {
-          console.warn(`⚠️ Failed to fetch group data for ${groupIdFromSession}:`, groupError);
+          console.warn(`⚠️ [Index] Failed to fetch group data for ${groupIdFromSession}:`, groupError);
         }
       } catch (error) {
-        console.warn(`⚠️ Error fetching group chunking options:`, error);
+        console.warn(`⚠️ [Index] Error fetching group chunking options:`, error);
       }
     }
     
@@ -1708,7 +2235,7 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     };
     
     const detectedFormat = getDoclingFormat(fileName);
-    console.log(`📄 Detected file format: ${detectedFormat} for ${fileName}`);
+    console.log(`📄 [Index] Detected file format: ${detectedFormat} for ${fileName}`);
     
     const payload: any = {
       fileUrl: fullFileUrl,
@@ -1733,7 +2260,7 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
             doclingOptions = typeof groupData.docling_options === 'string'
               ? JSON.parse(groupData.docling_options)
               : groupData.docling_options;
-            console.log(`📊 Loaded Docling options from group:`, doclingOptions);
+            console.log(`📊 [Index] Loaded Docling options from group:`, doclingOptions);
           } catch (e) {
             console.warn(`⚠️ Failed to parse docling_options:`, e);
           }
@@ -1836,7 +2363,7 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       payload.chunking_options = chunkingOptions;
     }
 
-    console.log(`📦 Payload being sent:`, payload);
+    console.log(`📦 [Index] Payload being sent:`, payload);
 
     // Try axios first, fallback to fetch with no-cors if CORS fails
     try {
@@ -1847,9 +2374,9 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
         timeout: 30000,
       });
 
-      console.log('✅ File sent to n8n for indexing:', response.data);
-      console.log('📊 Response status:', response.status);
-      console.log('📋 Response headers:', response.headers);
+      console.log('✅ [Index] File sent to n8n for indexing:', response.data);
+      console.log('📊 [Index] Response status:', response.status);
+      console.log('📋 [Index] Response headers:', response.headers);
 
       // Check if n8n provided a workflow ID or status
       const workflowId = response.data.workflowId || response.data.executionId;
@@ -1862,7 +2389,7 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
         ...(estimatedTime && { estimatedTime })
       };
     } catch (axiosError) {
-      console.warn('⚠️ Axios failed (likely CORS), trying fetch with no-cors:', axiosError);
+      console.warn('⚠️ [Index] Axios failed (likely CORS), trying fetch with no-cors:', axiosError);
       
       // Fallback to fetch with no-cors to bypass CORS
       try {
@@ -1875,26 +2402,26 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
           body: JSON.stringify(payload),
         });
 
-        console.log(`✅ Fetch request sent (no-cors mode) - status: ${fetchResponse.status}`);
-        console.log(`🔍 Response type: ${fetchResponse.type}`);
+        console.log(`✅ [Index] Fetch request sent (no-cors mode) - status: ${fetchResponse.status}`);
+        console.log(`🔍 [Index] Response type: ${fetchResponse.type}`);
         
         // Check if it's a 404 or other error
         if (fetchResponse.status === 0) {
           // In no-cors mode, status 0 usually means success or network error
-          console.log(`✅ Request sent successfully (no-cors mode)`);
+          console.log(`✅ [Index] Request sent successfully (no-cors mode)`);
           return {
             success: true,
             message: `File sent for indexing (CORS bypassed). Processing time: 30-60 seconds`
           };
         } else {
-          console.warn(`⚠️ Unexpected status in no-cors mode: ${fetchResponse.status}`);
+          console.warn(`⚠️ [Index] Unexpected status in no-cors mode: ${fetchResponse.status}`);
           return {
             success: true,
             message: `File sent for indexing (CORS bypassed, status: ${fetchResponse.status}). Processing time: 30-60 seconds`
           };
         }
       } catch (fetchError: any) {
-        console.error('❌ Both axios and fetch failed:', fetchError);
+        console.error('❌ [Index] Both axios and fetch failed:', fetchError);
         
         // Check if it's a 404 error
         if (fetchError?.message?.includes('404') || fetchError?.message?.includes('ERR_ABORTED')) {
@@ -2183,6 +2710,146 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
     
     console.log(`🔍 Checking sync status for: ${fileName} (group: ${groupId})`);
     
+    // First, check group settings to see if OpenAI Chat is enabled and get vector_store_id
+    let openaiChat = false;
+    let vectorStoreId: string | null = null;
+    try {
+      const { defaultSupabase } = await import('./groupService');
+      const { data: groupData, error: groupError } = await defaultSupabase
+        .from('group')
+        .select('openai_chat, vector_store_id')
+        .eq('group_id', groupId)
+        .single();
+
+      if (groupError) {
+        console.warn('⚠️ [checkFileSyncStatus] Error fetching group data for OpenAI settings:', groupError);
+      } else if (groupData) {
+        openaiChat = groupData.openai_chat === true;
+        vectorStoreId = groupData.vector_store_id || null;
+        console.log('📊 [checkFileSyncStatus] Group settings:', {
+          openai_chat: openaiChat,
+          vector_store_id: vectorStoreId,
+        });
+      }
+    } catch (groupError) {
+      console.warn('⚠️ [checkFileSyncStatus] Failed to load group OpenAI settings:', groupError);
+    }
+
+    // When OpenAI Chat is enabled, use OpenAI vector store to determine sync status
+    if (openaiChat && vectorStoreId) {
+      try {
+        const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
+        if (!openaiApiKey) {
+          console.error('❌ [checkFileSyncStatus] VITE_OPENAI_API_KEY not configured; cannot check OpenAI sync status');
+          return {
+            success: false,
+            syncStatus: 'error',
+            message: 'OpenAI API key not configured. Please set VITE_OPENAI_API_KEY in your .env file.',
+          };
+        }
+
+        // Look up this file's OpenAI file ID in the files table
+        const { data: fileRecord, error: fileError } = await supabase
+          .from('files')
+          .select('openai_file_id, is_indexed')
+          .eq('file_name', fileName)
+          .eq('group_id', groupId)
+          .single();
+
+        if (fileError || !fileRecord) {
+          console.warn('⚠️ [checkFileSyncStatus] File record not found for OpenAI sync check:', fileError);
+          return {
+            success: true,
+            syncStatus: 'pending',
+            message: 'File record not found for OpenAI sync check (pending)',
+          };
+        }
+
+        const openaiFileId = fileRecord.openai_file_id as string | null | undefined;
+        if (!openaiFileId) {
+          console.warn('⚠️ [checkFileSyncStatus] File does not have an openai_file_id, treating as pending');
+          return {
+            success: true,
+            syncStatus: 'pending',
+            message: 'File does not have an OpenAI file ID (pending)',
+          };
+        }
+
+        const listUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
+        console.log('🌐 [checkFileSyncStatus] Fetching files from OpenAI vector store:', listUrl);
+
+        const response = await fetch(listUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ [checkFileSyncStatus] Failed to list OpenAI vector store files:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+          return {
+            success: false,
+            syncStatus: 'error',
+            message: `Failed to check OpenAI sync status: ${response.status} ${response.statusText}`,
+          };
+        }
+
+        const data = await response.json();
+        const filesArray: any[] = Array.isArray(data?.data) ? data.data : [];
+        const indexedIds = new Set<string>(
+          filesArray
+            .map((f: any) => f?.id)
+            .filter((id: any) => typeof id === 'string' && id.length > 0)
+        );
+
+        const isIndexed = indexedIds.has(openaiFileId);
+
+        if (isIndexed) {
+          // Optionally update database record to mark as indexed
+          if (!fileRecord.is_indexed) {
+            try {
+              await supabase
+                .from('files')
+                .update({
+                  is_indexed: true,
+                  indexed_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('file_name', fileName)
+                .eq('group_id', groupId);
+            } catch (updateError) {
+              console.warn('⚠️ [checkFileSyncStatus] Failed to update file record for OpenAI sync:', updateError);
+            }
+          }
+
+          return {
+            success: true,
+            syncStatus: 'synced',
+            message: 'File is indexed in OpenAI vector store',
+          };
+        } else {
+          return {
+            success: true,
+            syncStatus: 'pending',
+            message: 'File is not yet indexed in OpenAI vector store (pending)',
+          };
+        }
+      } catch (openaiError: any) {
+        console.error('❌ [checkFileSyncStatus] Error while checking OpenAI sync status:', openaiError);
+        return {
+          success: false,
+          syncStatus: 'error',
+          message: `Error checking OpenAI sync status: ${openaiError.message || 'Unknown error'}`,
+        };
+      }
+    }
+
+    // Default: use Supabase documents table (n8n / Azure RAG flow)
     // Check if file is indexed in documents table, filtered by groupId
     const { data: indexedDocs, error: indexError } = await supabase
       .from('documents')

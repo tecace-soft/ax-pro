@@ -298,8 +298,10 @@ const GroupManagement: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
-            {filteredGroups.map((group) => (
+          // Make the groups section scrollable when there are many groups
+          <div className="max-h-[60vh] overflow-y-auto pr-1">
+            <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+              {filteredGroups.map((group) => (
               viewMode === 'grid' ? (
                 <div
                   key={group.id}
@@ -432,6 +434,7 @@ const GroupManagement: React.FC = () => {
                 </div>
               )
             ))}
+            </div>
           </div>
         )}
       </main>

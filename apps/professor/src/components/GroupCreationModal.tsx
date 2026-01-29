@@ -43,6 +43,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
     question4: '',
   });
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [openaiChat, setOpenaiChat] = useState(false);
   
   // Image editor state
   const [showImageEditor, setShowImageEditor] = useState(false);
@@ -69,6 +70,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
         question4: '',
       });
       setAvatarUrl('');
+      setOpenaiChat(false);
       setShowImageEditor(false);
       setTempImageUrl('');
       setImagePosition({ x: 50, y: 50 });
@@ -169,6 +171,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
         chat_subtitle: chatSubtitleValue,
         suggested_questions: suggestedQuestionsValue,
         avatar_url: avatarUrlValue,
+        openai_chat: openaiChat,
       });
 
       console.log('✅ Group created in database:', createdGroup);
@@ -223,8 +226,8 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           {/* Group Name */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+          <div className="mb-8">
+            <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>
               {t('group.create.groupNameRequired')}
             </label>
             <input
@@ -232,7 +235,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               placeholder={t('group.create.groupNamePlaceholder')}
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full px-4 py-2.5 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1"
               style={{
                 backgroundColor: 'var(--bg)',
                 borderColor: 'var(--border)',
@@ -242,8 +245,8 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
           </div>
 
           {/* User Search */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+          <div className="mb-8">
+            <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>
               {t('group.create.addUsers')}
             </label>
             <div className="relative">
@@ -290,8 +293,8 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
 
           {/* Selected Users */}
           {selectedUsers.length > 0 && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+            <div className="mb-8">
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>
                 {t('group.create.selectedUsers')} ({selectedUsers.length})
               </label>
               <div className="space-y-2">
@@ -324,13 +327,13 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
           )}
 
           {/* UI Customization Section */}
-          <div className="mb-6 border-t pt-6" style={{ borderColor: 'var(--border)' }}>
-            <h3 className="text-md font-semibold mb-4" style={{ color: 'var(--text)' }}>
+          <div className="mb-6 border-t pt-6 mt-6" style={{ borderColor: 'var(--border)' }}>
+            <h3 className="text-lg font-semibold mb-6" style={{ color: 'var(--text)' }}>
               {t('group.create.chatInterfaceSettings')}
             </h3>
             
             {/* Avatar Photo Upload - First */}
-            <div className="mb-4">
+            <div className="mb-6">
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
                 {t('group.create.chatbotAvatar')}
               </label>
@@ -413,8 +416,38 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
               </p>
             </div>
 
+            {/* OpenAI Chat Toggle */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                OpenAI Chat Feature
+              </label>
+              <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)' }}>
+                <div className="flex items-center justify-start gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setOpenaiChat(!openaiChat)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      openaiChat ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        openaiChat ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                  <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+                    {openaiChat ? 'On' : 'Off'}
+                  </span>
+                </div>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                  Turn on/off setting to utilize chat feature created in OpenAI Platform instead of n8n workflow for chatbot functionality
+                </p>
+              </div>
+            </div>
+
             {/* Chat Title */}
-            <div className="mb-4">
+            <div className="mb-6">
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
                 {t('group.create.chatTitle')}
               </label>
@@ -433,7 +466,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
             </div>
 
             {/* Chat Subtitle */}
-            <div className="mb-4">
+            <div className="mb-6">
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
                 {t('group.create.chatSubtitle')}
               </label>
@@ -452,7 +485,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
             </div>
 
             {/* Suggested Questions */}
-            <div className="mb-4">
+            <div className="mb-6">
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
                 {t('group.create.suggestedQuestions')}
               </label>
@@ -462,48 +495,48 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
                   value={suggestedQuestions.question1}
                   onChange={(e) => setSuggestedQuestions({ ...suggestedQuestions, question1: e.target.value })}
                   placeholder={`${t('group.create.question')} 1`}
-                  className="w-full px-3 py-2 border rounded-md text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text)'
-                  }}
+                className="w-full px-4 py-2.5 border rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1"
+                style={{
+                  backgroundColor: 'var(--bg)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text)'
+                }}
                 />
                 <input
                   type="text"
                   value={suggestedQuestions.question2}
                   onChange={(e) => setSuggestedQuestions({ ...suggestedQuestions, question2: e.target.value })}
                   placeholder={`${t('group.create.question')} 2`}
-                  className="w-full px-3 py-2 border rounded-md text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text)'
-                  }}
+                className="w-full px-4 py-2.5 border rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1"
+                style={{
+                  backgroundColor: 'var(--bg)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text)'
+                }}
                 />
                 <input
                   type="text"
                   value={suggestedQuestions.question3}
                   onChange={(e) => setSuggestedQuestions({ ...suggestedQuestions, question3: e.target.value })}
                   placeholder={`${t('group.create.question')} 3`}
-                  className="w-full px-3 py-2 border rounded-md text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text)'
-                  }}
+                className="w-full px-4 py-2.5 border rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1"
+                style={{
+                  backgroundColor: 'var(--bg)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text)'
+                }}
                 />
                 <input
                   type="text"
                   value={suggestedQuestions.question4}
                   onChange={(e) => setSuggestedQuestions({ ...suggestedQuestions, question4: e.target.value })}
                   placeholder={`${t('group.create.question')} 4`}
-                  className="w-full px-3 py-2 border rounded-md text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text)'
-                  }}
+                className="w-full px-4 py-2.5 border rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1"
+                style={{
+                  backgroundColor: 'var(--bg)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text)'
+                }}
                 />
               </div>
             </div>

@@ -313,215 +313,215 @@ export const chatService = {
       }
     } else {
       // Use n8n webhook for chat messages (sessions are handled locally)
-      // ALWAYS use the universal chatbot endpoint - user settings do not apply to chatbot
-      const CHATBOT_WEBHOOK_URL = 'https://n8n.srv1153481.hstgr.cloud/webhook/bdf7e8e7-8592-4518-a4ee-335c235ff94b';
+      // Webhook endpoint is determined by group's openai_chat setting
+      const N8N_WEBHOOK_URL = 'https://n8n.srv1153481.hstgr.cloud/webhook/bdf7e8e7-8592-4518-a4ee-335c235ff94b';
+      const OPENAI_WEBHOOK_URL = 'https://n8n.srv1153481.hstgr.cloud/webhook/758f5df5-94b4-4a97-9f5e-15be9d1cb375';
       
-      console.log('Backend unavailable, using universal chatbot webhook...');
-      console.log('Chatbot webhook URL:', CHATBOT_WEBHOOK_URL);
+      console.log('Backend unavailable, using webhook endpoint...');
       
-      // Always use the universal chatbot webhook (bypasses user settings)
       try {
-        console.log('Using universal chatbot webhook:', CHATBOT_WEBHOOK_URL);
+        const session = getSession();
+        // Get groupId from URL ONLY (allows multiple tabs with different groups)
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('group');
+        
+        // Validate that groupId exists
+        if (!groupId) {
+          console.error('❌ No group_id in session or URL. Session:', session);
+          throw new Error('No group selected. Please select a group first.');
+        }
+        
+        // Fetch group data (top_k and openai_chat)
+        let topK: number | undefined;
+        let openaiChat: boolean = false;
+        let webhookUrl: string = N8N_WEBHOOK_URL; // Default to n8n webhook
+        
         try {
-          const session = getSession();
-          // Get groupId from URL ONLY (allows multiple tabs with different groups)
-          const urlParams = new URLSearchParams(window.location.search);
-          const groupId = urlParams.get('group');
+          const { defaultSupabase } = await import('./groupService');
+          const { data: groupData, error: groupError } = await defaultSupabase
+            .from('group')
+            .select('top_k, openai_chat')
+            .eq('group_id', groupId)
+            .single();
           
-          // Validate that groupId exists
-          if (!groupId) {
-            console.error('❌ No group_id in session or URL. Session:', session);
-            throw new Error('No group selected. Please select a group first.');
-          }
-          
-          // Fetch top_k from group data
-          let topK: number | undefined;
-          try {
-            const { defaultSupabase } = await import('./groupService');
-            const { data: groupData, error: groupError } = await defaultSupabase
-              .from('group')
-              .select('top_k')
-              .eq('group_id', groupId)
-              .single();
-            
-            if (!groupError && groupData && groupData.top_k !== null && groupData.top_k !== undefined) {
+          if (!groupError && groupData) {
+            // Get top_k
+            if (groupData.top_k !== null && groupData.top_k !== undefined) {
               topK = Number(groupData.top_k);
               console.log(`📊 Using top_k from group: ${topK}`);
             } else {
               console.log(`⚠️ Group ${groupId} has no top_k value, using default`);
             }
-          } catch (error) {
-            console.warn(`⚠️ Error fetching group top_k:`, error);
-            // Continue without topK if fetch fails
-          }
-          
-          // Generate unique chatId for this message (for future feedback API)
-          // Use sessionId + timestamp + random to ensure uniqueness across sessions
-          const chatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          const request: N8nRequest = {
-            sessionId,
-            chatId,
-            // Only include userId if user is logged in
-            ...(session?.userId ? { userId: session.userId } : {}),
-            action: 'sendMessage',
-            chatInput: content,
-            groupId: groupId, // Always include groupId (validated above)
-            ...(topK !== undefined ? { topK } : {}), // Include topK only if it exists
-          };
-
-          console.log('=== CHAT SERVICE DEBUG ===');
-          console.log('Session:', session);
-          console.log('GroupId from session:', groupId);
-          console.log('Sending request to n8n:', request);
-          console.log('Request includes groupId:', !!request.groupId);
-          
-          // Retry mechanism for n8n requests with chat ID regeneration
-          let response: N8nResponse;
-          let lastError: Error | null = null;
-          let currentRequest = request;
-          
-          for (let attempt = 1; attempt <= 3; attempt++) {
-            try {
-              console.log(`n8n request attempt ${attempt}/3`);
-              console.log('Using chatId:', currentRequest.chatId);
-              // Always use the universal chatbot webhook URL directly
-              response = await sendToChatbotWebhook(currentRequest, CHATBOT_WEBHOOK_URL);
-              console.log('n8n response received successfully:', response);
-              console.log('Response type:', typeof response);
-              console.log('Response has answer?', !!response?.answer);
-              console.log('Response answer:', response?.answer);
-              break; // Success, exit retry loop
-            } catch (error) {
-              lastError = error as Error;
-              console.warn(`n8n request attempt ${attempt} failed:`, error);
-              
-              // Check if error is related to chat ID duplication or timeout
-              const errorMessage = error instanceof Error ? error.message : String(error);
-              const isChatIdError = errorMessage.includes('chat') && 
-                (errorMessage.includes('duplicate') || 
-                 errorMessage.includes('already exists') || 
-                 errorMessage.includes('not unique') ||
-                 errorMessage.includes('unique constraint'));
-              
-              const isTimeoutError = errorMessage.includes('timeout') || 
-                                     errorMessage.includes('timed out') ||
-                                     errorMessage.includes('aborted');
-              
-              // Generate new chatId for retry if:
-              // 1. Chat ID duplication error detected
-              // 2. Timeout error (server may have received the request but not responded)
-              // This ensures each retry uses a unique chatId
-              if (attempt < 3 && (isChatIdError || isTimeoutError)) {
-                if (isTimeoutError) {
-                  console.log('Timeout detected, generating new chatId for retry (previous request may have been received)...');
-                } else {
-                  console.log('Chat ID duplication detected, generating new chatId...');
-                }
-                // Generate new chatId for retry
-                const newChatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                currentRequest = {
-                  ...currentRequest,
-                  chatId: newChatId
-                };
-                console.log('New chatId generated:', newChatId);
-              }
-              
-              if (attempt < 3) {
-                // Wait before retry (exponential backoff)
-                const delay = Math.pow(2, attempt) * 1000; // 2s, 4s
-                console.log(`Retrying in ${delay}ms...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-              }
-            }
-          }
-          
-          // Check if all attempts failed
-          if (!response! || !response!.answer) {
-            console.error('All n8n attempts failed, last error:', lastError);
             
-            // Provide more specific error messages based on real server testing
-            let errorMessage = 'Chat service unavailable';
-            if (lastError?.message.includes('Empty response')) {
-              errorMessage += ': Empty response from webhook. Please check your workflow configuration.';
-            } else if (lastError?.message.includes('timeout') || lastError?.message.includes('ECONNRESET')) {
-              errorMessage += ': Request timed out or connection reset. The service may be overloaded.';
-            } else if (lastError?.message.includes('Network error')) {
-              errorMessage += ': Network connection failed. Please check your internet connection.';
-            } else if (lastError?.message.includes('socket hang up')) {
-              errorMessage += ': Connection lost. Please try again.';
-            } else if (lastError?.message.includes('chat') && lastError?.message.includes('duplicate')) {
-              errorMessage += ': Chat ID conflict detected and resolved, but service still unavailable.';
-            } else {
-              errorMessage += `: ${lastError?.message || 'Unknown error occurred'}`;
-            }
-            
-            throw new Error(`n8n webhook failed after 3 attempts: ${errorMessage}`);
-          }
-          
-          console.log('==========================');
-          
-          // Log response citation data BEFORE parsing
-          console.log('🔍 n8n response citation data:', {
-            citationTitle: response.citationTitle,
-            citationContent: response.citationContent,
-            titleType: typeof response.citationTitle,
-            contentType: typeof response.citationContent,
-            titleLength: response.citationTitle?.length,
-            contentLength: response.citationContent?.length,
-            hasDelimiter: response.citationContent?.includes('<|||>'),
-            delimiterCount: response.citationContent ? (response.citationContent.match(/<\|{3}>/g) || []).length : 0
-          });
-          
-          // Use chatId as messageId so feedback can link correctly
-          // chatId was sent to n8n and will be in the database
-          if (onStream) {
-            const answerText = response.answer;
-            console.log('Streaming answer text:', answerText);
-            const words = answerText.split(' ');
-            
-            for (let i = 0; i < words.length; i++) {
-              onStream({
-                type: 'delta',
-                text: words[i] + (i < words.length - 1 ? ' ' : '')
-              });
-              
-              // Small delay to simulate streaming
-              await new Promise(resolve => setTimeout(resolve, 50));
-            }
-            
-            const parsedCitations = parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()));
-            console.log('📦 Parsed citations for streaming:', parsedCitations.length, parsedCitations);
-            
-            onStream({
-              type: 'final',
-              messageId: chatId,
-              citations: parsedCitations
-            });
-          }
-
-          const parsedCitations = parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()));
-          console.log('📦 Parsed citations for return:', parsedCitations.length, parsedCitations);
-          
-          return {
-            messageId: chatId,  // Return the chatId that was sent to n8n
-            citations: parsedCitations
-          };
-        } catch (error) {
-          console.error('Failed to send to n8n:', error);
-          console.log('n8n failed, checking simulation mode setting');
-          
-          // Check if simulation mode is enabled
-          if (isSimulationModeEnabled()) {
-            console.log('Simulation mode enabled, falling back to simulation');
-            // Fall back to simulation
+            // Get openai_chat setting and determine webhook URL
+            openaiChat = groupData.openai_chat === true;
+            webhookUrl = openaiChat ? OPENAI_WEBHOOK_URL : N8N_WEBHOOK_URL;
+            console.log(`🔧 Group ${groupId} openai_chat setting: ${openaiChat}`);
+            console.log(`🌐 Using webhook: ${webhookUrl}`);
           } else {
-            console.log('Simulation mode disabled, throwing error');
-            throw new Error(`Chat service unavailable: ${error instanceof Error ? error.message : 'n8n webhook failed'}`);
+            console.log(`⚠️ Group ${groupId} not found or error fetching, using default n8n webhook`);
+          }
+        } catch (error) {
+          console.warn(`⚠️ Error fetching group data:`, error);
+          // Continue with default n8n webhook if fetch fails
+        }
+        
+        console.log('Using webhook endpoint:', webhookUrl);
+        
+        // Generate unique chatId for this message (for future feedback API)
+        // Use sessionId + timestamp + random to ensure uniqueness across sessions
+        const chatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const request: N8nRequest = {
+          sessionId,
+          chatId,
+          // Only include userId if user is logged in
+          ...(session?.userId ? { userId: session.userId } : {}),
+          action: 'sendMessage',
+          chatInput: content,
+          groupId: groupId, // Always include groupId (validated above)
+          ...(topK !== undefined ? { topK } : {}), // Include topK only if it exists
+        };
+
+        console.log('=== CHAT SERVICE DEBUG ===');
+        console.log('Session:', session);
+        console.log('GroupId from session:', groupId);
+        console.log('Sending request to webhook:', request);
+        console.log('Request includes groupId:', !!request.groupId);
+        
+        // Retry mechanism for webhook requests with chat ID regeneration
+        let response: N8nResponse;
+        let lastError: Error | null = null;
+        let currentRequest = request;
+        
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            console.log(`Webhook request attempt ${attempt}/3`);
+            console.log('Using chatId:', currentRequest.chatId);
+            // Use the webhook URL determined by group's openai_chat setting
+            response = await sendToChatbotWebhook(currentRequest, webhookUrl);
+            console.log('Webhook response received successfully:', response);
+            console.log('Response type:', typeof response);
+            console.log('Response has answer?', !!response?.answer);
+            console.log('Response answer:', response?.answer);
+            break; // Success, exit retry loop
+          } catch (error) {
+            lastError = error as Error;
+            console.warn(`Webhook request attempt ${attempt} failed:`, error);
+            
+            // Check if error is related to chat ID duplication or timeout
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const isChatIdError = errorMessage.includes('chat') && 
+              (errorMessage.includes('duplicate') || 
+               errorMessage.includes('already exists') || 
+               errorMessage.includes('not unique') ||
+               errorMessage.includes('unique constraint'));
+            
+            const isTimeoutError = errorMessage.includes('timeout') || 
+                                   errorMessage.includes('timed out') ||
+                                   errorMessage.includes('aborted');
+            
+            // Generate new chatId for retry if:
+            // 1. Chat ID duplication error detected
+            // 2. Timeout error (server may have received the request but not responded)
+            // This ensures each retry uses a unique chatId
+            if (attempt < 3 && (isChatIdError || isTimeoutError)) {
+              if (isTimeoutError) {
+                console.log('Timeout detected, generating new chatId for retry (previous request may have been received)...');
+              } else {
+                console.log('Chat ID duplication detected, generating new chatId...');
+              }
+              // Generate new chatId for retry
+              const newChatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              currentRequest = {
+                ...currentRequest,
+                chatId: newChatId
+              };
+              console.log('New chatId generated:', newChatId);
+            }
+            
+            if (attempt < 3) {
+              // Wait before retry (exponential backoff)
+              const delay = Math.pow(2, attempt) * 1000; // 2s, 4s
+              console.log(`Retrying in ${delay}ms...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
           }
         }
+        
+        // Check if all attempts failed
+        if (!response! || !response!.answer) {
+          console.error('All webhook attempts failed, last error:', lastError);
+          
+          // Provide more specific error messages based on real server testing
+          let errorMessage = 'Chat service unavailable';
+          if (lastError?.message.includes('Empty response')) {
+            errorMessage += ': Empty response from webhook. Please check your workflow configuration.';
+          } else if (lastError?.message.includes('timeout') || lastError?.message.includes('ECONNRESET')) {
+            errorMessage += ': Request timed out or connection reset. The service may be overloaded.';
+          } else if (lastError?.message.includes('Network error')) {
+            errorMessage += ': Network connection failed. Please check your internet connection.';
+          } else if (lastError?.message.includes('socket hang up')) {
+            errorMessage += ': Connection lost. Please try again.';
+          } else if (lastError?.message.includes('chat') && lastError?.message.includes('duplicate')) {
+            errorMessage += ': Chat ID conflict detected and resolved, but service still unavailable.';
+          } else {
+            errorMessage += `: ${lastError?.message || 'Unknown error occurred'}`;
+          }
+          
+          throw new Error(`Webhook failed after 3 attempts: ${errorMessage}`);
+        }
+        
+        console.log('==========================');
+        
+        // Log response citation data BEFORE parsing
+        console.log('🔍 Webhook response citation data:', {
+          citationTitle: response.citationTitle,
+          citationContent: response.citationContent,
+          titleType: typeof response.citationTitle,
+          contentType: typeof response.citationContent,
+          titleLength: response.citationTitle?.length,
+          contentLength: response.citationContent?.length,
+          hasDelimiter: response.citationContent?.includes('<|||>'),
+          delimiterCount: response.citationContent ? (response.citationContent.match(/<\|{3}>/g) || []).length : 0
+        });
+        
+        // Use chatId as messageId so feedback can link correctly
+        // chatId was sent to webhook and will be in the database
+        if (onStream) {
+          const answerText = response.answer;
+          console.log('Streaming answer text:', answerText);
+          const words = answerText.split(' ');
+          
+          for (let i = 0; i < words.length; i++) {
+            onStream({
+              type: 'delta',
+              text: words[i] + (i < words.length - 1 ? ' ' : '')
+            });
+            
+            // Small delay to simulate streaming
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          const parsedCitations = parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()));
+          console.log('📦 Parsed citations for streaming:', parsedCitations.length, parsedCitations);
+          
+          onStream({
+            type: 'final',
+            messageId: chatId,
+            citations: parsedCitations
+          });
+        }
+
+        const parsedCitations = parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()));
+        console.log('📦 Parsed citations for return:', parsedCitations.length, parsedCitations);
+        
+        return {
+          messageId: chatId,  // Return the chatId that was sent to webhook
+          citations: parsedCitations
+        };
       } catch (error) {
-        console.error('Failed to send to chatbot webhook:', error);
-        console.log('n8n failed, checking simulation mode setting');
+        console.error('Failed to send to webhook:', error);
+        console.log('Webhook failed, checking simulation mode setting');
         
         // Check if simulation mode is enabled
         if (isSimulationModeEnabled()) {
@@ -529,7 +529,7 @@ export const chatService = {
           // Fall back to simulation
         } else {
           console.log('Simulation mode disabled, throwing error');
-          throw new Error(`Chat service unavailable: ${error instanceof Error ? error.message : 'n8n webhook failed'}`);
+          throw new Error(`Chat service unavailable: ${error instanceof Error ? error.message : 'webhook failed'}`);
         }
       }
       

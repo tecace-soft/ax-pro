@@ -1003,7 +1003,8 @@ const FileLibrary: React.FC = () => {
   const handleDownloadFile = async (fileName: string) => {
     try {
       // Get Supabase signed URL (for private buckets)
-      const supabase = (await import('../../services/supabase')).getSupabaseClient();
+      const { getSupabaseClient } = await import('../../services/supabaseUserSpecific');
+      const supabase = getSupabaseClient();
       const filePath = `files/${fileName}`;
       
       // Create a signed URL that expires in 1 hour
@@ -1018,14 +1019,34 @@ const FileLibrary: React.FC = () => {
       }
       
       if (data?.signedUrl) {
-        // Open in new tab or download
-        window.open(data.signedUrl, '_blank');
+        // Fetch the file as a blob to force download
+        const response = await fetch(data.signedUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch file: ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        // Create a download link and trigger download
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+        }, 100);
       } else {
         alert('Failed to get download URL');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error downloading file:', error);
-      alert('Failed to download file');
+      alert(`Failed to download file: ${error.message || 'Unknown error'}`);
     }
   };
 

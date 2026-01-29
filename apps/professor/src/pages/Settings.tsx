@@ -5,7 +5,7 @@ import { withGroupParam } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
 import { useUICustomization } from '../hooks/useUICustomization';
-import { getGroupById, updateGroupName, getUsersByIds, updateGroupUsers, searchUsers, updateUserGroups, defaultSupabase, User, Group } from '../services/groupService';
+import { getGroupById, updateGroupName, getUsersByIds, updateGroupUsers, searchUsers, updateUserGroups, deleteGroupAndAllData, defaultSupabase, User, Group } from '../services/groupService';
 import { getSession, getUserRoleForGroup } from '../services/auth';
 import { useSearchParams } from 'react-router-dom';
 
@@ -74,7 +74,7 @@ const Settings: React.FC = () => {
   // Load group data when group tab is active or groupId changes
   useEffect(() => {
     const groupId = searchParams.get('group') || (getSession() as any)?.selectedGroupId;
-    if (groupId && (activeTab === 'group' || !group)) {
+    if (groupId) {
       loadGroupData(groupId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -304,6 +304,54 @@ const Settings: React.FC = () => {
     setShowConfirmModal(true);
   };
 
+  const handleDeleteGroup = () => {
+    if (!group || !group.group_id) return;
+
+    const groupId = group.group_id;
+    const groupName = group.name;
+
+    setConfirmTitle(language === 'ko' ? '그룹 삭제 확인' : 'Confirm Delete Group');
+    setConfirmMessage(
+      language === 'ko'
+        ? `'${groupName}' 그룹과 이 그룹과 연결된 모든 데이터(채팅, 세션, 파일, 피드백, 프롬프트, 문서 등)가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?`
+        : `You are about to permanently delete the group '${groupName}' and ALL associated data (chats, sessions, files, feedback, prompts, documents, etc.). This action cannot be undone. Do you want to continue?`
+    );
+
+    setConfirmAction(() => async () => {
+      try {
+        // Close confirmation modal
+        setShowConfirmModal(false);
+
+        // Perform full group deletion
+        await deleteGroupAndAllData(groupId);
+
+        // Show success notification
+        showSuccessModal(
+          language === 'ko'
+            ? `'${groupName}' 그룹과 모든 관련 데이터가 성공적으로 삭제되었습니다.`
+            : `The group '${groupName}' and all associated data have been deleted successfully.`
+        );
+
+        // Navigate back to group management after showing the notification
+        setTimeout(() => {
+          navigate('/group-management');
+        }, 2500); // Increased delay to ensure user sees the success message
+      } catch (error) {
+        console.error('Failed to delete group and related data:', error);
+        showErrorModal(
+          language === 'ko'
+            ? '그룹 삭제 중 오류가 발생했습니다. 나중에 다시 시도하세요.'
+            : 'An error occurred while deleting the group. Please try again later.'
+        );
+      } finally {
+        setUserToRemove(null);
+        setConfirmAction(null);
+      }
+    });
+
+    setShowConfirmModal(true);
+  };
+
   const handleConfirm = () => {
     if (confirmAction) {
       confirmAction();
@@ -424,7 +472,7 @@ const Settings: React.FC = () => {
                 borderBottomColor: activeTab === 'ui' ? 'var(--primary)' : 'transparent'
               }}
             >
-              {language === 'ko' ? 'UI 커스터마이징' : 'UI Customization'}
+              {language === 'ko' ? '채팅 커스터마이징' : 'Chat Customization'}
             </button>
             <button
               onClick={() => setActiveTab('group')}
@@ -705,6 +753,39 @@ const Settings: React.FC = () => {
                     )}
               </div>
             </div>
+
+            {/* Danger Zone - Delete Group (Admin only) */}
+            {currentUserRole === 'admin' && (
+              <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
+                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--danger, #ef4444)' }}>
+                  {language === 'ko' ? '위험 구역' : 'Danger Zone'}
+                </h2>
+                <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                  {language === 'ko'
+                    ? '이 그룹과 관련된 모든 데이터(채팅, 세션, 파일, 피드백, 프롬프트, 문서 등)를 영구적으로 삭제합니다. 이 작업은 되돌릴 수 없습니다.'
+                    : 'Permanently delete this group and all associated data (chats, sessions, files, feedback, prompts, documents, etc.). This action cannot be undone.'}
+                </p>
+                <button
+                  onClick={handleDeleteGroup}
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-all"
+                  style={{
+                    backgroundColor: '#ef4444',
+                    color: '#ffffff',
+                    border: '1px solid rgba(239, 68, 68, 0.6)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#dc2626';
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#ef4444';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  {language === 'ko' ? '그룹 삭제' : 'Delete Group'}
+                </button>
+              </div>
+            )}
           </>
             )}
           </div>

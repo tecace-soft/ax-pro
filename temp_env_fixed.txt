@@ -1,4 +1,4 @@
-# Environment Variables for AX Pro Professor App
+﻿# Environment Variables for AX Pro Professor App
 # Copy this file to .env and fill in your actual values
 
 # Supabase Configuration
@@ -16,3 +16,5 @@ VITE_N8N_FILE_STATUS_WEBHOOK_ID=your_file_status_webhook_id
 # Development Settings
 VITE_DEV_MODE=true
 VITE_USE_MOCK_DATA=false
+
+VITE_OPENAI_API_KEY=your_openai_api_key_here
