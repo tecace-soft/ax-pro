@@ -648,15 +648,18 @@ app.get('/chatkit', (req, res) => {
       }
 
       async function createSession(opts) {
-        const q = new URLSearchParams({ groupId: opts.groupId });
-        if (opts.forceNew) q.set('forceNew', '1');
-        const url = '/session?' + q.toString();
-        const res = await fetch(url, { method: 'GET', credentials: 'same-origin' });
+        var body = { groupid: opts.groupId || 'default' };
+        var res = await fetch('/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          credentials: 'same-origin'
+        });
         if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
+          var err = await res.json().catch(function() { return {}; });
           throw new Error(err.error || 'session ' + res.status);
         }
-        const data = await res.json();
+        var data = await res.json();
         if (!data.client_secret) throw new Error('No client_secret');
         return data.client_secret;
       }
@@ -808,81 +811,109 @@ app.get('/chatkit', (req, res) => {
   `);
 });
 
-// GET /session - Creates a ChatKit session and returns client_secret
+// Normalize groupid: primitive string, max 256 chars, default 'default'
+function normalizeGroupid(raw: string | undefined): string {
+  if (typeof raw !== 'string' || raw.length === 0 || raw.length > 256) {
+    return 'default';
+  }
+  return raw;
+}
+
+// Shared: create ChatKit session with groupid in workflow.state_variables only (no top-level groupid)
+async function createChatKitSession(res: express.Response, groupid: string): Promise<void> {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const WORKFLOW_ID = process.env.WORKFLOW_ID;
+
+  if (!OPENAI_API_KEY) {
+    res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+    return;
+  }
+  if (!WORKFLOW_ID) {
+    res.status(500).json({ error: 'WORKFLOW_ID environment variable is not set' });
+    return;
+  }
+
+  const payload = {
+    user: `user_${Date.now()}`,
+    workflow: {
+      id: WORKFLOW_ID,
+      state_variables: { groupid }
+    }
+  };
+
+  const apiRes = await fetch('https://api.openai.com/v1/chatkit/sessions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'OpenAI-Beta': 'chatkit_beta=v1',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await apiRes.json();
+
+  if (!apiRes.ok) {
+    res.status(apiRes.status).json({
+      error: data.error?.message || data.error || 'Failed to create ChatKit session',
+      details: data
+    });
+    return;
+  }
+
+  res.json({ client_secret: data.client_secret, groupId: groupid });
+}
+
+// GET /session - Creates a ChatKit session (groupId from query)
 app.get('/session', async (req, res) => {
-  // Set cache prevention headers (explicitly non-cacheable)
-  res.setHeader(
-    'Cache-Control',
-    'no-store, no-cache, must-revalidate, proxy-revalidate'
-  );
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.setHeader('Surrogate-Control', 'no-store');
-  
-  // Parse groupId from query; use lowercase variable for workflow state_variables (key: groupid)
-  const rawGroupId = typeof req.query.groupId === 'string' ? req.query.groupId : undefined;
-  const groupid = rawGroupId && rawGroupId.length <= 256 ? rawGroupId : 'default';
-  const rawForceNew =
-    typeof req.query.forceNew === 'string' ? req.query.forceNew : undefined;
-  const forceNew =
-    rawForceNew === '1' || rawForceNew === 'true' ? true : false;
-  // Audit log only: no API key, no client_secret value
-  console.log('[ChatKit /session]', {
-    hostname: req.hostname,
-    ip: req.ip,
-    groupid,
-    forceNew
-  });
-  
-  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-  const WORKFLOW_ID = process.env.WORKFLOW_ID;
-  
-  // Validate required environment variables
-  if (!OPENAI_API_KEY) {
-    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
-  }
-  
-  if (!WORKFLOW_ID) {
-    return res.status(500).json({ error: 'WORKFLOW_ID environment variable is not set' });
-  }
 
-  console.log('[ChatKit /session] creating session', { groupid });
+  const rawGroupId = typeof req.query.groupId === 'string' ? req.query.groupId : undefined;
+  const groupid = normalizeGroupid(rawGroupId);
+  const rawForceNew = typeof req.query.forceNew === 'string' ? req.query.forceNew : undefined;
+  const forceNew = rawForceNew === '1' || rawForceNew === 'true';
+
+  console.log('[ChatKit /session] GET', { hostname: req.hostname, ip: req.ip, groupid, forceNew });
 
   try {
-    const payload = {
-      workflow: {
-        id: WORKFLOW_ID,
-        state_variables: { groupid }
-      },
-      user: `user_${Date.now()}`
-    };
-    const response = await fetch('https://api.openai.com/v1/chatkit/sessions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'chatkit_beta=v1',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify(payload)
-    });
-    
-    const data = await response.json();
-    
-    // If OpenAI returns non-2xx, forward the status and error
-    if (!response.ok) {
-      return res.status(response.status).json({ 
-        error: data.error?.message || data.error || 'Failed to create ChatKit session',
-        details: data 
-      });
-    }
-    
-    // Return client_secret and groupId (API shape unchanged for frontend)
-    res.json({ client_secret: data.client_secret, groupId: groupid });
-  } catch (error: any) {
-    console.error('Error creating ChatKit session:', error);
-    res.status(500).json({ 
+    await createChatKitSession(res, groupid);
+  } catch (err: any) {
+    console.error('Error creating ChatKit session:', err);
+    res.status(500).json({
       error: 'Internal server error while creating ChatKit session',
-      message: error.message 
+      message: err.message
+    });
+  }
+});
+
+// POST /session - Creates a ChatKit session (groupid from JSON body; for clients that send { groupid })
+app.post('/session', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+
+  let groupid = 'default';
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const raw = body.groupid ?? body.groupId;
+    groupid = normalizeGroupid(typeof raw === 'string' ? raw : undefined);
+  } catch {
+    // keep default
+  }
+
+  console.log('[ChatKit /session] POST', { groupid });
+
+  try {
+    await createChatKitSession(res, groupid);
+  } catch (err: any) {
+    console.error('Error creating ChatKit session:', err);
+    res.status(500).json({
+      error: 'Internal server error while creating ChatKit session',
+      message: err.message
     });
   }
 });
