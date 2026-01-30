@@ -220,6 +220,15 @@ The app provides embed-ready endpoints for integrating OpenAI ChatKit into exter
 - **OPENAI_API_KEY**: Your OpenAI API key (never exposed to client)
 - **WORKFLOW_ID**: Your ChatKit workflow ID
 
+### Optional: ChatKit debug logging
+Set **CHATKIT_DEBUG=1** to log (no secrets):
+- Incoming `/session` request: `groupid`, `forceNew`
+- Outgoing OpenAI `/v1/chatkit/sessions` payload (user, workflow.id, workflow.state_variables.groupid)
+- OpenAI response: status, ok, session_id, expires_after (client_secret is never logged)
+
+- **Local:** add `CHATKIT_DEBUG=1` to `apps/professor/.env`, then restart the server.
+- **Render:** Environment tab → add `CHATKIT_DEBUG` = `1` → Save and redeploy.
+
 ### Setting Environment Variables in Render
 1. Go to your Render dashboard
 2. Select your service

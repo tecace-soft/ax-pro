@@ -841,6 +841,10 @@ async function createChatKitSession(res: express.Response, groupid: string): Pro
     }
   };
 
+  if (process.env.CHATKIT_DEBUG === '1') {
+    console.log('[ChatKit] OpenAI /v1/chatkit/sessions payload =', JSON.stringify(payload, null, 2));
+  }
+
   const apiRes = await fetch('https://api.openai.com/v1/chatkit/sessions', {
     method: 'POST',
     headers: {
@@ -852,6 +856,13 @@ async function createChatKitSession(res: express.Response, groupid: string): Pro
   });
 
   const data = await apiRes.json();
+
+  if (process.env.CHATKIT_DEBUG === '1') {
+    const safe = { status: apiRes.status, ok: apiRes.ok };
+    if (data.id != null) (safe as Record<string, unknown>).session_id = data.id;
+    if (data.expires_after != null) (safe as Record<string, unknown>).expires_after = data.expires_after;
+    console.log('[ChatKit] OpenAI session create response =', JSON.stringify(safe));
+  }
 
   if (!apiRes.ok) {
     res.status(apiRes.status).json({
@@ -876,7 +887,9 @@ app.get('/session', async (req, res) => {
   const rawForceNew = typeof req.query.forceNew === 'string' ? req.query.forceNew : undefined;
   const forceNew = rawForceNew === '1' || rawForceNew === 'true';
 
-  console.log('[ChatKit /session] GET', { hostname: req.hostname, ip: req.ip, groupid, forceNew });
+  if (process.env.CHATKIT_DEBUG === '1') {
+    console.log('[ChatKit /session] GET', { hostname: req.hostname, ip: req.ip, groupid, forceNew });
+  }
 
   try {
     await createChatKitSession(res, groupid);
@@ -897,15 +910,20 @@ app.post('/session', async (req, res) => {
   res.setHeader('Surrogate-Control', 'no-store');
 
   let groupid = 'default';
+  let forceNew = false;
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     const raw = body.groupid ?? body.groupId;
     groupid = normalizeGroupid(typeof raw === 'string' ? raw : undefined);
+    const rawFn = body.forceNew ?? body.force_new;
+    forceNew = rawFn === true || rawFn === '1' || rawFn === 'true';
   } catch {
     // keep default
   }
 
-  console.log('[ChatKit /session] POST', { groupid });
+  if (process.env.CHATKIT_DEBUG === '1') {
+    console.log('[ChatKit /session] POST', { groupid, forceNew });
+  }
 
   try {
     await createChatKitSession(res, groupid);
