@@ -331,16 +331,17 @@ export const chatService = {
           throw new Error('No group selected. Please select a group first.');
         }
         
-        // Fetch group data (top_k and openai_chat)
+        // Fetch group data (top_k, openai_chat, and vector_store_id)
         let topK: number | undefined;
         let openaiChat: boolean = false;
+        let vectorStoreId: string | undefined;
         let webhookUrl: string = N8N_WEBHOOK_URL; // Default to n8n webhook
         
         try {
           const { defaultSupabase } = await import('./groupService');
           const { data: groupData, error: groupError } = await defaultSupabase
             .from('group')
-            .select('top_k, openai_chat')
+            .select('top_k, openai_chat, vector_store_id')
             .eq('group_id', groupId)
             .single();
           
@@ -358,6 +359,16 @@ export const chatService = {
             webhookUrl = openaiChat ? OPENAI_WEBHOOK_URL : N8N_WEBHOOK_URL;
             console.log(`🔧 Group ${groupId} openai_chat setting: ${openaiChat}`);
             console.log(`🌐 Using webhook: ${webhookUrl}`);
+            
+            // Get vector_store_id ONLY when openai_chat is TRUE
+            if (openaiChat) {
+              vectorStoreId = groupData.vector_store_id || undefined;
+              if (vectorStoreId) {
+                console.log(`📦 Group ${groupId} vector_store_id: ${vectorStoreId}`);
+              } else {
+                console.warn(`⚠️ Group ${groupId} has openai_chat enabled but no vector_store_id`);
+              }
+            }
           } else {
             console.log(`⚠️ Group ${groupId} not found or error fetching, using default n8n webhook`);
           }
@@ -380,6 +391,7 @@ export const chatService = {
           chatInput: content,
           groupId: groupId, // Always include groupId (validated above)
           ...(topK !== undefined ? { topK } : {}), // Include topK only if it exists
+          ...(openaiChat && vectorStoreId ? { vectorStoreId } : {}), // Include vectorStoreId only when openai_chat is TRUE and vectorStoreId exists
         };
 
         console.log('=== CHAT SERVICE DEBUG ===');

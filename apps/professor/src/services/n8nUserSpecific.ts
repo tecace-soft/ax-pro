@@ -20,6 +20,7 @@ export interface N8nRequest {
   chatInput: string;
   groupId?: string;
   topK?: number; // Optional - top_k value from group data
+  vectorStoreId?: string; // Optional - vector_store_id from group data (only when openai_chat = TRUE)
 }
 
 export interface N8nResponse {
