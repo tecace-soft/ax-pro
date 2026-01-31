@@ -716,8 +716,73 @@ app.get('/chatkit', (req, res) => {
         }
       }
 
+      var CTX_TAG_PREFIX = '[CTX:groupid=';
+      function prependGroupIdToRequestBody(bodyObj, groupId) {
+        if (!bodyObj || typeof bodyObj !== 'object' || !groupId) return { body: bodyObj, modified: false };
+        var tag = CTX_TAG_PREFIX + groupId + ']' + String.fromCharCode(10);
+        if (typeof bodyObj.content === 'string') {
+          bodyObj.content = tag + bodyObj.content;
+          return { body: bodyObj, modified: true };
+        }
+        if (bodyObj.message && typeof bodyObj.message.content === 'string') {
+          bodyObj.message.content = tag + bodyObj.message.content;
+          return { body: bodyObj, modified: true };
+        }
+        if (Array.isArray(bodyObj.messages) && bodyObj.messages.length > 0) {
+          for (var i = bodyObj.messages.length - 1; i >= 0; i--) {
+            if (bodyObj.messages[i].role === 'user' && typeof bodyObj.messages[i].content === 'string') {
+              bodyObj.messages[i].content = tag + bodyObj.messages[i].content;
+              return { body: bodyObj, modified: true };
+            }
+          }
+        }
+        if (bodyObj.input) {
+          if (typeof bodyObj.input.content === 'string') {
+            bodyObj.input.content = tag + bodyObj.input.content;
+            return { body: bodyObj, modified: true };
+          }
+          if (Array.isArray(bodyObj.input.parts)) {
+            for (var j = 0; j < bodyObj.input.parts.length; j++) {
+              if (bodyObj.input.parts[j].type === 'text' && typeof bodyObj.input.parts[j].text === 'string') {
+                bodyObj.input.parts[j].text = tag + bodyObj.input.parts[j].text;
+                return { body: bodyObj, modified: true };
+              }
+            }
+          }
+        }
+        return { body: bodyObj, modified: false };
+      }
+
       var originalFetch = window.fetch;
-      window.fetch = function() {
+      window.fetch = function(input, init) {
+        var url = typeof input === 'string' ? input : (input && input.url);
+        var method = (init && init.method) || (input && input.method) || 'GET';
+        var body = (init && init.body) || (input && input.body);
+        var isOpenAi = url && (url.indexOf('api.openai.com') !== -1 || url.indexOf('platform.openai.com') !== -1);
+        var skipModify = !url || method !== 'POST' || !body || !isOpenAi || url.indexOf('/v1/chatkit/sessions') !== -1;
+        if (!skipModify && typeof body === 'string') {
+          try {
+            var parsed = JSON.parse(body);
+            var result = prependGroupIdToRequestBody(parsed, currentGroupId);
+            if (result.modified) {
+              console.log('PREPEND_APPLIED', { groupId: currentGroupId });
+              var bodyStr = JSON.stringify(result.body);
+              if (typeof input === 'string') {
+                init = init || {};
+                init.body = bodyStr;
+                return originalFetch(input, init).then(function(res) {
+                  if (res.status === 401 && window.__chatkitOn401) window.__chatkitOn401(res);
+                  return res;
+                });
+              }
+              var req = input instanceof Request ? input : null;
+              return originalFetch(new Request(url, { method: method, headers: req ? req.headers : {}, body: bodyStr })).then(function(res) {
+                if (res.status === 401 && window.__chatkitOn401) window.__chatkitOn401(res);
+                return res;
+              });
+            }
+          } catch (e) {}
+        }
         var p = originalFetch.apply(this, arguments);
         return p.then(function(res) {
           if (res.status === 401 && window.__chatkitOn401) {
@@ -936,6 +1001,33 @@ app.post('/session', async (req, res) => {
   }
 });
 
+// GET /chatkit-embed-preview - Minimal HTML that loads the floating widget script (for Settings preview)
+app.get('/chatkit-embed-preview', (req, res) => {
+  const groupId = typeof req.query.groupId === 'string' && req.query.groupId.length > 0
+    ? req.query.groupId
+    : 'YOUR_GROUP_ID';
+  const forceNew = req.query.forceNew === '1' || req.query.forceNew === 'true' ? '1' : '0';
+  const scriptUrl = 'https://mcp-n8n.johnson-tecace.workers.dev/embed.js?v=3';
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatKit Embed Preview</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; padding: 16px; background: var(--bg, #f5f5f5); color: var(--text, #333); }
+    .hint { font-size: 14px; opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <p class="hint">The floating &quot;Chat with AI&quot; button should appear in the corner. Click it to open ChatKit.</p>
+  <script src="${scriptUrl}" data-group-id="${groupId}" data-force-new="${forceNew}" defer></script>
+</body>
+</html>`);
+});
+
 // Diagnostics routes
 app.get('/__ping', (_req, res) => {
   res.type('text/plain').send('pong');
@@ -971,6 +1063,9 @@ try {
       pathOnly.startsWith('/session') ||
       pathOnly.startsWith('/chatkit')
     ) {
+      return next();
+    }
+    if (pathOnly === '/chatkit-embed-preview') {
       return next();
     }
 

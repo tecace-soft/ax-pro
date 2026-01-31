@@ -283,6 +283,17 @@ Returns an HTML page that:
 > Note: `client_secret` values are cached per group using the key pattern  
 > `chatkit_client_secret:<groupId>`.
 
+**Groupid in user message (CTX tag):**  
+Before each user message is sent to OpenAI, the embed prepends a hidden line `[CTX:groupid=<groupId>]\n` so the LLM (and MCP tools) can use the group context. The tag is not shown in the ChatKit composer UI; only the payload sent to the API is modified.  
+**Agent Builder prompt suggestion:** In your workflow system prompt, add: *"The line starting with [CTX:groupid=...] is system context only. Use it to know which group this user belongs to (e.g. for MCP tool groupId). Do not repeat or include this tag in your reply."*
+
+**Self-review checklist (CTX groupid prepend):**
+- [ ] 유저 UI에는 태그가 보이지 않는가?
+- [ ] ChatKit이 실제로 OpenAI에 보내는 message payload의 첫 줄에 태그가 들어가는가?
+- [ ] 태그 뒤에 유저 입력이 손실되지 않고 이어지는가?
+- [ ] 세션을 새로 열었을 때도 정상 동작하는가?
+- [ ] LLM이 태그를 읽고 MCP tool call에서 groupId를 재구성할 수 있는가?
+
 ### Verification Steps
 
 1. **Verify /session endpoint:**

@@ -14,7 +14,7 @@ const Settings: React.FC = () => {
   useGroupAuth(); // Require auth and group (also syncs URL)
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'ui' | 'group'>('ui');
+  const [activeTab, setActiveTab] = useState<'ui' | 'group' | 'chatkit'>('ui');
   const [searchParams] = useSearchParams();
   const { customization, updateCustomization, updateQuestion } = useUICustomization();
   
@@ -69,6 +69,47 @@ const Settings: React.FC = () => {
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmTitle, setConfirmTitle] = useState('');
   const [userToRemove, setUserToRemove] = useState<User | null>(null);
+
+  // ChatKit embed: group ID for embed code (default from URL/session)
+  const currentGroupIdFromUrl = searchParams.get('group') || (getSession() as any)?.selectedGroupId || '';
+  const [chatkitGroupId, setChatkitGroupId] = useState(currentGroupIdFromUrl);
+  const [chatkitCopied, setChatkitCopied] = useState<'production' | 'debug' | null>(null);
+  const [chatkitPreviewMode, setChatkitPreviewMode] = useState<'production' | 'debug'>('production');
+  useEffect(() => {
+    if (currentGroupIdFromUrl) setChatkitGroupId(currentGroupIdFromUrl);
+  }, [currentGroupIdFromUrl]);
+
+  const CHATKIT_EMBED_SCRIPT_URL = 'https://mcp-n8n.johnson-tecace.workers.dev/embed.js';
+  const chatkitProductionCode = `<script
+  src="${CHATKIT_EMBED_SCRIPT_URL}?v=3"
+  data-group-id="${chatkitGroupId || 'YOUR_GROUP_ID'}"
+  data-force-new="0"
+  defer
+></script>`;
+  const chatkitDebugCode = `<script
+  src="${CHATKIT_EMBED_SCRIPT_URL}?v=debug-3"
+  data-group-id="${chatkitGroupId || 'YOUR_GROUP_ID'}"
+  data-force-new="1"
+  defer
+></script>`;
+
+  // Inject the floating widget script on this page when ChatKit tab is active (Production or Debug)
+  useEffect(() => {
+    if (activeTab !== 'chatkit' || !chatkitGroupId?.trim()) return;
+    const isDebug = chatkitPreviewMode === 'debug';
+    const script = document.createElement('script');
+    script.src = `${CHATKIT_EMBED_SCRIPT_URL}?v=${isDebug ? 'debug-3' : '3'}`;
+    script.setAttribute('data-group-id', chatkitGroupId.trim());
+    script.setAttribute('data-force-new', isDebug ? '1' : '0');
+    script.defer = true;
+    script.dataset.axChatkitPreview = chatkitPreviewMode;
+    document.body.appendChild(script);
+    return () => {
+      script.remove();
+      const roots = document.querySelectorAll('[id*="chatkit"], [id*="embed-widget"], [class*="floating-chat"], [data-ax-embed]');
+      roots.forEach((el) => el.remove());
+    };
+  }, [activeTab, chatkitGroupId, chatkitPreviewMode]);
 
 
   // Load group data when group tab is active or groupId changes
@@ -440,6 +481,20 @@ const Settings: React.FC = () => {
             >
               {language === 'ko' ? '그룹 설정' : 'Group Settings'}
             </button>
+            <button
+              onClick={() => setActiveTab('chatkit')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'chatkit'
+                  ? 'border-gray-800 text-gray-800'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              style={{ 
+                color: activeTab === 'chatkit' ? 'var(--primary)' : 'var(--text-secondary)',
+                borderBottomColor: activeTab === 'chatkit' ? 'var(--primary)' : 'transparent'
+              }}
+            >
+              {language === 'ko' ? 'ChatKit 임베딩' : 'ChatKit Embedding'}
+            </button>
           </nav>
         </div>
         
@@ -710,6 +765,148 @@ const Settings: React.FC = () => {
           </div>
         )}
 
+
+        {/* ChatKit Embedding Tab */}
+        {activeTab === 'chatkit' && (
+          <div className="space-y-6" style={{ width: '100%' }}>
+            <div className="card p-6 rounded-lg" style={{ width: '100%' }}>
+              <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
+                {language === 'ko' ? 'ChatKit 플로팅 위젯 임베딩' : 'ChatKit Floating Widget Embed'}
+              </h2>
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                {language === 'ko'
+                  ? '웹페이지에 "Chat with AI" 플로팅 버튼을 띄웁니다. 클릭 시 AX Pro ChatKit(iframe)이 열리고, 전달한 그룹 ID로 봇이 선택됩니다.'
+                  : 'Adds a floating "Chat with AI" button on any webpage. When clicked, it opens AX Pro ChatKit in an iframe; the passed groupId selects which bot to load.'}
+              </p>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                  {language === 'ko' ? '그룹 ID (봇 선택)' : 'Group ID (bot selection)'}
+                </label>
+                <input
+                  type="text"
+                  value={chatkitGroupId}
+                  onChange={(e) => setChatkitGroupId(e.target.value)}
+                  className="input w-full px-3 py-2 rounded-md font-mono text-sm"
+                  placeholder={language === 'ko' ? '예: cK71K7F1FPCVAKJCMEls' : 'e.g. cK71K7F1FPCVAKJCMEls'}
+                />
+              </div>
+
+              {/* Live preview: choose Production or Debug, one at a time */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                  {language === 'ko' ? '실시간 미리보기' : 'Live preview'}
+                </label>
+                <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+                  {language === 'ko'
+                    ? '아래에서 미리보기할 스크립트를 고르면 이 페이지에 해당 스크립트만 로드됩니다. 플로팅 버튼을 눌러 동작을 확인하세요.'
+                    : 'Choose which script to preview below; only that script is loaded on this page. Click the floating button to try it.'}
+                </p>
+                <div className="flex items-center gap-4 mb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="chatkit-preview-mode"
+                      checked={chatkitPreviewMode === 'production'}
+                      onChange={() => setChatkitPreviewMode('production')}
+                      style={{ accentColor: 'var(--primary)' }}
+                    />
+                    <span style={{ color: 'var(--text)' }}>{language === 'ko' ? 'Production (운영용)' : 'Production'}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="chatkit-preview-mode"
+                      checked={chatkitPreviewMode === 'debug'}
+                      onChange={() => setChatkitPreviewMode('debug')}
+                      style={{ accentColor: 'var(--primary)' }}
+                    />
+                    <span style={{ color: 'var(--text)' }}>{language === 'ko' ? 'Debug (문제 해결용)' : 'Debug'}</span>
+                  </label>
+                </div>
+                <p className="text-xs font-medium" style={{ color: 'var(--primary)' }}>
+                  {language === 'ko' ? '현재 미리보기: ' : 'Currently previewing: '}
+                  {chatkitPreviewMode === 'production'
+                    ? (language === 'ko' ? 'Production (세션 재사용)' : 'Production (session reuse)')
+                    : (language === 'ko' ? 'Debug (새 세션 강제)' : 'Debug (force new session)')}
+                </p>
+              </div>
+
+              {/* Production (recommended) */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                  {language === 'ko' ? '운영용 (권장)' : 'Production (recommended)'}
+                </label>
+                <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
+                  {language === 'ko' ? '기존 세션 재사용으로 안정적인 대화 유지' : 'Reuses existing session for a stable conversation'}
+                </p>
+                <textarea
+                  readOnly
+                  value={chatkitProductionCode}
+                  rows={6}
+                  className="input w-full px-3 py-2 rounded-md font-mono text-sm resize-none"
+                  style={{ color: 'var(--text)', backgroundColor: 'var(--bg-secondary)' }}
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(chatkitProductionCode).then(() => {
+                      setChatkitCopied('production');
+                      setTimeout(() => setChatkitCopied(null), 2000);
+                    });
+                  }}
+                  className="mt-2 px-4 py-2 rounded-md text-sm font-medium"
+                  style={{
+                    backgroundColor: chatkitCopied === 'production' ? '#10b981' : '#3b82f6',
+                    color: '#ffffff',
+                    border: 'none'
+                  }}
+                >
+                  {chatkitCopied === 'production' ? (language === 'ko' ? '복사됨' : 'Copied!') : (language === 'ko' ? '코드 복사' : 'Copy code')}
+                </button>
+              </div>
+
+              {/* Debug / Troubleshooting */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
+                  {language === 'ko' ? '디버그 / 문제 해결' : 'Debug / Troubleshooting'}
+                </label>
+                <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
+                  {language === 'ko'
+                    ? '401 오류, 채팅 멈춤, 잘못된 봇/세션, 테스트용 새 세션 필요할 때 사용'
+                    : 'Use when: 401 Unauthorized, chat stuck, wrong bot/session, or need a clean start for testing'}
+                </p>
+                <textarea
+                  readOnly
+                  value={chatkitDebugCode}
+                  rows={6}
+                  className="input w-full px-3 py-2 rounded-md font-mono text-sm resize-none"
+                  style={{ color: 'var(--text)', backgroundColor: 'var(--bg-secondary)' }}
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(chatkitDebugCode).then(() => {
+                      setChatkitCopied('debug');
+                      setTimeout(() => setChatkitCopied(null), 2000);
+                    });
+                  }}
+                  className="mt-2 px-4 py-2 rounded-md text-sm font-medium"
+                  style={{
+                    backgroundColor: chatkitCopied === 'debug' ? '#10b981' : '#6b7280',
+                    color: '#ffffff',
+                    border: 'none'
+                  }}
+                >
+                  {chatkitCopied === 'debug' ? (language === 'ko' ? '복사됨' : 'Copied!') : (language === 'ko' ? '코드 복사' : 'Copy code')}
+                </button>
+              </div>
+
+              <p className="text-xs mt-4 pt-4 border-t" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
+                {language === 'ko'
+                  ? '스크립트는 공개이며 비밀키가 포함되지 않습니다. data-group-id만 바꿔도 다른 AX Pro 챗봇을 불러올 수 있습니다.'
+                  : 'The embed script is public and contains no secrets. Swap data-group-id to load a different AX Pro chatbot.'}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* UI Customization Tab */}
         {activeTab === 'ui' && (
