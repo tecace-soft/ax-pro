@@ -75,6 +75,7 @@ const Settings: React.FC = () => {
   const [chatkitGroupId, setChatkitGroupId] = useState(currentGroupIdFromUrl);
   const [chatkitCopied, setChatkitCopied] = useState<'production' | 'debug' | null>(null);
   const [chatkitPreviewMode, setChatkitPreviewMode] = useState<'production' | 'debug'>('production');
+  const [chatkitPreviewLoading, setChatkitPreviewLoading] = useState(false);
   useEffect(() => {
     if (currentGroupIdFromUrl) setChatkitGroupId(currentGroupIdFromUrl);
   }, [currentGroupIdFromUrl]);
@@ -93,21 +94,88 @@ const Settings: React.FC = () => {
   defer
 ></script>`;
 
-  // Inject the floating widget script on this page when ChatKit tab is active (Production or Debug)
+  // Inject the floating widget script on this page when ChatKit tab is active (Production or Debug).
+  // On mode change: remove widget completely, show loading for a moment, then add new script so the switch is noticeable.
   useEffect(() => {
-    if (activeTab !== 'chatkit' || !chatkitGroupId?.trim()) return;
+    if (activeTab !== 'chatkit' || !chatkitGroupId?.trim()) {
+      setChatkitPreviewLoading(false);
+      return;
+    }
+
+    setChatkitPreviewLoading(true);
+
+    // 1) Actively remove script + all widget DOM (button + popup). Remove popup by killing every iframe and its overlay parent.
+    const removeEmbedWidgetDom = () => {
+      document.querySelectorAll('script[data-ax-chatkit-preview]').forEach((el) => el.remove());
+      // Popup: remove chat iframes and their overlay parent so popup actually closes
+      document.querySelectorAll('body iframe').forEach((iframe) => {
+        const src = (iframe.getAttribute('src') || iframe.src || '').toLowerCase();
+        const isChatPopup = src.includes('chatkit') || src.includes('ax-pro') || src.includes('tecace');
+        if (isChatPopup || src === '') {
+          const parent = iframe.parentElement;
+          if (parent && parent !== document.body) parent.remove();
+          else iframe.remove();
+        }
+      });
+      const selectors = [
+        '[id*="chatkit"], [id*="embed-widget"], [class*="floating-chat"], [data-ax-embed]',
+        '[id*="chat-widget"], [id*="chatbot"], [id*="mcp-n8n"], [id*="ax-pro-embed"]',
+        '[id*="embed-root"], [id*="widget-container"], [id*="floating-button"]',
+        '[class*="chat-widget"], [class*="floating-widget"], [class*="floating-chat"]',
+        '[class*="embed-widget"], [data-embed], [data-chat-widget]',
+      ];
+      selectors.forEach((sel) => {
+        try {
+          document.querySelectorAll(sel).forEach((el) => el.remove());
+        } catch (_) {}
+      });
+    };
+    removeEmbedWidgetDom();
+
     const isDebug = chatkitPreviewMode === 'debug';
-    const script = document.createElement('script');
-    script.src = `${CHATKIT_EMBED_SCRIPT_URL}?v=${isDebug ? 'debug-3' : '3'}`;
-    script.setAttribute('data-group-id', chatkitGroupId.trim());
-    script.setAttribute('data-force-new', isDebug ? '1' : '0');
-    script.defer = true;
-    script.dataset.axChatkitPreview = chatkitPreviewMode;
-    document.body.appendChild(script);
+    const MIN_LOADING_MS = 900;
+    const loadingStarted = Date.now();
+
+    const timeoutId = window.setTimeout(() => {
+      const script = document.createElement('script');
+      script.src = `${CHATKIT_EMBED_SCRIPT_URL}?v=${isDebug ? 'debug-3' : '3'}`;
+      script.setAttribute('data-group-id', chatkitGroupId.trim());
+      script.setAttribute('data-force-new', isDebug ? '1' : '0');
+      script.defer = true;
+      script.dataset.axChatkitPreview = chatkitPreviewMode;
+      script.onload = () => {
+        const elapsed = Date.now() - loadingStarted;
+        const remaining = Math.max(0, MIN_LOADING_MS - elapsed);
+        window.setTimeout(() => setChatkitPreviewLoading(false), remaining);
+      };
+      script.onerror = () => setChatkitPreviewLoading(false);
+      document.body.appendChild(script);
+    }, MIN_LOADING_MS);
+
     return () => {
-      script.remove();
-      const roots = document.querySelectorAll('[id*="chatkit"], [id*="embed-widget"], [class*="floating-chat"], [data-ax-embed]');
-      roots.forEach((el) => el.remove());
+      window.clearTimeout(timeoutId);
+      document.querySelectorAll('script[data-ax-chatkit-preview]').forEach((el) => el.remove());
+      document.querySelectorAll('body iframe').forEach((iframe) => {
+        const src = (iframe.getAttribute('src') || iframe.src || '').toLowerCase();
+        const isChatPopup = src.includes('chatkit') || src.includes('ax-pro') || src.includes('tecace');
+        if (isChatPopup || src === '') {
+          const parent = iframe.parentElement;
+          if (parent && parent !== document.body) parent.remove();
+          else iframe.remove();
+        }
+      });
+      const selectors = [
+        '[id*="chatkit"], [id*="embed-widget"], [class*="floating-chat"], [data-ax-embed]',
+        '[id*="chat-widget"], [id*="chatbot"], [id*="mcp-n8n"], [id*="ax-pro-embed"]',
+        '[id*="embed-root"], [id*="widget-container"], [id*="floating-button"]',
+        '[class*="chat-widget"], [class*="floating-widget"], [class*="embed-widget"]',
+        '[data-embed], [data-chat-widget]',
+      ];
+      selectors.forEach((sel) => {
+        try {
+          document.querySelectorAll(sel).forEach((el) => el.remove());
+        } catch (_) {}
+      });
     };
   }, [activeTab, chatkitGroupId, chatkitPreviewMode]);
 
@@ -807,7 +875,8 @@ const Settings: React.FC = () => {
                       type="radio"
                       name="chatkit-preview-mode"
                       checked={chatkitPreviewMode === 'production'}
-                      onChange={() => setChatkitPreviewMode('production')}
+                      onChange={() => { setChatkitPreviewLoading(true); setChatkitPreviewMode('production'); }}
+                      disabled={chatkitPreviewLoading}
                       style={{ accentColor: 'var(--primary)' }}
                     />
                     <span style={{ color: 'var(--text)' }}>{language === 'ko' ? 'Production (운영용)' : 'Production'}</span>
@@ -817,18 +886,26 @@ const Settings: React.FC = () => {
                       type="radio"
                       name="chatkit-preview-mode"
                       checked={chatkitPreviewMode === 'debug'}
-                      onChange={() => setChatkitPreviewMode('debug')}
+                      onChange={() => { setChatkitPreviewLoading(true); setChatkitPreviewMode('debug'); }}
+                      disabled={chatkitPreviewLoading}
                       style={{ accentColor: 'var(--primary)' }}
                     />
                     <span style={{ color: 'var(--text)' }}>{language === 'ko' ? 'Debug (문제 해결용)' : 'Debug'}</span>
                   </label>
                 </div>
-                <p className="text-xs font-medium" style={{ color: 'var(--primary)' }}>
-                  {language === 'ko' ? '현재 미리보기: ' : 'Currently previewing: '}
-                  {chatkitPreviewMode === 'production'
-                    ? (language === 'ko' ? 'Production (세션 재사용)' : 'Production (session reuse)')
-                    : (language === 'ko' ? 'Debug (새 세션 강제)' : 'Debug (force new session)')}
-                </p>
+                {chatkitPreviewLoading ? (
+                  <p className="text-xs font-medium flex items-center gap-2" style={{ color: 'var(--primary)' }}>
+                    <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    {language === 'ko' ? '미리보기 로딩 중… (위젯 제거 후 다시 추가)' : 'Loading preview… (widget removed, adding again)'}
+                  </p>
+                ) : (
+                  <p className="text-xs font-medium" style={{ color: 'var(--primary)' }}>
+                    {language === 'ko' ? '현재 미리보기: ' : 'Currently previewing: '}
+                    {chatkitPreviewMode === 'production'
+                      ? (language === 'ko' ? 'Production (세션 재사용)' : 'Production (session reuse)')
+                      : (language === 'ko' ? 'Debug (새 세션 강제)' : 'Debug (force new session)')}
+                  </p>
+                )}
               </div>
 
               {/* Production (recommended) */}
