@@ -109,7 +109,7 @@ const Settings: React.FC = () => {
       document.querySelectorAll('script[data-ax-chatkit-preview]').forEach((el) => el.remove());
       // Popup: remove chat iframes and their overlay parent so popup actually closes
       document.querySelectorAll('body iframe').forEach((iframe) => {
-        const src = (iframe.getAttribute('src') || iframe.src || '').toLowerCase();
+        const src = (iframe.getAttribute('src') || '').toLowerCase();
         const isChatPopup = src.includes('chatkit') || src.includes('ax-pro') || src.includes('tecace');
         if (isChatPopup || src === '') {
           const parent = iframe.parentElement;
@@ -156,7 +156,7 @@ const Settings: React.FC = () => {
       window.clearTimeout(timeoutId);
       document.querySelectorAll('script[data-ax-chatkit-preview]').forEach((el) => el.remove());
       document.querySelectorAll('body iframe').forEach((iframe) => {
-        const src = (iframe.getAttribute('src') || iframe.src || '').toLowerCase();
+        const src = (iframe.getAttribute('src') || '').toLowerCase();
         const isChatPopup = src.includes('chatkit') || src.includes('ax-pro') || src.includes('tecace');
         if (isChatPopup || src === '') {
           const parent = iframe.parentElement;
