@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGroupAuth } from '../hooks/useGroupAuth';
 import { withGroupParam } from '../utils/navigation';
@@ -8,6 +8,7 @@ import { useUICustomization } from '../hooks/useUICustomization';
 import { getGroupById, updateGroupName, getUsersByIds, updateGroupUsers, searchUsers, updateUserGroups, defaultSupabase, User, Group } from '../services/groupService';
 import { getSession, getUserRoleForGroup } from '../services/auth';
 import { useSearchParams } from 'react-router-dom';
+import { removeChatkitEmbedWidget } from '../utils/chatkitEmbed';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
@@ -94,42 +95,26 @@ const Settings: React.FC = () => {
   defer
 ></script>`;
 
-  // Inject the floating widget script on this page when ChatKit tab is active (Production or Debug).
-  // On mode change: remove widget completely, show loading for a moment, then add new script so the switch is noticeable.
+  const removeEmbedWidgetDom = useCallback(() => {
+    removeChatkitEmbedWidget();
+  }, []);
+
+  // On unmount (navigate away from Settings): always remove widget so it doesn't persist on other pages
+  useEffect(() => {
+    return () => {
+      removeEmbedWidgetDom();
+    };
+  }, [removeEmbedWidgetDom]);
+
+  // Inject the floating widget script only when ChatKit tab is active (Production or Debug).
   useEffect(() => {
     if (activeTab !== 'chatkit' || !chatkitGroupId?.trim()) {
       setChatkitPreviewLoading(false);
+      removeEmbedWidgetDom();
       return;
     }
 
     setChatkitPreviewLoading(true);
-
-    // 1) Actively remove script + all widget DOM (button + popup). Remove popup by killing every iframe and its overlay parent.
-    const removeEmbedWidgetDom = () => {
-      document.querySelectorAll('script[data-ax-chatkit-preview]').forEach((el) => el.remove());
-      // Popup: remove chat iframes and their overlay parent so popup actually closes
-      document.querySelectorAll('body iframe').forEach((iframe) => {
-        const src = (iframe.getAttribute('src') || '').toLowerCase();
-        const isChatPopup = src.includes('chatkit') || src.includes('ax-pro') || src.includes('tecace');
-        if (isChatPopup || src === '') {
-          const parent = iframe.parentElement;
-          if (parent && parent !== document.body) parent.remove();
-          else iframe.remove();
-        }
-      });
-      const selectors = [
-        '[id*="chatkit"], [id*="embed-widget"], [class*="floating-chat"], [data-ax-embed]',
-        '[id*="chat-widget"], [id*="chatbot"], [id*="mcp-n8n"], [id*="ax-pro-embed"]',
-        '[id*="embed-root"], [id*="widget-container"], [id*="floating-button"]',
-        '[class*="chat-widget"], [class*="floating-widget"], [class*="floating-chat"]',
-        '[class*="embed-widget"], [data-embed], [data-chat-widget]',
-      ];
-      selectors.forEach((sel) => {
-        try {
-          document.querySelectorAll(sel).forEach((el) => el.remove());
-        } catch (_) {}
-      });
-    };
     removeEmbedWidgetDom();
 
     const isDebug = chatkitPreviewMode === 'debug';
@@ -154,28 +139,7 @@ const Settings: React.FC = () => {
 
     return () => {
       window.clearTimeout(timeoutId);
-      document.querySelectorAll('script[data-ax-chatkit-preview]').forEach((el) => el.remove());
-      document.querySelectorAll('body iframe').forEach((iframe) => {
-        const src = (iframe.getAttribute('src') || '').toLowerCase();
-        const isChatPopup = src.includes('chatkit') || src.includes('ax-pro') || src.includes('tecace');
-        if (isChatPopup || src === '') {
-          const parent = iframe.parentElement;
-          if (parent && parent !== document.body) parent.remove();
-          else iframe.remove();
-        }
-      });
-      const selectors = [
-        '[id*="chatkit"], [id*="embed-widget"], [class*="floating-chat"], [data-ax-embed]',
-        '[id*="chat-widget"], [id*="chatbot"], [id*="mcp-n8n"], [id*="ax-pro-embed"]',
-        '[id*="embed-root"], [id*="widget-container"], [id*="floating-button"]',
-        '[class*="chat-widget"], [class*="floating-widget"], [class*="embed-widget"]',
-        '[data-embed], [data-chat-widget]',
-      ];
-      selectors.forEach((sel) => {
-        try {
-          document.querySelectorAll(sel).forEach((el) => el.remove());
-        } catch (_) {}
-      });
+      removeChatkitEmbedWidget();
     };
   }, [activeTab, chatkitGroupId, chatkitPreviewMode]);
 
