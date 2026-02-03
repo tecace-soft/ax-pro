@@ -331,17 +331,17 @@ export const chatService = {
           throw new Error('No group selected. Please select a group first.');
         }
         
-        // Fetch group data (top_k, openai_chat, and vector_store_id)
+        // Fetch group data (top_k and vector_store_id)
+        // NOTE: Always using OpenAI route - openai_chat check removed
         let topK: number | undefined;
-        let openaiChat: boolean = false;
         let vectorStoreId: string | undefined;
-        let webhookUrl: string = N8N_WEBHOOK_URL; // Default to n8n webhook
+        let webhookUrl: string = OPENAI_WEBHOOK_URL; // Always use OpenAI webhook
         
         try {
           const { defaultSupabase } = await import('./groupService');
           const { data: groupData, error: groupError } = await defaultSupabase
             .from('group')
-            .select('top_k, openai_chat, vector_store_id')
+            .select('top_k, vector_store_id')
             .eq('group_id', groupId)
             .single();
           
@@ -354,27 +354,21 @@ export const chatService = {
               console.log(`⚠️ Group ${groupId} has no top_k value, using default`);
             }
             
-            // Get openai_chat setting and determine webhook URL
-            openaiChat = groupData.openai_chat === true;
-            webhookUrl = openaiChat ? OPENAI_WEBHOOK_URL : N8N_WEBHOOK_URL;
-            console.log(`🔧 Group ${groupId} openai_chat setting: ${openaiChat}`);
-            console.log(`🌐 Using webhook: ${webhookUrl}`);
-            
-            // Get vector_store_id ONLY when openai_chat is TRUE
-            if (openaiChat) {
-              vectorStoreId = groupData.vector_store_id || undefined;
-              if (vectorStoreId) {
-                console.log(`📦 Group ${groupId} vector_store_id: ${vectorStoreId}`);
-              } else {
-                console.warn(`⚠️ Group ${groupId} has openai_chat enabled but no vector_store_id`);
-              }
+            // Always get vector_store_id (OpenAI route)
+            vectorStoreId = groupData.vector_store_id || undefined;
+            if (vectorStoreId) {
+              console.log(`📦 Group ${groupId} vector_store_id: ${vectorStoreId}`);
+            } else {
+              console.warn(`⚠️ Group ${groupId} has no vector_store_id`);
             }
+            
+            console.log(`🌐 Using OpenAI webhook: ${webhookUrl}`);
           } else {
-            console.log(`⚠️ Group ${groupId} not found or error fetching, using default n8n webhook`);
+            console.log(`⚠️ Group ${groupId} not found or error fetching, using OpenAI webhook`);
           }
         } catch (error) {
           console.warn(`⚠️ Error fetching group data:`, error);
-          // Continue with default n8n webhook if fetch fails
+          // Continue with OpenAI webhook if fetch fails
         }
         
         console.log('Using webhook endpoint:', webhookUrl);
@@ -391,7 +385,7 @@ export const chatService = {
           chatInput: content,
           groupId: groupId, // Always include groupId (validated above)
           ...(topK !== undefined ? { topK } : {}), // Include topK only if it exists
-          ...(openaiChat && vectorStoreId ? { vectorStoreId } : {}), // Include vectorStoreId only when openai_chat is TRUE and vectorStoreId exists
+          ...(vectorStoreId ? { vectorStoreId } : {}), // Include vectorStoreId if it exists
         };
 
         console.log('=== CHAT SERVICE DEBUG ===');

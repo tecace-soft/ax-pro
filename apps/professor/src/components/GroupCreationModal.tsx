@@ -43,7 +43,6 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
     question4: '',
   });
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [openaiChat, setOpenaiChat] = useState(false);
   
   // Image editor state
   const [showImageEditor, setShowImageEditor] = useState(false);
@@ -70,7 +69,6 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
         question4: '',
       });
       setAvatarUrl('');
-      setOpenaiChat(false);
       setShowImageEditor(false);
       setTempImageUrl('');
       setImagePosition({ x: 50, y: 50 });
@@ -171,7 +169,7 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
         chat_subtitle: chatSubtitleValue,
         suggested_questions: suggestedQuestionsValue,
         avatar_url: avatarUrlValue,
-        openai_chat: openaiChat,
+        openai_chat: true, // Always use OpenAI route
       });
 
       console.log('✅ Group created in database:', createdGroup);
@@ -414,36 +412,6 @@ const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 {t('group.create.avatarDescription')}
               </p>
-            </div>
-
-            {/* OpenAI Chat Toggle */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                OpenAI Chat Feature
-              </label>
-              <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)' }}>
-                <div className="flex items-center justify-start gap-2 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setOpenaiChat(!openaiChat)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                      openaiChat ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        openaiChat ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                  <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
-                    {openaiChat ? 'On' : 'Off'}
-                  </span>
-                </div>
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                  Turn on/off setting to utilize chat feature created in OpenAI Platform instead of n8n workflow for chatbot functionality
-                </p>
-              </div>
             </div>
 
             {/* Chat Title */}

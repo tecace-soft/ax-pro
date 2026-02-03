@@ -526,26 +526,13 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
       const session = getSession();
       const groupId = getGroupIdFromUrl();
       
-      // Check if OpenAI Chat is enabled for this group
+      // Always upload to OpenAI (openai_chat check removed)
       let openaiFileId: string | null = null;
       if (groupId) {
         try {
-          console.log(`🔍 [OpenAI Upload] Checking openai_chat setting for group: ${groupId}`);
-          const { defaultSupabase } = await import('./groupService');
-          const { data: groupData, error: groupError } = await defaultSupabase
-            .from('group')
-            .select('openai_chat')
-            .eq('group_id', groupId)
-            .single();
-          
-          if (groupError) {
-            console.warn(`⚠️ [OpenAI Upload] Error fetching group data:`, groupError);
-          } else {
-            console.log(`📊 [OpenAI Upload] Group openai_chat setting: ${groupData?.openai_chat}`);
-          }
-          
-          if (!groupError && groupData && groupData.openai_chat === true) {
-            console.log('🔧 [OpenAI Upload] OpenAI Chat enabled for group, starting upload to OpenAI...');
+          console.log(`🔍 [OpenAI Upload] Starting upload to OpenAI for group: ${groupId}`);
+          // NOTE: openai_chat check removed - always using OpenAI route
+          console.log('🔧 [OpenAI Upload] Starting upload to OpenAI...');
             console.log(`📁 [OpenAI Upload] File details:`, {
               fileName: file.name,
               fileSize: file.size,
@@ -617,13 +604,14 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
               console.error(`📋 [OpenAI Upload] Error stack:`, openaiError?.stack);
               // Don't fail the entire upload if OpenAI upload fails
             }
-          } else {
-            console.log(`ℹ️ [OpenAI Upload] OpenAI Chat disabled or not set for group, skipping OpenAI upload`);
-          }
+          // NOTE: OpenAI Chat disabled route commented out - always using OpenAI route
+          // } else {
+          //   console.log(`ℹ️ [OpenAI Upload] OpenAI Chat disabled or not set for group, skipping OpenAI upload`);
+          // }
         } catch (error) {
-          console.warn('⚠️ [OpenAI Upload] Error checking group openai_chat setting:', error);
+          console.warn('⚠️ [OpenAI Upload] Error during OpenAI upload:', error);
           console.warn(`📊 [OpenAI Upload] Error details:`, error);
-          // Continue with normal upload if check fails
+          // Continue with normal upload if OpenAI upload fails
         }
       } else {
         console.log(`ℹ️ [OpenAI Upload] No group_id found, skipping OpenAI upload check`);
@@ -725,29 +713,24 @@ export async function fetchFilesFromSupabase(
       };
     }
 
-    // Check group settings to see if OpenAI Chat is enabled and get vector_store_id
-    let openaiChat = false;
+    // Always use OpenAI route (openai_chat check removed)
     let vectorStoreId: string | null = null;
     try {
       const { defaultSupabase } = await import('./groupService');
       const { data: groupData, error: groupError } = await defaultSupabase
         .from('group')
-        .select('openai_chat, vector_store_id')
+        .select('vector_store_id')
         .eq('group_id', groupId)
         .single();
 
       if (groupError) {
-        console.warn('⚠️ [fetchFilesFromSupabase] Error fetching group data for OpenAI settings:', groupError);
+        console.warn('⚠️ [fetchFilesFromSupabase] Error fetching group data for vector_store_id:', groupError);
       } else if (groupData) {
-        openaiChat = groupData.openai_chat === true;
         vectorStoreId = groupData.vector_store_id || null;
-        console.log('📊 [fetchFilesFromSupabase] Group settings:', {
-          openai_chat: openaiChat,
-          vector_store_id: vectorStoreId,
-        });
+        console.log('📊 [fetchFilesFromSupabase] Group vector_store_id:', vectorStoreId);
       }
     } catch (groupError) {
-      console.warn('⚠️ [fetchFilesFromSupabase] Failed to load group OpenAI settings:', groupError);
+      console.warn('⚠️ [fetchFilesFromSupabase] Failed to load group vector_store_id:', groupError);
     }
 
     console.log(`🔍 [fetchFilesFromSupabase] Querying files table for group_id: ${groupId}`);
@@ -827,8 +810,8 @@ export async function fetchFilesFromSupabase(
     if (filesToCheck.length > 0) {
       console.log(`🔍 [fetchFilesFromSupabase] Checking sync status for ${filesToCheck.length} files...`);
 
-      // If OpenAI Chat is enabled for this group, use OpenAI vector store to determine sync status
-      if (openaiChat && vectorStoreId) {
+      // Always use OpenAI vector store to determine sync status (openai_chat check removed)
+      if (vectorStoreId) {
         console.log('🔧 [fetchFilesFromSupabase] Using OpenAI vector store to determine sync status');
 
         try {
@@ -923,7 +906,9 @@ export async function fetchFilesFromSupabase(
           console.warn('⚠️ [fetchFilesFromSupabase] Error while checking OpenAI sync status:', openaiError);
           // If OpenAI check fails, leave existing syncStatus values (based on is_indexed) as-is
         }
-      } else {
+      }
+      // NOTE: Supabase documents route commented out - always using OpenAI route
+      /* else {
         // Existing sync status logic using Supabase documents (n8n / Azure RAG flow)
         console.log('🔧 [fetchFilesFromSupabase] Using Supabase documents to determine sync status');
         try {
@@ -1145,6 +1130,7 @@ export async function fetchFilesFromSupabase(
         }
       }
       } // end Supabase-documents branch
+      */
     }
 
     console.log(`✅ [fetchFilesFromSupabase] Successfully returning ${files.length} files`);
@@ -1185,14 +1171,13 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
 
     const filePath = `files/${fileName}`;
 
-    // Check if OpenAI Chat is enabled and get necessary IDs before deletion
+    // Always delete from OpenAI (openai_chat check removed)
     let openaiFileId: string | null = null;
     let vectorStoreId: string | undefined;
-    let openaiChatEnabled = false;
 
     if (groupId) {
       try {
-        console.log(`🔍 [Delete] Checking openai_chat setting for group: ${groupId}`);
+        console.log(`🔍 [Delete] Fetching file and group data for group: ${groupId}`);
         const { defaultSupabase } = await import('./groupService');
         
         // Fetch file data to get openai_file_id
@@ -1210,27 +1195,25 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
           console.log(`📁 [Delete] File's openai_file_id: ${openaiFileId || 'null'}`);
         }
 
-        // Fetch group data to get openai_chat and vector_store_id
+        // Fetch group data to get vector_store_id
         const { data: groupData, error: groupError } = await defaultSupabase
           .from('group')
-          .select('openai_chat, vector_store_id')
+          .select('vector_store_id')
           .eq('group_id', groupId)
           .single();
 
         if (groupError) {
           console.warn(`⚠️ [Delete] Error fetching group data:`, groupError);
         } else if (groupData) {
-          openaiChatEnabled = groupData.openai_chat === true;
           vectorStoreId = groupData.vector_store_id || undefined;
-          console.log(`📊 [Delete] Group ${groupId} openai_chat setting: ${openaiChatEnabled}`);
-          if (openaiChatEnabled && vectorStoreId) {
+          if (vectorStoreId) {
             console.log(`📦 [Delete] Group's vector_store_id: ${vectorStoreId}`);
           }
         }
 
-        // If OpenAI Chat is enabled, delete from OpenAI first
-        if (openaiChatEnabled && openaiFileId && vectorStoreId) {
-          console.log('🔧 [Delete] OpenAI Chat enabled, starting OpenAI deletion process...');
+        // Always delete from OpenAI if we have the necessary IDs
+        if (openaiFileId && vectorStoreId) {
+          console.log('🔧 [Delete] Starting OpenAI deletion process...');
           
           try {
             const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
@@ -1332,20 +1315,18 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
             // Continue with Supabase deletion even if OpenAI deletion fails
           }
         } else {
-          if (!openaiChatEnabled) {
-            console.log(`ℹ️ [Delete] OpenAI Chat disabled for group, skipping OpenAI deletion`);
-          } else if (!openaiFileId) {
+          if (!openaiFileId) {
             console.log(`ℹ️ [Delete] File does not have openai_file_id, skipping OpenAI deletion`);
           } else if (!vectorStoreId) {
             console.log(`ℹ️ [Delete] Group does not have vector_store_id, skipping OpenAI deletion`);
           }
         }
       } catch (error) {
-        console.warn('⚠️ [Delete] Error checking group openai_chat setting:', error);
-        // Continue with normal Supabase deletion if check fails
+        console.warn('⚠️ [Delete] Error during OpenAI deletion:', error);
+        // Continue with normal Supabase deletion if OpenAI deletion fails
       }
     } else {
-      console.log(`ℹ️ [Delete] No group_id found, skipping OpenAI deletion check`);
+      console.log(`ℹ️ [Delete] No group_id found, skipping OpenAI deletion`);
     }
 
     // Step 3: Delete from Supabase storage
@@ -1978,31 +1959,28 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       };
     }
     
-    // Check if OpenAI Chat is enabled for this group and get vector_store_id
-    let openaiChat: boolean = false;
+    // Always use OpenAI vector store API (openai_chat check removed)
     let vectorStoreId: string | null = null;
     try {
       const { defaultSupabase } = await import('./groupService');
       const { data: groupData, error: groupError } = await defaultSupabase
         .from('group')
-        .select('openai_chat, vector_store_id')
+        .select('vector_store_id')
         .eq('group_id', groupIdFromSession)
         .single();
       
       if (groupError) {
         console.warn(`⚠️ [Index] Error fetching group data:`, groupError);
       } else {
-        openaiChat = groupData?.openai_chat === true;
         vectorStoreId = groupData?.vector_store_id || null;
-        console.log(`📊 [Index] Group ${groupIdFromSession} openai_chat setting: ${openaiChat}`);
         console.log(`📊 [Index] Group ${groupIdFromSession} vector_store_id: ${vectorStoreId}`);
       }
     } catch (error) {
-      console.warn(`⚠️ [Index] Error checking group openai_chat setting:`, error);
+      console.warn(`⚠️ [Index] Error fetching group vector_store_id:`, error);
     }
     
-    // If OpenAI Chat is enabled, use OpenAI vector store API
-    if (openaiChat) {
+    // Always use OpenAI vector store API
+    {
       console.log(`🔧 [Index] OpenAI Chat enabled, using OpenAI vector store API`);
       
       // Fetch the file's openai_file_id from the files table
@@ -2051,11 +2029,61 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
         };
       }
       
+      // Fetch chunk_size and chunk_overlap from group data
+      let chunkSize: number | null = null;
+      let chunkOverlap: number | null = null;
+      try {
+        const { defaultSupabase } = await import('./groupService');
+        const { data: groupChunkingData, error: groupChunkingError } = await defaultSupabase
+          .from('group')
+          .select('chunk_size, chunk_overlap')
+          .eq('group_id', groupIdFromSession)
+          .single();
+        
+        if (!groupChunkingError && groupChunkingData) {
+          chunkSize = groupChunkingData.chunk_size !== null && groupChunkingData.chunk_size !== undefined 
+            ? Number(groupChunkingData.chunk_size) 
+            : null;
+          chunkOverlap = groupChunkingData.chunk_overlap !== null && groupChunkingData.chunk_overlap !== undefined 
+            ? Number(groupChunkingData.chunk_overlap) 
+            : null;
+          
+          if (chunkSize !== null && chunkOverlap !== null) {
+            console.log(`📊 [Index] Using chunking options from group:`, { chunkSize, chunkOverlap });
+          } else {
+            console.log(`ℹ️ [Index] Group ${groupIdFromSession} has no chunk_size or chunk_overlap values, using defaults`);
+          }
+        } else {
+          console.warn(`⚠️ [Index] Error fetching group chunking options:`, groupChunkingError);
+        }
+      } catch (error) {
+        console.warn(`⚠️ [Index] Error fetching group chunking options:`, error);
+      }
+      
       const openaiUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
       
       console.log(`📤 [Index] Adding file to OpenAI vector store...`);
       console.log(`🌐 [Index] Endpoint: ${openaiUrl}`);
       console.log(`📋 [Index] File ID: ${openaiFileId}`);
+      
+      // Build request body with optional chunking_strategy
+      const requestBody: any = {
+        file_id: openaiFileId
+      };
+      
+      // Add chunking_strategy if both chunk_size and chunk_overlap are available
+      if (chunkSize !== null && chunkOverlap !== null && chunkSize > 0 && chunkOverlap >= 0) {
+        requestBody.chunking_strategy = {
+          type: 'static',
+          static: {
+            max_chunk_size_tokens: chunkSize,
+            chunk_overlap_tokens: chunkOverlap
+          }
+        };
+        console.log(`📊 [Index] Adding chunking strategy:`, requestBody.chunking_strategy);
+      } else {
+        console.log(`ℹ️ [Index] No chunking strategy added (chunkSize: ${chunkSize}, chunkOverlap: ${chunkOverlap})`);
+      }
       
       const startTime = Date.now();
       try {
@@ -2065,9 +2093,7 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
             'Authorization': `Bearer ${openaiApiKey}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            file_id: openaiFileId
-          }),
+          body: JSON.stringify(requestBody),
         });
         
         const duration = Date.now() - startTime;
@@ -2099,6 +2125,8 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       }
     }
     
+    // NOTE: n8n webhook flow commented out - always using OpenAI route
+    /* 
     // If OpenAI Chat is disabled, use the existing n8n webhook flow
     console.log(`🔧 [Index] OpenAI Chat disabled, using n8n webhook flow`);
     
@@ -2434,6 +2462,13 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
         throw fetchError;
       }
     }
+    */
+    
+    // If we reach here, OpenAI route didn't return (shouldn't happen)
+    return {
+      success: false,
+      message: 'Failed to index file - OpenAI route did not complete',
+    };
 
   } catch (error: unknown) {
     const msg = (error instanceof Error) ? error.message : 'Failed to index file';
@@ -2710,33 +2745,28 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
     
     console.log(`🔍 Checking sync status for: ${fileName} (group: ${groupId})`);
     
-    // First, check group settings to see if OpenAI Chat is enabled and get vector_store_id
-    let openaiChat = false;
+    // Always use OpenAI route (openai_chat check removed)
     let vectorStoreId: string | null = null;
     try {
       const { defaultSupabase } = await import('./groupService');
       const { data: groupData, error: groupError } = await defaultSupabase
         .from('group')
-        .select('openai_chat, vector_store_id')
+        .select('vector_store_id')
         .eq('group_id', groupId)
         .single();
 
       if (groupError) {
-        console.warn('⚠️ [checkFileSyncStatus] Error fetching group data for OpenAI settings:', groupError);
+        console.warn('⚠️ [checkFileSyncStatus] Error fetching group data for vector_store_id:', groupError);
       } else if (groupData) {
-        openaiChat = groupData.openai_chat === true;
         vectorStoreId = groupData.vector_store_id || null;
-        console.log('📊 [checkFileSyncStatus] Group settings:', {
-          openai_chat: openaiChat,
-          vector_store_id: vectorStoreId,
-        });
+        console.log('📊 [checkFileSyncStatus] Group vector_store_id:', vectorStoreId);
       }
     } catch (groupError) {
-      console.warn('⚠️ [checkFileSyncStatus] Failed to load group OpenAI settings:', groupError);
+      console.warn('⚠️ [checkFileSyncStatus] Failed to load group vector_store_id:', groupError);
     }
 
-    // When OpenAI Chat is enabled, use OpenAI vector store to determine sync status
-    if (openaiChat && vectorStoreId) {
+    // Always use OpenAI vector store to determine sync status
+    if (vectorStoreId) {
       try {
         const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
         if (!openaiApiKey) {
@@ -2849,6 +2879,8 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
       }
     }
 
+    // NOTE: Supabase documents route commented out - always using OpenAI route
+    /* 
     // Default: use Supabase documents table (n8n / Azure RAG flow)
     // Check if file is indexed in documents table, filtered by groupId
     const { data: indexedDocs, error: indexError } = await supabase
@@ -2880,6 +2912,14 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
         message: 'File is not indexed (pending)'
       };
     }
+    */
+    
+    // If we reach here, OpenAI route didn't return (shouldn't happen)
+    return {
+      success: false,
+      syncStatus: 'error',
+      message: 'Failed to check sync status - OpenAI route did not complete',
+    };
   } catch (error: any) {
     console.error('Error checking sync status:', error);
     return {

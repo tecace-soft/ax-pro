@@ -107,10 +107,11 @@ export async function createGroup(groupData: CreateGroupData): Promise<Group> {
 
     console.log('✅ Group created successfully in database:', data);
 
-    // After the group is created in Supabase, optionally create a dedicated OpenAI vector store
-    // and save its ID to the group's vector_store_id column, BUT ONLY if openai_chat is enabled.
-    if (groupData.openai_chat) {
-      console.log('ℹ️ [Group] openai_chat=true for this group, attempting to create OpenAI vector store');
+    // Always create OpenAI vector store (openai_chat check removed)
+    // After the group is created in Supabase, create a dedicated OpenAI vector store
+    // and save its ID to the group's vector_store_id column.
+    {
+      console.log('ℹ️ [Group] Creating OpenAI vector store for group');
       try {
         const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
         if (!openaiApiKey) {
@@ -185,9 +186,8 @@ export async function createGroup(groupData: CreateGroupData): Promise<Group> {
         console.error('❌ [Group] Error while creating OpenAI vector store:', openaiError);
         // Do not throw here; group creation in Supabase has already succeeded
       }
-    } else {
-      console.log('ℹ️ [Group] openai_chat is false; skipping OpenAI vector store creation');
     }
+    // NOTE: openai_chat check removed - always creating vector store
 
     return data as Group;
   } catch (error) {
@@ -630,10 +630,10 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
       throw e;
     }
 
-    // 10) Delete OpenAI vector store and associated files if openai_chat is enabled
-    if (groupData.openai_chat === true && groupData.vector_store_id) {
+    // 10) Always delete OpenAI vector store and associated files (openai_chat check removed)
+    if (groupData.vector_store_id) {
       try {
-        console.log('🔧 [Group] OpenAI Chat enabled, deleting OpenAI vector store and files:', groupData.vector_store_id);
+        console.log('🔧 [Group] Deleting OpenAI vector store and files:', groupData.vector_store_id);
         
         const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
         if (!openaiApiKey) {
@@ -732,7 +732,7 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
         // Don't throw here - continue with group deletion even if vector store deletion fails
       }
     } else {
-      console.log('ℹ️ [Group] OpenAI Chat disabled or no vector_store_id; skipping OpenAI vector store deletion');
+      console.log('ℹ️ [Group] No vector_store_id; skipping OpenAI vector store deletion');
     }
 
     // 11) Finally, delete the group row itself
