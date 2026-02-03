@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { I18nProvider } from './i18n/I18nProvider';
 import Landing from './pages/Landing';
@@ -17,6 +17,7 @@ import ScrollToTop from './components/ui/ScrollToTop';
 // These are now imported in AdminShell.tsx
 import { isAuthedFor, isAuthedForSync, Role, getSession } from './services/auth';
 import { checkAndMigrateSettings } from './services/migrateToUserSettings';
+import { removeChatkitEmbedWidget } from './utils/chatkitEmbed';
 
 // Protected Route component with group-based role checking
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole: Role }> = ({ 
@@ -74,6 +75,17 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole: Role }
   return <>{children}</>;
 };
 
+/** Removes ChatKit floating widget when route is not /settings so it does not persist on other pages. */
+const ChatkitEmbedCleanup: React.FC = () => {
+  const location = useLocation();
+  useEffect(() => {
+    if (location.pathname !== '/settings') {
+      removeChatkitEmbedWidget();
+    }
+  }, [location.pathname]);
+  return null;
+};
+
 const App: React.FC = () => {
   // Initialize user settings migration on app start
   useEffect(() => {
@@ -85,6 +97,7 @@ const App: React.FC = () => {
       <I18nProvider>
         <Router>
           <div className="App">
+            <ChatkitEmbedCleanup />
             <ScrollToTop />
             <Routes>
               {/* Public routes */}

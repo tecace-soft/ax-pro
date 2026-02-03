@@ -1,3 +1,11 @@
+// Load .env for local development.
+// In production (Render), environment variables are provided by the platform.
+import dotenv from 'dotenv';
+if (process.env.NODE_ENV !== 'production') {
+  // In dev, prefer .env over any stale shell export (e.g. OPENAI_API_KEY=test)
+  dotenv.config({ override: true });
+}
+
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -67,7 +75,7 @@ const demoUsers = [
 const sessions_store: Map<string, string> = new Map(); // sessionId -> userId
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || process.env.SERVER_PORT || 3001;
 
 // Resolve paths for serving the frontend build in production
 const __filename = fileURLToPath(import.meta.url);
@@ -487,15 +495,589 @@ app.post('/api/messages/:id/feedback', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// ChatKit embed endpoints
+// GET /chatkit - Returns HTML page that initializes ChatKit UI
+app.get('/chatkit', (req, res) => {
+  // Set headers to allow iframe embedding
+  // Note: For cross-site iframe support, we avoid X-Frame-Options: DENY
+  // CSP frame-ancestors can be configured later for allowlist
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  
+  res.send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatKit Embed</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      overflow: hidden;
+    }
+    .container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #666;
+      background: #fff;
+    }
+    .loading.hidden {
+      display: none;
+    }
+    .error {
+      padding: 20px;
+      background: #fee;
+      color: #c00;
+      border: 1px solid #fcc;
+      margin: 20px;
+      border-radius: 4px;
+      display: none;
+    }
+    .error.visible {
+      display: block;
+    }
+    .error .refresh-btn {
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: #c00;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .loading, .error {
+      z-index: 10;
+      position: relative;
+    }
+    #chatkit-container {
+      width: 100%;
+      height: 100vh;
+      flex: 1;
+      display: none;
+    }
+    #chatkit-container.visible {
+      display: block;
+    }
+    openai-chatkit {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loading" class="loading">
+      <p>Loading chat…</p>
+    </div>
+    <div id="error" class="error"></div>
+    <div id="chatkit-container">
+      <openai-chatkit id="my-chat"></openai-chatkit>
+    </div>
+  </div>
+  
+  <!-- Load ChatKit SDK dynamically and wait for it to be ready -->
+  <script>
+    (async function() {
+      const loadingEl = document.getElementById('loading');
+      const errorEl = document.getElementById('error');
+      const containerEl = document.getElementById('chatkit-container');
+      const RECOVERY_FLAG = 'chatkit_401_recovered';
+      const CACHE_TTL_MS = 55 * 60 * 1000;
+
+      function parseParams() {
+        const params = new URLSearchParams(window.location.search);
+        let groupId = params.get('groupId') || 'default';
+        if (!groupId || groupId.length > 256) groupId = 'default';
+        const forceNew = params.get('forceNew') === '1' || params.get('forceNew') === 'true';
+        return { groupId, forceNew };
+      }
+
+      function cacheKey(groupId) {
+        return 'ck_client_secret:' + (groupId || 'default');
+      }
+
+      function loadCachedSecret(groupId) {
+        try {
+          const raw = localStorage.getItem(cacheKey(groupId));
+          if (!raw) return null;
+          const data = JSON.parse(raw);
+          const now = Date.now();
+          if (!data.client_secret) return null;
+          if (data.createdAt && (now - data.createdAt) > CACHE_TTL_MS) return null;
+          if (data.expiresAt && data.expiresAt < now) return null;
+          return data.client_secret;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function saveCachedSecret(groupId, secret) {
+        try {
+          const now = Date.now();
+          localStorage.setItem(cacheKey(groupId), JSON.stringify({
+            client_secret: secret,
+            createdAt: now,
+            expiresAt: now + CACHE_TTL_MS
+          }));
+        } catch (e) {}
+      }
+
+      function clearCachedSecret(groupId) {
+        try {
+          localStorage.removeItem(cacheKey(groupId));
+        } catch (e) {}
+      }
+
+      async function createSession(opts) {
+        var body = { groupid: opts.groupId || 'default' };
+        var res = await fetch('/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          credentials: 'same-origin'
+        });
+        if (!res.ok) {
+          var err = await res.json().catch(function() { return {}; });
+          throw new Error(err.error || 'session ' + res.status);
+        }
+        var data = await res.json();
+        if (!data.client_secret) throw new Error('No client_secret');
+        return data.client_secret;
+      }
+
+      function showLoading() {
+        if (errorEl) errorEl.classList.remove('visible');
+        if (loadingEl) loadingEl.classList.remove('hidden');
+        if (containerEl) containerEl.classList.remove('visible');
+      }
+
+      function showError(msg, withRefresh) {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (containerEl) containerEl.classList.remove('visible');
+        if (!errorEl) return;
+        errorEl.innerHTML = '';
+        errorEl.appendChild(document.createTextNode(msg || 'Session expired. Refresh.'));
+        if (withRefresh) {
+          var btn = document.createElement('button');
+          btn.className = 'refresh-btn';
+          btn.textContent = 'Refresh';
+          btn.onclick = function() { location.reload(); };
+          errorEl.appendChild(btn);
+        }
+        errorEl.classList.add('visible');
+      }
+
+      function showChat() {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (errorEl) errorEl.classList.remove('visible');
+        if (containerEl) containerEl.classList.add('visible');
+      }
+
+      var bootParams = parseParams();
+      console.log('ChatKit boot params', { groupId: bootParams.groupId, forceNew: bootParams.forceNew });
+
+      if (bootParams.forceNew) {
+        clearCachedSecret(bootParams.groupId);
+        console.log('forceNew=1: cleared cache, creating session');
+      }
+
+      var currentGroupId = bootParams.groupId;
+      var currentSecret = loadCachedSecret(currentGroupId);
+      if (currentSecret) {
+        console.log('using cache for groupId=' + currentGroupId);
+      } else {
+        console.log('creating session for groupId=' + currentGroupId);
+        try {
+          currentSecret = await createSession({ groupId: currentGroupId, forceNew: bootParams.forceNew });
+          saveCachedSecret(currentGroupId, currentSecret);
+        } catch (e) {
+          showError('Error: ' + e.message);
+          console.error('Failed to create session', e);
+          return;
+        }
+      }
+
+      var CTX_TAG_PREFIX = '[CTX:groupid=';
+      function prependGroupIdToRequestBody(bodyObj, groupId) {
+        if (!bodyObj || typeof bodyObj !== 'object' || !groupId) return { body: bodyObj, modified: false };
+        var tag = CTX_TAG_PREFIX + groupId + ']' + String.fromCharCode(10);
+        if (typeof bodyObj.content === 'string') {
+          bodyObj.content = tag + bodyObj.content;
+          return { body: bodyObj, modified: true };
+        }
+        if (bodyObj.message && typeof bodyObj.message.content === 'string') {
+          bodyObj.message.content = tag + bodyObj.message.content;
+          return { body: bodyObj, modified: true };
+        }
+        if (Array.isArray(bodyObj.messages) && bodyObj.messages.length > 0) {
+          for (var i = bodyObj.messages.length - 1; i >= 0; i--) {
+            if (bodyObj.messages[i].role === 'user' && typeof bodyObj.messages[i].content === 'string') {
+              bodyObj.messages[i].content = tag + bodyObj.messages[i].content;
+              return { body: bodyObj, modified: true };
+            }
+          }
+        }
+        if (bodyObj.input) {
+          if (typeof bodyObj.input.content === 'string') {
+            bodyObj.input.content = tag + bodyObj.input.content;
+            return { body: bodyObj, modified: true };
+          }
+          if (Array.isArray(bodyObj.input.parts)) {
+            for (var j = 0; j < bodyObj.input.parts.length; j++) {
+              if (bodyObj.input.parts[j].type === 'text' && typeof bodyObj.input.parts[j].text === 'string') {
+                bodyObj.input.parts[j].text = tag + bodyObj.input.parts[j].text;
+                return { body: bodyObj, modified: true };
+              }
+            }
+          }
+        }
+        return { body: bodyObj, modified: false };
+      }
+
+      var originalFetch = window.fetch;
+      window.fetch = function(input, init) {
+        var url = typeof input === 'string' ? input : (input && input.url);
+        var method = (init && init.method) || (input && input.method) || 'GET';
+        var body = (init && init.body) || (input && input.body);
+        var isOpenAi = url && (url.indexOf('api.openai.com') !== -1 || url.indexOf('platform.openai.com') !== -1);
+        var skipModify = !url || method !== 'POST' || !body || !isOpenAi || url.indexOf('/v1/chatkit/sessions') !== -1;
+        if (!skipModify && typeof body === 'string') {
+          try {
+            var parsed = JSON.parse(body);
+            var result = prependGroupIdToRequestBody(parsed, currentGroupId);
+            if (result.modified) {
+              console.log('PREPEND_APPLIED', { groupId: currentGroupId });
+              var bodyStr = JSON.stringify(result.body);
+              if (typeof input === 'string') {
+                init = init || {};
+                init.body = bodyStr;
+                return originalFetch(input, init).then(function(res) {
+                  if (res.status === 401 && window.__chatkitOn401) window.__chatkitOn401(res);
+                  return res;
+                });
+              }
+              var req = input instanceof Request ? input : null;
+              return originalFetch(new Request(url, { method: method, headers: req ? req.headers : {}, body: bodyStr })).then(function(res) {
+                if (res.status === 401 && window.__chatkitOn401) window.__chatkitOn401(res);
+                return res;
+              });
+            }
+          } catch (e) {}
+        }
+        var p = originalFetch.apply(this, arguments);
+        return p.then(function(res) {
+          if (res.status === 401 && window.__chatkitOn401) {
+            window.__chatkitOn401(res);
+          }
+          return res;
+        });
+      };
+
+      window.__chatkitOn401 = async function(res) {
+        var recovered = sessionStorage.getItem(RECOVERY_FLAG);
+        if (recovered) {
+          console.log('give up after retry');
+          showError('Session expired. Refresh.', true);
+          return;
+        }
+        console.log('on 401 -> recovering (retry 1)');
+        showLoading();
+        clearCachedSecret(currentGroupId);
+        try {
+          var newSecret = await createSession({ groupId: currentGroupId, forceNew: true });
+          saveCachedSecret(currentGroupId, newSecret);
+          sessionStorage.setItem(RECOVERY_FLAG, '1');
+          location.reload();
+        } catch (e) {
+          console.error('Recovery failed', e);
+          showError('Session expired. Refresh.', true);
+        }
+      };
+
+      function loadChatKitScript() {
+        return new Promise(function(resolve, reject) {
+          if (customElements.get('openai-chatkit')) {
+            resolve();
+            return;
+          }
+          var s = document.createElement('script');
+          s.src = 'https://cdn.platform.openai.com/deployments/chatkit/chatkit.js';
+          s.async = true;
+          s.onload = function() {
+            var n = 0;
+            var iv = setInterval(function() {
+              n++;
+              if (customElements.get('openai-chatkit')) {
+                clearInterval(iv);
+                resolve();
+              } else if (n >= 100) {
+                clearInterval(iv);
+                reject(new Error('openai-chatkit not registered'));
+              }
+            }, 100);
+          };
+          s.onerror = function() { reject(new Error('ChatKit script load failed')); };
+          document.head.appendChild(s);
+        });
+      }
+
+      try {
+        await loadChatKitScript();
+        var chatkitEl = document.getElementById('my-chat');
+        if (!chatkitEl) {
+          showError('ChatKit element not found');
+          return;
+        }
+
+        chatkitEl.setOptions({
+          api: {
+            getClientSecret: async function() {
+              var params = parseParams();
+              var gid = params.groupId;
+              var secret = loadCachedSecret(gid);
+              if (secret) return secret;
+              secret = await createSession({ groupId: gid, forceNew: false });
+              saveCachedSecret(gid, secret);
+              return secret;
+            }
+          }
+        });
+
+        sessionStorage.removeItem(RECOVERY_FLAG);
+        showChat();
+        console.log('ChatKit initialized successfully');
+      } catch (err) {
+        showError('Error: ' + err.message, true);
+        console.error('Failed to initialize ChatKit', err);
+      }
+    })();
+  </script>
+</body>
+</html>
+  `);
 });
 
-// Serve static frontend in production
+// Normalize groupid: primitive string, max 256 chars, default 'default'
+function normalizeGroupid(raw: string | undefined): string {
+  if (typeof raw !== 'string' || raw.length === 0 || raw.length > 256) {
+    return 'default';
+  }
+  return raw;
+}
+
+// Shared: create ChatKit session with groupid in workflow.state_variables only (no top-level groupid)
+async function createChatKitSession(res: express.Response, groupid: string): Promise<void> {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const WORKFLOW_ID = process.env.WORKFLOW_ID;
+
+  if (!OPENAI_API_KEY) {
+    res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+    return;
+  }
+  if (!WORKFLOW_ID) {
+    res.status(500).json({ error: 'WORKFLOW_ID environment variable is not set' });
+    return;
+  }
+
+  const payload = {
+    user: `user_${Date.now()}`,
+    workflow: {
+      id: WORKFLOW_ID,
+      state_variables: { groupid }
+    }
+  };
+
+  if (process.env.CHATKIT_DEBUG === '1') {
+    console.log('[ChatKit] OpenAI /v1/chatkit/sessions payload =', JSON.stringify(payload, null, 2));
+  }
+
+  const apiRes = await fetch('https://api.openai.com/v1/chatkit/sessions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'OpenAI-Beta': 'chatkit_beta=v1',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await apiRes.json();
+
+  if (process.env.CHATKIT_DEBUG === '1') {
+    const safe = { status: apiRes.status, ok: apiRes.ok };
+    if (data.id != null) (safe as Record<string, unknown>).session_id = data.id;
+    if (data.expires_after != null) (safe as Record<string, unknown>).expires_after = data.expires_after;
+    console.log('[ChatKit] OpenAI session create response =', JSON.stringify(safe));
+  }
+
+  if (!apiRes.ok) {
+    res.status(apiRes.status).json({
+      error: data.error?.message || data.error || 'Failed to create ChatKit session',
+      details: data
+    });
+    return;
+  }
+
+  res.json({ client_secret: data.client_secret, groupId: groupid });
+}
+
+// GET /session - Creates a ChatKit session (groupId from query)
+app.get('/session', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+
+  const rawGroupId = typeof req.query.groupId === 'string' ? req.query.groupId : undefined;
+  const groupid = normalizeGroupid(rawGroupId);
+  const rawForceNew = typeof req.query.forceNew === 'string' ? req.query.forceNew : undefined;
+  const forceNew = rawForceNew === '1' || rawForceNew === 'true';
+
+  if (process.env.CHATKIT_DEBUG === '1') {
+    console.log('[ChatKit /session] GET', { hostname: req.hostname, ip: req.ip, groupid, forceNew });
+  }
+
+  try {
+    await createChatKitSession(res, groupid);
+  } catch (err: any) {
+    console.error('Error creating ChatKit session:', err);
+    res.status(500).json({
+      error: 'Internal server error while creating ChatKit session',
+      message: err.message
+    });
+  }
+});
+
+// POST /session - Creates a ChatKit session (groupid from JSON body; for clients that send { groupid })
+app.post('/session', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+
+  let groupid = 'default';
+  let forceNew = false;
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const raw = body.groupid ?? body.groupId;
+    groupid = normalizeGroupid(typeof raw === 'string' ? raw : undefined);
+    const rawFn = body.forceNew ?? body.force_new;
+    forceNew = rawFn === true || rawFn === '1' || rawFn === 'true';
+  } catch {
+    // keep default
+  }
+
+  if (process.env.CHATKIT_DEBUG === '1') {
+    console.log('[ChatKit /session] POST', { groupid, forceNew });
+  }
+
+  try {
+    await createChatKitSession(res, groupid);
+  } catch (err: any) {
+    console.error('Error creating ChatKit session:', err);
+    res.status(500).json({
+      error: 'Internal server error while creating ChatKit session',
+      message: err.message
+    });
+  }
+});
+
+// GET /chatkit-embed-preview - Minimal HTML that loads the floating widget script (for Settings preview)
+app.get('/chatkit-embed-preview', (req, res) => {
+  const groupId = typeof req.query.groupId === 'string' && req.query.groupId.length > 0
+    ? req.query.groupId
+    : 'YOUR_GROUP_ID';
+  const forceNew = req.query.forceNew === '1' || req.query.forceNew === 'true' ? '1' : '0';
+  const scriptUrl = 'https://mcp-n8n.johnson-tecace.workers.dev/embed.js?v=3';
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatKit Embed Preview</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; padding: 16px; background: var(--bg, #f5f5f5); color: var(--text, #333); }
+    .hint { font-size: 14px; opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <p class="hint">The floating &quot;Chat with AI&quot; button should appear in the corner. Click it to open ChatKit.</p>
+  <script src="${scriptUrl}" data-group-id="${groupId}" data-force-new="${forceNew}" defer></script>
+</body>
+</html>`);
+});
+
+// Diagnostics routes
+app.get('/__ping', (_req, res) => {
+  res.type('text/plain').send('pong');
+});
+
+app.get('/__routes', (_req, res) => {
+  const routes: string[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (app as any)._router.stack.forEach((layer: any) => {
+    if (layer.route && layer.route.path) {
+      const methods = Object.keys(layer.route.methods)
+        .filter((m) => layer.route.methods[m])
+        .map((m) => m.toUpperCase());
+      methods.forEach((m) => routes.push(`${m} ${layer.route.path}`));
+    }
+  });
+  res.json({ routes });
+});
+
+// Serve static frontend in production (must be after specific routes like /chatkit and /session)
 try {
   app.use(express.static(distDir));
-  // SPA fallback to index.html
-  app.get('*', (_, res) => {
+  // SPA fallback to index.html for non-API, HTML-accepting routes
+  app.get('*', (req, res, next) => {
+    const accept = req.headers.accept || '';
+    const pathOnly = req.path || '';
+
+    // Skip fallback for:
+    // - API / diagnostics / ChatKit endpoints
+    if (
+      pathOnly.startsWith('/api') ||
+      pathOnly.startsWith('/__') ||
+      pathOnly.startsWith('/session') ||
+      pathOnly.startsWith('/chatkit')
+    ) {
+      return next();
+    }
+    if (pathOnly === '/chatkit-embed-preview') {
+      return next();
+    }
+
+    // Only handle HTML navigations
+    if (!accept.includes('text/html')) {
+      return next();
+    }
+
     res.sendFile(path.join(distDir, 'index.html'));
   });
 } catch {}
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

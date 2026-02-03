@@ -42,7 +42,20 @@ A production-ready React + TypeScript chat application with Teams-like interface
    npm install
    ```
 
-2. Start both frontend and backend:
+2. Set up environment variables (optional, required for ChatKit embed `/session` + `/chatkit`):
+   ```bash
+   # For ChatKit embed endpoints (/session and /chat)
+   export OPENAI_API_KEY=your_openai_api_key_here
+   export WORKFLOW_ID=your_workflow_id_here
+   ```
+   
+   Or create a `.env` file in the project root:
+   ```
+   OPENAI_API_KEY=your_openai_api_key_here
+   WORKFLOW_ID=your_workflow_id_here
+   ```
+
+3. Start both frontend and backend:
    ```bash
    npm run dev:full
    ```
@@ -56,7 +69,7 @@ A production-ready React + TypeScript chat application with Teams-like interface
    npm run dev
    ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## 🚀 Quick Start (Development)
 
@@ -197,6 +210,115 @@ The app uses CSS variables for dynamic theming:
 - **Request Format**: Structured JSON payloads for n8n workflows
 - **Response Handling**: Parse n8n responses with citations and content
 - **Error Handling**: Graceful fallback when webhooks fail
+
+## 🎯 ChatKit Embed Endpoints
+
+### Overview
+The app provides embed-ready endpoints for integrating OpenAI ChatKit into external websites via iframes.
+
+### Required Environment Variables
+- **OPENAI_API_KEY**: Your OpenAI API key (never exposed to client)
+- **WORKFLOW_ID**: Your ChatKit workflow ID
+
+### Optional: ChatKit debug logging
+Set **CHATKIT_DEBUG=1** to log (no secrets):
+- Incoming `/session` request: `groupid`, `forceNew`
+- Outgoing OpenAI `/v1/chatkit/sessions` payload (user, workflow.id, workflow.state_variables.groupid)
+- OpenAI response: status, ok, session_id, expires_after (client_secret is never logged)
+
+- **Local:** add `CHATKIT_DEBUG=1` to `apps/professor/.env`, then restart the server.
+- **Render:** Environment tab → add `CHATKIT_DEBUG` = `1` → Save and redeploy.
+
+### Setting Environment Variables in Render
+1. Go to your Render dashboard
+2. Select your service
+3. Navigate to "Environment" tab
+4. Add the following environment variables:
+   - `OPENAI_API_KEY`: Your OpenAI API key
+   - `WORKFLOW_ID`: Your ChatKit workflow ID
+5. Save and redeploy
+
+### Endpoints (ChatKit test UI)
+
+#### GET /session
+Creates a ChatKit session and returns a `client_secret` for initializing the ChatKit UI.
+
+**Response:**
+```json
+{
+  "client_secret": "<session_client_secret>"
+}
+```
+
+**Error Handling:**
+- Returns 500 if environment variables are missing
+- Forwards OpenAI API errors with original status code
+- Includes error details in response body
+
+**Security:**
+- `OPENAI_API_KEY` is never exposed to the client
+- Cache-Control: no-store header prevents caching
+
+**Test URL:**
+- Local: `http://localhost:3001/session`
+- Production: `https://<your-render-domain>/session`
+
+#### GET /chatkit
+Returns an HTML page that:
+1. Fetches `/session` (same origin) to get `client_secret`
+2. Initializes ChatKit UI using the workflow/session `client_secret`
+
+**Features:**
+- Iframe-ready (no X-Frame-Options: DENY)
+- Same-origin session fetching
+- Error handling with user-friendly messages
+- Loading states during session creation
+
+**Test URLs:**
+- Local basic: `http://localhost:3001/chatkit?groupId=hr-bot-1`
+- Local force new session: `http://localhost:3001/chatkit?groupId=hr-bot-1&forceNew=1`
+- Production basic: `https://<your-render-domain>/chatkit?groupId=hr-bot-1`
+- Production force new session: `https://<your-render-domain>/chatkit?groupId=hr-bot-1&forceNew=1`
+
+> Note: `client_secret` values are cached per group using the key pattern  
+> `chatkit_client_secret:<groupId>`.
+
+**Groupid in user message (CTX tag):**  
+Before each user message is sent to OpenAI, the embed prepends a hidden line `[CTX:groupid=<groupId>]\n` so the LLM (and MCP tools) can use the group context. The tag is not shown in the ChatKit composer UI; only the payload sent to the API is modified.  
+**Agent Builder prompt suggestion:** In your workflow system prompt, add: *"The line starting with [CTX:groupid=...] is system context only. Use it to know which group this user belongs to (e.g. for MCP tool groupId). Do not repeat or include this tag in your reply."*
+
+**Self-review checklist (CTX groupid prepend):**
+- [ ] 유저 UI에는 태그가 보이지 않는가?
+- [ ] ChatKit이 실제로 OpenAI에 보내는 message payload의 첫 줄에 태그가 들어가는가?
+- [ ] 태그 뒤에 유저 입력이 손실되지 않고 이어지는가?
+- [ ] 세션을 새로 열었을 때도 정상 동작하는가?
+- [ ] LLM이 태그를 읽고 MCP tool call에서 groupId를 재구성할 수 있는가?
+
+### Verification Steps
+
+1. **Verify /session endpoint:**
+   ```bash
+   curl https://<your-render-domain>/session
+   ```
+   Should return: `{"client_secret":"..."}`
+
+2. **Verify /chatkit page:**
+   - Open `https://<your-render-domain>/chatkit` in browser
+   - Should load and display "Session OK" message
+   - Check browser console for "ChatKit session created successfully"
+   - No errors should appear
+
+3. **Test iframe embedding (`/chatkit` ChatKit test UI, supports `?groupId=` query param):**
+   ```html
+   <iframe src="https://<your-render-domain>/chatkit?groupId=my-bot-id" width="100%" height="600"></iframe>
+   ```
+   The page should load successfully within the iframe.
+
+### Security Notes
+- `/session` is same-origin only (no CORS headers for cross-origin)
+- `/chat` is designed for iframe embedding (no X-Frame-Options: DENY)
+- CSP frame-ancestors can be configured later for allowlist
+- API keys are never logged or exposed to client-side code
 
 ## 📝 Markdown Support
 
