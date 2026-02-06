@@ -50,18 +50,21 @@ const References: React.FC<ReferencesProps> = ({ citations }) => {
                 [{index + 1}]
               </span>
               <div className="flex-1 min-w-0">
-                <h5 
-                  className="text-sm font-medium break-words" 
-                  style={{ color: 'var(--text)' }}
-                >
-                  {citation.title || 'Untitled Source'}
-                </h5>
-                {citation.snippet && (
+                {citation.title && citation.title.trim() && (
+                  <h5 
+                    className="text-sm font-medium break-words" 
+                    style={{ color: 'var(--text)' }}
+                  >
+                    {citation.title}
+                  </h5>
+                )}
+                {citation.snippet && citation.snippet.trim() && (
                   <div 
                     className="text-xs mt-1.5 break-words" 
                     style={{ 
                       color: 'var(--text-secondary)',
-                      lineHeight: '1.5'
+                      lineHeight: '1.5',
+                      marginTop: citation.title && citation.title.trim() ? '6px' : '0'
                     }}
                   >
                     <ReactMarkdown

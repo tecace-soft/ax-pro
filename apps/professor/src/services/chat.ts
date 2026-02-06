@@ -108,8 +108,9 @@ export function parseCitations(
     contents: contents.map((c, i) => ({ index: i, length: c.length, preview: c.substring(0, 100) }))
   });
 
-  // Use the shorter length to avoid mismatched pairs (no fallback to first item only)
-  const count = Math.min(titles.length, contents.length);
+  // Create citations for all titles, even if content is missing
+  // This allows citations to show title even when content is empty
+  const count = titles.length;
 
   const citations: MessageCitation[] = [];
   for (let i = 0; i < count; i++) {
