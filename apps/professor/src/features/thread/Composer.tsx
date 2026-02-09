@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useT } from '../../i18n/I18nProvider';
+import { useMobile } from '../../hooks/useMobile';
 
 interface ComposerProps {
   onSend: (content: string) => void;
@@ -10,6 +11,7 @@ const Composer: React.FC<ComposerProps> = ({ onSend, disabled = false }) => {
   const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const t = useT();
+  const isMobile = useMobile();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,13 +49,17 @@ const Composer: React.FC<ComposerProps> = ({ onSend, disabled = false }) => {
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={t('ui.typeMessage')}
-          className="w-full resize-none rounded-2xl px-4 py-3 pr-12 min-h-[52px] max-h-[200px] border focus:outline-none focus:ring-0 focus:border-transparent transition-all"
+          className="w-full resize-none rounded-2xl resize-none border focus:outline-none focus:ring-0 focus:border-transparent transition-all"
           style={{
             backgroundColor: 'var(--bg-secondary)',
             borderColor: 'var(--border)',
             color: 'var(--text)',
-            fontSize: '16px',
-            boxShadow: '0 0 0 1px var(--border)'
+            fontSize: isMobile ? '16px' : '16px', // Prevent zoom on iOS
+            boxShadow: '0 0 0 1px var(--border)',
+            padding: isMobile ? '0.75rem 3rem 0.75rem 0.75rem' : '0.75rem 3rem 0.75rem 1rem',
+            minHeight: isMobile ? '44px' : '52px',
+            maxHeight: '200px',
+            paddingRight: isMobile ? '3rem' : '3rem'
           }}
           disabled={disabled}
           rows={1}
@@ -61,15 +67,23 @@ const Composer: React.FC<ComposerProps> = ({ onSend, disabled = false }) => {
         <button
           type="submit"
           disabled={!content.trim() || disabled}
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          className="absolute transform -translate-y-1/2 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           style={{
             backgroundColor: content.trim() && !disabled ? 'var(--primary)' : 'transparent',
-            color: content.trim() && !disabled ? 'white' : 'var(--text-muted)'
+            color: content.trim() && !disabled ? 'white' : 'var(--text-muted)',
+            right: isMobile ? '0.5rem' : '0.5rem',
+            top: '50%',
+            padding: isMobile ? '0.625rem' : '0.5rem',
+            minWidth: '44px',
+            minHeight: '44px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}
         >
           <svg 
-            width="20" 
-            height="20" 
+            width={isMobile ? "22" : "20"} 
+            height={isMobile ? "22" : "20"} 
             viewBox="0 0 24 24" 
             fill="none" 
             stroke="currentColor" 

@@ -15,6 +15,7 @@ import { fetchSessionById } from '../services/chatData';
 import { useSearchParams } from 'react-router-dom';
 import { useSessions } from '../features/sessions/useSessions';
 import { IconSettings } from '../ui/icons';
+import { useMobile } from '../hooks/useMobile';
 
 const ChatShell: React.FC = () => {
   const navigate = useNavigate();
@@ -31,6 +32,8 @@ const ChatShell: React.FC = () => {
   const hasAutoCreatedSession = useRef(false);
   const [urlCopied, setUrlCopied] = useState(false);
   const lastGroupRoleCheckRef = useRef<string | null>(null);
+  const isMobile = useMobile();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Check auth and group on mount (also syncs URL) - only if user is logged in
   // For non-logged-in users, we skip this to allow access
@@ -226,18 +229,48 @@ const ChatShell: React.FC = () => {
     navigate('/');
   };
 
+  // Close mobile sidebar when session is selected
+  useEffect(() => {
+    if (isMobile && currentSessionId) {
+      setMobileSidebarOpen(false);
+    }
+  }, [currentSessionId, isMobile]);
+
   return (
     <div style={{ height: '100vh', display: 'flex', overflow: 'hidden', backgroundColor: 'var(--bg)' }}>
+      {/* Mobile Overlay - Darkens background when sidebar is open */}
+      {isMobile && mobileSidebarOpen && user && (
+        <div
+          onClick={() => setMobileSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 40,
+            transition: 'opacity 0.3s ease'
+          }}
+        />
+      )}
+
       {/* Left Rail - Session List - Only show if user is logged in */}
       {user && (
       <div style={{ 
-        width: '320px', 
-        borderRight: '1px solid var(--border)', 
-        display: 'flex', 
+        width: isMobile ? '280px' : '320px',
+        borderRight: isMobile ? 'none' : '1px solid var(--border)',
+        display: isMobile && !mobileSidebarOpen ? 'none' : 'flex',
         flexDirection: 'column',
-        height: '100vh', 
+        height: '100vh',
         overflow: 'hidden',
-        position: 'relative'
+        position: isMobile ? 'fixed' : 'relative',
+        left: isMobile && !mobileSidebarOpen ? '-280px' : '0',
+        top: 0,
+        zIndex: 50,
+        backgroundColor: 'var(--bg)',
+        transition: 'left 0.3s ease',
+        boxShadow: isMobile ? '2px 0 8px rgba(0, 0, 0, 0.1)' : 'none'
       }}>
         {/* Header - Fixed at top, never scrolls */}
         <div style={{ 
@@ -248,19 +281,52 @@ const ChatShell: React.FC = () => {
           position: 'relative',
           zIndex: 10
         }}>
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: isMobile ? '0.75rem' : '1rem' }}>
+            <h1 className="font-semibold" style={{ 
+              color: 'var(--text)',
+              fontSize: isMobile ? '0.875rem' : '1.125rem'
+            }}>
               {customization.chatTitle}
             </h1>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center" style={{ gap: isMobile ? '0.5rem' : '0.5rem' }}>
+              {/* Mobile Close Button */}
+              {isMobile && (
+                <button
+                  onClick={() => setMobileSidebarOpen(false)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid var(--border)',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '44px',
+                    minHeight: '44px'
+                  }}
+                  title="Close menu"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              )}
               {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className="text-sm px-2 py-1 rounded border"
+                className="rounded border"
                 style={{ 
                   backgroundColor: 'var(--card)', 
                   borderColor: 'var(--border)',
-                  color: 'var(--text)'
+                  color: 'var(--text)',
+                  padding: isMobile ? '0.5rem' : '0.25rem 0.5rem',
+                  minWidth: '44px',
+                  minHeight: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
                 title={theme === 'light' ? t('ui.theme.dark') : t('ui.theme.light')}
               >
@@ -287,10 +353,14 @@ const ChatShell: React.FC = () => {
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
-                className="text-sm px-2 py-1 rounded border bg-transparent"
+                className="rounded border bg-transparent"
                 style={{ 
                   borderColor: 'var(--border)',
-                  color: 'var(--text)'
+                  color: 'var(--text)',
+                  padding: isMobile ? '0.5rem' : '0.25rem 0.5rem',
+                  fontSize: isMobile ? '0.875rem' : '0.875rem',
+                  minWidth: '44px',
+                  minHeight: '44px'
                 }}
               >
                 <option value="en">EN</option>
@@ -300,26 +370,44 @@ const ChatShell: React.FC = () => {
           </div>
           
           {/* User Info */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+          <div className="flex items-center justify-between" style={{ 
+            flexWrap: isMobile ? 'wrap' : 'nowrap',
+            gap: isMobile ? '0.75rem' : '0'
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p className="font-medium truncate" style={{ 
+                color: 'var(--text)',
+                fontSize: isMobile ? '0.75rem' : '0.875rem'
+              }}>
                 {user.email}
               </p>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <p className="truncate" style={{ 
+                color: 'var(--text-muted)',
+                fontSize: isMobile ? '0.625rem' : '0.75rem'
+              }}>
                 {groupRole === 'admin' ? 'Administrator' : t('ui.user')}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center" style={{ gap: isMobile ? '0.5rem' : '0.5rem', flexShrink: 0 }}>
               <button
-                onClick={() => navigate(withGroupParam('/admin/dashboard'))}
-                className="p-2 rounded-md border transition-colors"
+                onClick={() => {
+                  if (isMobile) setMobileSidebarOpen(false);
+                  navigate(withGroupParam('/admin/dashboard'));
+                }}
+                className="rounded-md border transition-colors"
                 style={{
                   borderColor: 'var(--border)',
-                  color: 'var(--text)'
+                  color: 'var(--text)',
+                  padding: isMobile ? '0.5rem' : '0.5rem',
+                  minWidth: '44px',
+                  minHeight: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
                 title={t('ui.dashboard')}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width={isMobile ? "18" : "16"} height={isMobile ? "18" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="7" height="7"></rect>
                   <rect x="14" y="3" width="7" height="7"></rect>
                   <rect x="14" y="14" width="7" height="7"></rect>
@@ -327,19 +415,38 @@ const ChatShell: React.FC = () => {
                 </svg>
               </button>
               <button
-                onClick={() => navigate(withGroupParam('/settings'))}
-                className="p-2 rounded-md border transition-colors"
+                onClick={() => {
+                  if (isMobile) setMobileSidebarOpen(false);
+                  navigate(withGroupParam('/settings'));
+                }}
+                className="rounded-md border transition-colors"
                 style={{
                   borderColor: 'var(--border)',
-                  color: 'var(--text)'
+                  color: 'var(--text)',
+                  padding: isMobile ? '0.5rem' : '0.5rem',
+                  minWidth: '44px',
+                  minHeight: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
                 title={t('ui.settings')}
               >
-                <IconSettings size={16} />
+                <IconSettings size={isMobile ? 18 : 16} />
               </button>
               <button
-                onClick={handleLogout}
-                className="text-sm link"
+                onClick={() => {
+                  if (isMobile) setMobileSidebarOpen(false);
+                  handleLogout();
+                }}
+                className="link"
+                style={{
+                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                  padding: isMobile ? '0.5rem' : '0.25rem 0.5rem',
+                  minHeight: '44px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
               >
                 {t('ui.signOut')}
               </button>
@@ -374,21 +481,55 @@ const ChatShell: React.FC = () => {
         {currentSessionId ? (
           <div className="flex-1 flex flex-col h-full">
             {/* Chat Header */}
-            <div className="flex items-center justify-between p-4 border-b flex-shrink-0 sticky top-0 z-10" style={{ 
+            <div className="flex items-center justify-between border-b flex-shrink-0 sticky top-0 z-10" style={{ 
               borderColor: 'var(--border)',
-              backgroundColor: 'var(--bg)'
+              backgroundColor: 'var(--bg)',
+              padding: isMobile ? '0.75rem' : '1rem'
             }}>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center" style={{ gap: isMobile ? '0.5rem' : '0.75rem', flex: 1, minWidth: 0 }}>
+                {/* Mobile Menu Button */}
+                {isMobile && user && (
+                  <button
+                    onClick={() => setMobileSidebarOpen(true)}
+                    style={{
+                      padding: '0.5rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid var(--border)',
+                      backgroundColor: 'var(--card)',
+                      color: 'var(--text)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      minWidth: '44px',
+                      minHeight: '44px'
+                    }}
+                    title="Open menu"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="3" y1="12" x2="21" y2="12"></line>
+                      <line x1="3" y1="6" x2="21" y2="6"></line>
+                      <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                  </button>
+                )}
                 <img 
                   src={customization.avatarUrl} 
                   alt="Chatbot Avatar" 
-                  className="w-10 h-10 rounded-full flex-shrink-0"
-                  style={{ objectFit: 'cover' }}
+                  className="rounded-full flex-shrink-0"
+                  style={{ 
+                    objectFit: 'cover',
+                    width: isMobile ? '36px' : '40px',
+                    height: isMobile ? '36px' : '40px'
+                  }}
                   onError={(e) => {
                     e.currentTarget.src = '/default-profile-avatar.png';
                   }}
                 />
-                <h2 className="text-lg font-medium" style={{ color: 'var(--text)' }}>
+                <h2 className="font-medium truncate" style={{ 
+                  color: 'var(--text)',
+                  fontSize: isMobile ? '0.875rem' : '1.125rem'
+                }}>
                   {(() => {
                     // Find the current session in the sessions list to get the proper title/firstMessage
                     const sessionInList = sessions.find(s => s.id === currentSessionId);
@@ -400,37 +541,43 @@ const ChatShell: React.FC = () => {
                   })()}
                 </h2>
               </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={async () => {
-                    try {
-                      const currentUrl = window.location.href;
-                      await navigator.clipboard.writeText(currentUrl);
-                      setUrlCopied(true);
-                      setTimeout(() => {
-                        setUrlCopied(false);
-                      }, 2000);
-                    } catch (error) {
-                      console.error('Failed to copy URL:', error);
-                    }
-                  }}
-                  className="text-sm px-3 py-1.5 rounded-md border hover:bg-gray-50 flex items-center space-x-2"
-                  style={{ 
-                    borderColor: 'var(--border)',
-                    color: 'var(--text)',
-                    backgroundColor: 'var(--card)'
-                  }}
-                  title="Copy chat URL to clipboard"
-                >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="18" cy="5" r="3"></circle>
-                    <circle cx="6" cy="12" r="3"></circle>
-                    <circle cx="18" cy="19" r="3"></circle>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                      </svg>
-                  <span>{urlCopied ? 'URL Copied!' : 'Share URL'}</span>
-                </button>
+              <div className="flex items-center" style={{ gap: isMobile ? '0.5rem' : '0.5rem', flexShrink: 0 }}>
+                {!isMobile && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const currentUrl = window.location.href;
+                        await navigator.clipboard.writeText(currentUrl);
+                        setUrlCopied(true);
+                        setTimeout(() => {
+                          setUrlCopied(false);
+                        }, 2000);
+                      } catch (error) {
+                        console.error('Failed to copy URL:', error);
+                      }
+                    }}
+                    className="rounded-md border flex items-center"
+                    style={{ 
+                      borderColor: 'var(--border)',
+                      color: 'var(--text)',
+                      backgroundColor: 'var(--card)',
+                      padding: '0.375rem 0.75rem',
+                      fontSize: '0.875rem',
+                      gap: '0.5rem',
+                      minHeight: '44px'
+                    }}
+                    title="Copy chat URL to clipboard"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="18" cy="5" r="3"></circle>
+                      <circle cx="6" cy="12" r="3"></circle>
+                      <circle cx="18" cy="19" r="3"></circle>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                    <span>{urlCopied ? 'Copied!' : 'Share'}</span>
+                  </button>
+                )}
                 <button
                   onClick={async () => {
                     try {
@@ -443,19 +590,25 @@ const ChatShell: React.FC = () => {
                       console.error('Failed to create new chat:', error);
                     }
                   }}
-                  className="text-sm px-3 py-1.5 rounded-md border hover:bg-gray-50 flex items-center space-x-2"
+                  className="rounded-md border flex items-center"
                   style={{ 
                     borderColor: 'var(--border)',
                     color: 'var(--text)',
-                    backgroundColor: 'var(--card)'
+                    backgroundColor: 'var(--card)',
+                    padding: isMobile ? '0.5rem' : '0.375rem 0.75rem',
+                    fontSize: isMobile ? '0.75rem' : '0.875rem',
+                    gap: isMobile ? '0.25rem' : '0.5rem',
+                    minWidth: isMobile ? '44px' : 'auto',
+                    minHeight: '44px',
+                    justifyContent: 'center'
                   }}
                   title="Start a new chat (⌘N or Ctrl+N)"
                 >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width={isMobile ? "18" : "14"} height={isMobile ? "18" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
-                  <span>{t('ui.newChat')}</span>
+                  </svg>
+                  {!isMobile && <span>{t('ui.newChat')}</span>}
                 </button>
               </div>
             </div>
