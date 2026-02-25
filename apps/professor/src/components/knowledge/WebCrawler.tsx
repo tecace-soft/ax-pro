@@ -25,12 +25,12 @@ const WebCrawler: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<CrawledFile | null>(null);
   const [isIndexing, setIsIndexing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isGroupMember, setIsGroupMember] = useState(false);
   const [isInputSectionCollapsed, setIsInputSectionCollapsed] = useState(false);
 
-  // Check if user is admin
+  // Check if user is a member of the group
   React.useEffect(() => {
-    const checkAdmin = async () => {
+    const checkGroupMembership = async () => {
       const session = getSession();
       if (!session) return;
       
@@ -39,11 +39,12 @@ const WebCrawler: React.FC = () => {
       
       try {
         const role = await getUserRoleForGroup(groupId);
-        setIsAdmin(role === 'admin');
+        setIsGroupMember(role !== null && role !== undefined);
       } catch (error) {
+        setIsGroupMember(false);
       }
     };
-    checkAdmin();
+    checkGroupMembership();
   }, []);
 
   const handleAddUrl = () => {
@@ -241,8 +242,8 @@ const WebCrawler: React.FC = () => {
   };
 
   const handleIndexFile = async (file: CrawledFile) => {
-    if (!isAdmin) {
-      setError('Only administrators can index files');
+    if (!isGroupMember) {
+      setError('You must be a member of this group to index files');
       return;
     }
 
@@ -318,8 +319,8 @@ const WebCrawler: React.FC = () => {
   };
 
   const handleIndexAll = async () => {
-    if (!isAdmin) {
-      setError('Only administrators can index files');
+    if (!isGroupMember) {
+      setError('You must be a member of this group to index files');
       return;
     }
 
@@ -363,10 +364,10 @@ const WebCrawler: React.FC = () => {
     }
   };
 
-  if (!isAdmin) {
+  if (!isGroupMember) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        <p>Web Crawler is only available to administrators.</p>
+        <p>Web Crawler is only available to group members.</p>
       </div>
     );
   }
