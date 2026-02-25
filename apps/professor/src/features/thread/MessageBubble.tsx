@@ -39,7 +39,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     try {
       localStorage.setItem(`showReferences_${message.id}`, String(newValue));
     } catch (error) {
-      console.error('Failed to save showReferences state:', error);
     }
   };
 
@@ -56,7 +55,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = message.content;
@@ -69,7 +67,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {
-        console.error('Fallback copy failed:', err);
       }
       document.body.removeChild(textArea);
     }
@@ -81,7 +78,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       setCopiedCodeBlock(codeId);
       setTimeout(() => setCopiedCodeBlock(null), 2000);
     } catch (error) {
-      console.error('Failed to copy code:', error);
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = codeContent;
@@ -94,7 +90,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         setCopiedCodeBlock(codeId);
         setTimeout(() => setCopiedCodeBlock(null), 2000);
       } catch (err) {
-        console.error('Fallback copy failed:', err);
       }
       document.body.removeChild(textArea);
     }

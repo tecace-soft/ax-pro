@@ -33,22 +33,16 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole: Role }
     const checkAuth = async () => {
       // First check if user is logged in
       if (!session) {
-        console.log('🔒 ProtectedRoute: No session, unauthorized');
         setIsAuthorized(false);
         return;
       }
-
-      console.log('🔐 ProtectedRoute: Checking auth for role:', requiredRole, 'groupId:', groupId);
-
       // If groupId exists, check group-based role
       if (groupId) {
         const authorized = await isAuthedFor(requiredRole, groupId);
-        console.log('✅ ProtectedRoute: Group-based auth result:', authorized);
         setIsAuthorized(authorized);
       } else {
         // Fall back to session-based role check (for pages without group)
         const authorized = isAuthedForSync(requiredRole);
-        console.log('✅ ProtectedRoute: Session-based auth result:', authorized);
         setIsAuthorized(authorized);
       }
     };

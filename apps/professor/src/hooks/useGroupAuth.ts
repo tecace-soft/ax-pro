@@ -18,16 +18,8 @@ export const useGroupAuth = () => {
   const urlGroupId = searchParams.get('group');
   
   useEffect(() => {
-    console.log('🔄 useGroupAuth: Effect running', {
-      pathname: location.pathname,
-      urlGroupId,
-      hasChecked: hasCheckedRef.current,
-      lastGroupId: lastGroupIdRef.current
-    });
-
     // Skip if we've already checked this group ID
     if (hasCheckedRef.current && lastGroupIdRef.current === urlGroupId) {
-      console.log('⏭️ useGroupAuth: Already checked this group, skipping');
       return;
     }
     
@@ -35,7 +27,6 @@ export const useGroupAuth = () => {
 
     // Require logged in user
     if (!session) {
-      console.log('🔒 useGroupAuth: No session, redirecting to login');
       navigate('/', { replace: true });
       return;
     }
@@ -47,23 +38,13 @@ export const useGroupAuth = () => {
     const requiresGroup = location.pathname.startsWith('/admin') || 
                           location.pathname.startsWith('/settings') ||
                           location.pathname.startsWith('/chat');
-    
-    console.log('🔍 useGroupAuth: Check conditions', {
-      urlGroupId,
-      requiresGroup,
-      pathname: location.pathname,
-      isGroupManagement: location.pathname === '/group-management'
-    });
-    
     if (!urlGroupId && requiresGroup && location.pathname !== '/group-management') {
-      console.log('⚠️ useGroupAuth: No group in URL for page that requires it, redirecting to group management');
       console.trace('Redirect trace:');
       navigate('/group-management', { replace: true });
       return;
     }
     
     if (urlGroupId) {
-      console.log('✅ useGroupAuth: Valid session and group:', urlGroupId);
     }
     
     hasCheckedRef.current = true;

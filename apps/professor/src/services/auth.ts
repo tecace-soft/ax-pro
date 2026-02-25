@@ -60,18 +60,13 @@ export const login = async (email: string, password: string): Promise<Session | 
       // Store session in localStorage for cross-window persistence
       try {
         localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-        console.log('✅ Database user logged in:', session);
         return session;
       } catch (error) {
-        console.error('Failed to store session:', error);
         return null;
       }
     }
-    
-    console.log('❌ Invalid credentials');
     return null;
   } catch (error) {
-    console.error('Authentication error:', error);
     return null;
   }
 };
@@ -83,7 +78,6 @@ export const logout = (): void => {
   try {
     localStorage.removeItem(SESSION_KEY);
   } catch (error) {
-    console.error('Failed to clear session:', error);
   }
 };
 
@@ -105,9 +99,7 @@ export const getSession = (): Session | null => {
           localStorage.setItem(SESSION_KEY, oldSessionData);
           sessionStorage.removeItem(SESSION_KEY);
           sessionData = oldSessionData;
-          console.log('✅ Migrated session from sessionStorage to localStorage');
         } catch (error) {
-          console.error('Failed to migrate session:', error);
         }
       }
     }
@@ -126,7 +118,6 @@ export const getSession = (): Session | null => {
 
     return session;
   } catch (error) {
-    console.error('Failed to retrieve session:', error);
     logout(); // Clear corrupted session
     return null;
   }
@@ -161,7 +152,6 @@ export const getUserRoleForGroup = async (groupId: string): Promise<'admin' | 'u
 
     return null; // User is not a member of this group
   } catch (error) {
-    console.error('Failed to get user role for group:', error);
     return null;
   }
 };

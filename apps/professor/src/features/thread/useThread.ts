@@ -24,7 +24,6 @@ export const useThread = (sessionId: string) => {
       const groupId = searchParams.get('group') || (getSession() as any)?.selectedGroupId;
       
       if (!groupId) {
-        console.warn('No group_id available, cannot fetch messages');
         setMessages([]);
         setLoading(false);
         return;
@@ -70,7 +69,6 @@ export const useThread = (sessionId: string) => {
           }
           
           if (existingCitations) {
-            console.log(`✅ Preserved citations for message ${msg.id}:`, existingCitations);
             return { ...msg, citations: existingCitations };
           }
           return msg;
@@ -78,10 +76,7 @@ export const useThread = (sessionId: string) => {
         
         return mergedMessages;
       });
-      
-      console.log(`✅ Loaded ${chatMessages.length} messages from Supabase for session: ${sessionId}, group: ${groupId}`);
     } catch (err) {
-      console.error('Failed to fetch messages from Supabase:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch messages');
       setMessages([]);
     } finally {
@@ -107,14 +102,8 @@ export const useThread = (sessionId: string) => {
     // Prevent duplicate message sending within 5 seconds
     const now = Date.now();
     if (lastSentMessage === content && (now - lastSentTime) < 5000) {
-      console.log('Preventing duplicate message send within 5 seconds');
       return;
     }
-
-    console.log('=== SEND MESSAGE START ===');
-    console.log('Session ID:', sessionId);
-    console.log('Content:', content);
-
     setSending(true);
     setError(null);
     setLastSentMessage(content);
@@ -131,7 +120,6 @@ export const useThread = (sessionId: string) => {
     };
     
     setMessages(prev => {
-      console.log('Adding user message:', userMessage);
       return [...prev, userMessage];
     });
 
@@ -146,7 +134,6 @@ export const useThread = (sessionId: string) => {
         createdAt: new Date().toISOString(),
         meta: { isStreaming: true }
       };
-      console.log('Created new assistant message:', newAssistantMessage);
       return [...prev, newAssistantMessage];
     });
 
@@ -156,20 +143,12 @@ export const useThread = (sessionId: string) => {
 
     try {
       // Call chat service
-      console.log('Calling chatService.sendMessage...');
       const result = await chatService.sendMessage(sessionId, content, (event) => {
-        console.log('=== STREAM EVENT ===');
-        console.log('Event type:', event.type);
-        console.log('Event text:', event.text);
-        console.log('Event messageId:', event.messageId);
-        console.log('===================');
-
         if (event.type === 'delta' && event.text) {
           accumulatedContent += event.text;
           setMessages(prev => prev.map(msg => {
             if (msg.id === assistantMessageId) {
               const newContent = (msg.content || '') + event.text!;
-              console.log('Updated assistant message content:', newContent);
               return { ...msg, content: newContent };
             }
             return msg;
@@ -177,12 +156,8 @@ export const useThread = (sessionId: string) => {
         } else if (event.type === 'final') {
           finalMessageId = event.messageId;
           finalCitations = event.citations;
-          console.log('Final event received - messageId:', event.messageId, 'citations:', event.citations);
         }
       });
-
-      console.log('Chat service result:', result);
-
       // After streaming, update the temporary assistant message with final content and ID
       // Use assistant_${chatId} format to match what we get from Supabase
       setMessages(prev => prev.map(msg => {
@@ -199,8 +174,6 @@ export const useThread = (sessionId: string) => {
             citations: finalCitations,
             meta: { isStreaming: false }
           };
-          console.log('Final assistant message:', updatedMessage);
-          console.log('Citations preserved:', finalCitations);
           return updatedMessage;
         }
         return msg;
@@ -216,8 +189,6 @@ export const useThread = (sessionId: string) => {
       }, 1000);
 
     } catch (err) {
-      console.error('Error in sendMessage:', err);
-      
       // Clear the last sent message tracking on error to allow retry
       setLastSentMessage(null);
       setLastSentTime(0);
@@ -249,7 +220,6 @@ export const useThread = (sessionId: string) => {
       setMessages(prev => [...prev, errorMessageObj]);
     } finally {
       setSending(false);
-      console.log('=== SEND MESSAGE END ===');
     }
   }, [sessionId, messages]);
 
@@ -261,28 +231,20 @@ export const useThread = (sessionId: string) => {
     try {
       const session = getSession();
       if (!session || !session.userId) {
-        console.error('No user session found');
         throw new Error('Please log in to submit feedback');
       }
 
       // Find the message to get its chatId (if available from n8n response)
       const message = messages.find(msg => msg.id === messageId);
       if (!message) {
-        console.error('Message not found:', messageId);
         throw new Error('Message not found');
       }
 
       // Extract chat_id from messageId (remove assistant_ prefix)
       const chatId = messageId.startsWith('assistant_') ? messageId.replace('assistant_', '') : messageId;
       const reaction = rating === 1 ? 'good' : 'bad';
-
-      console.log('Submitting feedback:', { chatId, userId: session.userId, reaction, feedbackText });
-
       await submitUserFeedback(chatId, session.userId, reaction, feedbackText);
-
-      console.log('✅ Feedback submitted successfully');
     } catch (error) {
-      console.error('Failed to submit feedback:', error);
       throw error;
     }
   }, [messages]);

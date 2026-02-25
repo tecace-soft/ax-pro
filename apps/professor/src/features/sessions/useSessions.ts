@@ -142,7 +142,6 @@ export const useSessions = () => {
       const groupId = searchParams.get('group') || (getSession() as any)?.selectedGroupId;
       
       if (!groupId) {
-        console.warn('No group_id available, cannot fetch sessions');
         setSessions([]);
         setLoading(false);
         return;
@@ -174,7 +173,6 @@ export const useSessions = () => {
                   session.firstMessage = firstUserMessage.content.trim();
                 }
               } catch (msgError) {
-                console.warn(`Could not fetch first message for session ${s.session_id}:`, msgError);
               }
             }
 
@@ -183,15 +181,12 @@ export const useSessions = () => {
         );
         
         setSessions(convertedSessions);
-        console.log(`✅ Loaded ${convertedSessions.length} sessions from Supabase for group: ${groupId}`);
       } catch (fetchError) {
         // If session table doesn't exist or has issues, just show empty list
         // Sessions will be created by backend when messages are sent
-        console.warn('Could not fetch sessions from database (this is okay - sessions are created by backend):', fetchError);
         setSessions([]);
       }
     } catch (err) {
-      console.error('Failed to fetch sessions:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch sessions');
       setSessions([]);
     } finally {
@@ -201,20 +196,11 @@ export const useSessions = () => {
 
   const createSession = async (title?: string) => {
     try {
-      console.log('Creating new session...');
-      
       // Get group_id from URL or session
       const groupId = searchParams.get('group') || (getSession() as any)?.selectedGroupId;
       
-      console.log('Group ID check:', {
-        fromUrl: searchParams.get('group'),
-        fromSession: (getSession() as any)?.selectedGroupId,
-        final: groupId
-      });
-      
       if (!groupId) {
         const errorMsg = 'No group selected. Please select a group from the group management page first.';
-        console.error('❌', errorMsg);
         setError(errorMsg);
         throw new Error(errorMsg);
       }
@@ -222,8 +208,6 @@ export const useSessions = () => {
       // Generate unique session ID
       // The backend/n8n workflow will create the session entry automatically when first message is sent
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      console.log('✅ Generated new session ID:', sessionId);
       setError(null); // Clear any previous errors
       
       // Add temporary session to list immediately so it appears in sidebar
@@ -248,7 +232,6 @@ export const useSessions = () => {
       // Return sessionId - let the caller handle navigation/state management
       return sessionId;
     } catch (err) {
-      console.error('❌ Failed to create session:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create session';
       setError(errorMessage);
       throw err;
@@ -268,8 +251,6 @@ export const useSessions = () => {
 
   const deleteSession = async (id: string) => {
     try {
-      console.log('Deleting session:', id);
-      
       // Get group_id from URL or session
       const groupId = searchParams.get('group') || (getSession() as any)?.selectedGroupId;
       
@@ -291,7 +272,6 @@ export const useSessions = () => {
         navigate(withGroupParam('/chat', groupId));
       }
     } catch (err) {
-      console.error('Error in deleteSession:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete session');
       throw err;
     }

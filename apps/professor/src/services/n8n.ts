@@ -45,14 +45,11 @@ export const getN8nConfigs = (): N8nConfig[] => {
       const defaultConfigs = [DEFAULT_N8N_CONFIG];
       localStorage.setItem(N8N_CONFIGS_KEY, JSON.stringify(defaultConfigs));
       localStorage.setItem(ACTIVE_N8N_CONFIG_KEY, DEFAULT_N8N_CONFIG.id);
-      console.log('Initialized with default n8n config:', DEFAULT_N8N_CONFIG);
       return defaultConfigs;
     }
     const parsedConfigs = JSON.parse(configs);
-    console.log('Loaded n8n configs from localStorage:', parsedConfigs);
     return parsedConfigs;
   } catch (error) {
-    console.error('Failed to get n8n configs:', error);
     return [DEFAULT_N8N_CONFIG];
   }
 };
@@ -64,7 +61,6 @@ export const saveN8nConfigs = (configs: N8nConfig[]): void => {
   try {
     localStorage.setItem(N8N_CONFIGS_KEY, JSON.stringify(configs));
   } catch (error) {
-    console.error('Failed to save n8n configs:', error);
   }
 };
 
@@ -74,22 +70,14 @@ export const saveN8nConfigs = (configs: N8nConfig[]): void => {
 export const getActiveN8nConfig = (): N8nConfig | null => {
   try {
     const activeId = localStorage.getItem(ACTIVE_N8N_CONFIG_KEY);
-    console.log('Active n8n config ID:', activeId);
-    
     if (!activeId) {
-      console.log('No active ID, using default config');
       return DEFAULT_N8N_CONFIG;
     }
     
     const configs = getN8nConfigs();
-    console.log('Available n8n configs:', configs);
-    
     const activeConfig = configs.find(config => config.id === activeId) || DEFAULT_N8N_CONFIG;
-    console.log('Selected active config:', activeConfig);
-    
     return activeConfig;
   } catch (error) {
-    console.error('Failed to get active n8n config:', error);
     return DEFAULT_N8N_CONFIG;
   }
 };
@@ -101,7 +89,6 @@ export const setActiveN8nConfig = (configId: string): void => {
   try {
     localStorage.setItem(ACTIVE_N8N_CONFIG_KEY, configId);
   } catch (error) {
-    console.error('Failed to set active n8n config:', error);
   }
 };
 
@@ -171,9 +158,6 @@ export const deleteN8nConfig = (id: string): boolean => {
  */
 export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
   const activeConfig = getActiveN8nConfig();
-  console.log('Sending to n8n with config:', activeConfig);
-  console.log('Request payload:', request);
-  
   if (!activeConfig) {
     throw new Error('No active n8n configuration found');
   }
@@ -181,11 +165,8 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
   // Skip the HEAD request test as it may cause CORS issues
 
   try {
-    console.log('Making request to:', activeConfig.webhookUrl);
-    console.log('Request payload:', JSON.stringify(request));
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('n8n webhook request timed out after 30 seconds');
       controller.abort();
     }, 30000); // 30 second timeout
     
@@ -201,36 +182,17 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     });
     
     clearTimeout(timeoutId);
-
-    console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers);
-
     // Get response text first
     const responseText = await response.text();
-    console.log('=== N8N WEBHOOK DEBUG ===');
-    console.log('Response status:', response.status);
-    console.log('Response ok:', response.ok);
-    console.log('Raw response text length:', responseText.length);
-    console.log('Raw response text:', responseText);
-    console.log('Response text trimmed:', responseText.trim());
-    console.log('Is empty?', !responseText || responseText.trim() === '');
-    console.log('Response URL:', response.url);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-    console.log('========================');
-    
     // Log if we get the error message
     if (responseText.includes('No response from webhook')) {
-      console.error('ERROR: Webhook returned error message instead of actual response!');
-      console.error('This suggests the workflow is not properly configured or is returning an error.');
     }
     
     if (!response.ok) {
-      console.error('Response error:', responseText);
       throw new Error(`HTTP error! status: ${response.status}, message: ${responseText}`);
     }
     
     if (!responseText || responseText.trim() === '') {
-      console.warn('Empty response from webhook');
       throw new Error('Empty response from webhook. Please check your workflow configuration.');
     }
 
@@ -238,40 +200,25 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     try {
       data = JSON.parse(responseText);
     } catch (parseError) {
-      console.error('Failed to parse JSON response:', parseError);
-      console.error('Response text was:', responseText);
       throw new Error(`Invalid JSON response from n8n: ${responseText.substring(0, 100)}...`);
     }
-    
-    console.log('n8n response:', data);
-    console.log('n8n response type:', typeof data);
-    console.log('n8n response is array:', Array.isArray(data));
     
     // Check if the response contains the error message
     let responseData;
     if (Array.isArray(data)) {
       responseData = data[0];
-      console.log('n8n array response data:', responseData);
     } else if (data && typeof data === 'object') {
       responseData = data;
-      console.log('n8n object response data:', responseData);
     } else {
       throw new Error('Unexpected response format from n8n webhook');
     }
-    
-    console.log('n8n responseData:', responseData);
-    console.log('n8n responseData.answer:', responseData?.answer);
-    console.log('n8n responseData.answer type:', typeof responseData?.answer);
-    
     // Check if the response contains the error message
     if (responseData && responseData.answer && responseData.answer.includes('No response from webhook')) {
-      console.error('Webhook returned error message:', responseData.answer);
       throw new Error('Webhook returned error: ' + responseData.answer);
     }
     
     // Also check if the response is just the error message string
     if (responseData && typeof responseData === 'string' && responseData.includes('No response from webhook')) {
-      console.error('Webhook returned error message as string:', responseData);
       throw new Error('Webhook returned error: ' + responseData);
     }
     
@@ -279,15 +226,12 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     if (responseData && typeof responseData === 'object') {
       const responseString = JSON.stringify(responseData);
       if (responseString.includes('No response from webhook')) {
-        console.error('Webhook returned error message in object:', responseData);
         throw new Error('Webhook returned error: ' + responseString);
       }
     }
     
     return responseData;
   } catch (error: any) {
-    console.error('Failed to send to n8n:', error);
-    
     if (error.name === 'AbortError') {
       throw new Error('Webhook request timed out after 30 seconds');
     } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
@@ -321,7 +265,6 @@ export const testN8nConnection = async (webhookUrl: string): Promise<boolean> =>
 
     return response.ok;
   } catch (error) {
-    console.error('Failed to test n8n connection:', error);
     return false;
   }
 };

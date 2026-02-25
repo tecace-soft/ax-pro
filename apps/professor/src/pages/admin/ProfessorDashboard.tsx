@@ -90,16 +90,7 @@ export default function ProfessorDashboard() {
       setActiveStudents(uniqueStudents)
       setTopTopics(topics)
       setCourseStats(courses)
-
-      console.log('✅ Professor metrics loaded:', {
-        sessions: uniqueSessions,
-        questions: totalQ,
-        avgPerSession: avgQ,
-        satisfaction: satisfactionPct,
-        students: uniqueStudents
-      })
     } catch (error) {
-      console.error('Failed to load professor metrics:', error)
     }
   }
 

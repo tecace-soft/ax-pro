@@ -74,8 +74,6 @@ export function validatePassword(password: string): { isValid: boolean; errors: 
  */
 export async function checkEmailExists(email: string): Promise<boolean> {
   try {
-    console.log('Checking email existence in default Supabase...');
-    
     const { data, error } = await defaultSupabase
       .from('user')
       .select('email')
@@ -84,14 +82,10 @@ export async function checkEmailExists(email: string): Promise<boolean> {
     
     if (error && error.code !== 'PGRST116') {
       // PGRST116 means no rows found, which is what we want
-      console.error('Error checking email:', error);
       throw error;
     }
-    
-    console.log(`Email ${email} exists:`, !!data);
     return !!data; // Return true if email exists, false otherwise
   } catch (error) {
-    console.error('Failed to check email existence:', error);
     throw error;
   }
 }
@@ -101,8 +95,6 @@ export async function checkEmailExists(email: string): Promise<boolean> {
  */
 export async function createUser(userData: Omit<User, 'id' | 'created_at'>): Promise<User> {
   try {
-    console.log('Creating new user in default Supabase...', { ...userData, password: '[HIDDEN]' });
-    
     const { data, error } = await defaultSupabase
       .from('user')
       .insert([{
@@ -116,14 +108,10 @@ export async function createUser(userData: Omit<User, 'id' | 'created_at'>): Pro
       .single();
     
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to create user: ${error.message}`);
     }
-    
-    console.log('✅ User created successfully in default Supabase:', data);
     return data as User;
   } catch (error) {
-    console.error('Failed to create user:', error);
     throw error;
   }
 }
@@ -133,8 +121,6 @@ export async function createUser(userData: Omit<User, 'id' | 'created_at'>): Pro
  */
 export async function getUserByEmail(email: string): Promise<User | null> {
   try {
-    console.log('Getting user by email from default Supabase...');
-    
     const { data, error } = await defaultSupabase
       .from('user')
       .select('*')
@@ -144,16 +130,12 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     if (error) {
       if (error.code === 'PGRST116') {
         // No rows found
-        console.log('User not found');
         return null;
       }
       throw error;
     }
-    
-    console.log('✅ User found:', { ...data, password: '[HIDDEN]' });
     return data as User;
   } catch (error) {
-    console.error('Failed to get user by email:', error);
     throw error;
   }
 }
@@ -163,8 +145,6 @@ export async function getUserByEmail(email: string): Promise<User | null> {
  */
 export async function getUserById(userId: string): Promise<User | null> {
   try {
-    console.log('Getting user by ID from default Supabase...');
-    
     const { data, error } = await defaultSupabase
       .from('user')
       .select('*')
@@ -174,16 +154,12 @@ export async function getUserById(userId: string): Promise<User | null> {
     if (error) {
       if (error.code === 'PGRST116') {
         // No rows found
-        console.log('User not found');
         return null;
       }
       throw error;
     }
-    
-    console.log('✅ User found:', { ...data, password: '[HIDDEN]' });
     return data as User;
   } catch (error) {
-    console.error('Failed to get user by ID:', error);
     throw error;
   }
 }
@@ -193,25 +169,18 @@ export async function getUserById(userId: string): Promise<User | null> {
  */
 export async function authenticateUser(email: string, password: string): Promise<User | null> {
   try {
-    console.log('Authenticating user with default Supabase...');
-    
     const user = await getUserByEmail(email);
     
     if (!user) {
-      console.log('User not found');
       return null;
     }
     
     // Simple password comparison (in production, use proper hashing)
     if (user.password !== password) {
-      console.log('Invalid password');
       return null;
     }
-    
-    console.log('✅ User authenticated successfully');
     return user;
   } catch (error) {
-    console.error('Failed to authenticate user:', error);
     throw error;
   }
 }
@@ -221,8 +190,6 @@ export async function authenticateUser(email: string, password: string): Promise
  */
 export async function updateUser(userId: string, updates: { first_name?: string; last_name?: string; password?: string }): Promise<User> {
   try {
-    console.log('Updating user in default Supabase...', { userId, updates: { ...updates, password: updates.password ? '[HIDDEN]' : undefined } });
-    
     const updateData: any = {};
     if (updates.first_name !== undefined) {
       updateData.first_name = updates.first_name;
@@ -242,14 +209,10 @@ export async function updateUser(userId: string, updates: { first_name?: string;
       .single();
     
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to update user: ${error.message}`);
     }
-    
-    console.log('✅ User updated successfully:', { ...data, password: '[HIDDEN]' });
     return data as User;
   } catch (error) {
-    console.error('Failed to update user:', error);
     throw error;
   }
 }

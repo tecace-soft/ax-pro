@@ -41,7 +41,6 @@ const GroupManagement: React.FC = () => {
         setUserName(`${user.first_name} ${user.last_name}`);
       }
     } catch (error) {
-      console.error('Failed to load user data:', error);
     }
   };
 
@@ -54,7 +53,6 @@ const GroupManagement: React.FC = () => {
         setGroups(userGroups);
       }
     } catch (error) {
-      console.error('Failed to load groups:', error);
     } finally {
       setIsLoading(false);
     }
@@ -70,8 +68,6 @@ const GroupManagement: React.FC = () => {
   };
 
   const handleGroupCreated = async (groupId: string) => {
-    console.log('Group created with ID:', groupId);
-    
     // Reload groups after creation
     await loadGroups();
     
@@ -81,10 +77,8 @@ const GroupManagement: React.FC = () => {
 
   // Open group - navigate with group ID in URL only (no session storage)
   const handleOpenGroup = async (group: Group) => {
-    console.log('🚀 Opening group:', group.name, 'ID:', group.group_id);
     const session = getSession();
     if (!session) {
-      console.error('❌ No session found');
       return;
     }
 
@@ -92,22 +86,16 @@ const GroupManagement: React.FC = () => {
     try {
       const { getUserRoleForGroup } = await import('../services/auth');
       const groupRole = await getUserRoleForGroup(group.group_id);
-      console.log('👤 User role in group:', groupRole);
-      
       // Route: both admins and users -> dashboard
       // Group ID is ONLY in URL - allows multiple tabs with different groups
       if (groupRole === 'admin' || groupRole === 'user') {
-        console.log('✅ Navigating to /admin/dashboard?group=' + group.group_id);
         navigate(`/admin/dashboard?group=${group.group_id}`);
       } else {
         // User is not a member of this group
-        console.warn('⚠️ User is not a member of this group');
         navigate(`/group-management`);
       }
     } catch (error) {
-      console.error('❌ Failed to check group role:', error);
       // Fallback: navigate all users to dashboard
-      console.log('🔄 Fallback: Navigating to /admin/dashboard?group=' + group.group_id);
       navigate(`/admin/dashboard?group=${group.group_id}`);
     }
   };

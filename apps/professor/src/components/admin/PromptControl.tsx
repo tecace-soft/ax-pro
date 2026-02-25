@@ -56,13 +56,10 @@ export default function PromptControl() {
 
   const loadSystemPrompt = async () => {
     try {
-      console.log('Loading system prompt...')
       const content = await fetchSystemPrompt()
-      console.log('System prompt loaded')
       setPromptText(content)
       setLastRefreshed(new Date())
     } catch (error) {
-      console.error('Failed to load system prompt:', error)
       setResponseModal({
         isOpen: true,
         message: error instanceof Error ? error.message : 'Failed to load system prompt',
@@ -76,13 +73,9 @@ export default function PromptControl() {
   const loadPromptHistory = async () => {
     setIsLoadingHistory(true)
     try {
-      console.log('🔄 Loading prompt history...')
       const history = await fetchPromptHistory(10)
-      console.log('📚 Raw history data:', history)
       setPromptHistory(history)
-      console.log('✅ Prompt history loaded:', history.length, 'entries')
     } catch (error) {
-      console.error('❌ Failed to load prompt history:', error)
       setResponseModal({
         isOpen: true,
         message: `Failed to load prompt history: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -100,7 +93,6 @@ export default function PromptControl() {
       setPromptText(content)
       setLastRefreshed(new Date())
     } catch (error) {
-      console.error('Failed to refresh system prompt:', error)
       setResponseModal({
         isOpen: true,
         message: error instanceof Error ? error.message : 'Failed to refresh system prompt',
@@ -120,15 +112,9 @@ export default function PromptControl() {
     setShowConfirmation(false)
     
     try {
-      console.log('Saving system prompt...')
       await updateSystemPrompt(promptText)
-      console.log('System prompt saved successfully')
-      
       // Try to force reload (optional)
-      console.log('Attempting force reload...')
       const reloadResult = await forcePromptReload()
-      console.log('Force reload result:', reloadResult)
-      
       setResponseModal({
         isOpen: true,
         message: 'System prompt updated successfully!' + (reloadResult.status === 'skipped' ? '' : ` ${reloadResult.message}`),
@@ -137,7 +123,6 @@ export default function PromptControl() {
       
       setLastRefreshed(new Date())
     } catch (error) {
-      console.error('Save operation failed:', error)
       setResponseModal({
         isOpen: true,
         message: error instanceof Error ? error.message : 'Failed to update system prompt',
@@ -172,7 +157,6 @@ export default function PromptControl() {
     if (!deleteConfirm.promptId) return
 
     try {
-      console.log('🗑️ Deleting prompt:', deleteConfirm.promptId)
       await deletePrompt(deleteConfirm.promptId)
       
       // Remove from local state
@@ -184,7 +168,6 @@ export default function PromptControl() {
         isSuccess: true
       })
     } catch (error) {
-      console.error('❌ Failed to delete prompt:', error)
       setResponseModal({
         isOpen: true,
         message: `Failed to delete prompt: ${error instanceof Error ? error.message : 'Unknown error'}`,

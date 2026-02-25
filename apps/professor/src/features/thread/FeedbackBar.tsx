@@ -25,7 +25,6 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
     try {
       const session = getSession();
       if (!session || !session.userId) {
-        console.error('No user session found');
         alert('Please log in to submit feedback');
         return;
       }
@@ -33,12 +32,7 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
       // Extract chat_id from messageId (remove assistant_ prefix)
       const chatId = messageId.startsWith('assistant_') ? messageId.replace('assistant_', '') : messageId;
       const reaction = currentRating === 1 ? 'good' : 'bad';
-
-      console.log('Submitting feedback:', { chatId, userId: session.userId, reaction, feedbackText: note });
-
       await submitUserFeedback(chatId, session.userId, reaction, note || undefined);
-
-      console.log('✅ Feedback submitted successfully');
       setRating(currentRating);
       setShowNoteModal(false);
       setNote('');
@@ -47,7 +41,6 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({ messageId }) => {
       setShowToast('success');
       setTimeout(() => setShowToast(null), 3000);
     } catch (error) {
-      console.error('Failed to submit feedback:', error);
       setShowNoteModal(false);
       
       // Show error toast

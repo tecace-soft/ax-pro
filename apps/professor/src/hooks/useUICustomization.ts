@@ -51,7 +51,6 @@ export const useUICustomization = () => {
       setLoading(true);
       try {
         if (!currentGroupId) {
-          console.warn('No group_id available, using empty values with default avatar');
           setCustomization({
             chatTitle: '',
             chatSubtitle: '',
@@ -71,7 +70,6 @@ export const useUICustomization = () => {
         const data = await fetchUICustomization(currentGroupId);
         setCustomization(data);
       } catch (error) {
-        console.error('Failed to load UI customization:', error);
         setCustomization({
           chatTitle: '',
           chatSubtitle: '',
@@ -104,7 +102,6 @@ export const useUICustomization = () => {
       if (hasGroupFields) {
         const groupId = getGroupId();
         if (!groupId) {
-          console.error('No group_id available, cannot save UI customization to group table');
           setLoading(false);
           return;
         }
@@ -114,16 +111,13 @@ export const useUICustomization = () => {
         
         if (success) {
           setCustomization(updatedCustomization);
-          console.log('✅ UI customization updated successfully');
         } else {
-          console.error('Failed to save to Supabase group table');
         }
       } else {
         // For other non-group fields, just update state
         setCustomization(updatedCustomization);
       }
     } catch (error) {
-      console.error('Failed to update UI customization:', error);
     } finally {
       setLoading(false);
     }
@@ -134,7 +128,6 @@ export const useUICustomization = () => {
     try {
       const groupId = getGroupId();
       if (!groupId) {
-        console.error('No group_id available, cannot reset UI customization');
         setLoading(false);
         return;
       }
@@ -145,7 +138,6 @@ export const useUICustomization = () => {
         setCustomization(DEFAULT_CUSTOMIZATION);
       }
     } catch (error) {
-      console.error('Failed to reset UI customization:', error);
     } finally {
       setLoading(false);
     }

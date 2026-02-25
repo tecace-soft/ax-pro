@@ -122,24 +122,13 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
         fetchAllUserFeedback(),
         fetchAllAdminFeedback()
       ])
-
-      console.log('📊 Loaded data:', {
-        chats: chats.length,
-        userFeedbacks: userFeedbacks.length,
-        adminFeedbacks: adminFeedbacks.length
-      })
-
       // Debug: Log sample IDs and full chat object to see all fields
       if (chats.length > 0) {
-        console.log('Sample chat object:', chats[0])
-        console.log('Sample chat ID:', chats[0].id)
         console.log('Sample chat all keys:', Object.keys(chats[0]))
       }
       if (userFeedbacks.length > 0) {
-        console.log('Sample user feedback chat_id:', userFeedbacks[0].chat_id)
       }
       if (adminFeedbacks.length > 0) {
-        console.log('Sample admin feedback chat_id:', adminFeedbacks[0].chat_id)
       }
 
       const userFeedbackMap = new Map<string, UserFeedbackData[]>()
@@ -188,8 +177,6 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
       
       // WORKAROUND: Since chat table doesn't have chat_id field that matches feedback.chat_id,
       // we'll distribute feedback proportionally across days based on message count
-      console.warn('⚠️ Chat table missing chat_id field - feedback will be estimated by day proportion')
-      
       chats.forEach(chat => {
         if (!chat.created_at) return
         
@@ -230,31 +217,11 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
           adminFeedbackMatches++
         }
       })
-
-      console.log('🔍 Feedback distribution by date:', {
-        totalChats: chats.length,
-        userFeedbackDistributed: userFeedbackMatches,
-        adminFeedbackDistributed: adminFeedbackMatches,
-        totalUserFeedbacks: userFeedbacks.length,
-        totalAdminFeedbacks: adminFeedbacks.length
-      })
-
       // Debug: Log sample day data to see if feedback is being distributed
       const sampleDay = Array.from(dayMap.values()).find(d => d.userFeedbackCount > 0 || d.adminFeedbackCount > 0)
       if (sampleDay) {
-        console.log('📊 Sample day with feedback:', {
-          date: sampleDay.date,
-          messages: sampleDay.messageCount,
-          userFeedback: sampleDay.userFeedbackCount,
-          adminFeedback: sampleDay.adminFeedbackCount,
-          corrected: sampleDay.correctedResponseCount
-        })
       } else {
-        console.log('⚠️ No days with feedback data found')
       }
-      
-      console.log('💡 To fix: Add chat_id column to Supabase chat table to match feedback.chat_id')
-
       const dayDataArray = Array.from(dayMap.values())
       setData(dayDataArray)
 
@@ -283,7 +250,6 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
         daysWithData: dayDataArray.filter(d => d.messageCount > 0).length
       })
     } catch (error) {
-      console.error('Failed to load daily message activity:', error)
     } finally {
       setIsLoading(false)
     }

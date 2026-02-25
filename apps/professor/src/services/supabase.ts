@@ -33,7 +33,6 @@ export const getSupabaseClient = (): SupabaseClient => {
     
     supabaseClient = createClient(config.url, config.anonKey);
     currentConfig = configKey;
-    console.log('✅ Supabase client initialized');
   }
   
   return supabaseClient;
@@ -49,7 +48,6 @@ export const getSupabaseConfig = (): SupabaseConfig => {
     
     return { url, anonKey };
   } catch (error) {
-    console.error('Failed to get Supabase config:', error);
     return { url: DEFAULT_SUPABASE_URL, anonKey: DEFAULT_SUPABASE_ANON_KEY };
   }
 };
@@ -62,7 +60,6 @@ export const saveSupabaseConfig = (config: SupabaseConfig): void => {
     localStorage.setItem(SUPABASE_URL_KEY, config.url);
     localStorage.setItem(SUPABASE_ANON_KEY_KEY, config.anonKey);
   } catch (error) {
-    console.error('Failed to save Supabase config:', error);
   }
 };
 
@@ -84,11 +81,8 @@ export const testSupabaseConnection = async (config: SupabaseConfig): Promise<bo
         'Authorization': `Bearer ${config.anonKey}`
       }
     });
-
-    console.log('Supabase connection test response:', response.status);
     return response.ok;
   } catch (error) {
-    console.error('Supabase connection test failed:', error);
     return false;
   }
 };

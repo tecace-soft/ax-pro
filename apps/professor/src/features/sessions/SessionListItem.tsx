@@ -31,7 +31,6 @@ const SessionListItem: React.FC<SessionListItemProps> = ({
       await deleteSession(session.id);
       setShowDeleteModal(false);
     } catch (error) {
-      console.error('Failed to delete session:', error);
       alert('Failed to delete chat. Please try again.');
     } finally {
       setIsDeleting(false);

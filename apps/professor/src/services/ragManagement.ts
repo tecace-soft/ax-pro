@@ -72,10 +72,7 @@ export async function uploadFilesToRAG(files: File[]): Promise<FileUploadResult[
       });
     });
 
-    console.log('RAG upload response:', response.data);
-    
   } catch (error: any) {
-    console.error('Error uploading files to RAG:', error);
     
     // Create error results for all files
     files.forEach(file => {
@@ -104,8 +101,6 @@ export async function uploadSingleFileToRAG(file: File): Promise<FileUploadResul
  */
 export async function fetchFilesFromRAG(): Promise<FileListResponse> {
   try {
-    console.log('Fetching files from n8n RAG system...');
-    
     const response = await axios.post(ENDPOINTS.LIST_FILES, {}, {
       headers: {
         'Accept': 'application/json',
@@ -114,8 +109,6 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
       timeout: 10000, // 10 second timeout
     });
 
-    console.log('Files fetched successfully:', response.data);
-    
     // Handle different response formats from n8n
     let filesData = [];
     if (Array.isArray(response.data)) {
@@ -125,7 +118,6 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
     } else if (response.data.data && Array.isArray(response.data.data)) {
       filesData = response.data.data;
     } else {
-      console.warn('Unexpected response format from n8n:', response.data);
       filesData = [];
     }
     
@@ -143,7 +135,6 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
     }));
 
     // Check sync status for each file by comparing with indexed documents (batched)
-    console.log('🔍 Checking sync status for files (batched by filename)...');
     try {
       const supabase = getSupabaseClient();
       // Fetch only explicit fileName metadata and build a set (lowercased)
@@ -152,7 +143,7 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
         .select('metadata->>fileName as fileName');
 
       if (metasError) {
-        console.warn('⚠️ Failed to fetch document filenames for sync check:', metasError);
+        // Failed to fetch document filenames for sync check
       }
 
       const indexedNameSet = new Set<string>();
@@ -165,11 +156,6 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
         }
       }
 
-      // Debug: log counts and a sample
-      console.log('[SyncCheck] Indexed filenames count:', indexedNameSet.size);
-      if (indexedNameSet.size > 0) {
-        console.log('[SyncCheck] Example indexed name:', Array.from(indexedNameSet)[0]);
-      }
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -179,7 +165,6 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
         file.syncStatus = indexedNameSet.has(normalized) ? 'synced' : 'pending';
       }
     } catch (error) {
-      console.warn('⚠️ Error during batched sync status calculation:', error);
       // If check fails, mark as error but do not crash the listing
       for (let i = 0; i < files.length; i++) {
         files[i].syncStatus = 'error';
@@ -194,8 +179,6 @@ export async function fetchFilesFromRAG(): Promise<FileListResponse> {
     };
     
   } catch (error: any) {
-    console.error('Error fetching files from RAG:', error);
-    
     // Return empty list on error
     return {
       success: false,
@@ -316,8 +299,6 @@ export function getFileIcon(fileType: string): string {
  */
 export async function reindexFile(fileId: string): Promise<{ success: boolean; message: string }> {
   try {
-    console.log(`Re-indexing file via n8n: ${fileId}`);
-    
     const response = await axios.post(ENDPOINTS.REINDEX_FILE, {
       fileId: fileId
     }, {
@@ -328,14 +309,11 @@ export async function reindexFile(fileId: string): Promise<{ success: boolean; m
       timeout: 15000, // 15 second timeout for reindexing
     });
 
-    console.log('Re-index response:', response.data);
-    
     return {
       success: true,
       message: response.data.message || 'File re-indexed successfully'
     };
   } catch (error: any) {
-    console.error('Error re-indexing file:', error);
     return {
       success: false,
       message: error.response?.data?.message || error.message || 'Failed to re-index file'
@@ -348,8 +326,6 @@ export async function reindexFile(fileId: string): Promise<{ success: boolean; m
  */
 export async function deleteFileFromRAG(fileId: string): Promise<{ success: boolean; message: string }> {
   try {
-    console.log(`Deleting file from RAG via n8n: ${fileId}`);
-    
     const response = await axios.post(ENDPOINTS.DELETE_FILE, {
       fileId: fileId
     }, {
@@ -360,14 +336,11 @@ export async function deleteFileFromRAG(fileId: string): Promise<{ success: bool
       timeout: 10000, // 10 second timeout
     });
 
-    console.log('Delete response:', response.data);
-    
     return {
       success: true,
       message: response.data.message || 'File deleted successfully'
     };
   } catch (error: any) {
-    console.error('Error deleting file:', error);
     return {
       success: false,
       message: error.response?.data?.message || error.message || 'Failed to delete file'
@@ -395,7 +368,6 @@ async function getUniqueFileName(supabase: any, originalName: string): Promise<s
       });
 
     if (error) {
-      console.error('Error listing files:', error);
       // If we can't check, just use original name
       return originalName;
     }
@@ -427,10 +399,8 @@ async function getUniqueFileName(supabase: any, originalName: string): Promise<s
       newName = `${baseName} (${counter})${extension}`;
     }
 
-    console.log(`📝 Duplicate file detected: ${originalName} → ${newName}`);
     return newName;
   } catch (error) {
-    console.error('Error in getUniqueFileName:', error);
     // Fallback to original name
     return originalName;
   }
@@ -459,43 +429,33 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
 
       // Sanitize filename to avoid unicode issues
       let sanitizedName = sanitizeFileName(file.name);
-      
-      // Convert .txt to .md (Docling doesn't support .txt format)
-      let renamedToMd = false;
       let contentType = file.type || 'application/octet-stream';
-      
-      if (sanitizedName.toLowerCase().endsWith('.txt')) {
-        sanitizedName = sanitizedName.slice(0, -4) + '.md';
-        renamedToMd = true;
-        contentType = 'text/markdown'; // Set content type to markdown for .txt files converted to .md
-        console.log(`📝 .txt file detected: "${file.name}" → "${sanitizedName}" (Docling requires .md format)`);
-      }
       
       // Normalize .md files to always use text/markdown (not text/x-markdown or other variants)
       if (sanitizedName.toLowerCase().endsWith('.md')) {
         contentType = 'text/markdown';
       }
       
-      // Show warning if filename was changed
-      if (sanitizedName !== file.name) {
-        if (renamedToMd) {
-          console.warn(`⚠️ File renamed from .txt to .md: "${file.name}" → "${sanitizedName}" (Docling doesn't support .txt)`);
-        } else {
-          console.warn(`⚠️ Filename sanitized: "${file.name}" → "${sanitizedName}"`);
-        }
+      // Set content type for .txt files
+      if (sanitizedName.toLowerCase().endsWith('.txt')) {
+        contentType = 'text/plain';
       }
+      
+      // Show warning if filename was changed (only for sanitization, not conversion)
       
       // Get unique filename (macOS style - add (1), (2) if duplicate)
       const uniqueFileName = await getUniqueFileName(supabase, sanitizedName);
       const filePath = `files/${uniqueFileName}`;
 
-      console.log(`Uploading file to Supabase Storage: ${filePath}`);
 
       // Create a new File object with updated content type if needed
       let fileToUpload: File = file;
       if (sanitizedName.toLowerCase().endsWith('.md') && file.type !== 'text/markdown') {
         // Create a new File with markdown content type (normalize text/x-markdown to text/markdown)
         fileToUpload = new File([file], uniqueFileName, { type: 'text/markdown' });
+      } else if (sanitizedName.toLowerCase().endsWith('.txt') && file.type !== 'text/plain') {
+        // Create a new File with plain text content type for .txt files
+        fileToUpload = new File([file], uniqueFileName, { type: 'text/plain' });
       }
 
       // Upload to Supabase Storage
@@ -508,7 +468,6 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
         });
 
       if (error) {
-        console.error('Supabase upload error:', error);
         results.push({
           success: false,
           message: 'Failed to upload file',
@@ -518,7 +477,6 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
         continue;
       }
 
-      console.log('File uploaded successfully:', data);
 
       // Save file metadata to database table with group_id
       const { getSession } = await import('./auth');
@@ -530,34 +488,15 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
       let openaiFileId: string | null = null;
       if (groupId) {
         try {
-          console.log(`🔍 [OpenAI Upload] Starting upload to OpenAI for group: ${groupId}`);
           // NOTE: openai_chat check removed - always using OpenAI route
-          console.log('🔧 [OpenAI Upload] Starting upload to OpenAI...');
-            console.log(`📁 [OpenAI Upload] File details:`, {
-              fileName: file.name,
-              fileSize: file.size,
-              fileType: file.type,
-              originalName: file.name
-            });
-            
             // Upload to OpenAI API
             try {
               const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
-              if (!openaiApiKey) {
-                console.error('❌ [OpenAI Upload] OPENAI_API_KEY not found in environment variables');
-                console.log('💡 [OpenAI Upload] Make sure VITE_OPENAI_API_KEY is set in your .env file');
-              } else {
-                console.log(`🔑 [OpenAI Upload] API key found (length: ${openaiApiKey.length} chars)`);
-                
+              if (openaiApiKey) {
                 const formData = new FormData();
                 formData.append('purpose', 'assistants');
                 formData.append('file', file); // Use original file for OpenAI
                 
-                console.log(`📤 [OpenAI Upload] Sending request to OpenAI API...`);
-                console.log(`🌐 [OpenAI Upload] Endpoint: https://api.openai.com/v1/files`);
-                console.log(`📋 [OpenAI Upload] Purpose: assistants`);
-                
-                const startTime = Date.now();
                 const openaiResponse = await fetch('https://api.openai.com/v1/files', {
                   method: 'POST',
                   headers: {
@@ -565,56 +504,24 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
                   },
                   body: formData,
                 });
-                const duration = Date.now() - startTime;
-                
-                console.log(`⏱️ [OpenAI Upload] Request completed in ${duration}ms`);
-                console.log(`📊 [OpenAI Upload] Response status: ${openaiResponse.status} ${openaiResponse.statusText}`);
-                console.log(`📋 [OpenAI Upload] Response headers:`, Object.fromEntries(openaiResponse.headers.entries()));
                 
                 if (openaiResponse.ok) {
                   const openaiData = await openaiResponse.json();
-                  console.log(`✅ [OpenAI Upload] Success! Response data:`, {
-                    id: openaiData.id,
-                    object: openaiData.object,
-                    bytes: openaiData.bytes,
-                    createdAt: openaiData.created_at,
-                    filename: openaiData.filename,
-                    purpose: openaiData.purpose
-                  });
                   openaiFileId = openaiData.id;
-                  console.log(`💾 [OpenAI Upload] OpenAI file ID to be saved: ${openaiFileId}`);
                 } else {
-                  const errorText = await openaiResponse.text();
-                  let errorData;
-                  try {
-                    errorData = JSON.parse(errorText);
-                  } catch {
-                    errorData = { error: errorText || 'Unknown error' };
-                  }
-                  console.error('❌ [OpenAI Upload] Failed to upload to OpenAI');
-                  console.error(`📊 [OpenAI Upload] Status: ${openaiResponse.status} ${openaiResponse.statusText}`);
-                  console.error(`📋 [OpenAI Upload] Error response:`, errorData);
                   // Don't fail the entire upload if OpenAI upload fails
                 }
               }
             } catch (openaiError: any) {
-              console.error('❌ [OpenAI Upload] Exception during OpenAI upload:', openaiError);
-              console.error(`📊 [OpenAI Upload] Error type: ${openaiError?.constructor?.name || 'Unknown'}`);
-              console.error(`📋 [OpenAI Upload] Error message: ${openaiError?.message || 'No message'}`);
-              console.error(`📋 [OpenAI Upload] Error stack:`, openaiError?.stack);
               // Don't fail the entire upload if OpenAI upload fails
             }
           // NOTE: OpenAI Chat disabled route commented out - always using OpenAI route
           // } else {
-          //   console.log(`ℹ️ [OpenAI Upload] OpenAI Chat disabled or not set for group, skipping OpenAI upload`);
+          //   
           // }
         } catch (error) {
-          console.warn('⚠️ [OpenAI Upload] Error during OpenAI upload:', error);
-          console.warn(`📊 [OpenAI Upload] Error details:`, error);
           // Continue with normal upload if OpenAI upload fails
         }
-      } else {
-        console.log(`ℹ️ [OpenAI Upload] No group_id found, skipping OpenAI upload check`);
       }
       
       if (groupId && session?.userId) {
@@ -633,32 +540,20 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
             }]);
           
           if (dbError) {
-            console.warn('⚠️ Failed to save file metadata to database:', dbError);
             // Don't fail the upload if DB insert fails
-          } else {
-            console.log('✅ File metadata saved to database with group_id:', groupId);
-            if (openaiFileId) {
-              console.log('✅ OpenAI file ID saved to database:', openaiFileId);
-            }
           }
         } catch (dbErr) {
-          console.warn('⚠️ Error saving file metadata:', dbErr);
           // Don't fail the upload if DB insert fails
         }
-      } else {
-        console.warn('⚠️ No group_id or userId in session, file metadata not saved to database');
       }
 
       results.push({
         success: true,
-        message: renamedToMd 
-          ? `File uploaded successfully (renamed from .txt to .md for Docling compatibility)`
-          : 'File uploaded successfully',
-        fileName: uniqueFileName, // Return the unique filename (may be .md if originally .txt)
+        message: 'File uploaded successfully',
+        fileName: uniqueFileName,
       });
 
     } catch (error: any) {
-      console.error('Error uploading file to Supabase:', error);
       results.push({
         success: false,
         message: 'Failed to upload file',
@@ -686,7 +581,6 @@ export async function fetchFilesFromSupabase(
   onProgress?: (current: number, total: number, status: string) => void
 ): Promise<FileListResponse> {
   try {
-    console.log('🔍 [fetchFilesFromSupabase] Starting file fetch...');
     const supabase = getSupabaseClient();
     
     // Get group_id from URL
@@ -696,15 +590,7 @@ export async function fetchFilesFromSupabase(
     const groupId = getGroupIdFromUrl();
     const userId = session?.userId;
     
-    console.log('🔍 [fetchFilesFromSupabase] Session check:', {
-      hasSession: !!session,
-      groupId: groupId || 'MISSING',
-      userId: userId || 'MISSING',
-      sessionKeys: session ? Object.keys(session) : []
-    });
-    
     if (!groupId) {
-      console.warn('⚠️ [fetchFilesFromSupabase] No group_id in session, cannot fetch group-specific files');
       return {
         success: false,
         files: [],
@@ -723,17 +609,12 @@ export async function fetchFilesFromSupabase(
         .eq('group_id', groupId)
         .single();
 
-      if (groupError) {
-        console.warn('⚠️ [fetchFilesFromSupabase] Error fetching group data for vector_store_id:', groupError);
-      } else if (groupData) {
+      if (!groupError && groupData) {
         vectorStoreId = groupData.vector_store_id || null;
-        console.log('📊 [fetchFilesFromSupabase] Group vector_store_id:', vectorStoreId);
       }
     } catch (groupError) {
-      console.warn('⚠️ [fetchFilesFromSupabase] Failed to load group vector_store_id:', groupError);
+      // Failed to load group vector_store_id
     }
-
-    console.log(`🔍 [fetchFilesFromSupabase] Querying files table for group_id: ${groupId}`);
     
     // Query files table filtered by group_id
     const { data: fileRecords, error: dbError } = await supabase
@@ -743,19 +624,11 @@ export async function fetchFilesFromSupabase(
       .order('uploaded_at', { ascending: false });
 
     if (dbError) {
-      console.error('❌ [fetchFilesFromSupabase] Database error:', {
-        code: dbError.code,
-        message: dbError.message,
-        details: dbError.details,
-        hint: dbError.hint
-      });
-      
       // If files table doesn't exist, return empty list with helpful message
       // We can't filter files by group from storage alone, so we need the table
       // PGRST205 = PostgREST error: table not found in schema cache
       // 42P01 = PostgreSQL error: relation does not exist
       if (dbError.code === '42P01' || dbError.code === 'PGRST205' || dbError.message?.includes('does not exist') || dbError.message?.includes('schema cache')) {
-        console.warn('⚠️ [fetchFilesFromSupabase] Files table does not exist. Please run the migration to create it.');
         return {
           success: false,
           files: [],
@@ -766,7 +639,6 @@ export async function fetchFilesFromSupabase(
       
       // Check for RLS policy errors
       if (dbError.code === '42501' || dbError.message?.includes('permission denied') || dbError.message?.includes('policy')) {
-        console.warn('⚠️ [fetchFilesFromSupabase] RLS policy may be blocking access');
         return {
           success: false,
           files: [],
@@ -776,7 +648,6 @@ export async function fetchFilesFromSupabase(
       }
       
       // For other errors, return empty list rather than showing all files
-      console.warn('⚠️ [fetchFilesFromSupabase] Error querying files table, returning empty list to prevent showing all files');
       return {
         success: false,
         files: [],
@@ -786,7 +657,6 @@ export async function fetchFilesFromSupabase(
     }
 
     const totalFiles = fileRecords?.length || 0;
-    console.log(`✅ [fetchFilesFromSupabase] Found ${totalFiles} files in database for group ${groupId}`);
 
     if (onProgress) {
       onProgress(0, totalFiles, `Found ${totalFiles} files. Checking sync status...`);
@@ -808,19 +678,12 @@ export async function fetchFilesFromSupabase(
     const filesToCheck = files.filter(f => f.syncStatus !== 'synced');
     
     if (filesToCheck.length > 0) {
-      console.log(`🔍 [fetchFilesFromSupabase] Checking sync status for ${filesToCheck.length} files...`);
-
       // Always use OpenAI vector store to determine sync status (openai_chat check removed)
       if (vectorStoreId) {
-        console.log('🔧 [fetchFilesFromSupabase] Using OpenAI vector store to determine sync status');
-
         try {
           const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
-          if (!openaiApiKey) {
-            console.error('❌ [fetchFilesFromSupabase] VITE_OPENAI_API_KEY not configured; cannot check OpenAI sync status');
-          } else {
+          if (openaiApiKey) {
             const listUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
-            console.log('🌐 [fetchFilesFromSupabase] Fetching files from OpenAI vector store:', listUrl);
 
             const response = await fetch(listUrl, {
               method: 'GET',
@@ -829,14 +692,7 @@ export async function fetchFilesFromSupabase(
               },
             });
 
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error('❌ [fetchFilesFromSupabase] Failed to list OpenAI vector store files:', {
-                status: response.status,
-                statusText: response.statusText,
-                body: errorText,
-              });
-            } else {
+            if (response.ok) {
               const data = await response.json();
               const filesArray: any[] = Array.isArray(data?.data) ? data.data : [];
               const indexedIds = new Set<string>(
@@ -844,8 +700,6 @@ export async function fetchFilesFromSupabase(
                   .map((f: any) => f?.id)
                   .filter((id: any) => typeof id === 'string' && id.length > 0)
               );
-
-              console.log(`📊 [fetchFilesFromSupabase] OpenAI vector store contains ${indexedIds.size} files`);
 
               // Build a map of file_name -> DB record to access openai_file_id
               const fileRecordMap = new Map<string, any>();
@@ -889,7 +743,7 @@ export async function fetchFilesFromSupabase(
                         })
                         .eq('id', record.id);
                     } catch (updateError) {
-                      console.warn('⚠️ [fetchFilesFromSupabase] Failed to update file record for OpenAI sync:', updateError);
+                      // Failed to update file record for OpenAI sync
                     }
                   }
                 } else if (file.syncStatus !== 'synced') {
@@ -899,18 +753,15 @@ export async function fetchFilesFromSupabase(
                 }
               }
 
-              console.log(`📊 [fetchFilesFromSupabase] OpenAI sync summary: ${syncedCount} synced, ${pendingCount} pending out of ${files.length} files`);
             }
           }
         } catch (openaiError) {
-          console.warn('⚠️ [fetchFilesFromSupabase] Error while checking OpenAI sync status:', openaiError);
           // If OpenAI check fails, leave existing syncStatus values (based on is_indexed) as-is
         }
       }
       // NOTE: Supabase documents route commented out - always using OpenAI route
       /* else {
         // Existing sync status logic using Supabase documents (n8n / Azure RAG flow)
-        console.log('🔧 [fetchFilesFromSupabase] Using Supabase documents to determine sync status');
         try {
         // OPTIMIZED: Fetch only unique fileNames from documents (much faster than fetching all metadata)
         // Use a more efficient approach: get distinct fileName values
@@ -941,7 +792,6 @@ export async function fetchFilesFromSupabase(
         while (!allPagesLoaded && retryCount < maxRetries) {
           // Reset for retry
           if (retryCount > 0) {
-            console.log(`🔄 Retrying to fetch all indexed files (attempt ${retryCount + 1}/${maxRetries})...`);
             allFileNames.clear();
             page = 0;
             totalChunksChecked = 0;
@@ -958,13 +808,11 @@ export async function fetchFilesFromSupabase(
               .range(page * pageSize, (page + 1) * pageSize - 1);
           
             if (pageError) {
-              console.warn(`⚠️ Error fetching page ${page}:`, pageError);
               // Don't break on error, try to continue or retry
               if (retryCount < maxRetries - 1) {
                 retryCount++;
                 break; // Break inner loop to retry
               } else {
-                console.error(`❌ Failed to fetch all pages after ${maxRetries} attempts`);
                 break;
               }
             }
@@ -991,9 +839,6 @@ export async function fetchFilesFromSupabase(
                 );
               }
               
-              if (page % 10 === 0) {
-                console.log(`📄 Checked ${page} pages: ${totalChunksChecked} chunks, ${allFileNames.size} unique files`);
-              }
             } else {
               hasMore = false;
             }
@@ -1002,18 +847,14 @@ export async function fetchFilesFromSupabase(
           // Verify we got all chunks
           if (totalChunksChecked >= totalChunks || !hasMore) {
             allPagesLoaded = true;
-            console.log(`✅ All pages loaded: ${totalChunksChecked} chunks checked, ${allFileNames.size} unique files found`);
           } else {
             retryCount++;
             if (retryCount < maxRetries) {
-              console.warn(`⚠️ Incomplete data: expected ${totalChunks} chunks, got ${totalChunksChecked}. Retrying...`);
               // Small delay before retry
               await new Promise(resolve => setTimeout(resolve, 500));
             }
           }
         }
-        
-        console.log(`📊 Final: Checked ${totalChunksChecked} chunks, found ${allFileNames.size} unique indexed files (before normalization)`);
         
         if (onProgress) {
           onProgress(totalFiles, totalFiles, `Matching ${totalFiles} files with indexed chunks...`);
@@ -1047,8 +888,6 @@ export async function fetchFilesFromSupabase(
         normalizationMap.set(name, normalized);
       });
       
-      console.log(`📋 After normalization: ${normalizedIndexedNames.size} unique indexed files (from ${allFileNames.size} raw names)`);
-      console.log(`📋 Sample indexed names:`, Array.from(normalizedIndexedNames).slice(0, 5));
 
       // Count synced files for debugging
       let syncedCount = 0;
@@ -1089,7 +928,7 @@ export async function fetchFilesFromSupabase(
                 })
                 .eq('id', fileRecord.id);
             } catch (updateError) {
-              console.warn('⚠️ Failed to update file record:', updateError);
+              // Failed to update file record
             }
           }
         } else {
@@ -1106,25 +945,11 @@ export async function fetchFilesFromSupabase(
                      indexedBase.includes(fileBase.substring(0, 20));
             });
             
-            if (closeMatches.length > 0) {
-              console.log(`⚠️ [FileLibrary] File mismatch (close matches found):`, {
-                storage: file.name,
-                normalized: normalizedFileName,
-                closeMatches: closeMatches.slice(0, 3)
-              });
-            } else {
-              console.log(`⚠️ [FileLibrary] File not indexed:`, {
-                storage: file.name,
-                normalized: normalizedFileName
-              });
-            }
           }
         }
       }
       
-      console.log(`📊 [FileLibrary] Sync status summary: ${syncedCount} synced, ${pendingCount} pending out of ${files.length} total files`);
       } catch (syncError) {
-        console.warn('⚠️ Error during sync status calculation:', syncError);
         for (let i = 0; i < files.length; i++) {
           files[i].syncStatus = 'error';
         }
@@ -1133,7 +958,6 @@ export async function fetchFilesFromSupabase(
       */
     }
 
-    console.log(`✅ [fetchFilesFromSupabase] Successfully returning ${files.length} files`);
     return {
       success: true,
       files,
@@ -1144,8 +968,6 @@ export async function fetchFilesFromSupabase(
     };
 
   } catch (error: any) {
-    console.error('❌ [fetchFilesFromSupabase] Unexpected error:', error);
-    console.error('Error stack:', error.stack);
     return {
       success: false,
       files: [],
@@ -1160,7 +982,6 @@ export async function fetchFilesFromSupabase(
  */
 export async function deleteFileFromSupabase(fileName: string): Promise<{ success: boolean; message: string }> {
   try {
-    console.log(`🗑️ [Delete] Starting deletion process for file: ${fileName}`);
     const supabase = getSupabaseClient();
     
     // Get group_id from URL to delete the correct database record
@@ -1177,56 +998,38 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
 
     if (groupId) {
       try {
-        console.log(`🔍 [Delete] Fetching file and group data for group: ${groupId}`);
         const { defaultSupabase } = await import('./groupService');
         
         // Fetch file data to get openai_file_id
-        const { data: fileData, error: fileError } = await supabase
+        const { data: fileData } = await supabase
           .from('files')
           .select('openai_file_id')
           .eq('file_name', fileName)
           .eq('group_id', groupId)
           .maybeSingle();
 
-        if (fileError) {
-          console.warn(`⚠️ [Delete] Error fetching file data:`, fileError);
-        } else if (fileData) {
+        if (fileData) {
           openaiFileId = fileData.openai_file_id || null;
-          console.log(`📁 [Delete] File's openai_file_id: ${openaiFileId || 'null'}`);
         }
 
         // Fetch group data to get vector_store_id
-        const { data: groupData, error: groupError } = await defaultSupabase
+        const { data: groupData } = await defaultSupabase
           .from('group')
           .select('vector_store_id')
           .eq('group_id', groupId)
           .single();
 
-        if (groupError) {
-          console.warn(`⚠️ [Delete] Error fetching group data:`, groupError);
-        } else if (groupData) {
+        if (groupData) {
           vectorStoreId = groupData.vector_store_id || undefined;
-          if (vectorStoreId) {
-            console.log(`📦 [Delete] Group's vector_store_id: ${vectorStoreId}`);
-          }
         }
 
         // Always delete from OpenAI if we have the necessary IDs
         if (openaiFileId && vectorStoreId) {
-          console.log('🔧 [Delete] Starting OpenAI deletion process...');
-          
           try {
             const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
-            if (!openaiApiKey) {
-              console.error('❌ [Delete] OPENAI_API_KEY not found in environment variables');
-              console.log('💡 [Delete] Make sure VITE_OPENAI_API_KEY is set in your .env file');
-            } else {
-              console.log(`🔑 [Delete] API key found (length: ${openaiApiKey.length} chars)`);
-
+            if (openaiApiKey) {
               // Step 1: List files in vector store to find the vector store file entry
               const listFilesUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
-              console.log(`📤 [Delete] Listing files in OpenAI vector store...`);
-              console.log(`🌐 [Delete] Endpoint: ${listFilesUrl}`);
 
               const listFilesResponse = await fetch(listFilesUrl, {
                 method: 'GET',
@@ -1240,7 +1043,6 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
               if (listFilesResponse.ok) {
                 const listFilesData = await listFilesResponse.json();
                 const files = listFilesData?.data || [];
-                console.log(`📋 [Delete] Found ${files.length} file(s) in vector store`);
 
                 // Find the file that matches our openai_file_id
                 // The file object in the vector store has an 'id' field that should match openai_file_id
@@ -1248,20 +1050,15 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
                 
                 if (matchingFile) {
                   vectorStoreFileId = matchingFile.id;
-                  console.log(`✅ [Delete] Found matching file in vector store with ID: ${vectorStoreFileId}`);
                 } else {
-                  console.warn(`⚠️ [Delete] File with openai_file_id ${openaiFileId} not found in vector store`);
                 }
               } else {
                 const errorData = await listFilesResponse.json().catch(() => ({ error: 'Unknown error' }));
-                console.warn('⚠️ [Delete] Failed to list files from vector store:', errorData);
               }
 
               // Step 2: Remove file from OpenAI vector store (if found)
               if (vectorStoreFileId) {
                 const removeFromVectorStoreUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files/${vectorStoreFileId}`;
-                console.log(`📤 [Delete] Removing file from OpenAI vector store...`);
-                console.log(`🌐 [Delete] Endpoint: ${removeFromVectorStoreUrl}`);
 
                 const removeFromVectorStoreResponse = await fetch(removeFromVectorStoreUrl, {
                   method: 'DELETE',
@@ -1270,24 +1067,18 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
                   },
                 });
 
-                console.log(`📊 [Delete] Vector store removal response: ${removeFromVectorStoreResponse.status} ${removeFromVectorStoreResponse.statusText}`);
 
                 if (removeFromVectorStoreResponse.ok) {
                   const removeData = await removeFromVectorStoreResponse.json().catch(() => ({}));
-                  console.log('✅ [Delete] File removed from OpenAI vector store successfully:', removeData);
                 } else {
                   const errorData = await removeFromVectorStoreResponse.json().catch(() => ({ error: 'Unknown error' }));
-                  console.warn('⚠️ [Delete] Failed to remove file from OpenAI vector store:', errorData);
                   // Continue with deletion even if this fails
                 }
               } else {
-                console.log(`ℹ️ [Delete] File not found in vector store, skipping vector store removal`);
               }
 
               // Step 3: Delete file from OpenAI
               const deleteFileUrl = `https://api.openai.com/v1/files/${openaiFileId}`;
-              console.log(`📤 [Delete] Deleting file from OpenAI...`);
-              console.log(`🌐 [Delete] Endpoint: ${deleteFileUrl}`);
 
               const deleteFileResponse = await fetch(deleteFileUrl, {
                 method: 'DELETE',
@@ -1296,53 +1087,39 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
                 },
               });
 
-              console.log(`📊 [Delete] File deletion response: ${deleteFileResponse.status} ${deleteFileResponse.statusText}`);
 
               if (deleteFileResponse.ok) {
                 const deleteData = await deleteFileResponse.json().catch(() => ({}));
-                console.log('✅ [Delete] File deleted from OpenAI successfully:', deleteData);
               } else {
                 const errorData = await deleteFileResponse.json().catch(() => ({ error: 'Unknown error' }));
-                console.warn('⚠️ [Delete] Failed to delete file from OpenAI:', errorData);
                 // Continue with Supabase deletion even if this fails
               }
             }
           } catch (openaiError: any) {
-            console.error('❌ [Delete] Exception during OpenAI deletion:', openaiError);
-            console.error(`📊 [Delete] Error type: ${openaiError?.constructor?.name || 'Unknown'}`);
-            console.error(`📋 [Delete] Error message: ${openaiError?.message || 'No message'}`);
-            console.error(`📋 [Delete] Error stack:`, openaiError?.stack);
             // Continue with Supabase deletion even if OpenAI deletion fails
           }
         } else {
           if (!openaiFileId) {
-            console.log(`ℹ️ [Delete] File does not have openai_file_id, skipping OpenAI deletion`);
           } else if (!vectorStoreId) {
-            console.log(`ℹ️ [Delete] Group does not have vector_store_id, skipping OpenAI deletion`);
           }
         }
       } catch (error) {
-        console.warn('⚠️ [Delete] Error during OpenAI deletion:', error);
         // Continue with normal Supabase deletion if OpenAI deletion fails
       }
     } else {
-      console.log(`ℹ️ [Delete] No group_id found, skipping OpenAI deletion`);
     }
 
     // Step 3: Delete from Supabase storage
-    console.log(`🗑️ [Delete] Deleting file from Supabase Storage: ${filePath}`);
     const { error } = await supabase.storage
       .from(SUPABASE_BUCKET)
       .remove([filePath]);
 
     if (error) {
-      console.error('❌ [Delete] Supabase storage delete error:', error);
       return {
         success: false,
         message: error.message,
       };
     }
-    console.log('✅ [Delete] File deleted from Supabase Storage');
 
     // Step 4: Delete from database table if group_id is available
     if (groupId) {
@@ -1354,18 +1131,14 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
           .eq('group_id', groupId);
         
         if (dbError) {
-          console.warn('⚠️ [Delete] Failed to delete file record from database:', dbError);
           // Don't fail if DB delete fails (file already deleted from storage)
         } else {
-          console.log('✅ [Delete] File record deleted from database');
         }
       } catch (dbErr) {
-        console.warn('⚠️ [Delete] Error deleting file record:', dbErr);
         // Don't fail if DB delete fails
       }
     }
 
-    console.log('✅ [Delete] File deleted successfully from all systems');
 
     return {
       success: true,
@@ -1373,7 +1146,6 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
     };
 
   } catch (error: any) {
-    console.error('❌ [Delete] Error deleting file:', error);
     return {
       success: false,
       message: error.message || 'Failed to delete file',
@@ -1396,7 +1168,6 @@ export async function getSupabaseFileUrl(fileName: string): Promise<string | nul
     return data.publicUrl;
 
   } catch (error: any) {
-    console.error('Error getting file URL:', error);
     return null;
   }
 }
@@ -1482,7 +1253,6 @@ export async function fetchFileSummaries(
   onProgress?: (current: number, total: number, status: string) => void
 ): Promise<{ success: boolean; files: FileSummary[]; total: number; message?: string }> {
   try {
-    console.log(`📋 Fetching file summaries (fast mode)...`);
     const supabase = getSupabaseClient();
     
     const { getGroupIdFromUrl } = await import('../utils/navigation');
@@ -1504,7 +1274,6 @@ export async function fetchFileSummaries(
       .eq('metadata->>groupId', groupId);
     
     if (countError) {
-      console.error('Error getting count:', countError);
       return { success: false, files: [], total: 0, message: countError.message };
     }
 
@@ -1528,7 +1297,6 @@ export async function fetchFileSummaries(
     while (!allPagesLoaded && retryCount < maxRetries) {
       // Reset for retry
       if (retryCount > 0) {
-        console.log(`🔄 [KnowledgeIndex] Retrying to fetch all metadata (attempt ${retryCount + 1}/${maxRetries})...`);
         allMetas = [];
         page = 0;
         hasMore = true;
@@ -1543,12 +1311,10 @@ export async function fetchFileSummaries(
           .range(page * pageSize, (page + 1) * pageSize - 1);
         
         if (pageError) {
-          console.error('Error fetching page:', pageError);
           if (retryCount < maxRetries - 1) {
             retryCount++;
             break; // Break inner loop to retry
           } else {
-            console.error(`❌ [KnowledgeIndex] Failed to fetch all pages after ${maxRetries} attempts`);
             break;
           }
         }
@@ -1565,9 +1331,6 @@ export async function fetchFileSummaries(
           }
           
           // Log progress every 10 pages
-          if (page % 10 === 0) {
-            console.log(`📄 [KnowledgeIndex] Fetched ${page} pages: ${allMetas.length.toLocaleString()} / ${totalCount.toLocaleString()} metadata records (${Math.round((allMetas.length / totalCount) * 100)}%)`);
-          }
         } else {
           hasMore = false;
         }
@@ -1576,11 +1339,9 @@ export async function fetchFileSummaries(
       // Verify we got all chunks
       if (allMetas.length >= totalCount || !hasMore) {
         allPagesLoaded = true;
-        console.log(`✅ [KnowledgeIndex] All pages loaded: ${allMetas.length.toLocaleString()} metadata records`);
       } else {
         retryCount++;
         if (retryCount < maxRetries) {
-          console.warn(`⚠️ [KnowledgeIndex] Incomplete data: expected ${totalCount} records, got ${allMetas.length}. Retrying...`);
           // Small delay before retry
           await new Promise(resolve => setTimeout(resolve, 500));
         }
@@ -1590,8 +1351,6 @@ export async function fetchFileSummaries(
     if (onProgress) {
       onProgress(allMetas.length, totalCount, 'Grouping by file...');
     }
-    
-    console.log(`✅ Fetched ${allMetas.length.toLocaleString()} metadata records`);
     
     if (onProgress) {
       onProgress(allMetas.length, totalCount, 'Grouping by file...');
@@ -1669,9 +1428,6 @@ export async function fetchFileSummaries(
       });
     }
     
-    console.log(`📋 [KnowledgeIndex] Found ${fileNames.size} files in storage for sync status check`);
-    console.log(`📋 [KnowledgeIndex] Sample storage file names:`, Array.from(fileNames).slice(0, 5));
-    
     // Count synced vs orphaned for debugging
     let syncedCount = 0;
     let orphanedCount = 0;
@@ -1700,19 +1456,7 @@ export async function fetchFileSummaries(
                  storageBase.includes(metaBase.substring(0, 20));
         });
         
-        if (closeMatches.length > 0) {
-          console.log(`⚠️ [KnowledgeIndex] File name mismatch (close matches found):`, {
-            metadata: fileName,
-            normalized: normalizedMetadataName,
-            closeMatches: closeMatches.slice(0, 3),
-            storageOriginals: closeMatches.map(m => fileNamesOriginal.get(m)).filter(Boolean)
-          });
-        } else {
-          console.log(`⚠️ [KnowledgeIndex] Orphaned file (no match in storage):`, {
-            metadata: fileName,
-            normalized: normalizedMetadataName
-          });
-        }
+        // File name mismatch detected
       }
       
       return {
@@ -1723,10 +1467,6 @@ export async function fetchFileSummaries(
         syncStatus: isSynced ? 'synced' : 'orphaned'
       };
     });
-    
-    console.log(`📊 [KnowledgeIndex] Found ${files.length} unique files with ${allMetas.length} total chunks`);
-    console.log(`📊 [KnowledgeIndex] Sync status summary: ${syncedCount} synced, ${orphanedCount} orphaned`);
-    
     return {
       success: true,
       files,
@@ -1734,7 +1474,6 @@ export async function fetchFileSummaries(
       message: 'File summaries fetched successfully',
     };
   } catch (error: any) {
-    console.error('Error fetching file summaries:', error);
     return {
       success: false,
       files: [],
@@ -1756,7 +1495,6 @@ export async function fetchChunksForFile(
   offset: number = 0
 ): Promise<{ success: boolean; documents: VectorDocument[]; total?: number; message?: string }> {
   try {
-    console.log(`📄 Fetching chunks for file: ${fileName} (limit: ${limit}, offset: ${offset})`);
     const supabase = getSupabaseClient();
     
     const { getGroupIdFromUrl } = await import('../utils/navigation');
@@ -1778,7 +1516,6 @@ export async function fetchChunksForFile(
       .eq('metadata->>fileName', fileName);
     
     if (countError) {
-      console.error('Error getting chunk count:', countError);
     }
 
     // Fetch chunks for this specific file with pagination
@@ -1791,7 +1528,6 @@ export async function fetchChunksForFile(
       .range(offset, offset + limit - 1);
     
     if (error) {
-      console.error('Error fetching chunks:', error);
       return {
         success: false,
         documents: [],
@@ -1806,8 +1542,6 @@ export async function fetchChunksForFile(
       embedding: undefined,
     }));
     
-    console.log(`✅ Fetched ${documents.length} chunks for ${fileName} (${offset + documents.length} / ${count || '?'} total)`);
-    
     return {
       success: true,
       documents,
@@ -1815,7 +1549,6 @@ export async function fetchChunksForFile(
       message: 'Chunks fetched successfully',
     };
   } catch (error: any) {
-    console.error('Error fetching chunks for file:', error);
     return {
       success: false,
       documents: [],
@@ -1831,7 +1564,6 @@ export async function fetchChunksForFile(
  */
 export async function fetchVectorDocuments(limit: number = 50, offset: number = 0): Promise<{ success: boolean; documents: VectorDocument[]; total: number; message?: string }> {
   try {
-    console.log(`Fetching vector documents from Supabase (limit: ${limit}, offset: ${offset})...`);
     const supabase = getSupabaseClient();
     
     // Get group_id from URL
@@ -1841,7 +1573,6 @@ export async function fetchVectorDocuments(limit: number = 50, offset: number = 
     const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('⚠️ No group_id in URL, cannot fetch group-specific documents');
       return {
         success: false,
         documents: [],
@@ -1857,7 +1588,6 @@ export async function fetchVectorDocuments(limit: number = 50, offset: number = 
       .eq('metadata->>groupId', groupId);
     
     if (countError) {
-      console.error('Error getting count:', countError);
       return {
         success: false,
         documents: [],
@@ -1882,7 +1612,6 @@ export async function fetchVectorDocuments(limit: number = 50, offset: number = 
         .range(page * pageSize, (page + 1) * pageSize - 1);
       
       if (pageError) {
-        console.error('Error fetching page:', pageError);
         break;
       }
       
@@ -1890,21 +1619,15 @@ export async function fetchVectorDocuments(limit: number = 50, offset: number = 
         allData = [...allData, ...pageData];
         hasMore = pageData.length === pageSize;
         page++;
-        console.log(`📄 Fetched page ${page}: ${pageData.length} documents (total so far: ${allData.length})`);
       } else {
         hasMore = false;
       }
     }
-    
-    console.log(`✅ Fetched ${allData.length} total documents for groupId: ${groupId}`);
-    
     // Extract unique fileNames to verify we're getting all files
     const uniqueFileNames = [...new Set(allData.map(d => {
       const meta = d.metadata || {};
       return meta.fileName || 'Unknown';
     }).filter(f => f !== 'Unknown'))];
-    console.log(`📋 Found ${uniqueFileNames.length} unique files:`, uniqueFileNames);
-    
     // Group by fileName to show distribution
     const fileDistribution = allData.reduce((acc, d) => {
       const meta = d.metadata || {};
@@ -1912,14 +1635,10 @@ export async function fetchVectorDocuments(limit: number = 50, offset: number = 
       acc[fileName] = (acc[fileName] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    console.log(`📊 Documents per file:`, fileDistribution);
-    
     // If limit is >= 10000, treat it as "fetch all" and return all documents
     // Otherwise, apply pagination for backward compatibility
     const shouldReturnAll = limit >= 10000;
     const paginatedData = shouldReturnAll ? allData : allData.slice(offset, offset + limit);
-    
-    console.log(`📦 Returning ${paginatedData.length} documents (${shouldReturnAll ? 'all' : `paginated: offset=${offset}, limit=${limit}`})`);
     
     return {
       success: true,
@@ -1929,7 +1648,6 @@ export async function fetchVectorDocuments(limit: number = 50, offset: number = 
     };
 
   } catch (error: any) {
-    console.error('Error fetching vector documents:', error);
     return {
       success: false,
       documents: [],
@@ -1970,19 +1688,14 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
         .single();
       
       if (groupError) {
-        console.warn(`⚠️ [Index] Error fetching group data:`, groupError);
       } else {
         vectorStoreId = groupData?.vector_store_id || null;
-        console.log(`📊 [Index] Group ${groupIdFromSession} vector_store_id: ${vectorStoreId}`);
       }
     } catch (error) {
-      console.warn(`⚠️ [Index] Error fetching group vector_store_id:`, error);
     }
     
     // Always use OpenAI vector store API
     {
-      console.log(`🔧 [Index] OpenAI Chat enabled, using OpenAI vector store API`);
-      
       // Fetch the file's openai_file_id from the files table
       const { data: fileData, error: fileError } = await supabase
         .from('files')
@@ -1992,7 +1705,6 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
         .single();
       
       if (fileError || !fileData) {
-        console.error(`❌ [Index] Error fetching file data:`, fileError);
         return {
           success: false,
           message: `File not found in database or missing OpenAI file ID. Please ensure the file was uploaded with OpenAI Chat enabled.`,
@@ -2001,19 +1713,14 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       
       const openaiFileId = fileData.openai_file_id;
       if (!openaiFileId) {
-        console.error(`❌ [Index] File ${fileName} does not have an openai_file_id`);
         return {
           success: false,
           message: `File does not have an OpenAI file ID. Please re-upload the file with OpenAI Chat enabled.`,
         };
       }
-      
-      console.log(`📁 [Index] Found OpenAI file ID: ${openaiFileId} for file: ${fileName}`);
-      
       // Make API call to add file to OpenAI vector store
       const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
       if (!openaiApiKey) {
-        console.error('❌ [Index] OPENAI_API_KEY not found in environment variables');
         return {
           success: false,
           message: 'OpenAI API key not configured. Please set VITE_OPENAI_API_KEY in your .env file.',
@@ -2022,7 +1729,6 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       
       // Get vector_store_id from group data
       if (!vectorStoreId) {
-        console.error(`❌ [Index] Group ${groupIdFromSession} does not have a vector_store_id`);
         return {
           success: false,
           message: `Group does not have a vector store ID. Please ensure the group was created with OpenAI Chat enabled.`,
@@ -2049,23 +1755,14 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
             : null;
           
           if (chunkSize !== null && chunkOverlap !== null) {
-            console.log(`📊 [Index] Using chunking options from group:`, { chunkSize, chunkOverlap });
           } else {
-            console.log(`ℹ️ [Index] Group ${groupIdFromSession} has no chunk_size or chunk_overlap values, using defaults`);
           }
         } else {
-          console.warn(`⚠️ [Index] Error fetching group chunking options:`, groupChunkingError);
         }
       } catch (error) {
-        console.warn(`⚠️ [Index] Error fetching group chunking options:`, error);
       }
       
       const openaiUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
-      
-      console.log(`📤 [Index] Adding file to OpenAI vector store...`);
-      console.log(`🌐 [Index] Endpoint: ${openaiUrl}`);
-      console.log(`📋 [Index] File ID: ${openaiFileId}`);
-      
       // Build request body with optional chunking_strategy
       const requestBody: any = {
         file_id: openaiFileId
@@ -2080,9 +1777,7 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
             chunk_overlap_tokens: chunkOverlap
           }
         };
-        console.log(`📊 [Index] Adding chunking strategy:`, requestBody.chunking_strategy);
       } else {
-        console.log(`ℹ️ [Index] No chunking strategy added (chunkSize: ${chunkSize}, chunkOverlap: ${chunkOverlap})`);
       }
       
       const startTime = Date.now();
@@ -2097,27 +1792,20 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
         });
         
         const duration = Date.now() - startTime;
-        console.log(`⏱️ [Index] Request completed in ${duration}ms`);
-        console.log(`📊 [Index] Response status: ${response.status} ${response.statusText}`);
-        
         if (response.ok) {
           const responseData = await response.json();
-          console.log(`✅ [Index] File added to OpenAI vector store successfully:`, responseData);
-          
           return {
             success: true,
             message: `File added to OpenAI vector store successfully.`,
           };
         } else {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          console.error(`❌ [Index] Failed to add file to OpenAI vector store:`, errorData);
           return {
             success: false,
             message: `Failed to add file to OpenAI vector store: ${errorData.error?.message || 'Unknown error'}`,
           };
         }
       } catch (openaiError: any) {
-        console.error(`❌ [Index] Exception during OpenAI vector store API call:`, openaiError);
         return {
           success: false,
           message: `Error adding file to OpenAI vector store: ${openaiError?.message || 'Unknown error'}`,
@@ -2128,20 +1816,12 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     // NOTE: n8n webhook flow commented out - always using OpenAI route
     /* 
     // If OpenAI Chat is disabled, use the existing n8n webhook flow
-    console.log(`🔧 [Index] OpenAI Chat disabled, using n8n webhook flow`);
-    
     // Get signed URL for the file
     const filePath = `files/${fileName}`;
-    console.log(`🔍 [Index] Requesting signed URL for: ${filePath}`);
-    
     const { data: urlData, error: urlError } = await supabase.storage
       .from(SUPABASE_BUCKET)
       .createSignedUrl(filePath, 3600); // 1 hour
-      
-    console.log(`🔍 [Index] Signed URL response:`, { urlData, urlError });
-
     if (urlError || !urlData?.signedUrl) {
-      console.error('❌ [Index] Error getting file URL:', urlError);
       return {
         success: false,
         message: 'Failed to get file URL',
@@ -2152,10 +1832,6 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     const { data: publicUrlData } = supabase.storage
       .from(SUPABASE_BUCKET)
       .getPublicUrl(filePath);
-    console.log(`🔍 [Index] Public URL for comparison:`, publicUrlData);
-
-    console.log(`📤 [Index] Sending file to n8n for indexing: ${fileName}`);
-    
     // Ensure we have a full URL for n8n
     let fullFileUrl = urlData.signedUrl;
     
@@ -2166,31 +1842,21 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       if (urlData.signedUrl.startsWith('/object/')) {
         // Format: /object/sign/bucket/path?token=...
         fullFileUrl = `${supabaseUrl}/storage/v1${urlData.signedUrl}`;
-        console.log(`🔧 [Index] Converted relative URL to full URL`);
       } else if (urlData.signedUrl.startsWith('/storage/')) {
         // Format: /storage/v1/object/sign/bucket/path?token=...
         fullFileUrl = `${supabaseUrl}${urlData.signedUrl}`;
-        console.log(`🔧 [Index] Converted /storage/ URL to full URL`);
       } else {
         // Fallback: assume it needs the full path
         fullFileUrl = `${supabaseUrl}/storage/v1/object/sign/${SUPABASE_BUCKET}/${filePath}?token=${urlData.signedUrl.split('token=')[1] || ''}`;
-        console.log(`🔧 [Index] Used fallback URL construction`);
       }
     } else {
-      console.log(`✅ [Index] URL already full, no conversion needed`);
     }
-    
-    console.log(`🔗 [Index] FINAL URL SENT TO N8N: ${fullFileUrl}`);
-    console.log(`⏰ [Index] Request time: ${new Date().toISOString()}`);
 
     // Send to n8n webhook - UNIVERSAL ENDPOINT (hardcoded)
     // Hardcoded universal endpoint for document indexing (same for all users)
     const INDEXING_WEBHOOK_URL = 'https://n8n.srv1153481.hstgr.cloud/webhook/8f9c95ef-1cf4-4310-820b-9d5fe26ac3bc';
     const n8nWebhookUrl = INDEXING_WEBHOOK_URL;
     
-    console.log(`🔧 [Index] Webhook mode: UNIVERSAL (hardcoded)`);
-    console.log(`🌐 [Index] Using webhook: ${n8nWebhookUrl}`);
-    console.log(`👤 [Index] User: ${session?.email || 'Unknown'} (${session?.userId || 'Unknown'})`);
     
     // Fetch group data to get chunking options
     let chunkingOptions: { chunk_size: number; chunk_overlap: number } | undefined;
@@ -2212,15 +1878,11 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
               chunk_size: Number(chunkSize),
               chunk_overlap: Number(chunkOverlap)
             };
-            console.log(`📊 [Index] Using chunking options from group:`, chunkingOptions);
           } else {
-            console.warn(`⚠️ [Index] Group ${groupIdFromSession} has missing chunk_size or chunk_overlap values`);
           }
         } else {
-          console.warn(`⚠️ [Index] Failed to fetch group data for ${groupIdFromSession}:`, groupError);
         }
       } catch (error) {
-        console.warn(`⚠️ [Index] Error fetching group chunking options:`, error);
       }
     }
     
@@ -2263,8 +1925,6 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     };
     
     const detectedFormat = getDoclingFormat(fileName);
-    console.log(`📄 [Index] Detected file format: ${detectedFormat} for ${fileName}`);
-    
     const payload: any = {
       fileUrl: fullFileUrl,
       fileName: fileName,
@@ -2288,13 +1948,10 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
             doclingOptions = typeof groupData.docling_options === 'string'
               ? JSON.parse(groupData.docling_options)
               : groupData.docling_options;
-            console.log(`📊 [Index] Loaded Docling options from group:`, doclingOptions);
           } catch (e) {
-            console.warn(`⚠️ Failed to parse docling_options:`, e);
           }
         }
       } catch (error) {
-        console.warn(`⚠️ Error fetching Docling options:`, error);
       }
     }
     
@@ -2390,9 +2047,6 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
     if (chunkingOptions) {
       payload.chunking_options = chunkingOptions;
     }
-
-    console.log(`📦 [Index] Payload being sent:`, payload);
-
     // Try axios first, fallback to fetch with no-cors if CORS fails
     try {
       const response = await axios.post(n8nWebhookUrl, payload, {
@@ -2401,11 +2055,6 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
         },
         timeout: 30000,
       });
-
-      console.log('✅ [Index] File sent to n8n for indexing:', response.data);
-      console.log('📊 [Index] Response status:', response.status);
-      console.log('📋 [Index] Response headers:', response.headers);
-
       // Check if n8n provided a workflow ID or status
       const workflowId = response.data.workflowId || response.data.executionId;
       const estimatedTime = response.data.estimatedTime || '30-60 seconds';
@@ -2417,7 +2066,6 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
         ...(estimatedTime && { estimatedTime })
       };
     } catch (axiosError) {
-      console.warn('⚠️ [Index] Axios failed (likely CORS), trying fetch with no-cors:', axiosError);
       
       // Fallback to fetch with no-cors to bypass CORS
       try {
@@ -2430,27 +2078,20 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
           body: JSON.stringify(payload),
         });
 
-        console.log(`✅ [Index] Fetch request sent (no-cors mode) - status: ${fetchResponse.status}`);
-        console.log(`🔍 [Index] Response type: ${fetchResponse.type}`);
-        
         // Check if it's a 404 or other error
         if (fetchResponse.status === 0) {
           // In no-cors mode, status 0 usually means success or network error
-          console.log(`✅ [Index] Request sent successfully (no-cors mode)`);
           return {
             success: true,
             message: `File sent for indexing (CORS bypassed). Processing time: 30-60 seconds`
           };
         } else {
-          console.warn(`⚠️ [Index] Unexpected status in no-cors mode: ${fetchResponse.status}`);
           return {
             success: true,
             message: `File sent for indexing (CORS bypassed, status: ${fetchResponse.status}). Processing time: 30-60 seconds`
           };
         }
       } catch (fetchError: any) {
-        console.error('❌ [Index] Both axios and fetch failed:', fetchError);
-        
         // Check if it's a 404 error
         if (fetchError?.message?.includes('404') || fetchError?.message?.includes('ERR_ABORTED')) {
           return {
@@ -2472,7 +2113,6 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
 
   } catch (error: unknown) {
     const msg = (error instanceof Error) ? error.message : 'Failed to index file';
-    console.error('Error indexing file:', error);
     return {
       success: false,
       message: msg,
@@ -2519,7 +2159,6 @@ export async function checkIndexingStatus(fileName: string): Promise<{
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('Error checking indexing status:', error);
       return {
         success: false,
         message: 'Failed to check indexing status',
@@ -2544,7 +2183,6 @@ export async function checkIndexingStatus(fileName: string): Promise<{
       };
     }
   } catch (error) {
-    console.error('Error checking indexing status:', error);
     return {
       success: false,
       message: 'Failed to check indexing status',
@@ -2574,16 +2212,12 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
       };
     }
     
-    console.log(`🗑️ Direct Supabase deletion for filename: "${fileName}" (group: ${groupId})`);
-    console.log(`🔍 Filename length: ${fileName.length}`);
-    console.log(`🔍 Filename characters: ${fileName.split('').map(c => c.charCodeAt(0)).join(',')}`);
     
     // Try multiple query approaches to handle different filename formats, all filtered by groupId
     let records: any[] = [];
     let recordCount = 0;
     
     // Approach 1: Exact match
-    console.log('🔍 Trying exact match...');
     let { data: exactRecords, error: exactError } = await supabase
       .from('documents')
       .select('id, metadata')
@@ -2593,10 +2227,7 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
     if (!exactError && exactRecords && exactRecords.length > 0) {
       records = exactRecords;
       recordCount = exactRecords.length;
-      console.log(`✅ Found ${recordCount} records with exact match`);
     } else {
-      console.log('❌ Exact match failed, trying ilike...');
-      
       // Approach 2: Case-insensitive match
       let { data: ilikeRecords, error: ilikeError } = await supabase
         .from('documents')
@@ -2607,10 +2238,7 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
       if (!ilikeError && ilikeRecords && ilikeRecords.length > 0) {
         records = ilikeRecords;
         recordCount = ilikeRecords.length;
-        console.log(`✅ Found ${recordCount} records with ilike match`);
       } else {
-        console.log('❌ ilike match failed, trying contains...');
-        
         // Approach 3: Contains match (for partial filenames)
         let { data: containsRecords, error: containsError } = await supabase
           .from('documents')
@@ -2621,18 +2249,12 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
         if (!containsError && containsRecords && containsRecords.length > 0) {
           records = containsRecords;
           recordCount = containsRecords.length;
-          console.log(`✅ Found ${recordCount} records with contains match`);
         } else {
-          console.log('❌ All query approaches failed');
-          
           // Debug: Show some sample metadata to understand the format
           let { data: sampleRecords } = await supabase
             .from('documents')
             .select('metadata')
             .limit(10);
-          
-          console.log('🔍 Sample metadata from database:', sampleRecords);
-          
           // Show all unique filenames in the database
           let { data: allRecords } = await supabase
             .from('documents')
@@ -2641,19 +2263,11 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
           
           if (allRecords) {
             const uniqueFilenames = [...new Set(allRecords.map(r => r.fileName))];
-            console.log('🔍 All unique filenames in database:', uniqueFilenames);
-            console.log('🔍 Looking for filename containing "PM-Marketing":', 
-              uniqueFilenames.filter(f => f && f.includes('PM-Marketing')));
-            console.log('🔍 Looking for filename containing "Team Notebook":', 
-              uniqueFilenames.filter(f => f && f.includes('Team Notebook')));
           }
           return { success: false, message: `No records found for filename: ${fileName}. Check console for debugging info.`, deletedCount: 0 };
         }
       }
     }
-    
-    console.log(`📊 Found ${recordCount} records to delete for filename: ${fileName}`);
-    
     if (recordCount === 0) {
       return { success: true, message: `No records found for filename: ${fileName}`, deletedCount: 0 };
     }
@@ -2675,33 +2289,25 @@ async function deleteDocumentsByFilename(fileName: string): Promise<{ success: b
     const { error: deleteError } = await deleteQuery;
     
     if (deleteError) {
-      console.error('Error deleting records:', deleteError);
       return { success: false, message: `Failed to delete documents: ${deleteError.message}`, deletedCount: 0 };
     }
-    
-    console.log(`✅ Successfully deleted ${recordCount} records for filename: ${fileName}`);
-    
     return {
       success: true,
       message: `File ${fileName} unindexed successfully (${recordCount} chunks removed)`,
       deletedCount: recordCount
     };
   } catch (error: any) {
-    console.error('Error in direct Supabase deletion:', error);
     return { success: false, message: `Failed to delete documents: ${error.message}`, deletedCount: 0 };
   }
 }
 
 export async function unindexFileByFilename(fileName: string): Promise<{ success: boolean; message: string; deletedCount?: number }> {
   try {
-    console.log('🗑️ Unindexing file using direct Supabase deletion:', fileName);
-    
     // Use direct Supabase deletion as primary method (following documentation)
     const result = await deleteDocumentsByFilename(fileName);
     return result;
     
   } catch (error: any) {
-    console.error('❌ Failed to unindex file:', error);
     return {
       success: false,
       message: `Failed to unindex file: ${error.message || 'Unknown error'}`
@@ -2743,7 +2349,6 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
       };
     }
     
-    console.log(`🔍 Checking sync status for: ${fileName} (group: ${groupId})`);
     
     // Always use OpenAI route (openai_chat check removed)
     let vectorStoreId: string | null = null;
@@ -2756,13 +2361,10 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
         .single();
 
       if (groupError) {
-        console.warn('⚠️ [checkFileSyncStatus] Error fetching group data for vector_store_id:', groupError);
       } else if (groupData) {
         vectorStoreId = groupData.vector_store_id || null;
-        console.log('📊 [checkFileSyncStatus] Group vector_store_id:', vectorStoreId);
       }
     } catch (groupError) {
-      console.warn('⚠️ [checkFileSyncStatus] Failed to load group vector_store_id:', groupError);
     }
 
     // Always use OpenAI vector store to determine sync status
@@ -2770,7 +2372,6 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
       try {
         const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
         if (!openaiApiKey) {
-          console.error('❌ [checkFileSyncStatus] VITE_OPENAI_API_KEY not configured; cannot check OpenAI sync status');
           return {
             success: false,
             syncStatus: 'error',
@@ -2787,7 +2388,6 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
           .single();
 
         if (fileError || !fileRecord) {
-          console.warn('⚠️ [checkFileSyncStatus] File record not found for OpenAI sync check:', fileError);
           return {
             success: true,
             syncStatus: 'pending',
@@ -2797,7 +2397,6 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
 
         const openaiFileId = fileRecord.openai_file_id as string | null | undefined;
         if (!openaiFileId) {
-          console.warn('⚠️ [checkFileSyncStatus] File does not have an openai_file_id, treating as pending');
           return {
             success: true,
             syncStatus: 'pending',
@@ -2806,8 +2405,6 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
         }
 
         const listUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
-        console.log('🌐 [checkFileSyncStatus] Fetching files from OpenAI vector store:', listUrl);
-
         const response = await fetch(listUrl, {
           method: 'GET',
           headers: {
@@ -2817,11 +2414,6 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('❌ [checkFileSyncStatus] Failed to list OpenAI vector store files:', {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText,
-          });
           return {
             success: false,
             syncStatus: 'error',
@@ -2853,7 +2445,6 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
                 .eq('file_name', fileName)
                 .eq('group_id', groupId);
             } catch (updateError) {
-              console.warn('⚠️ [checkFileSyncStatus] Failed to update file record for OpenAI sync:', updateError);
             }
           }
 
@@ -2870,7 +2461,6 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
           };
         }
       } catch (openaiError: any) {
-        console.error('❌ [checkFileSyncStatus] Error while checking OpenAI sync status:', openaiError);
         return {
           success: false,
           syncStatus: 'error',
@@ -2890,7 +2480,6 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
       .eq('metadata->>groupId', groupId); // Filter by groupId
     
     if (indexError) {
-      console.error('Error checking sync status:', indexError);
       return {
         success: false,
         syncStatus: 'error',
@@ -2921,7 +2510,6 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
       message: 'Failed to check sync status - OpenAI route did not complete',
     };
   } catch (error: any) {
-    console.error('Error checking sync status:', error);
     return {
       success: false,
       syncStatus: 'error',

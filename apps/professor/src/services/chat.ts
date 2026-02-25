@@ -35,17 +35,6 @@ export function parseCitations(
   messageId: string = '',
   baseId: string = ''
 ): MessageCitation[] {
-  // Log RAW data for debugging
-  console.log('📋 RAW citation data:', {
-    citationTitle,
-    citationContent,
-    titleType: typeof citationTitle,
-    contentType: typeof citationContent,
-    titleLength: citationTitle?.length,
-    contentLength: citationContent?.length,
-    hasDelimiter: citationContent?.includes('<|||>'),
-    delimiterCount: citationContent ? (citationContent.match(/<\|{3}>/g) || []).length : 0
-  });
 
   if (!citationTitle || !citationTitle.trim()) {
     return [];
@@ -69,11 +58,6 @@ export function parseCitations(
       contents = citationContent.split('&lt;|||&gt;').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
     } else {
       // No delimiter found - split by title count
-      console.warn('⚠️ citationContent does not contain <|||> delimiter! Splitting by title count.', {
-        titlesCount: titles.length,
-        contentPreview: citationContent.substring(0, 200),
-        contentLength: citationContent.length
-      });
       
       // If we have multiple titles but no delimiter, split content evenly
       if (titles.length > 1 && citationContent.length > 0) {
@@ -88,25 +72,12 @@ export function parseCitations(
             contents.push(chunk);
           }
         }
-        console.log('📊 Split content by title count:', {
-          titlesCount: titles.length,
-          contentsCount: contents.length,
-          chunkSize,
-          contentLength
-        });
       } else {
         // Single title or no titles - treat entire content as single citation
         contents = [citationContent.trim()].filter((c: string) => c.length > 0);
       }
     }
   }
-
-  console.log('🔪 Split results:', {
-    titlesCount: titles.length,
-    contentsCount: contents.length,
-    titles,
-    contents: contents.map((c, i) => ({ index: i, length: c.length, preview: c.substring(0, 100) }))
-  });
 
   // Create citations for all titles, even if content is missing
   // This allows citations to show title even when content is empty
@@ -124,8 +95,6 @@ export function parseCitations(
       metadata: {}
     });
   }
-
-  console.log('✅ Parsed citations:', citations.length, citations);
   return citations;
 }
 
@@ -165,7 +134,6 @@ export class ChatStreamReader {
               const parsed = JSON.parse(data);
               yield parsed;
             } catch (e) {
-              console.warn('Failed to parse SSE data:', data);
             }
           }
         }
@@ -181,63 +149,45 @@ export class ChatStreamReader {
  * This ensures all chatbot requests use the same endpoint regardless of user configuration
  */
 const sendToChatbotWebhook = async (request: N8nRequest, webhookUrl: string): Promise<N8nResponse> => {
-  console.log('Sending to universal chatbot webhook:', webhookUrl);
-  console.log('Request payload:', request);
-  
+  const requestBody = JSON.stringify(request);
+ 
   try {
-    console.log('Making request to:', webhookUrl);
-    console.log('Request payload:', JSON.stringify(request));
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('n8n webhook request timed out after 60 seconds');
       controller.abort();
     }, 60000);
     
-    const response = await fetch(webhookUrl, {
+    const fetchOptions: RequestInit = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       },
-      body: JSON.stringify(request),
+      body: requestBody,
       signal: controller.signal
-    });
+    };
+    
+    const response = await fetch(webhookUrl, fetchOptions);
     
     clearTimeout(timeoutId);
-
-    console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers);
-
+    
     const responseText = await response.text();
-    console.log('=== CHATBOT WEBHOOK DEBUG ===');
-    console.log('Response status:', response.status);
-    console.log('Response ok:', response.ok);
-    console.log('Raw response text length:', responseText.length);
-    console.log('Raw response text:', responseText);
-    console.log('=============================');
     
     if (!response.ok) {
-      console.error('Response error:', responseText);
       throw new Error(`HTTP error! status: ${response.status}, message: ${responseText}`);
     }
     
     if (!responseText || responseText.trim() === '') {
-      console.warn('Empty response from webhook');
       throw new Error('Empty response from webhook. Please check your workflow configuration.');
     }
 
     let data;
     try {
       data = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('Failed to parse JSON response:', parseError);
-      console.error('Response text was:', responseText);
+    } catch {
       throw new Error(`Invalid JSON response from n8n: ${responseText.substring(0, 100)}...`);
     }
-    
-    console.log('n8n response:', data);
-    
     let responseData;
     if (Array.isArray(data)) {
       responseData = data[0];
@@ -249,20 +199,16 @@ const sendToChatbotWebhook = async (request: N8nRequest, webhookUrl: string): Pr
     
     if (responseData && responseData.answer) {
       if (responseData.answer.includes('No response from webhook')) {
-        console.error('Webhook returned error message:', responseData.answer);
         throw new Error('Webhook returned error: ' + responseData.answer);
       }
       
       if (responseData.answer === null || responseData.answer === '') {
-        console.error('Webhook returned null or empty answer');
         throw new Error('Empty response from webhook. Please check your workflow configuration.');
       }
     }
     
     return responseData;
   } catch (error: any) {
-    console.error('Failed to send to chatbot webhook:', error);
-    
     if (error.name === 'AbortError') {
       throw new Error('Webhook request timed out after 60 seconds');
     } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
@@ -282,8 +228,6 @@ export const chatService = {
   ): Promise<{ messageId: string; citations: MessageCitation[] }> {
     
     const backendAvailable = await isBackendAvailable();
-    console.log('Backend available:', backendAvailable);
-    
     if (backendAvailable) {
       // Use backend API
       if (onStream) {
@@ -317,9 +261,6 @@ export const chatService = {
       // Webhook endpoint is determined by group's openai_chat setting
       const N8N_WEBHOOK_URL = 'https://n8n.srv1153481.hstgr.cloud/webhook/bdf7e8e7-8592-4518-a4ee-335c235ff94b';
       const OPENAI_WEBHOOK_URL = 'https://n8n.srv1153481.hstgr.cloud/webhook/758f5df5-94b4-4a97-9f5e-15be9d1cb375';
-      
-      console.log('Backend unavailable, using webhook endpoint...');
-      
       try {
         const session = getSession();
         // Get groupId from URL ONLY (allows multiple tabs with different groups)
@@ -328,7 +269,6 @@ export const chatService = {
         
         // Validate that groupId exists
         if (!groupId) {
-          console.error('❌ No group_id in session or URL. Session:', session);
           throw new Error('No group selected. Please select a group first.');
         }
         
@@ -350,30 +290,19 @@ export const chatService = {
             // Get top_k
             if (groupData.top_k !== null && groupData.top_k !== undefined) {
               topK = Number(groupData.top_k);
-              console.log(`📊 Using top_k from group: ${topK}`);
             } else {
-              console.log(`⚠️ Group ${groupId} has no top_k value, using default`);
             }
             
             // Always get vector_store_id (OpenAI route)
             vectorStoreId = groupData.vector_store_id || undefined;
             if (vectorStoreId) {
-              console.log(`📦 Group ${groupId} vector_store_id: ${vectorStoreId}`);
             } else {
-              console.warn(`⚠️ Group ${groupId} has no vector_store_id`);
             }
-            
-            console.log(`🌐 Using OpenAI webhook: ${webhookUrl}`);
           } else {
-            console.log(`⚠️ Group ${groupId} not found or error fetching, using OpenAI webhook`);
           }
         } catch (error) {
-          console.warn(`⚠️ Error fetching group data:`, error);
           // Continue with OpenAI webhook if fetch fails
         }
-        
-        console.log('Using webhook endpoint:', webhookUrl);
-        
         // Generate unique chatId for this message (for future feedback API)
         // Use sessionId + timestamp + random to ensure uniqueness across sessions
         const chatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -388,13 +317,6 @@ export const chatService = {
           ...(topK !== undefined ? { topK } : {}), // Include topK only if it exists
           ...(vectorStoreId ? { vectorStoreId } : {}), // Include vectorStoreId if it exists
         };
-
-        console.log('=== CHAT SERVICE DEBUG ===');
-        console.log('Session:', session);
-        console.log('GroupId from session:', groupId);
-        console.log('Sending request to webhook:', request);
-        console.log('Request includes groupId:', !!request.groupId);
-        
         // Retry mechanism for webhook requests with chat ID regeneration
         let response: N8nResponse;
         let lastError: Error | null = null;
@@ -402,19 +324,12 @@ export const chatService = {
         
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
-            console.log(`Webhook request attempt ${attempt}/3`);
-            console.log('Using chatId:', currentRequest.chatId);
             // Use the webhook URL determined by group's openai_chat setting
             response = await sendToChatbotWebhook(currentRequest, webhookUrl);
-            console.log('Webhook response received successfully:', response);
-            console.log('Response type:', typeof response);
-            console.log('Response has answer?', !!response?.answer);
-            console.log('Response answer:', response?.answer);
+
             break; // Success, exit retry loop
           } catch (error) {
             lastError = error as Error;
-            console.warn(`Webhook request attempt ${attempt} failed:`, error);
-            
             // Check if error is related to chat ID duplication or timeout
             const errorMessage = error instanceof Error ? error.message : String(error);
             const isChatIdError = errorMessage.includes('chat') && 
@@ -433,9 +348,7 @@ export const chatService = {
             // This ensures each retry uses a unique chatId
             if (attempt < 3 && (isChatIdError || isTimeoutError)) {
               if (isTimeoutError) {
-                console.log('Timeout detected, generating new chatId for retry (previous request may have been received)...');
               } else {
-                console.log('Chat ID duplication detected, generating new chatId...');
               }
               // Generate new chatId for retry
               const newChatId = `chat_${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -443,13 +356,11 @@ export const chatService = {
                 ...currentRequest,
                 chatId: newChatId
               };
-              console.log('New chatId generated:', newChatId);
             }
             
             if (attempt < 3) {
               // Wait before retry (exponential backoff)
               const delay = Math.pow(2, attempt) * 1000; // 2s, 4s
-              console.log(`Retrying in ${delay}ms...`);
               await new Promise(resolve => setTimeout(resolve, delay));
             }
           }
@@ -457,8 +368,6 @@ export const chatService = {
         
         // Check if all attempts failed
         if (!response! || !response!.answer) {
-          console.error('All webhook attempts failed, last error:', lastError);
-          
           // Provide more specific error messages based on real server testing
           let errorMessage = 'Chat service unavailable';
           if (lastError?.message.includes('Empty response')) {
@@ -478,25 +387,10 @@ export const chatService = {
           throw new Error(`Webhook failed after 3 attempts: ${errorMessage}`);
         }
         
-        console.log('==========================');
-        
-        // Log response citation data BEFORE parsing
-        console.log('🔍 Webhook response citation data:', {
-          citationTitle: response.citationTitle,
-          citationContent: response.citationContent,
-          titleType: typeof response.citationTitle,
-          contentType: typeof response.citationContent,
-          titleLength: response.citationTitle?.length,
-          contentLength: response.citationContent?.length,
-          hasDelimiter: response.citationContent?.includes('<|||>'),
-          delimiterCount: response.citationContent ? (response.citationContent.match(/<\|{3}>/g) || []).length : 0
-        });
-        
         // Use chatId as messageId so feedback can link correctly
         // chatId was sent to webhook and will be in the database
         if (onStream) {
           const answerText = response.answer;
-          console.log('Streaming answer text:', answerText);
           const words = answerText.split(' ');
           
           for (let i = 0; i < words.length; i++) {
@@ -510,8 +404,6 @@ export const chatService = {
           }
           
           const parsedCitations = parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()));
-          console.log('📦 Parsed citations for streaming:', parsedCitations.length, parsedCitations);
-          
           onStream({
             type: 'final',
             messageId: chatId,
@@ -520,28 +412,20 @@ export const chatService = {
         }
 
         const parsedCitations = parseCitations(response.citationTitle, response.citationContent, chatId, String(Date.now()));
-        console.log('📦 Parsed citations for return:', parsedCitations.length, parsedCitations);
-        
         return {
           messageId: chatId,  // Return the chatId that was sent to webhook
           citations: parsedCitations
         };
       } catch (error) {
-        console.error('Failed to send to webhook:', error);
-        console.log('Webhook failed, checking simulation mode setting');
-        
         // Check if simulation mode is enabled
         if (isSimulationModeEnabled()) {
-          console.log('Simulation mode enabled, falling back to simulation');
           // Fall back to simulation
         } else {
-          console.log('Simulation mode disabled, throwing error');
           throw new Error(`Chat service unavailable: ${error instanceof Error ? error.message : 'webhook failed'}`);
         }
       }
       
       // Only reach here if simulation mode is enabled
-      console.log('Falling back to simulation');
       const simulationModule = await import('./simulation');
       const simulatedResponse = simulationModule.generateSimulatedResponse(content);
       const responseText = simulatedResponse.reply;

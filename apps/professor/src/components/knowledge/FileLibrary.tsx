@@ -58,7 +58,6 @@ const FileLibrary: React.FC = () => {
         return new Set(files);
       }
     } catch (error) {
-      console.warn('Failed to load pollingFiles from localStorage:', error);
     }
     return new Set();
   };
@@ -74,7 +73,6 @@ const FileLibrary: React.FC = () => {
         return new Map(Object.entries(times));
       }
     } catch (error) {
-      console.warn('Failed to load indexRequestTimes from localStorage:', error);
     }
     return new Map();
   };
@@ -97,7 +95,6 @@ const FileLibrary: React.FC = () => {
       const filesArray = Array.from(pollingFiles);
       localStorage.setItem(`pollingFiles_${groupId}`, JSON.stringify(filesArray));
     } catch (error) {
-      console.warn('Failed to save pollingFiles to localStorage:', error);
     }
   }, [pollingFiles]);
 
@@ -110,7 +107,6 @@ const FileLibrary: React.FC = () => {
       const timesObj = Object.fromEntries(indexRequestTimes);
       localStorage.setItem(`indexRequestTimes_${groupId}`, JSON.stringify(timesObj));
     } catch (error) {
-      console.warn('Failed to save indexRequestTimes to localStorage:', error);
     }
   }, [indexRequestTimes]);
   const [showIndexingModal, setShowIndexingModal] = useState(false);
@@ -234,16 +230,13 @@ const FileLibrary: React.FC = () => {
 
   // Refresh sync status for all files
   const refreshSyncStatus = async () => {
-    console.log('🔄 Refreshing sync status for all files...');
     setIsLoading(true);
     setLoadingStatus('Refreshing sync status...');
     
     try {
       // Reload files to get updated sync status
       await loadFiles();
-      console.log('✅ Sync status refreshed');
     } catch (error) {
-      console.error('❌ Error refreshing sync status:', error);
       setError('Failed to refresh sync status');
       setLoadingStatus('');
     } finally {
@@ -263,8 +256,6 @@ const FileLibrary: React.FC = () => {
     // Restore pollingFiles from localStorage ONLY if files are actually still indexing
     const storedPollingFiles = getStoredPollingFiles();
     if (storedPollingFiles.size > 0) {
-      console.log(`📋 Found ${storedPollingFiles.size} files in localStorage pollingFiles - verifying status...`);
-      
       // Check which files are still actually indexing (not synced)
       const stillIndexing = new Set<string>();
       storedPollingFiles.forEach(fileName => {
@@ -275,7 +266,6 @@ const FileLibrary: React.FC = () => {
       });
       
       if (stillIndexing.size > 0) {
-        console.log(`✅ Restoring ${stillIndexing.size} files that are still indexing`);
         setPollingFiles(stillIndexing);
         
         // Restore index_started status for these files
@@ -291,7 +281,6 @@ const FileLibrary: React.FC = () => {
           return file;
         }));
       } else {
-        console.log(`🧹 All stored pollingFiles are already completed - clearing`);
         // Clear localStorage if all files are completed
         try {
           const groupId = getGroupIdFromUrl();
@@ -299,7 +288,6 @@ const FileLibrary: React.FC = () => {
             localStorage.removeItem(`pollingFiles_${groupId}`);
           }
         } catch (error) {
-          console.warn('Failed to clear pollingFiles from localStorage:', error);
         }
       }
     }
@@ -309,7 +297,6 @@ const FileLibrary: React.FC = () => {
   useEffect(() => {
     // CRITICAL: Always clear interval first to prevent stale intervals
     if (autoRefreshIntervalRef.current) {
-      console.log('🧹 Clearing existing auto-refresh interval');
       clearInterval(autoRefreshIntervalRef.current);
       autoRefreshIntervalRef.current = null;
     }
@@ -326,7 +313,6 @@ const FileLibrary: React.FC = () => {
       console.log('🔄 Starting auto-refresh interval (15s)');
       // Set up new interval
       autoRefreshIntervalRef.current = setInterval(() => {
-        console.log('🔄 Auto-refreshing file list...');
         loadFiles();
       }, 15000); // 15 seconds
       
@@ -340,12 +326,9 @@ const FileLibrary: React.FC = () => {
     } else {
       // Auto-disable if no files are being indexed (even if autoRefresh was true)
       if (autoRefresh && !hasIndexingFiles) {
-        console.log('🔄 Auto-disabling refresh: no files being indexed');
         setAutoRefresh(false);
       } else if (!autoRefresh) {
-        console.log('🔄 Auto-refresh is disabled - no interval will be created');
       } else {
-        console.log('🔄 No indexing files - no interval will be created');
       }
     }
   }, [autoRefresh, pollingFiles, indexingStatus]);
@@ -363,7 +346,6 @@ const FileLibrary: React.FC = () => {
       });
       
       if (filesToRemove.length > 0) {
-        console.log(`🧹 Cleaning up ${filesToRemove.length} completed files from pollingFiles`);
         setPollingFiles(prev => {
           const newSet = new Set(prev);
           filesToRemove.forEach(fileName => newSet.delete(fileName));
@@ -382,22 +364,17 @@ const FileLibrary: React.FC = () => {
   
   // CRITICAL: Ensure autoRefresh is OFF on mount and clear ALL intervals
   useEffect(() => {
-    console.log('🚀 Component mount - initializing...');
-    
     // On mount, immediately clear any existing interval (CRITICAL)
     if (autoRefreshIntervalRef.current) {
-      console.log('🧹 FORCE CLEAR: Clearing stale auto-refresh interval on mount');
       clearInterval(autoRefreshIntervalRef.current);
       autoRefreshIntervalRef.current = null;
     }
     
     // Force autoRefresh to false on mount (user must explicitly enable it)
-    console.log('🔄 FORCE SET: Setting auto-refresh to false on mount');
     setAutoRefresh(false);
     
     // Clear pollingFiles on mount (will be restored only if files are actually indexing)
     if (pollingFiles.size > 0) {
-      console.log(`🧹 Clearing ${pollingFiles.size} files from pollingFiles on mount - will restore if needed`);
       setPollingFiles(new Set());
     }
     
@@ -425,7 +402,6 @@ const FileLibrary: React.FC = () => {
       
       if (!groupId) {
         // Don't close modal, just show warning and use defaults
-        console.warn('No group selected, using default values');
         // Reset to defaults
         setChunkSize('');
         setChunkOverlap('');
@@ -443,7 +419,6 @@ const FileLibrary: React.FC = () => {
       if (groupError) {
         // If docling_options field doesn't exist, try without it
         if (groupError.message?.includes('docling_options') || groupError.code === 'PGRST116') {
-          console.warn('docling_options field not found, loading without it:', groupError);
           const { data: fallbackData, error: fallbackError } = await defaultSupabase
             .from('group')
             .select('chunk_size, chunk_overlap, top_k')
@@ -451,7 +426,6 @@ const FileLibrary: React.FC = () => {
             .single();
           
           if (fallbackError) {
-            console.error('Error loading chunking options:', fallbackError);
             showToast('Failed to load chunking options', 'error');
             return;
           }
@@ -464,8 +438,6 @@ const FileLibrary: React.FC = () => {
           }
           return;
         }
-        
-        console.error('Error loading chunking options:', groupError);
         showToast('Failed to load chunking options', 'error');
         return;
       }
@@ -483,12 +455,10 @@ const FileLibrary: React.FC = () => {
               : groupData.docling_options;
             setDoclingOptions(prev => ({ ...prev, ...savedOptions }));
           } catch (e) {
-            console.warn('Failed to parse docling_options:', e);
           }
         }
       }
     } catch (error) {
-      console.error('Error loading chunking options:', error);
       showToast('Failed to load chunking options', 'error');
     } finally {
       setIsLoadingChunking(false);
@@ -567,9 +537,7 @@ const FileLibrary: React.FC = () => {
         if (doclingError) {
           // If field doesn't exist, it's okay - we'll just skip saving docling_options
           if (doclingError.message?.includes('docling_options') || doclingError.code === 'PGRST116') {
-            console.warn('docling_options field not found in database, skipping save. This is okay for now.');
           } else {
-            console.warn('Failed to save Docling options:', doclingError);
           }
           // Don't fail the whole operation if docling_options save fails
         }
@@ -582,7 +550,6 @@ const FileLibrary: React.FC = () => {
       setShowIndexingModal(false);
       setShowRetrievalModal(false);
     } catch (error: any) {
-      console.error('Error saving chunking options:', error);
       showToast(error.message || 'Failed to save chunking options', 'error');
     } finally {
       setIsSavingChunking(false);
@@ -621,7 +588,6 @@ const FileLibrary: React.FC = () => {
                   localStorage.setItem(`pollingFiles_${groupId}`, JSON.stringify(filesArray));
                 }
               } catch (error) {
-                console.warn('Failed to update pollingFiles in localStorage:', error);
               }
               
               return newSet;
@@ -667,11 +633,9 @@ const FileLibrary: React.FC = () => {
                   ? { ...file, syncStatus: 'pending' as const }
                   : file
               ));
-              console.log(`⚠️ Indexing failed for ${fileName}, reverted to pending. User can retry.`);
             }
           }
         } catch (error) {
-          console.error(`Error polling status for ${fileName}:`, error);
         }
       }
     }, 3000); // Poll every 3 seconds
@@ -721,8 +685,6 @@ const FileLibrary: React.FC = () => {
         });
         setLoadingStatus(`Loaded ${response.files.length} files`);
         setLoadingProgress({ current: response.files.length, total: response.files.length });
-        console.log(`✅ Loaded ${response.files.length} files from Supabase Storage`);
-        
         // Clear status after a brief moment
         setTimeout(() => {
           setLoadingStatus('');
@@ -732,14 +694,12 @@ const FileLibrary: React.FC = () => {
         setError(response.message || 'Failed to load files from Supabase');
         setLoadingStatus('');
         setLoadingProgress(null);
-        console.error('Failed to load files:', response.message);
       }
     } catch (err) {
       const errorMessage = 'Failed to connect to Supabase Storage. Please check your configuration.';
       setError(errorMessage);
       setLoadingStatus('');
       setLoadingProgress(null);
-      console.error('Error loading files:', err);
     } finally {
       setIsLoading(false);
     }
@@ -768,13 +728,11 @@ const FileLibrary: React.FC = () => {
           newSet.delete(fileId);
           return newSet;
         });
-        console.log(`✅ File ${fileName} deleted successfully`);
         showToast(t('knowledge.deleteSuccess', { fileName }), 'success');
       } else {
         showToast(t('knowledge.deleteFailed', { message: result.message }), 'error');
       }
     } catch (error) {
-      console.error('Error deleting file:', error);
       showToast(t('knowledge.deleteFailed', { message: 'Unknown error' }), 'error');
     }
   };
@@ -831,7 +789,6 @@ const FileLibrary: React.FC = () => {
         } catch (error) {
           failCount++;
           failedFiles.push(file.name);
-          console.error(`Error deleting ${file.name}:`, error);
         }
       }
 
@@ -849,7 +806,6 @@ const FileLibrary: React.FC = () => {
       // Refresh file list
       await loadFiles();
     } catch (error) {
-      console.error('Error in batch delete:', error);
       showToast('Error during batch delete', 'error');
     } finally {
       setActionLoading(null);
@@ -884,8 +840,6 @@ const FileLibrary: React.FC = () => {
   const handleIndexFile = async (fileName: string) => {
     setActionLoading(fileName);
     try {
-      console.log('🔄 Starting index process for:', fileName);
-      
       // Set initial status
       setIndexingStatus(prev => ({
         ...prev,
@@ -896,12 +850,9 @@ const FileLibrary: React.FC = () => {
       }));
       
       const result = await indexFileToVector(fileName);
-      console.log('📋 Index result:', result);
-      
       if (result.success) {
         // Enable auto-refresh when user clicks Index button
         if (!autoRefresh) {
-          console.log('🔄 Enabling auto-refresh because user clicked Index button');
           setAutoRefresh(true);
         }
         
@@ -945,7 +896,6 @@ const FileLibrary: React.FC = () => {
         showToast(`❌ Failed to index file: ${result.message}`, 'error');
       }
     } catch (error) {
-      console.error('❌ Error indexing file:', error);
       setIndexingStatus(prev => ({
         ...prev,
         [fileName]: {
@@ -975,7 +925,6 @@ const FileLibrary: React.FC = () => {
         alert(`❌ ${result.message}`);
       }
     } catch (error) {
-      console.error('Error unindexing file:', error);
       alert(`❌ Error unindexing file: ${error}`);
     } finally {
       setActionLoading(null);
@@ -994,7 +943,6 @@ const FileLibrary: React.FC = () => {
         alert(`Failed to re-index file: ${result.message}`);
       }
     } catch (error) {
-      console.error('Error re-indexing file:', error);
       alert('Failed to re-index file');
     }
   };
@@ -1013,7 +961,6 @@ const FileLibrary: React.FC = () => {
         .createSignedUrl(filePath, 3600); // 3600 seconds = 1 hour
       
       if (error) {
-        console.error('Error creating signed URL:', error);
         alert(`Failed to get download URL: ${error.message}`);
         return;
       }
@@ -1045,7 +992,6 @@ const FileLibrary: React.FC = () => {
         alert('Failed to get download URL');
       }
     } catch (error: any) {
-      console.error('Error downloading file:', error);
       alert(`Failed to download file: ${error.message || 'Unknown error'}`);
     }
   };
@@ -1081,19 +1027,6 @@ const FileLibrary: React.FC = () => {
 
   // Upload files to Supabase Storage
   const uploadFiles = async (files: File[]) => {
-    // Check for .txt files and show confirmation
-    const txtFiles = files.filter(f => f.name.toLowerCase().endsWith('.txt'));
-    if (txtFiles.length > 0) {
-      const fileNames = txtFiles.map(f => f.name).join(', ');
-      const confirmMessage = txtFiles.length === 1
-        ? t('knowledge.txtConvertConfirmSingle', { fileName: fileNames })
-        : t('knowledge.txtConvertConfirmMultiple', { count: txtFiles.length, fileNames });
-      
-      if (!confirm(confirmMessage)) {
-        return; // User cancelled
-      }
-    }
-
     setIsUploading(true);
     setUploadResults([]);
 
@@ -1107,13 +1040,7 @@ const FileLibrary: React.FC = () => {
       const failedResults = results.filter(r => !r.success);
 
       if (successCount > 0) {
-        // Check if any files were renamed from .txt to .md
-        const renamedFiles = results.filter(r => r.success && r.message?.includes('renamed from .txt to .md'));
-        if (renamedFiles.length > 0) {
-          showToast(t('knowledge.uploadSuccessWithConvert', { count: successCount, renamedCount: renamedFiles.length }), 'success');
-        } else {
-          showToast(t('knowledge.uploadSuccess', { count: successCount }), 'success');
-        }
+        showToast(t('knowledge.uploadSuccess', { count: successCount }), 'success');
       }
       if (failCount > 0) {
         const errorMessages = failedResults.map(r => r.message).join(', ');
@@ -1124,7 +1051,6 @@ const FileLibrary: React.FC = () => {
       await loadFiles();
       
     } catch (error) {
-      console.error('Upload error:', error);
     } finally {
       setIsUploading(false);
     }

@@ -31,7 +31,6 @@ export async function fetchUICustomization(groupId?: string | null): Promise<UIC
     const targetGroupId = groupId || getGroupId();
     
     if (!targetGroupId) {
-      console.warn('No group_id available, returning empty values with default avatar');
       return {
         chatTitle: '',
         chatSubtitle: '',
@@ -54,7 +53,6 @@ export async function fetchUICustomization(groupId?: string | null): Promise<UIC
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching UI customization from group table:', error);
       return {
         chatTitle: '',
         chatSubtitle: '',
@@ -69,7 +67,6 @@ export async function fetchUICustomization(groupId?: string | null): Promise<UIC
     }
 
     if (!data) {
-      console.log('No UI customization found in group table, returning empty values');
       return {
         chatTitle: '',
         chatSubtitle: '',
@@ -102,7 +99,6 @@ export async function fetchUICustomization(groupId?: string | null): Promise<UIC
       }
     };
   } catch (error) {
-    console.error('Failed to fetch UI customization:', error);
     return {
       chatTitle: '',
       chatSubtitle: '',
@@ -125,7 +121,6 @@ export async function saveUICustomization(customization: UICustomization, groupI
     const targetGroupId = groupId || getGroupId();
     
     if (!targetGroupId) {
-      console.error('No group_id available, cannot save UI customization');
       return false;
     }
 
@@ -150,14 +145,10 @@ export async function saveUICustomization(customization: UICustomization, groupI
       .eq('group_id', targetGroupId);
 
     if (error) {
-      console.error('Error saving UI customization to group table:', error);
       return false;
     }
-
-    console.log('✅ UI customization saved to group table for group_id:', targetGroupId);
     return true;
   } catch (error) {
-    console.error('Failed to save UI customization:', error);
     return false;
   }
 }

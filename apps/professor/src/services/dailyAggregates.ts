@@ -18,28 +18,18 @@ export type EstimationMode = 'simple' | 'improved' | 'realistic';
 
 export async function fetchDailyAggregatesWithMode(mode: EstimationMode = 'simple'): Promise<DailyRow[]> {
   try {
-    console.log('🔄 Fetching from Google Sheets:', CSV_URL);
     const res = await fetch(CSV_URL, { 
       cache: "no-store",
       mode: 'cors'
     });
-    
-    console.log('📊 Response status:', res.status);
-    
     if (!res.ok) throw new Error(`Sheets CSV fetch failed: ${res.status}`);
     const csv = await res.text();
-
-    console.log('📄 CSV data received, length:', csv.length);
-
     const lines = csv.split('\n').filter(line => line.trim());
     if (lines.length === 0) {
-      console.log('⚠️ No data in CSV, using dummy data');
       return generateDummyRadarData();
     }
     
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    console.log('📋 Headers found:', headers);
-    
     const realRows: DailyRow[] = [];
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
@@ -69,14 +59,9 @@ export async function fetchDailyAggregatesWithMode(mode: EstimationMode = 'simpl
     const sortedRealRows = realRows.sort((a, b) => a.Date.localeCompare(b.Date));
     
     if (sortedRealRows.length === 0) {
-      console.log('⚠️ No valid rows found, using dummy data');
       return generateDummyRadarData();
     }
-    
-    console.log('✅ Successfully loaded', sortedRealRows.length, 'real rows from Google Sheets');
-    
     if (sortedRealRows.length < 30) {
-      console.log(`📅 Adding estimated data with ${mode} mode`);
       const allRows = generateExtendedDataWithMode(sortedRealRows, mode);
       return allRows;
     }
@@ -84,8 +69,6 @@ export async function fetchDailyAggregatesWithMode(mode: EstimationMode = 'simpl
     return sortedRealRows;
 
   } catch (error) {
-    console.error('❌ Failed to fetch Google Sheets data:', error);
-    console.log('🔄 Using dummy data instead');
     return generateDummyRadarData();
   }
 }
@@ -135,8 +118,6 @@ function generateExtendedDataWithMode(realRows: DailyRow[], mode: EstimationMode
   
   const simulatedCount = allRows.filter(row => row.isSimulated).length;
   const realCount = allRows.filter(row => !row.isSimulated).length;
-  
-  console.log(`📈 Generated data (${mode}): ${realCount} real + ${simulatedCount} simulated = ${allRows.length} total`);
   
   return allRows.sort((a, b) => a.Date.localeCompare(b.Date));
 }
@@ -211,7 +192,6 @@ function getDefaultBaseRow(): DailyRow {
 }
 
 function generateDummyRadarData(): DailyRow[] {
-  console.log('🎲 Generating dummy radar data...');
   const rows: DailyRow[] = [];
   
   const today = new Date();
@@ -232,8 +212,6 @@ function generateDummyRadarData(): DailyRow[] {
       isSimulated: true
     });
   }
-  
-  console.log('✅ Generated', rows.length, 'dummy rows');
   return rows;
 }
 

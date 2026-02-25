@@ -20,7 +20,6 @@ const ThreadView: React.FC<ThreadViewProps> = ({ sessionId }) => {
 
   // Debug: Log messages
   React.useEffect(() => {
-    console.log('ThreadView messages for sessionId:', sessionId, messages);
   }, [messages, sessionId]);
 
   const scrollToBottom = () => {
@@ -137,7 +136,6 @@ const ThreadView: React.FC<ThreadViewProps> = ({ sessionId }) => {
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.75rem' : '1rem' }}>
               {messages.map((message) => {
-                console.log('Rendering message:', message);
                 return <MessageBubble key={message.id} message={message} />;
               })}
             </div>

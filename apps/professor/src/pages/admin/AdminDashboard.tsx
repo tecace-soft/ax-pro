@@ -98,7 +98,6 @@ export default function AdminDashboard() {
         const role = await getUserRoleForGroup(groupId)
         setIsGroupAdmin(role === 'admin')
       } catch (error) {
-        console.error('Failed to check group role:', error)
         setIsGroupAdmin(false)
       } finally {
         setRoleLoading(false)
@@ -196,7 +195,6 @@ export default function AdminDashboard() {
       // Apply theme customization
       if (customization) {
         applyThemeCustomization(customization)
-        console.log('✨ Applied custom theme for:', session.email)
       }
     }
 
@@ -261,17 +259,7 @@ export default function AdminDashboard() {
       if (docsResponse.success) {
         setTotalDocuments(docsResponse.total)
       }
-
-      console.log('✅ Metrics loaded:', {
-        sessions: uniqueSessions,
-        questions: chatData.length,
-        avgPerSession: avgQ,
-        students: uniqueUsers,
-        satisfaction: satisfactionRate,
-        documents: docsResponse.total
-      })
     } catch (error) {
-      console.error('❌ Failed to load metrics:', error)
     }
   }
 
@@ -282,7 +270,6 @@ export default function AdminDashboard() {
 
   const loadRadarData = async () => {
     try {
-      console.log('📊 Loading Google Sheets data for Performance Timeline...')
       const data = await fetchDailyAggregatesWithMode(estimationMode)
       setRadarData(data)
       
@@ -290,10 +277,7 @@ export default function AdminDashboard() {
       if (data.length > 0) {
         setSelectedRadarDate(data[data.length - 1].Date)
       }
-      
-      console.log('✅ Loaded', data.length, 'days of performance data')
     } catch (error) {
-      console.error('❌ Failed to load radar data:', error)
     }
   }
 
@@ -1380,7 +1364,6 @@ export default function AdminDashboard() {
                       scrollToChatId={scrollToChatId}
                       highlightedChatId={highlightedChatId}
                       onScrollComplete={() => {
-                        console.log('✅ Scroll complete, clearing scrollToChatId')
                         setScrollToChatId(null)
                       }}
                     />

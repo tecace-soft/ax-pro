@@ -83,8 +83,6 @@ const Landing: React.FC = () => {
         setError(t('auth.error'));
       }
     } catch (apiError) {
-      console.log('Backend API failed, trying local auth:', apiError);
-      
       // Fallback to local auth if backend is not available
       const session = await login(formData.email, formData.password);
       

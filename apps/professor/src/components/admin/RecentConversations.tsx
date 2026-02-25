@@ -69,8 +69,6 @@ export default function RecentConversations({
   // Handle scroll to specific chat
   useEffect(() => {
     if (scrollToChatId) {
-      console.log('🔍 ScrollToChat triggered for:', scrollToChatId)
-      
       // Expand the chat if it's not already expanded (for card view)
       setExpandedChats(prev => {
         const newSet = new Set(prev)
@@ -80,12 +78,9 @@ export default function RecentConversations({
 
       // Ensure the chat is displayed (increase limit if needed)
       const chatIndex = filteredConversations.findIndex(c => c.chat_id === scrollToChatId)
-      console.log('📊 Chat index:', chatIndex, 'Display limit:', displayLimit, 'Filtered count:', filteredConversations.length)
-      
       if (chatIndex !== -1 && chatIndex >= displayLimit) {
         // Increase limit to show the chat (but cap at 20 if possible)
         const newLimit = Math.min(chatIndex + 1, filteredConversations.length, Math.max(chatIndex + 1, 20))
-        console.log('📈 Increasing display limit to:', newLimit)
         setDisplayLimit(newLimit)
       }
 
@@ -93,10 +88,7 @@ export default function RecentConversations({
       const attemptScroll = (attempt = 0) => {
         setTimeout(() => {
           const chatElement = document.getElementById(`chat-${scrollToChatId}`)
-          console.log('🔎 Looking for element:', `chat-${scrollToChatId}`, 'Found:', !!chatElement)
-          
           if (chatElement) {
-            console.log('✅ Scrolling to chat element')
             chatElement.scrollIntoView({ 
               behavior: 'smooth', 
               block: 'center' 
@@ -116,10 +108,8 @@ export default function RecentConversations({
             onScrollComplete?.()
           } else if (attempt < 3) {
             // Retry up to 3 times with increasing delays
-            console.log(`⏳ Retry attempt ${attempt + 1}/3`)
             attemptScroll(attempt + 1)
           } else {
-            console.error('❌ Chat element not found after retries:', scrollToChatId)
           }
         }, attempt === 0 ? 200 : 300 * (attempt + 1))
       }
@@ -159,7 +149,6 @@ export default function RecentConversations({
       
       setConversations(conversationsWithFeedback)
     } catch (error) {
-      console.error('Failed to load conversations:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to load conversations'
       // Check if it's a table access error
       if (errorMessage.includes('Could not find the table') || errorMessage.includes('PGRST')) {
@@ -195,7 +184,6 @@ export default function RecentConversations({
       
       setConversations(conversationsWithFeedback)
     } catch (error) {
-      console.error('Failed to refresh conversations:', error)
       setError(error instanceof Error ? error.message : 'Failed to refresh conversations')
     } finally {
       setIsRefreshing(false)
@@ -343,7 +331,6 @@ export default function RecentConversations({
       // Refresh conversations to show updated feedback
       handleRefresh()
     } catch (error) {
-      console.error('Failed to submit admin feedback:', error)
       alert('Failed to submit feedback. Please try again.')
     } finally {
       setIsSubmitting(false)
@@ -382,7 +369,6 @@ export default function RecentConversations({
         setUserFeedbackModal({ chatId, feedback: null })
       }
     } catch (error) {
-      console.error('Error fetching user feedback:', error)
       setUserFeedbackModal({ chatId, feedback: null })
     }
   }

@@ -67,9 +67,6 @@ const KnowledgeIndex: React.FC = () => {
         setLoadingStatus(status);
         setLoadingProgress({ current, total });
       });
-      
-      console.log('📋 File summaries response:', response);
-      
       if (response.success) {
         setError(null); // Clear any previous errors
         setLoadingStatus(`Found ${response.files.length} files with ${response.total.toLocaleString()} chunks`);
@@ -87,21 +84,12 @@ const KnowledgeIndex: React.FC = () => {
         setError(errorMsg);
         setLoadingStatus('');
         setLoadingProgress(null);
-        console.error('❌ Failed to load file summaries:', {
-          message: errorMsg,
-          response: response
-        });
       }
     } catch (err: any) {
       const errorMessage = err?.message || 'Failed to connect to Supabase. Please check your configuration.';
       setError(errorMessage);
       setLoadingStatus('');
       setLoadingProgress(null);
-      console.error('❌ Error loading file summaries:', {
-        error: err,
-        message: err?.message,
-        stack: err?.stack
-      });
     } finally {
       setIsLoading(false);
     }
@@ -174,10 +162,8 @@ const KnowledgeIndex: React.FC = () => {
         
         console.log(`✅ Loaded ${transformedDocs.length} chunks for ${fileName} (${offset + transformedDocs.length} / ${totalChunks} total)`);
       } else {
-        console.error('Failed to load chunks:', response.message);
       }
     } catch (err) {
-      console.error('Error loading chunks for file:', err);
     } finally {
       setLoadingChunks(prev => {
         const newSet = new Set(prev);
@@ -193,7 +179,6 @@ const KnowledgeIndex: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    console.log('🔄 Manual refresh triggered by user');
     setLastRefreshTime(new Date().toLocaleTimeString());
     setCurrentPage(1); // Reset to first page
     setChunksByFile(new Map()); // Clear cached chunks
@@ -312,7 +297,6 @@ const KnowledgeIndex: React.FC = () => {
         } catch (error) {
           failCount++;
           failedFiles.push(`${fileName}: Unknown error`);
-          console.error(`Error unindexing file ${fileName}:`, error);
         }
       }
 
@@ -331,7 +315,6 @@ const KnowledgeIndex: React.FC = () => {
       setExpandedFiles(new Set()); // Collapse all files
       await loadFileSummaries();
     } catch (error) {
-      console.error('Error in batch delete:', error);
       alert('Error during batch delete');
     } finally {
       setActionLoading(null);
@@ -606,9 +589,6 @@ const KnowledgeIndex: React.FC = () => {
         Last Refresh: {lastRefreshTime || 'Never'} | 
         <button 
           onClick={() => {
-            console.log('📊 File summaries:', fileSummaries);
-            console.log('📊 Loaded chunks:', chunksByFile);
-            console.log('📊 Filtered files:', filteredFiles);
           }}
           style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '0.8em' }}
         >

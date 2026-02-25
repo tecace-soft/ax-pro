@@ -26,7 +26,6 @@ const OverviewDashboard: React.FC = () => {
         setTimelineData(timeline);
         setActivityData(activity);
       } catch (error) {
-        console.error('Failed to fetch analytics data:', error);
       } finally {
         setLoading(false);
       }
@@ -49,7 +48,6 @@ const OverviewDashboard: React.FC = () => {
         setTimelineData(timeline);
         setActivityData(activity);
       } catch (error) {
-        console.error('Failed to fetch analytics data:', error);
       } finally {
         setLoading(false);
       }

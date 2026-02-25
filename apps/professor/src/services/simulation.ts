@@ -129,21 +129,13 @@ How can I help you further?`,
 export const simulateStreamingResponse = async function* (
   request: SimulationRequest
 ): AsyncGenerator<{ type: 'delta' | 'final'; text?: string; messageId?: string; citations?: any[] }> {
-  console.log('Starting simulation for:', request.chatInput);
   const response = generateSimulatedResponse(request.chatInput);
-  console.log('Generated response:', response.reply);
-  
   const words = response.reply.split(' ');
-  console.log('Words to stream:', words);
-  
   // Simulate streaming by sending words one by one
   for (let i = 0; i < words.length; i++) {
     const word = words[i];
     const isLastWord = i === words.length - 1;
     const textToSend = word + (isLastWord ? '' : ' ');
-    
-    console.log(`Streaming word ${i + 1}/${words.length}:`, textToSend);
-    
     yield {
       type: 'delta',
       text: textToSend
@@ -155,9 +147,6 @@ export const simulateStreamingResponse = async function* (
   
   // Send final response
   const messageId = `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  console.log('Final message ID:', messageId);
-  console.log('Final response content:', response.reply);
-  
   yield {
     type: 'final',
     messageId,

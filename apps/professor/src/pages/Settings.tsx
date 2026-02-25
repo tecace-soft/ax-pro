@@ -170,7 +170,6 @@ const Settings: React.FC = () => {
           const userRole = await getUserRoleForGroup(groupId);
           setCurrentUserRole(userRole);
         } catch (error) {
-          console.error('Failed to get user role:', error);
           setCurrentUserRole(null);
         }
         
@@ -191,7 +190,6 @@ const Settings: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to load group data:', error);
     } finally {
       setIsLoadingGroup(false);
     }
@@ -219,7 +217,6 @@ const Settings: React.FC = () => {
       setGroup({ ...group, name: localGroupName.trim() });
       showSuccessModal(language === 'ko' ? '그룹 이름이 성공적으로 업데이트되었습니다' : 'Group name updated successfully');
     } catch (error) {
-      console.error('Failed to update group name:', error);
       showErrorModal(language === 'ko' ? '그룹 이름 업데이트에 실패했습니다' : 'Failed to update group name');
     }
   };
@@ -238,7 +235,6 @@ const Settings: React.FC = () => {
       const filteredResults = results.filter(user => !groupUserIds.includes(user.user_id));
       setSearchResults(filteredResults);
     } catch (error) {
-      console.error('Failed to search users:', error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -264,7 +260,6 @@ const Settings: React.FC = () => {
       
       showSuccessModal(language === 'ko' ? '사용자가 그룹에 성공적으로 추가되었습니다' : 'User added to group successfully');
     } catch (error) {
-      console.error('Failed to add user:', error);
       showErrorModal(language === 'ko' ? '사용자 추가에 실패했습니다' : 'Failed to add user to group');
     }
   };
@@ -274,7 +269,6 @@ const Settings: React.FC = () => {
     
     const user = groupUsers.find(u => u.user_id === userId);
     if (!user) {
-      console.error('User not found:', userId);
       return;
     }
     
@@ -312,7 +306,6 @@ const Settings: React.FC = () => {
         
         showSuccessModal(language === 'ko' ? '사용자가 그룹에서 성공적으로 제거되었습니다' : 'User removed from group successfully');
       } catch (error) {
-        console.error('Failed to remove user:', error);
         showErrorModal(language === 'ko' ? '사용자 제거에 실패했습니다' : 'Failed to remove user from group');
       } finally {
         setShowConfirmModal(false);
@@ -366,7 +359,6 @@ const Settings: React.FC = () => {
           navigate('/group-management');
         }, 2000);
       } catch (error) {
-        console.error('Failed to leave group:', error);
         showErrorModal(language === 'ko' ? '그룹 탈퇴에 실패했습니다' : 'Failed to leave group');
       } finally {
         setShowConfirmModal(false);
@@ -410,7 +402,6 @@ const Settings: React.FC = () => {
           navigate('/group-management');
         }, 2500); // Increased delay to ensure user sees the success message
       } catch (error) {
-        console.error('Failed to delete group and related data:', error);
         showErrorModal(
           language === 'ko'
             ? '그룹 삭제 중 오류가 발생했습니다. 나중에 다시 시도하세요.'

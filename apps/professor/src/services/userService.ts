@@ -76,13 +76,11 @@ export async function checkEmailExists(email: string): Promise<boolean> {
     
     if (error && error.code !== 'PGRST116') {
       // PGRST116 means no rows found, which is what we want
-      console.error('Error checking email:', error);
       throw error;
     }
     
     return !!data; // Return true if email exists, false otherwise
   } catch (error) {
-    console.error('Failed to check email existence:', error);
     throw error;
   }
 }
@@ -93,9 +91,6 @@ export async function checkEmailExists(email: string): Promise<boolean> {
 export async function createUser(userData: Omit<User, 'id' | 'created_at'>): Promise<User> {
   try {
     const supabase = getSupabaseClient();
-    
-    console.log('Creating new user:', { ...userData, password: '[HIDDEN]' });
-    
     const { data, error } = await supabase
       .from('user')
       .insert([{
@@ -109,14 +104,10 @@ export async function createUser(userData: Omit<User, 'id' | 'created_at'>): Pro
       .single();
     
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to create user: ${error.message}`);
     }
-    
-    console.log('✅ User created successfully:', data);
     return data as User;
   } catch (error) {
-    console.error('Failed to create user:', error);
     throw error;
   }
 }
@@ -144,7 +135,6 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     
     return data as User;
   } catch (error) {
-    console.error('Failed to get user by email:', error);
     throw error;
   }
 }
@@ -172,7 +162,6 @@ export async function getUserById(userId: string): Promise<User | null> {
     
     return data as User;
   } catch (error) {
-    console.error('Failed to get user by ID:', error);
     throw error;
   }
 }

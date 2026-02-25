@@ -104,15 +104,11 @@ export const getUserSettings = (): UserSettings | null => {
       // Save the new settings to localStorage
       allUserSettings[session.userId] = newSettings;
       localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(allUserSettings));
-      
-      console.log('✅ Created and saved default settings for:', session.email);
-      
       return newSettings;
     }
     
     return userSettings;
   } catch (error) {
-    console.error('Failed to get user settings:', error);
     return null;
   }
 };
@@ -143,7 +139,6 @@ export const saveUserSettings = (settings: Partial<UserSettings>): boolean => {
     
     return true;
   } catch (error) {
-    console.error('Failed to save user settings:', error);
     return false;
   }
 };
@@ -298,7 +293,6 @@ export const getSettingsForUser = (userId: string): UserSettings | null => {
     const allUserSettings = JSON.parse(localStorage.getItem(USER_SETTINGS_KEY) || '{}');
     return allUserSettings[userId] || null;
   } catch (error) {
-    console.error('Failed to get settings for user:', error);
     return null;
   }
 };
@@ -323,7 +317,6 @@ export const saveSettingsForUser = (userId: string, settings: Partial<UserSettin
     
     return true;
   } catch (error) {
-    console.error('Failed to save settings for user:', error);
     return false;
   }
 };

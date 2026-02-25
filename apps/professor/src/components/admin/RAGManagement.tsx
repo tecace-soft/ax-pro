@@ -79,7 +79,6 @@ const RAGManagement: React.FC<RAGManagementProps> = ({ className = '' }) => {
 
       setUploadedFiles(prev => [...newFiles, ...prev]);
     } catch (error) {
-      console.error('Upload error:', error);
     } finally {
       setIsUploading(false);
     }
@@ -143,7 +142,6 @@ const RAGManagement: React.FC<RAGManagementProps> = ({ className = '' }) => {
         }, 2000);
       }
     } catch (error) {
-      console.error('Re-index error:', error);
     }
   };
 
@@ -161,7 +159,6 @@ const RAGManagement: React.FC<RAGManagementProps> = ({ className = '' }) => {
         alert(result.message);
       }
     } catch (error) {
-      console.error('Delete error:', error);
       alert(t('admin.deleteError'));
     }
   };

@@ -17,13 +17,9 @@ export const migrateToUserSettings = (): void => {
     if (existingSettings) {
       const allUserSettings = JSON.parse(existingSettings);
       if (allUserSettings[session.userId]) {
-        console.log('User already has settings, skipping migration');
         return;
       }
     }
-
-    console.log('Migrating global settings to user-specific settings for:', session.email);
-
     // Migrate N8n settings
     const n8nConfigs = JSON.parse(localStorage.getItem('axpro_n8n_configs') || '[]');
     const activeN8nConfigId = localStorage.getItem('axpro_active_n8n_config') || '';
@@ -63,10 +59,7 @@ export const migrateToUserSettings = (): void => {
 
     // Save user settings
     saveUserSettings(userSettings);
-    console.log('Successfully migrated settings for user:', session.email);
-
   } catch (error) {
-    console.error('Failed to migrate settings:', error);
   }
 };
 

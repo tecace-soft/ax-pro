@@ -157,7 +157,6 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
         setFeedbacks(feedbacksWithChat)
       }
     } catch (error) {
-      console.error('Failed to load admin feedback:', error)
       setError(error instanceof Error ? error.message : 'Failed to load admin feedback')
     } finally {
       setIsLoading(false)
@@ -248,7 +247,6 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       const { updateAdminFeedbackField } = await import('../../services/feedback')
       await updateAdminFeedbackField(feedbackId, { apply: newApplyValue })
     } catch (error) {
-      console.error('Failed to update apply status:', error)
       // Revert on error
       setFeedbacks(prev => prev.map(f => 
         f.id === feedbackId ? { ...f, apply: !newApplyValue } : f
@@ -340,7 +338,6 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       setEditingFeedback(null)
       setEditValue('')
     } catch (error) {
-      console.error('Failed to update feedback:', error)
       alert('Failed to save changes. Please try again.')
     }
   }
@@ -354,9 +351,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       await deleteAdminFeedback(feedbackId)
       // Remove from local state
       setFeedbacks(prev => prev.filter(f => f.id !== feedbackId))
-      console.log('✅ Admin feedback deleted successfully')
     } catch (error) {
-      console.error('Failed to delete admin feedback:', error)
       alert('Failed to delete feedback. Please try again.')
     }
   }
@@ -393,7 +388,6 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       // Refresh feedback list
       await loadFeedback()
     } catch (error) {
-      console.error('Failed to submit admin feedback:', error)
       alert('Failed to submit feedback. Please try again.')
     } finally {
       setIsSubmittingAdd(false)

@@ -35,10 +35,8 @@ export interface N8nResponse {
 export const getN8nConfigs = (): N8nConfig[] => {
   try {
     const configs = getUserN8nConfigs();
-    console.log('Loaded user-specific n8n configs:', configs);
     return configs;
   } catch (error) {
-    console.error('Failed to get user n8n configs:', error);
     return [];
   }
 };
@@ -49,9 +47,7 @@ export const getN8nConfigs = (): N8nConfig[] => {
 export const saveN8nConfigs = (configs: N8nConfig[]): void => {
   try {
     saveUserN8nConfigs(configs);
-    console.log('Saved user-specific n8n configs:', configs);
   } catch (error) {
-    console.error('Failed to save user n8n configs:', error);
   }
 };
 
@@ -61,7 +57,6 @@ export const saveN8nConfigs = (configs: N8nConfig[]): void => {
 export const getActiveN8nConfig = (): N8nConfig | null => {
   try {
     const activeConfig = getUserActiveN8nConfig();
-    console.log('Active user n8n config:', activeConfig);
     if (activeConfig) return activeConfig;
     // Fallback to universal webhook if none is configured
     return {
@@ -73,7 +68,6 @@ export const getActiveN8nConfig = (): N8nConfig | null => {
       updatedAt: new Date().toISOString(),
     };
   } catch (error) {
-    console.error('Failed to get active user n8n config:', error);
     return {
       id: 'universal_default',
       name: 'Universal Default Webhook (Admin)',
@@ -91,9 +85,7 @@ export const getActiveN8nConfig = (): N8nConfig | null => {
 export const setActiveN8nConfig = (configId: string): void => {
   try {
     setUserActiveN8nConfig(configId);
-    console.log('Set active user n8n config:', configId);
   } catch (error) {
-    console.error('Failed to set active user n8n config:', error);
   }
 };
 
@@ -163,19 +155,13 @@ export const deleteN8nConfig = (id: string): boolean => {
  */
 export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
   const activeConfig = getActiveN8nConfig();
-  console.log('Sending to n8n with user config:', activeConfig);
-  console.log('Request payload:', request);
-  
   if (!activeConfig) {
     throw new Error('No active n8n configuration found for current user');
   }
 
   try {
-    console.log('Making request to:', activeConfig.webhookUrl);
-    console.log('Request payload:', JSON.stringify(request));
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('n8n webhook request timed out after 60 seconds');
       controller.abort();
     }, 60000); // Increased to 60 seconds
     
@@ -191,30 +177,13 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     });
     
     clearTimeout(timeoutId);
-
-    console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers);
-
     // Get response text first
     const responseText = await response.text();
-    console.log('=== N8N WEBHOOK DEBUG ===');
-    console.log('Response status:', response.status);
-    console.log('Response ok:', response.ok);
-    console.log('Raw response text length:', responseText.length);
-    console.log('Raw response text:', responseText);
-    console.log('Response text trimmed:', responseText.trim());
-    console.log('Is empty?', !responseText || responseText.trim() === '');
-    console.log('Response URL:', response.url);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-    console.log('========================');
-    
     if (!response.ok) {
-      console.error('Response error:', responseText);
       throw new Error(`HTTP error! status: ${response.status}, message: ${responseText}`);
     }
     
     if (!responseText || responseText.trim() === '') {
-      console.warn('Empty response from webhook');
       throw new Error('Empty response from webhook. Please check your workflow configuration.');
     }
 
@@ -222,13 +191,8 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     try {
       data = JSON.parse(responseText);
     } catch (parseError) {
-      console.error('Failed to parse JSON response:', parseError);
-      console.error('Response text was:', responseText);
       throw new Error(`Invalid JSON response from n8n: ${responseText.substring(0, 100)}...`);
     }
-    
-    console.log('n8n response:', data);
-    
     // Check if the response contains the error message
     let responseData;
     if (Array.isArray(data)) {
@@ -243,13 +207,11 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
     if (responseData && responseData.answer) {
       // Check for various error patterns found in real server testing
       if (responseData.answer.includes('No response from webhook')) {
-        console.error('Webhook returned error message:', responseData.answer);
         throw new Error('Webhook returned error: ' + responseData.answer);
       }
       
       // Check for null or empty answers (real server pattern)
       if (responseData.answer === null || responseData.answer === '') {
-        console.error('Webhook returned null or empty answer');
         throw new Error('Empty response from webhook. Please check your workflow configuration.');
       }
       
@@ -259,15 +221,12 @@ export const sendToN8n = async (request: N8nRequest): Promise<N8nResponse> => {
            responseData.answer.includes('Error') ||
            responseData.answer.includes('not valid') ||
            responseData.answer.includes('invalid'))) {
-        console.warn('Webhook answer contains error indicators:', responseData.answer);
         // Don't throw error here, just log - let the calling code decide
       }
     }
     
     return responseData;
   } catch (error: any) {
-    console.error('Failed to send to n8n:', error);
-    
     if (error.name === 'AbortError') {
       throw new Error('Webhook request timed out after 60 seconds');
     } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
@@ -302,7 +261,6 @@ export const testN8nConnection = async (webhookUrl: string): Promise<boolean> =>
 
     return response.ok;
   } catch (error) {
-    console.error('Failed to test n8n connection:', error);
     return false;
   }
 };

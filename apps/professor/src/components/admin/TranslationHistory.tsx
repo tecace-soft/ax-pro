@@ -1199,7 +1199,6 @@ export default function TranslationHistory({ selectedTerm = '2025-fall', selecte
       
       alert('Admin feedback submitted successfully!')
     } catch (error) {
-      console.error('Failed to submit admin feedback:', error)
       alert('Failed to submit feedback. Please try again.')
     } finally {
       setIsSubmitting(false)

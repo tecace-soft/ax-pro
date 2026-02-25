@@ -3,9 +3,10 @@ import { useTranslation } from '../i18n/I18nProvider';
 import { useTheme } from '../theme/ThemeProvider';
 import FileLibrary from '../components/knowledge/FileLibrary';
 import KnowledgeIndex from '../components/knowledge/KnowledgeIndex';
+import WebCrawler from '../components/knowledge/WebCrawler';
 import '../styles/knowledge-management.css';
 
-type TabType = 'file-library' | 'knowledge-index';
+type TabType = 'file-library' | 'knowledge-index' | 'web-crawler';
 
 const KnowledgeManagement: React.FC = () => {
   const { t } = useTranslation();
@@ -15,6 +16,7 @@ const KnowledgeManagement: React.FC = () => {
   const tabs = [
     { id: 'file-library' as TabType, label: t('knowledge.fileLibrary') },
     { id: 'knowledge-index' as TabType, label: t('knowledge.knowledgeIndex') },
+    { id: 'web-crawler' as TabType, label: t('knowledge.webCrawler') },
   ];
 
   const renderTabContent = () => {
@@ -23,6 +25,8 @@ const KnowledgeManagement: React.FC = () => {
         return <FileLibrary />;
       case 'knowledge-index':
         return <KnowledgeIndex />;
+      case 'web-crawler':
+        return <WebCrawler />;
       default:
         return <FileLibrary />;
     }

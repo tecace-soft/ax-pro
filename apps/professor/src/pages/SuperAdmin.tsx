@@ -59,7 +59,6 @@ const SuperAdmin: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (groupsError) {
-        console.error('Error loading groups:', groupsError);
         setGroups([]);
       } else {
         // Load creator names for each group
@@ -80,7 +79,6 @@ const SuperAdmin: React.FC = () => {
                   };
                 }
               } catch (error) {
-                console.error(`Error loading creator for group ${group.group_id}:`, error);
               }
             }
             return {
@@ -100,13 +98,11 @@ const SuperAdmin: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (usersError) {
-        console.error('Error loading users:', usersError);
         setUsers([]);
       } else {
         setUsers(usersData || []);
       }
     } catch (error) {
-      console.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -145,7 +141,6 @@ const SuperAdmin: React.FC = () => {
                   .eq('user_id', userId);
               }
             } catch (error) {
-              console.error(`Error updating user ${userId}:`, error);
             }
           }
         }
@@ -166,7 +161,6 @@ const SuperAdmin: React.FC = () => {
         setItemToDelete(null);
         setConfirmAction(null);
       } catch (error) {
-        console.error('Failed to delete group:', error);
         alert(language === 'ko' ? '그룹 삭제에 실패했습니다' : 'Failed to delete group');
       }
     });
@@ -210,7 +204,6 @@ const SuperAdmin: React.FC = () => {
                       .eq('user_id', userId);
                   }
                 } catch (error) {
-                  console.error(`Error updating user ${userId} for group deletion:`, error);
                 }
               }
             }
@@ -246,7 +239,6 @@ const SuperAdmin: React.FC = () => {
                   .eq('group_id', groupId);
               }
             } catch (error) {
-              console.error(`Error updating group ${groupId}:`, error);
             }
           }
         }
@@ -268,7 +260,6 @@ const SuperAdmin: React.FC = () => {
         setGroupsToDelete([]);
         setConfirmAction(null);
       } catch (error) {
-        console.error('Failed to delete user:', error);
         alert(language === 'ko' ? '사용자 삭제에 실패했습니다' : 'Failed to delete user');
       }
     });

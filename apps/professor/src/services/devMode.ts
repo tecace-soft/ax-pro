@@ -8,7 +8,6 @@ export const isBackendAvailable = async (): Promise<boolean> => {
   // For now, we don't have a backend API server for sessions
   // We only have n8n webhook for chat messages
   // Sessions are handled locally in localStorage
-  console.log('Backend check: No backend API server, using local storage for sessions');
   return false;
 };
 
@@ -19,7 +18,6 @@ export const isN8nWebhookAvailable = (): boolean => {
   // Check environment variables first (new secure method)
   const envWebhookUrl = (import.meta as any).env?.VITE_N8N_BASE_URL;
   if (envWebhookUrl && envWebhookUrl.trim()) {
-    console.log('n8n webhook check: Configured (environment variable)');
     return true;
   }
   
@@ -32,21 +30,16 @@ export const isN8nWebhookAvailable = (): boolean => {
     try {
       const configs = JSON.parse(n8nConfigs);
       if (Array.isArray(configs) && configs.length > 0 && configs[0].webhookUrl) {
-        console.log('n8n webhook check: Configured (multi-config)');
         return true;
       }
     } catch (e) {
-      console.error('Failed to parse n8n configs:', e);
     }
   }
   
   // Fall back to checking old single webhook URL
   if (oldWebhook && oldWebhook.trim()) {
-    console.log('n8n webhook check: Configured (legacy)');
     return true;
   }
-  
-  console.log('n8n webhook check: Not configured');
   return false;
 };
 

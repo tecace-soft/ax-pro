@@ -142,7 +142,6 @@ export const deleteFile = async (id: string): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 300));
   
   // In production, this would make an API call
-  console.log('Deleting file:', id);
 };
 
 export const listIndex = async (params: ListParams = {}): Promise<{ rows: IndexRow[]; total: number }> => {
@@ -186,7 +185,6 @@ export const reindex = async (id: string): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 300));
   
   // In production, this would make an API call
-  console.log('Reindexing:', id);
 };
 
 export const listSync = async (params: ListParams = {}): Promise<{ rows: SyncRow[]; total: number }> => {

@@ -67,7 +67,6 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
               isEnabled: true
             }
           } catch (error) {
-            console.warn(`Failed to load chat data for ${feedback.chat_id}:`, error)
             return {
               ...feedback,
               chatData: null,
@@ -78,7 +77,6 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
       )
       setFeedbacks(feedbacksWithChat)
     } catch (error) {
-      console.error('Failed to load user feedback:', error)
       setError(error instanceof Error ? error.message : 'Failed to load user feedback')
     } finally {
       setIsLoading(false)
@@ -100,7 +98,6 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
               isEnabled: true
             }
           } catch (error) {
-            console.warn(`Failed to load chat data for ${feedback.chat_id}:`, error)
             return {
               ...feedback,
               chatData: null,
@@ -111,7 +108,6 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
       )
       setFeedbacks(feedbacksWithChat)
     } catch (error) {
-      console.error('Failed to refresh user feedback:', error)
       setError(error instanceof Error ? error.message : 'Failed to refresh user feedback')
     } finally {
       setIsRefreshing(false)
@@ -174,16 +170,13 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
     // If not expanded and no chat data, fetch it
     if (!feedback.isExpanded && !feedback.chatData) {
-      console.log(`Fetching chat data for feedback ${feedbackId} with chat_id: ${feedback.chat_id}`);
       const chatData = await fetchChatById(feedback.chat_id)
       
       if (chatData) {
-        console.log(`✅ Successfully loaded chat data for ${feedback.chat_id}`);
         setFeedbacks(prev => prev.map(f => 
           f.id === feedbackId ? { ...f, chatData, isExpanded: true } : f
         ))
       } else {
-        console.warn(`❌ Could not load chat data for ${feedback.chat_id}. This might be due to a chat_id mismatch.`);
         // Still expand to show the error state
         setFeedbacks(prev => prev.map(f => 
           f.id === feedbackId ? { ...f, chatData: null, isExpanded: true } : f
@@ -256,9 +249,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
       await deleteUserFeedback(feedbackId)
       // Remove from local state
       setFeedbacks(prev => prev.filter(f => f.id !== feedbackId))
-      console.log('✅ User feedback deleted successfully')
     } catch (error) {
-      console.error('Failed to delete user feedback:', error)
       alert('Failed to delete feedback. Please try again.')
     }
   }

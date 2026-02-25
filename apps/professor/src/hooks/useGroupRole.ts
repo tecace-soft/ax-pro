@@ -45,7 +45,6 @@ export const useGroupRole = () => {
         const groupRole = await getUserRoleForGroup(currentGroupId);
         setRole(groupRole);
       } catch (err) {
-        console.error('Failed to get group role:', err);
         setError(err instanceof Error ? err.message : 'Failed to get group role');
         setRole(null);
       } finally {

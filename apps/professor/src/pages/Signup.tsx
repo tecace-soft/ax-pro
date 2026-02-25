@@ -129,7 +129,6 @@ const Signup: React.FC = () => {
       navigate('/');
       
     } catch (error) {
-      console.error('Signup error:', error);
       setErrors({ 
         general: error instanceof Error ? error.message : t('auth.signup.error.general')
       });

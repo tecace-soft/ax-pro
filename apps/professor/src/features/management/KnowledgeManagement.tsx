@@ -78,7 +78,6 @@ const KnowledgeManagement: React.FC = () => {
       }
       setPagination(prev => ({ ...prev, total: result.total }));
     } catch (error) {
-      console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -90,7 +89,6 @@ const KnowledgeManagement: React.FC = () => {
         await deleteFile(id);
         fetchData();
       } catch (error) {
-        console.error('Failed to delete file:', error);
       }
     }
   };
@@ -100,7 +98,6 @@ const KnowledgeManagement: React.FC = () => {
       await reindex(id);
       fetchData();
     } catch (error) {
-      console.error('Failed to reindex:', error);
     }
   };
 

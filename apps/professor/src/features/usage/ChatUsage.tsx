@@ -61,7 +61,6 @@ const ChatUsage: React.FC = () => {
       setSessions(result.rows);
       setPagination(prev => ({ ...prev, total: result.total }));
     } catch (error) {
-      console.error('Failed to fetch sessions:', error);
     } finally {
       setLoading(false);
     }
@@ -75,7 +74,6 @@ const ChatUsage: React.FC = () => {
       });
       setMessages(result.rows);
     } catch (error) {
-      console.error('Failed to fetch messages:', error);
     }
   };
 
@@ -88,7 +86,6 @@ const ChatUsage: React.FC = () => {
       setAdminFeedback(admin.rows);
       setUserFeedback(user.rows);
     } catch (error) {
-      console.error('Failed to fetch feedback:', error);
     }
   };
 
@@ -102,20 +99,16 @@ const ChatUsage: React.FC = () => {
         case 'rename':
           if (title) {
             // TODO: Implement rename functionality
-            console.log('Renaming session:', sessionId, title);
           }
           break;
         case 'close':
           // TODO: Implement close functionality
-          console.log('Closing session:', sessionId);
           break;
         case 'delete':
           // TODO: Implement delete functionality
-          console.log('Deleting session:', sessionId);
           break;
       }
     } catch (error) {
-      console.error('Failed to perform session action:', error);
     }
   };
 

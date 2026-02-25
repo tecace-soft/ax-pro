@@ -179,7 +179,6 @@ export const upsertAdminFeedback = async (item: AdminFeedback): Promise<void> =>
   await new Promise(resolve => setTimeout(resolve, 300));
   
   // In production, this would make an API call
-  console.log('Upserting admin feedback:', item);
 };
 
 export const setUserFeedback = async (messageId: string, rating: 1 | -1, note?: string): Promise<void> => {
@@ -187,7 +186,6 @@ export const setUserFeedback = async (messageId: string, rating: 1 | -1, note?: 
   await new Promise(resolve => setTimeout(resolve, 300));
   
   // In production, this would make an API call
-  console.log('Setting user feedback:', { messageId, rating, note });
 };
 
 export const renameSession = async (id: string, title: string): Promise<void> => {
@@ -195,7 +193,6 @@ export const renameSession = async (id: string, title: string): Promise<void> =>
   await new Promise(resolve => setTimeout(resolve, 300));
   
   // In production, this would make an API call
-  console.log('Renaming session:', { id, title });
 };
 
 export const closeSession = async (id: string): Promise<void> => {
@@ -203,7 +200,6 @@ export const closeSession = async (id: string): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 300));
   
   // In production, this would make an API call
-  console.log('Closing session:', id);
 };
 
 export const deleteSession = async (id: string): Promise<void> => {
@@ -211,7 +207,6 @@ export const deleteSession = async (id: string): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 300));
   
   // In production, this would make an API call
-  console.log('Deleting session:', id);
 };
 
 export const getAdminFeedback = async (params: ListParams = {}): Promise<{ rows: AdminFeedback[]; total: number }> => {

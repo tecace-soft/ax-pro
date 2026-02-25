@@ -13,12 +13,8 @@ export async function fetchAllAdminFeedback(): Promise<AdminFeedbackData[]> {
     const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in URL, cannot fetch group-specific admin feedback');
       return [];
     }
-    
-    console.log('Fetching admin feedback from Supabase for group_id:', groupId);
-    
     const { data, error } = await supabase
       .from('admin_feedback')
       .select('*')
@@ -26,14 +22,10 @@ export async function fetchAllAdminFeedback(): Promise<AdminFeedbackData[]> {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to fetch admin feedback: ${error.message}`);
     }
-
-    console.log(`✅ Fetched ${data?.length || 0} admin feedback records for group_id: ${groupId}`);
     return data || [];
   } catch (error) {
-    console.error('Failed to fetch admin feedback:', error);
     throw error;
   }
 }
@@ -49,12 +41,8 @@ export async function fetchAllUserFeedback(): Promise<UserFeedbackData[]> {
     const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in URL, cannot fetch group-specific user feedback');
       return [];
     }
-    
-    console.log('Fetching user feedback from Supabase for group_id:', groupId);
-    
     const { data, error } = await supabase
       .from('user_feedback')
       .select('*')
@@ -62,14 +50,10 @@ export async function fetchAllUserFeedback(): Promise<UserFeedbackData[]> {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to fetch user feedback: ${error.message}`);
     }
-
-    console.log(`✅ Fetched ${data?.length || 0} user feedback records for group_id: ${groupId}`);
     return data || [];
   } catch (error) {
-    console.error('Failed to fetch user feedback:', error);
     throw error;
   }
 }
@@ -85,7 +69,6 @@ export async function fetchUserFeedbackByDateRange(startDate: string, endDate: s
     const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in URL, cannot fetch group-specific user feedback');
       return [];
     }
     
@@ -98,13 +81,11 @@ export async function fetchUserFeedbackByDateRange(startDate: string, endDate: s
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to fetch user feedback: ${error.message}`);
     }
 
     return data || [];
   } catch (error) {
-    console.error('Failed to fetch user feedback by date range:', error);
     throw error;
   }
 }
@@ -132,7 +113,6 @@ export async function getAdminFeedback(chatId: string): Promise<AdminFeedbackDat
 
     return data;
   } catch (error) {
-    console.error('Error fetching admin feedback:', error);
     throw error;
   }
 }
@@ -156,9 +136,6 @@ export async function submitUserFeedback(
     if (!groupId) {
       throw new Error('No group_id in URL. Please select a group first.');
     }
-    
-    console.log('Submitting user feedback:', { chatId, userId, reaction, feedbackText, groupId });
-    
     const feedbackData = {
       chat_id: chatId,
       user_id: userId,
@@ -174,14 +151,10 @@ export async function submitUserFeedback(
       .single();
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to submit user feedback: ${error.message}`);
     }
-
-    console.log('✅ User feedback submitted:', data, 'for group_id:', groupId);
     return data as UserFeedbackData;
   } catch (error) {
-    console.error('Failed to submit user feedback:', error);
     throw error;
   }
 }
@@ -197,7 +170,6 @@ export async function getAdminFeedbackByChat(chatId: string): Promise<AdminFeedb
     const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in URL, cannot fetch group-specific admin feedback');
       return null;
     }
     
@@ -210,13 +182,11 @@ export async function getAdminFeedbackByChat(chatId: string): Promise<AdminFeedb
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching admin feedback:', error);
       throw error;
     }
 
     return data as AdminFeedbackData | null;
   } catch (error) {
-    console.error('Error fetching admin feedback by chat:', error);
     return null;
   }
 }
@@ -242,9 +212,6 @@ export async function submitAdminFeedback(
     if (!groupId) {
       throw new Error('No group_id in URL. Please select a group first.');
     }
-    
-    console.log('Submitting admin feedback:', { chatId, verdict, feedbackText, correctedMessage, correctedResponse, groupId });
-    
     // If chatId is provided, check if feedback already exists
     let existingFeedback = null;
     if (chatId) {
@@ -297,14 +264,10 @@ export async function submitAdminFeedback(
     }
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to submit admin feedback: ${error.message}`);
     }
-
-    console.log('✅ Admin feedback submitted:', data, 'for group_id:', groupId);
     return data as AdminFeedbackData;
   } catch (error) {
-    console.error('Failed to submit admin feedback:', error);
     throw error;
   }
 }
@@ -320,9 +283,6 @@ export async function updateAdminFeedback(
 ): Promise<AdminFeedbackData> {
   try {
     const supabase = getSupabaseClient();
-    
-    console.log('Updating admin feedback:', { id, verdict, feedbackText, correctedResponse });
-    
     const feedbackData = {
       feedback_verdict: verdict,
       feedback_text: feedbackText || null,
@@ -338,14 +298,10 @@ export async function updateAdminFeedback(
       .single();
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to update admin feedback: ${error.message}`);
     }
-
-    console.log('✅ Admin feedback updated:', data);
     return data as AdminFeedbackData;
   } catch (error) {
-    console.error('Failed to update admin feedback:', error);
     throw error;
   }
 }
@@ -356,9 +312,6 @@ export async function updateAdminFeedbackField(
 ): Promise<AdminFeedbackData> {
   try {
     const supabase = getSupabaseClient();
-    
-    console.log('Updating admin feedback field:', { id, updates });
-    
     const { data, error } = await supabase
       .from('admin_feedback')
       .update(updates)
@@ -367,14 +320,10 @@ export async function updateAdminFeedbackField(
       .single();
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to update admin feedback: ${error.message}`);
     }
-
-    console.log('✅ Admin feedback field updated:', data);
     return data as AdminFeedbackData;
   } catch (error) {
-    console.error('Failed to update admin feedback field:', error);
     throw error;
   }
 }
@@ -385,22 +334,15 @@ export async function updateAdminFeedbackField(
 export async function deleteAdminFeedback(id: number): Promise<void> {
   try {
     const supabase = getSupabaseClient();
-    
-    console.log('Deleting admin feedback:', { id });
-    
     const { error } = await supabase
       .from('admin_feedback')
       .delete()
       .eq('id', id);
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to delete admin feedback: ${error.message}`);
     }
-
-    console.log('✅ Admin feedback deleted:', id);
   } catch (error) {
-    console.error('Failed to delete admin feedback:', error);
     throw error;
   }
 }
@@ -411,22 +353,15 @@ export async function deleteAdminFeedback(id: number): Promise<void> {
 export async function deleteUserFeedback(id: number): Promise<void> {
   try {
     const supabase = getSupabaseClient();
-    
-    console.log('Deleting user feedback:', { id });
-    
     const { error } = await supabase
       .from('user_feedback')
       .delete()
       .eq('id', id);
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to delete user feedback: ${error.message}`);
     }
-
-    console.log('✅ User feedback deleted:', id);
   } catch (error) {
-    console.error('Failed to delete user feedback:', error);
     throw error;
   }
 }

@@ -84,7 +84,6 @@ export const getSupabaseClient = (): SupabaseClient => {
     // Always have hard-coded fallback; no throwing here
     supabaseClient = createClient(config.url, config.anonKey);
     currentConfig = configKey;
-    console.log('✅ Supabase client initialized for current user');
   }
   
   return supabaseClient;
@@ -122,11 +121,8 @@ export const testSupabaseConnection = async (config: { url: string; anonKey: str
         'Authorization': `Bearer ${config.anonKey}`
       }
     });
-
-    console.log('Supabase connection test response:', response.status);
     return response.ok;
   } catch (error) {
-    console.error('Supabase connection test failed:', error);
     return false;
   }
 };

@@ -32,7 +32,6 @@ const SessionList: React.FC<SessionListProps> = ({ currentSessionId, onSessionSe
         onNewSession(newSessionId);
       }
     } catch (error) {
-      console.error('Failed to create new chat:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create new chat';
       setCreateError(errorMessage);
       // Show error for 5 seconds

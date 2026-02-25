@@ -52,13 +52,11 @@ export async function searchUsers(searchTerm: string): Promise<User[]> {
       .limit(10);
 
     if (error) {
-      console.error('Error searching users:', error);
       throw new Error(`Failed to search users: ${error.message}`);
     }
 
     return data as User[] || [];
   } catch (error) {
-    console.error('Failed to search users:', error);
     throw error;
   }
 }
@@ -68,13 +66,6 @@ export async function searchUsers(searchTerm: string): Promise<User[]> {
  */
 export async function createGroup(groupData: CreateGroupData): Promise<Group> {
   try {
-    console.log('Creating group in database:', {
-      group_id: groupData.group_id,
-      name: groupData.name,
-      administrator: groupData.administrator,
-      users: groupData.users
-    });
-
     const { data, error } = await defaultSupabase
       .from('group')
       .insert({
@@ -93,29 +84,19 @@ export async function createGroup(groupData: CreateGroupData): Promise<Group> {
       .single();
 
     if (error) {
-      console.error('❌ Supabase error creating group:', error);
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-      console.error('Error details:', error.details);
       throw new Error(`Failed to create group: ${error.message} (Code: ${error.code})`);
     }
 
     if (!data) {
-      console.error('❌ No data returned from group creation');
       throw new Error('Group creation succeeded but no data was returned');
     }
-
-    console.log('✅ Group created successfully in database:', data);
-
     // Always create OpenAI vector store (openai_chat check removed)
     // After the group is created in Supabase, create a dedicated OpenAI vector store
     // and save its ID to the group's vector_store_id column.
     {
-      console.log('ℹ️ [Group] Creating OpenAI vector store for group');
       try {
         const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
         if (!openaiApiKey) {
-          console.warn('⚠️ [Group] VITE_OPENAI_API_KEY not found; skipping OpenAI vector store creation');
         } else {
           // Build unique vector store name: "Vector Store - <group name> - YYMMDDhhmmss"
           const now = new Date();
@@ -128,11 +109,6 @@ export async function createGroup(groupData: CreateGroupData): Promise<Group> {
           const seconds = pad(now.getSeconds());               // ss
           const timestamp = `${year}${month}${day}${hour}${minute}${seconds}`;
           const vectorStoreName = `Vector Store - ${groupData.name} - ${timestamp}`;
-          console.log('📦 [Group] Creating OpenAI vector store for group:', {
-            groupId: groupData.group_id,
-            name: vectorStoreName
-          });
-
           const response = await fetch('https://api.openai.com/v1/vector_stores', {
             method: 'POST',
             headers: {
@@ -143,18 +119,9 @@ export async function createGroup(groupData: CreateGroupData): Promise<Group> {
               name: vectorStoreName
             })
           });
-
-          console.log('📊 [Group] OpenAI vector store response status:', response.status, response.statusText);
-
           if (response.ok) {
             const vsData = await response.json();
             const vectorStoreId = vsData?.id;
-            console.log('✅ [Group] OpenAI vector store created:', {
-              id: vectorStoreId,
-              name: vsData?.name,
-              status: vsData?.status
-            });
-
             if (vectorStoreId) {
               const { error: updateError } = await defaultSupabase
                 .from('group')
@@ -162,14 +129,11 @@ export async function createGroup(groupData: CreateGroupData): Promise<Group> {
                 .eq('group_id', groupData.group_id);
 
               if (updateError) {
-                console.error('❌ [Group] Failed to save vector_store_id to group:', updateError);
               } else {
-                console.log('💾 [Group] Saved vector_store_id to group:', vectorStoreId);
                 // Also reflect this in the returned group object
                 (data as any).vector_store_id = vectorStoreId;
               }
             } else {
-              console.warn('⚠️ [Group] OpenAI vector store response missing id field:', vsData);
             }
           } else {
             const errorText = await response.text();
@@ -179,11 +143,9 @@ export async function createGroup(groupData: CreateGroupData): Promise<Group> {
             } catch {
               errorJson = { error: errorText };
             }
-            console.error('❌ [Group] Failed to create OpenAI vector store:', errorJson);
           }
         }
       } catch (openaiError) {
-        console.error('❌ [Group] Error while creating OpenAI vector store:', openaiError);
         // Do not throw here; group creation in Supabase has already succeeded
       }
     }
@@ -191,7 +153,6 @@ export async function createGroup(groupData: CreateGroupData): Promise<Group> {
 
     return data as Group;
   } catch (error) {
-    console.error('❌ Failed to create group:', error);
     throw error;
   }
 }
@@ -208,7 +169,6 @@ export async function updateUserGroups(userIds: string[], groupId: string): Prom
       .in('user_id', userIds);
 
     if (fetchError) {
-      console.error('Error fetching users:', fetchError);
       throw new Error(`Failed to fetch users: ${fetchError.message}`);
     }
 
@@ -225,15 +185,12 @@ export async function updateUserGroups(userIds: string[], groupId: string): Prom
         .eq('user_id', user.user_id);
 
       if (updateError) {
-        console.error(`Error updating user ${user.user_id}:`, updateError);
         throw new Error(`Failed to update user groups: ${updateError.message}`);
       }
     });
 
     await Promise.all(updatePromises);
-    console.log('✅ User groups updated successfully');
   } catch (error) {
-    console.error('Failed to update user groups:', error);
     throw error;
   }
 }
@@ -251,7 +208,6 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
       .single();
 
     if (userError) {
-      console.error('Error fetching user data:', userError);
       throw new Error(`Failed to fetch user data: ${userError.message}`);
     }
 
@@ -269,13 +225,11 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
       .order('created_at', { ascending: false });
 
     if (groupsError) {
-      console.error('Error fetching groups:', groupsError);
       throw new Error(`Failed to fetch groups: ${groupsError.message}`);
     }
 
     return groups as Group[] || [];
   } catch (error) {
-    console.error('Failed to fetch user groups:', error);
     throw error;
   }
 }
@@ -295,13 +249,11 @@ export async function getGroupById(groupId: string): Promise<Group | null> {
       if (error.code === 'PGRST116') {
         return null; // No group found
       }
-      console.error('Error fetching group:', error);
       throw new Error(`Failed to fetch group: ${error.message}`);
     }
 
     return data as Group;
   } catch (error) {
-    console.error('Failed to fetch group:', error);
     throw error;
   }
 }
@@ -317,13 +269,9 @@ export async function updateGroupName(groupId: string, name: string): Promise<vo
       .eq('group_id', groupId);
 
     if (error) {
-      console.error('Error updating group name:', error);
       throw new Error(`Failed to update group name: ${error.message}`);
     }
-
-    console.log('✅ Group name updated successfully');
   } catch (error) {
-    console.error('Failed to update group name:', error);
     throw error;
   }
 }
@@ -343,13 +291,11 @@ export async function getUsersByIds(userIds: string[]): Promise<User[]> {
       .in('user_id', userIds);
 
     if (error) {
-      console.error('Error fetching users:', error);
       throw new Error(`Failed to fetch users: ${error.message}`);
     }
 
     return data as User[] || [];
   } catch (error) {
-    console.error('Failed to fetch users:', error);
     throw error;
   }
 }
@@ -365,13 +311,9 @@ export async function updateGroupUsers(groupId: string, userIds: string[]): Prom
       .eq('group_id', groupId);
 
     if (error) {
-      console.error('Error updating group users:', error);
       throw new Error(`Failed to update group users: ${error.message}`);
     }
-
-    console.log('✅ Group users updated successfully');
   } catch (error) {
-    console.error('Failed to update group users:', error);
     throw error;
   }
 }
@@ -395,13 +337,9 @@ export async function updateGroupChunkingOptions(
       .eq('group_id', groupId);
 
     if (error) {
-      console.error('Error updating group chunking options:', error);
       throw new Error(`Failed to update group chunking options: ${error.message}`);
     }
-
-    console.log('✅ Group chunking options updated successfully');
   } catch (error) {
-    console.error('Failed to update group chunking options:', error);
     throw error;
   }
 }
@@ -423,13 +361,9 @@ export async function updateGroupTopK(
       .eq('group_id', groupId);
 
     if (error) {
-      console.error('Error updating group top_k:', error);
       throw new Error(`Failed to update group top_k: ${error.message}`);
     }
-
-    console.log('✅ Group top_k updated successfully');
   } catch (error) {
-    console.error('Failed to update group top_k:', error);
     throw error;
   }
 }
@@ -450,13 +384,9 @@ export async function updateGroupOpenAIChat(
       .eq('group_id', groupId);
 
     if (error) {
-      console.error('Error updating group openai_chat:', error);
       throw new Error(`Failed to update group openai_chat: ${error.message}`);
     }
-
-    console.log('✅ Group openai_chat updated successfully');
   } catch (error) {
-    console.error('Failed to update group openai_chat:', error);
     throw error;
   }
 }
@@ -471,8 +401,6 @@ export async function updateGroupOpenAIChat(
  */
 export async function deleteGroupAndAllData(groupId: string): Promise<void> {
   try {
-    console.log('🗑️ [Group] Starting deleteGroupAndAllData for group:', groupId);
-
     // 1) Load group to get users array, openai_chat, and vector_store_id
     const { data: groupData, error: groupError } = await defaultSupabase
       .from('group')
@@ -481,25 +409,16 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
       .maybeSingle();
 
     if (groupError) {
-      console.error('❌ [Group] Failed to fetch group before delete:', groupError);
       throw new Error(`Failed to fetch group before delete: ${groupError.message}`);
     }
 
     if (!groupData) {
-      console.warn('⚠️ [Group] Group not found, nothing to delete:', groupId);
       return;
     }
-
-    console.log('📋 [Group] Deleting group and related data for:', {
-      group_id: groupData.group_id,
-      name: groupData.name,
-      usersCount: Array.isArray(groupData.users) ? groupData.users.length : 0,
-    });
 
     // 2) Remove group_id from all users' groups arrays (if any)
     const groupUsers: string[] = Array.isArray(groupData.users) ? groupData.users : [];
     if (groupUsers.length > 0) {
-      console.log(`👥 [Group] Removing group_id from ${groupUsers.length} user(s) groups arrays`);
       for (const userId of groupUsers) {
         try {
           const { data: userData, error: userError } = await defaultSupabase
@@ -516,11 +435,9 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
               .eq('user_id', userId);
 
             if (updateUserError) {
-              console.warn(`⚠️ [Group] Failed to update user ${userId} groups array:`, updateUserError);
             }
           }
         } catch (userUpdateError) {
-          console.warn(`⚠️ [Group] Error updating user ${userId} groups array:`, userUpdateError);
         }
       }
     }
@@ -532,10 +449,8 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
         .delete()
         .eq('group_id', groupId);
       if (error) {
-        console.error('❌ [Group] Failed to delete admin_feedback rows:', error);
         throw new Error(`Failed to delete admin_feedback rows: ${error.message}`);
       }
-      console.log('🧹 [Group] Deleted admin_feedback rows for group:', groupId);
     } catch (e) {
       throw e;
     }
@@ -547,10 +462,8 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
         .delete()
         .eq('group_id', groupId);
       if (error) {
-        console.error('❌ [Group] Failed to delete user_feedback rows:', error);
         throw new Error(`Failed to delete user_feedback rows: ${error.message}`);
       }
-      console.log('🧹 [Group] Deleted user_feedback rows for group:', groupId);
     } catch (e) {
       throw e;
     }
@@ -562,10 +475,8 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
         .delete()
         .eq('group_id', groupId);
       if (error) {
-        console.error('❌ [Group] Failed to delete chat rows:', error);
         throw new Error(`Failed to delete chat rows: ${error.message}`);
       }
-      console.log('🧹 [Group] Deleted chat rows for group:', groupId);
     } catch (e) {
       throw e;
     }
@@ -577,10 +488,8 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
         .delete()
         .eq('group_id', groupId);
       if (error) {
-        console.error('❌ [Group] Failed to delete session rows:', error);
         throw new Error(`Failed to delete session rows: ${error.message}`);
       }
-      console.log('🧹 [Group] Deleted session rows for group:', groupId);
     } catch (e) {
       throw e;
     }
@@ -592,10 +501,8 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
         .delete()
         .eq('group_id', groupId);
       if (error) {
-        console.error('❌ [Group] Failed to delete files rows:', error);
         throw new Error(`Failed to delete files rows: ${error.message}`);
       }
-      console.log('🧹 [Group] Deleted files rows for group:', groupId);
     } catch (e) {
       throw e;
     }
@@ -607,10 +514,8 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
         .delete()
         .eq('group_id', groupId);
       if (error) {
-        console.error('❌ [Group] Failed to delete prompts rows:', error);
         throw new Error(`Failed to delete prompts rows: ${error.message}`);
       }
-      console.log('🧹 [Group] Deleted prompts rows for group:', groupId);
     } catch (e) {
       throw e;
     }
@@ -622,10 +527,8 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
         .delete()
         .eq('metadata->>groupId', groupId);
       if (error) {
-        console.error('❌ [Group] Failed to delete documents rows:', error);
         throw new Error(`Failed to delete documents rows: ${error.message}`);
       }
-      console.log('🧹 [Group] Deleted documents rows for group:', groupId);
     } catch (e) {
       throw e;
     }
@@ -633,16 +536,12 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
     // 10) Always delete OpenAI vector store and associated files (openai_chat check removed)
     if (groupData.vector_store_id) {
       try {
-        console.log('🔧 [Group] Deleting OpenAI vector store and files:', groupData.vector_store_id);
-        
         const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
         if (!openaiApiKey) {
-          console.warn('⚠️ [Group] VITE_OPENAI_API_KEY not found; skipping OpenAI vector store deletion');
         } else {
           const vectorStoreId = groupData.vector_store_id;
           
           // Step 1: Get list of files in the vector store
-          console.log(`📋 [Group] Fetching files from OpenAI vector store: ${vectorStoreId}`);
           const listFilesUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
           
           const listResponse = await fetch(listFilesUrl, {
@@ -655,18 +554,15 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
           if (listResponse.ok) {
             const listData = await listResponse.json();
             const files = listData?.data || [];
-            console.log(`📁 [Group] Found ${files.length} file(s) in vector store`);
             
             // Step 2: Delete each file from OpenAI
             if (files.length > 0) {
-              console.log(`🗑️ [Group] Deleting ${files.length} file(s) from OpenAI...`);
               let deletedCount = 0;
               let failedCount = 0;
               
               for (const file of files) {
                 const fileId = file.id;
                 if (!fileId) {
-                  console.warn('⚠️ [Group] File object missing id:', file);
                   continue;
                 }
                 
@@ -681,31 +577,23 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
                   
                   if (deleteFileResponse.ok) {
                     const deleteData = await deleteFileResponse.json().catch(() => ({}));
-                    console.log(`✅ [Group] Deleted OpenAI file: ${fileId}`, deleteData);
                     deletedCount++;
                   } else {
                     const errorData = await deleteFileResponse.json().catch(() => ({ error: 'Unknown error' }));
-                    console.error(`❌ [Group] Failed to delete OpenAI file ${fileId}:`, errorData);
                     failedCount++;
                   }
                 } catch (fileError) {
-                  console.error(`❌ [Group] Error deleting OpenAI file ${fileId}:`, fileError);
                   failedCount++;
                 }
               }
-              
-              console.log(`📊 [Group] File deletion summary: ${deletedCount} deleted, ${failedCount} failed`);
             } else {
-              console.log('ℹ️ [Group] No files found in vector store');
             }
           } else {
             const errorData = await listResponse.json().catch(() => ({ error: 'Unknown error' }));
-            console.warn('⚠️ [Group] Failed to list files from vector store:', errorData);
             // Continue with vector store deletion even if we couldn't list files
           }
           
           // Step 3: Delete the vector store itself
-          console.log(`📤 [Group] Deleting OpenAI vector store: ${vectorStoreId}`);
           const deleteVectorStoreUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}`;
           
           const deleteResponse = await fetch(deleteVectorStoreUrl, {
@@ -714,25 +602,18 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
               'Authorization': `Bearer ${openaiApiKey}`,
             },
           });
-          
-          console.log(`📊 [Group] OpenAI vector store deletion response: ${deleteResponse.status} ${deleteResponse.statusText}`);
-          
           if (deleteResponse.ok) {
             const responseData = await deleteResponse.json().catch(() => ({}));
-            console.log('✅ [Group] OpenAI vector store deleted successfully:', responseData);
           } else {
             const errorData = await deleteResponse.json().catch(() => ({ error: 'Unknown error' }));
-            console.error('❌ [Group] Failed to delete OpenAI vector store:', errorData);
             // Don't throw here - continue with group deletion even if vector store deletion fails
             // The vector store can be manually cleaned up later if needed
           }
         }
       } catch (openaiError) {
-        console.error('❌ [Group] Error deleting OpenAI vector store and files:', openaiError);
         // Don't throw here - continue with group deletion even if vector store deletion fails
       }
     } else {
-      console.log('ℹ️ [Group] No vector_store_id; skipping OpenAI vector store deletion');
     }
 
     // 11) Finally, delete the group row itself
@@ -742,15 +623,12 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
         .delete()
         .eq('group_id', groupId);
       if (error) {
-        console.error('❌ [Group] Failed to delete group row:', error);
         throw new Error(`Failed to delete group row: ${error.message}`);
       }
-      console.log('✅ [Group] Group deleted successfully:', groupId);
     } catch (e) {
       throw e;
     }
   } catch (error) {
-    console.error('❌ [Group] deleteGroupAndAllData failed:', error);
     throw error;
   }
 }

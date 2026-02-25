@@ -58,7 +58,6 @@ const ChatShell: React.FC = () => {
             userId: (userData as any).email
           });
         } catch (error) {
-          console.log('Backend auth failed, trying local auth:', error);
           // Fall through to local session
         }
       }
@@ -84,7 +83,6 @@ const ChatShell: React.FC = () => {
               setUser(prev => prev ? { ...prev, role } : null);
             }
           } catch (error) {
-            console.error('Failed to get group role:', error);
           }
         }
       }
@@ -122,7 +120,6 @@ const ChatShell: React.FC = () => {
           setUser(prev => prev ? { ...prev, role } : null);
         }
       } catch (error) {
-        console.error('Failed to get group role:', error);
         setGroupRole(null);
       }
     };
@@ -150,7 +147,6 @@ const ChatShell: React.FC = () => {
               setCurrentSession(null);
             }
           } catch (error) {
-            console.error('Failed to load session:', error);
             setCurrentSession(null);
           }
         }
@@ -188,14 +184,12 @@ const ChatShell: React.FC = () => {
     const isChatPage = currentPath === '/chat' || currentPath === '/chat/';
     
     if (isChatPage && !hasAutoCreatedSession.current) {
-      console.log('Auto-creating new chat session for group:', groupId);
       hasAutoCreatedSession.current = true;
       createSession().then(sessionId => {
     if (sessionId) {
           setCurrentSessionId(sessionId);
         }
       }).catch(error => {
-        console.error('Failed to auto-create new chat:', error);
         hasAutoCreatedSession.current = false; // Reset on error so it can retry
       });
     }
@@ -207,7 +201,6 @@ const ChatShell: React.FC = () => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
         e.preventDefault();
         createSession().catch(error => {
-          console.error('Failed to create new chat:', error);
         });
       }
     };
@@ -221,7 +214,6 @@ const ChatShell: React.FC = () => {
       // Try backend logout first
       await authApi.logout();
     } catch (error) {
-      console.log('Backend logout failed, using local logout:', error);
     }
     
     // Always clear local session
@@ -553,7 +545,6 @@ const ChatShell: React.FC = () => {
                           setUrlCopied(false);
                         }, 2000);
                       } catch (error) {
-                        console.error('Failed to copy URL:', error);
                       }
                     }}
                     className="rounded-md border flex items-center"
@@ -587,7 +578,6 @@ const ChatShell: React.FC = () => {
                         hasAutoCreatedSession.current = false;
                       }
                     } catch (error) {
-                      console.error('Failed to create new chat:', error);
                     }
                   }}
                   className="rounded-md border flex items-center"

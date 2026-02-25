@@ -13,12 +13,8 @@ export async function fetchAllChatData(limit: number = 100): Promise<ChatData[]>
     const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in URL, cannot fetch group-specific chat data');
       return [];
     }
-    
-    console.log('Fetching chat data from Supabase for group_id:', groupId);
-    
     const { data, error } = await supabase
       .from('chat')
       .select('*')
@@ -27,14 +23,10 @@ export async function fetchAllChatData(limit: number = 100): Promise<ChatData[]>
       .limit(limit);
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to fetch chat data: ${error.message}`);
     }
-
-    console.log(`✅ Fetched ${data?.length || 0} chat records for group_id: ${groupId}`);
     return data || [];
   } catch (error) {
-    console.error('Failed to fetch chat data:', error);
     throw error;
   }
 }
@@ -50,7 +42,6 @@ export async function fetchChatDataBySession(sessionId: string): Promise<ChatDat
     const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in URL, cannot fetch group-specific chat data');
       return [];
     }
     
@@ -62,13 +53,11 @@ export async function fetchChatDataBySession(sessionId: string): Promise<ChatDat
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to fetch chat data: ${error.message}`);
     }
 
     return data || [];
   } catch (error) {
-    console.error('Failed to fetch chat data by session:', error);
     throw error;
   }
 }
@@ -84,7 +73,6 @@ export async function fetchChatDataByDateRange(startDate: string, endDate: strin
     const groupId = getGroupIdFromUrl();
     
     if (!groupId) {
-      console.warn('No group_id in URL, cannot fetch group-specific chat data');
       return [];
     }
     
@@ -97,13 +85,11 @@ export async function fetchChatDataByDateRange(startDate: string, endDate: strin
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to fetch chat data: ${error.message}`);
     }
 
     return data || [];
   } catch (error) {
-    console.error('Failed to fetch chat data by date range:', error);
     throw error;
   }
 }
@@ -127,7 +113,6 @@ export async function getChatData(requestId: string): Promise<ChatData | null> {
 
     return data;
   } catch (error) {
-    console.error('Error fetching chat data:', error);
     throw error;
   }
 }
@@ -139,9 +124,6 @@ export async function getChatData(requestId: string): Promise<ChatData | null> {
 export async function fetchChatById(chatId: string): Promise<ChatData | null> {
   try {
     const supabase = getSupabaseClient();
-    
-    console.log(`Looking for chat with chat_id: ${chatId}`);
-    
     // Match against the chat_id column (string), not the id column (numeric)
     const { data, error } = await supabase
       .from('chat')
@@ -150,13 +132,11 @@ export async function fetchChatById(chatId: string): Promise<ChatData | null> {
       .maybeSingle();
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to fetch chat data: ${error.message}`);
     }
 
     return data;
   } catch (error) {
-    console.error('Error fetching chat data:', error);
     throw error;
   }
 }
@@ -167,9 +147,6 @@ export async function fetchChatById(chatId: string): Promise<ChatData | null> {
 export async function fetchSessionsByGroup(groupId: string): Promise<SessionData[]> {
   try {
     const supabase = getSupabaseClient();
-    
-    console.log(`Fetching sessions for group_id: ${groupId}`);
-    
     // Only select columns that definitely exist
     const { data, error } = await supabase
       .from('session')
@@ -180,17 +157,12 @@ export async function fetchSessionsByGroup(groupId: string): Promise<SessionData
     if (error) {
       // If table doesn't exist, return empty array (sessions are created by backend)
       if (error.code === 'PGRST116' || error.message.includes('does not exist') || error.message.includes('schema cache')) {
-        console.warn('Session table does not exist or has schema issues (this is okay - sessions are created by backend)');
         return [];
       }
-      console.error('Supabase error:', error);
       throw new Error(`Failed to fetch sessions: ${error.message}`);
     }
-
-    console.log(`✅ Fetched ${data?.length || 0} sessions for group_id: ${groupId}`);
     return data || [];
   } catch (error) {
-    console.error('Error fetching sessions:', error);
     // Return empty array instead of throwing - sessions are created by backend
     return [];
   }
@@ -217,13 +189,11 @@ export async function fetchSessionById(sessionId: string, groupId: string): Prom
       if (error.code === 'PGRST116' || error.message.includes('does not exist') || error.message.includes('schema cache')) {
         return null;
       }
-      console.error('Supabase error:', error);
       return null;
     }
 
     return data;
   } catch (error) {
-    console.error('Error fetching session:', error);
     return null;
   }
 }
@@ -243,42 +213,19 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Supabase error:', error);
       throw new Error(`Failed to fetch chat messages: ${error.message}`);
     }
     
-    // Log raw data for debugging
+    // Process chat data
     if (data && data.length > 0) {
-      console.log('📊 Raw chat data from database:', data.map(chat => ({
-        chat_id: chat.chat_id,
-        has_response: !!chat.response,
-        response_type: typeof chat.response,
-        response_value: chat.response, // Show full value to see if it's actually "undefined" string
-        response_is_undefined_string: chat.response === 'undefined',
-        response_length: typeof chat.response === 'string' ? chat.response.length : 'N/A',
-        chat_message: chat.chat_message?.substring(0, 50),
-        created_at: chat.created_at,
-        all_keys: Object.keys(chat) // Show all available fields
-      })));
+      // Data processing continues
     }
 
     // Convert ChatData to ChatMessage format
     const messages: any[] = [];
     if (data) {
-      console.log(`📥 Fetched ${data.length} chat records from database`);
       for (const chat of data) {
         // Log raw data for debugging - show ALL fields
-        console.log(`🔍 Processing chat ${chat.chat_id}:`, {
-          chat_id: chat.chat_id,
-          has_response: !!chat.response,
-          response_type: typeof chat.response,
-          response_value: chat.response,
-          response_length: chat.response?.length,
-          chat_message: chat.chat_message,
-          created_at: chat.created_at,
-          ALL_FIELDS: chat  // Show all fields to see what's actually in the database
-        });
-        
         // Safely extract and parse content
         // Try multiple possible field names for response
         let userContent = chat.chat_message;
@@ -288,25 +235,7 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
         if (assistantContent === 'undefined' || assistantContent === 'null' || 
             (typeof assistantContent === 'string' && assistantContent.trim() === 'undefined') ||
             (typeof assistantContent === 'string' && assistantContent.trim() === 'null')) {
-          console.warn(`⚠️ Chat ${chat.chat_id} has invalid response (string "undefined"/"null"):`, {
-            chat_id: chat.chat_id,
-            response: assistantContent,
-            responseType: typeof assistantContent,
-            chat_message: userContent,
-            all_chat_keys: Object.keys(chat)
-          });
           assistantContent = null; // Set to null so it will be filtered out later
-        }
-        
-        // Debug logging for troubleshooting
-        if (!assistantContent) {
-          console.warn(`⚠️ Chat ${chat.chat_id} has no valid response:`, {
-            chat_id: chat.chat_id,
-            original_response: chat.response,
-            responseType: typeof chat.response,
-            chat_message: userContent,
-            all_chat_keys: Object.keys(chat)
-          });
         }
         
         // Handle different response formats
@@ -315,7 +244,6 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
           
           // If response is already an object (shouldn't happen but handle it)
           if (typeof assistantContent === 'object' && assistantContent !== null) {
-            console.log(`📦 Response is object for ${chat.chat_id}:`, assistantContent);
             assistantContent = assistantContent.answer || assistantContent.content || assistantContent.response || JSON.stringify(assistantContent);
           }
           // If response is a JSON string
@@ -325,36 +253,23 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
             if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
               try {
                 const parsed = JSON.parse(assistantContent);
-                console.log(`📦 Parsed JSON response for ${chat.chat_id}:`, parsed);
                 // If parsed is an object with an 'answer' or 'content' field, use that
                 if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
                   assistantContent = parsed.answer || parsed.content || parsed.response || assistantContent;
-                  console.log(`✅ Extracted content from JSON object:`, assistantContent?.substring(0, 100));
                 } else if (Array.isArray(parsed) && parsed.length > 0) {
                   // Handle array responses (take first element)
                   const first = parsed[0];
                   assistantContent = first?.answer || first?.content || first?.response || assistantContent;
-                  console.log(`✅ Extracted content from JSON array:`, assistantContent?.substring(0, 100));
                 }
               } catch (e) {
                 // Not valid JSON, use as-is
-                console.warn(`⚠️ Failed to parse response as JSON for ${chat.chat_id}, using as string:`, e);
-                console.warn(`   Response was:`, assistantContent?.substring(0, 200));
               }
             } else {
               // Regular string, use as-is
-              console.log(`📝 Response is plain string for ${chat.chat_id}, length:`, assistantContent.length);
             }
           }
           
-          if (originalContent !== assistantContent) {
-            console.log(`🔄 Transformed response for ${chat.chat_id}:`, {
-              original: typeof originalContent === 'string' ? originalContent.substring(0, 100) : originalContent,
-              transformed: typeof assistantContent === 'string' ? assistantContent.substring(0, 100) : assistantContent
-            });
-          }
         } else {
-          console.error(`❌ Chat ${chat.chat_id} has null/undefined response!`);
         }
         
         // Ensure content is a string, not null, undefined, or the string "undefined"
@@ -419,35 +334,20 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
             const citationContent = chat.citation_content || '';
             
             // Log RAW data for debugging
-            console.log('📋 RAW citation data from DB:', {
-              citationTitle,
-              citationContent,
-              chat_id: chat.chat_id
-            });
-            
             // Use parseCitations function from chat.ts for consistent parsing
             const { parseCitations } = await import('./chat');
             const parsedCitations = parseCitations(citationTitle, citationContent, chat.chat_id, String(chat.chat_id));
             
-            console.log('🔪 Split results from DB:', {
-              titlesCount: parsedCitations.length,
-              citations: parsedCitations.map((c, i) => ({ index: i, title: c.title, snippetLength: c.snippet.length }))
-            });
             
             assistantMessage.citations = parsedCitations;
-            
-            console.log('✅ Parsed citations from DB:', assistantMessage.citations.length, assistantMessage.citations);
           }
 
           messages.push(assistantMessage);
         }
       }
     }
-
-    console.log(`✅ Fetched ${messages.length} messages for session: ${sessionId}`);
     return messages;
   } catch (error) {
-    console.error('Failed to fetch chat messages:', error);
     throw error;
   }
 }
@@ -458,9 +358,6 @@ export async function fetchChatMessagesForSession(sessionId: string, groupId: st
 export async function deleteSessionAndChatData(sessionId: string, groupId: string): Promise<void> {
   try {
     const supabase = getSupabaseClient();
-    
-    console.log(`Deleting session ${sessionId} and all chat data for group ${groupId}`);
-    
     // First, delete all chat data for this session
     // Use a more aggressive delete to ensure all related records are removed
     const { data: chatData, error: chatSelectError } = await supabase
@@ -470,10 +367,7 @@ export async function deleteSessionAndChatData(sessionId: string, groupId: strin
       .eq('group_id', groupId);
 
     if (chatSelectError) {
-      console.warn('Could not query chat data (may not exist):', chatSelectError);
     } else if (chatData && chatData.length > 0) {
-      console.log(`Found ${chatData.length} chat records to delete`);
-      
       // Delete all chat records
       const { error: chatError } = await supabase
         .from('chat')
@@ -482,16 +376,11 @@ export async function deleteSessionAndChatData(sessionId: string, groupId: strin
         .eq('group_id', groupId);
 
       if (chatError) {
-        console.error('Error deleting chat data:', chatError);
         throw new Error(`Failed to delete chat data: ${chatError.message}`);
       }
-
-      console.log(`✅ Deleted ${chatData.length} chat records for session: ${sessionId}`);
-      
       // Wait a bit to ensure the deletion is committed
       await new Promise(resolve => setTimeout(resolve, 100));
     } else {
-      console.log('No chat records found for this session');
     }
 
     // Then, delete the session itself
@@ -504,13 +393,11 @@ export async function deleteSessionAndChatData(sessionId: string, groupId: strin
     if (sessionError) {
       // If session table doesn't exist or has issues, that's okay - chat data is already deleted
       if (sessionError.code === 'PGRST116' || sessionError.message.includes('does not exist') || sessionError.message.includes('schema cache')) {
-        console.warn('Session table does not exist or has schema issues, but chat data was deleted successfully');
         return;
       }
       
       // Check if it's a foreign key constraint error
       if (sessionError.message.includes('foreign key constraint') || sessionError.code === '23503') {
-        console.error('Foreign key constraint error - chat data may still exist:', sessionError);
         // Try to delete chat data again more aggressively
         const { error: retryChatError } = await supabase
           .from('chat')
@@ -528,18 +415,12 @@ export async function deleteSessionAndChatData(sessionId: string, groupId: strin
           if (retrySessionError) {
             throw new Error(`Failed to delete session after retry: ${retrySessionError.message}`);
           }
-          console.log(`✅ Successfully deleted session after retry: ${sessionId}`);
           return;
         }
       }
-      
-      console.error('Error deleting session:', sessionError);
       throw new Error(`Failed to delete session: ${sessionError.message}`);
     }
-
-    console.log(`✅ Deleted session: ${sessionId}`);
   } catch (error) {
-    console.error('Failed to delete session and chat data:', error);
     throw error;
   }
 }

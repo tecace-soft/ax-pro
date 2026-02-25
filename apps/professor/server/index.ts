@@ -1,17 +1,52 @@
 // Load .env for local development.
 // In production (Render), environment variables are provided by the platform.
 import dotenv from 'dotenv';
-if (process.env.NODE_ENV !== 'production') {
-  // In dev, prefer .env over any stale shell export (e.g. OPENAI_API_KEY=test)
-  dotenv.config({ override: true });
-}
-
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
+import multer from 'multer';
+
+// Resolve paths first (needed for .env path resolution)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Always try to load .env file and override system env vars
+// Look for .env in the apps/professor directory
+const envPath = path.resolve(__dirname, '..', '.env');
+const envResult = dotenv.config({ path: envPath, override: true });
+
+// Log environment status for debugging
+console.log('[Server] Environment Loading:', {
+  NODE_ENV: process.env.NODE_ENV,
+  envFilePath: envPath,
+  envFileExists: envResult.error ? false : true,
+  envFileError: envResult.error?.message,
+  systemOpenAIKeyBefore: process.env.OPENAI_API_KEY 
+    ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...${process.env.OPENAI_API_KEY.substring(process.env.OPENAI_API_KEY.length - 4)}`
+    : 'not set (before .env load)'
+});
+
+// Log what was loaded from .env file
+if (envResult.parsed) {
+  const envFileKey = envResult.parsed.OPENAI_API_KEY;
+  console.log('[Server] .env file contents:', {
+    hasOpenAIKeyInFile: !!envFileKey,
+    openaiKeyFromFile: envFileKey 
+      ? `${envFileKey.substring(0, 10)}...${envFileKey.substring(envFileKey.length - 4)}`
+      : 'not in .env file'
+  });
+}
+
+// Log final value being used
+console.log('[Server] Final OpenAI API Key:', {
+  hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+  openaiKeyPreview: process.env.OPENAI_API_KEY 
+    ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...${process.env.OPENAI_API_KEY.substring(process.env.OPENAI_API_KEY.length - 4)}`
+    : 'not set'
+});
 
 // Types
 interface User {
@@ -78,8 +113,6 @@ const app = express();
 const PORT = process.env.PORT || process.env.SERVER_PORT || 3001;
 
 // Resolve paths for serving the frontend build in production
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const distDir = path.resolve(__dirname, '..', 'dist');
 
 // Middleware
@@ -889,6 +922,19 @@ async function createChatKitSession(res: express.Response, groupid: string): Pro
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   const WORKFLOW_ID = process.env.WORKFLOW_ID;
 
+  // Log which API key is being used (first 10 and last 4 chars for debugging)
+  if (OPENAI_API_KEY) {
+    const keyPreview = OPENAI_API_KEY.length > 14 
+      ? `${OPENAI_API_KEY.substring(0, 10)}...${OPENAI_API_KEY.substring(OPENAI_API_KEY.length - 4)}`
+      : '***';
+    console.log('[ChatKit] createChatKitSession called', {
+      groupid,
+      openaiKeyPreview: keyPreview,
+      keyLength: OPENAI_API_KEY.length,
+      workflowId: WORKFLOW_ID
+    });
+  }
+
   if (!OPENAI_API_KEY) {
     res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
     return;
@@ -910,6 +956,13 @@ async function createChatKitSession(res: express.Response, groupid: string): Pro
     console.log('[ChatKit] OpenAI /v1/chatkit/sessions payload =', JSON.stringify(payload, null, 2));
   }
 
+  console.log('[ChatKit] Making request to OpenAI', {
+    url: 'https://api.openai.com/v1/chatkit/sessions',
+    groupid,
+    apiKeyPreview: OPENAI_API_KEY ? `${OPENAI_API_KEY.substring(0, 10)}...${OPENAI_API_KEY.substring(OPENAI_API_KEY.length - 4)}` : 'not set',
+    apiKeyLength: OPENAI_API_KEY?.length
+  });
+
   const apiRes = await fetch('https://api.openai.com/v1/chatkit/sessions', {
     method: 'POST',
     headers: {
@@ -922,6 +975,14 @@ async function createChatKitSession(res: express.Response, groupid: string): Pro
 
   const data = await apiRes.json();
 
+  console.log('[ChatKit] OpenAI API response', {
+    status: apiRes.status,
+    statusText: apiRes.statusText,
+    ok: apiRes.ok,
+    error: data.error,
+    hasClientSecret: !!data.client_secret
+  });
+
   if (process.env.CHATKIT_DEBUG === '1') {
     const safe = { status: apiRes.status, ok: apiRes.ok };
     if (data.id != null) (safe as Record<string, unknown>).session_id = data.id;
@@ -930,6 +991,11 @@ async function createChatKitSession(res: express.Response, groupid: string): Pro
   }
 
   if (!apiRes.ok) {
+    console.error('[ChatKit] OpenAI API error response', {
+      status: apiRes.status,
+      error: data.error,
+      fullResponse: data
+    });
     res.status(apiRes.status).json({
       error: data.error?.message || data.error || 'Failed to create ChatKit session',
       details: data
@@ -952,14 +1018,18 @@ app.get('/session', async (req, res) => {
   const rawForceNew = typeof req.query.forceNew === 'string' ? req.query.forceNew : undefined;
   const forceNew = rawForceNew === '1' || rawForceNew === 'true';
 
-  if (process.env.CHATKIT_DEBUG === '1') {
-    console.log('[ChatKit /session] GET', { hostname: req.hostname, ip: req.ip, groupid, forceNew });
-  }
+  console.log('[ChatKit /session] GET request', {
+    hostname: req.hostname,
+    url: req.url,
+    groupid,
+    forceNew,
+    apiKeyPreview: process.env.OPENAI_API_KEY ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...${process.env.OPENAI_API_KEY.substring(process.env.OPENAI_API_KEY.length - 4)}` : 'not set'
+  });
 
   try {
     await createChatKitSession(res, groupid);
   } catch (err: any) {
-    console.error('Error creating ChatKit session:', err);
+    console.error('[ChatKit /session] Error creating ChatKit session:', err);
     res.status(500).json({
       error: 'Internal server error while creating ChatKit session',
       message: err.message
@@ -986,18 +1056,70 @@ app.post('/session', async (req, res) => {
     // keep default
   }
 
-  if (process.env.CHATKIT_DEBUG === '1') {
-    console.log('[ChatKit /session] POST', { groupid, forceNew });
-  }
+  console.log('[ChatKit /session] POST request', {
+    hostname: req.hostname,
+    url: req.url,
+    groupid,
+    forceNew,
+    apiKeyPreview: process.env.OPENAI_API_KEY ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...${process.env.OPENAI_API_KEY.substring(process.env.OPENAI_API_KEY.length - 4)}` : 'not set'
+  });
 
   try {
     await createChatKitSession(res, groupid);
   } catch (err: any) {
-    console.error('Error creating ChatKit session:', err);
+    console.error('[ChatKit /session] Error creating ChatKit session:', err);
     res.status(500).json({
       error: 'Internal server error while creating ChatKit session',
       message: err.message
     });
+  }
+});
+
+// Configure multer for memory storage (we'll forward to OpenAI)
+const upload = multer({ storage: multer.memoryStorage() });
+
+// POST /api/openai/files - Proxy endpoint for OpenAI file uploads (to avoid CORS)
+app.post('/api/openai/files', requireAuth, upload.single('file'), async (req, res) => {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file provided' });
+  }
+
+  try {
+    // Reconstruct FormData for OpenAI
+    const FormData = (await import('form-data')).default;
+    const formData = new FormData();
+    formData.append('purpose', req.body.purpose || 'assistants');
+    formData.append('file', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
+    });
+
+    // Forward the request to OpenAI
+    const openaiResponse = await fetch('https://api.openai.com/v1/files', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        ...formData.getHeaders(),
+      },
+      body: formData as any,
+    });
+
+    const data = await openaiResponse.json();
+    
+    if (!openaiResponse.ok) {
+      return res.status(openaiResponse.status).json(data);
+    }
+
+    res.json(data);
+  } catch (error: any) {
+    console.error('Error proxying OpenAI file upload:', error);
+    res.status(500).json({ error: 'Failed to upload file to OpenAI', message: error.message });
   }
 });
 
@@ -1026,6 +1148,77 @@ app.get('/chatkit-embed-preview', (req, res) => {
   <script src="${scriptUrl}" data-group-id="${groupId}" data-force-new="${forceNew}" defer></script>
 </body>
 </html>`);
+});
+
+// Web Crawler API Proxy
+app.get('/api/web-crawler/run-crawl', async (req, res) => {
+  try {
+    const { urls } = req.query;
+    
+    if (!urls || typeof urls !== 'string') {
+      return res.status(400).json({ error: 'urls query parameter is required' });
+    }
+
+    const apiUrl = `https://rag-web-crawler.onrender.com/run-crawl?urls=${encodeURIComponent(urls)}`;
+    console.log('[WebCrawler Proxy] Making request to:', apiUrl);
+    
+    // Check if fetch is available
+    if (typeof fetch === 'undefined') {
+      console.error('[WebCrawler Proxy] fetch is not available');
+      return res.status(500).json({ 
+        error: 'fetch is not available in this Node.js environment',
+        suggestion: 'Node.js 18+ is required or install node-fetch'
+      });
+    }
+    
+    let response;
+    try {
+      response = await fetch(apiUrl);
+    } catch (fetchError: any) {
+      console.error('[WebCrawler Proxy] Fetch error:', fetchError);
+      return res.status(500).json({ 
+        error: 'Failed to fetch from web crawler API',
+        message: fetchError.message,
+        stack: fetchError.stack
+      });
+    }
+    
+    console.log('[WebCrawler Proxy] Response status:', response.status, response.statusText);
+    console.log('[WebCrawler Proxy] Response content-type:', response.headers.get('content-type'));
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[WebCrawler Proxy] Error response:', errorText.substring(0, 500));
+      return res.status(response.status).json({ 
+        error: `Web crawler API error: ${response.statusText}`,
+        details: errorText 
+      });
+    }
+
+    // Check content type before parsing
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('[WebCrawler Proxy] Non-JSON response:', text.substring(0, 500));
+      return res.status(500).json({
+        error: 'Web crawler API returned non-JSON response',
+        contentType,
+        preview: text.substring(0, 200)
+      });
+    }
+
+    const data = await response.json();
+    console.log('[WebCrawler Proxy] Success, data keys:', Object.keys(data));
+    res.json(data);
+  } catch (error: any) {
+    console.error('[WebCrawler Proxy] Unexpected error:', error);
+    console.error('[WebCrawler Proxy] Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to proxy web crawler request',
+      message: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
+  }
 });
 
 // Diagnostics routes
