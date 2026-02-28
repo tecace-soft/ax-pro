@@ -4,6 +4,7 @@
   --admin-bg: #0b1226;
   --admin-bg-elevated: #0f1734;
   --admin-bg-card: #121b3d;
+  --admin-card-bg: rgba(8, 20, 35, 0.6);
   --admin-text: #d3dcff;
   --admin-text-muted: #9aa7cc;
   --admin-text-secondary: #8895b8;
@@ -16,6 +17,7 @@
   --admin-ring: #3be6ff;
   --admin-card-shadow: 0 8px 30px rgba(3, 8, 28, 0.65), 0 0 0 1px rgba(59, 230, 255, 0.04);
   --admin-border: rgba(59, 230, 255, 0.06);
+  --admin-hover-bg: rgba(124, 140, 255, 0.08);
 }
 
 /* Light theme */
@@ -23,6 +25,7 @@
   --admin-bg: #f8fafc;
   --admin-bg-elevated: #ffffff;
   --admin-bg-card: #ffffff;
+  --admin-card-bg: #f1f5f9;
   --admin-text: #0f172a;
   --admin-text-muted: #475569;
   --admin-text-secondary: #334155;
@@ -33,8 +36,9 @@
   --admin-warning: #f59e0b;
   --admin-danger: #ef4444;
   --admin-ring: #0ea5e9;
-  --admin-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
-  --admin-border: #e2e8f0;
+  --admin-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --admin-border: #94a3b8;
+  --admin-hover-bg: #e2e8f0;
 }
 
 .admin-layout {

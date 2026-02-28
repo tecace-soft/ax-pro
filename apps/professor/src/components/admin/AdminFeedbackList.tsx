@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchAllAdminFeedback, deleteAdminFeedback, submitAdminFeedback } from '../../services/feedback'
+import { fetchSupervisorCorrections, deleteAdminFeedback, submitAdminFeedback } from '../../services/feedback'
 import { fetchChatById } from '../../services/chatData'
 import { AdminFeedbackData, ChatData } from '../../services/supabaseUserSpecific'
 import { useTranslation } from '../../i18n/I18nProvider'
@@ -26,8 +26,6 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('date-desc')
-  const [filterVerdict, setFilterVerdict] = useState<'all' | 'good' | 'bad'>('all')
-  const [filterApply, setFilterApply] = useState<'all' | 'applied' | 'not-applied'>('all')
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('table')
@@ -37,10 +35,8 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   const [editValue, setEditValue] = useState<string>('')
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium')
   
-  // Add feedback modal state
+  // Add supervisor correction modal state
   const [showAddModal, setShowAddModal] = useState(false)
-  const [addVerdict, setAddVerdict] = useState<'good' | 'bad'>('good')
-  const [addSupervisorFeedback, setAddSupervisorFeedback] = useState('')
   const [addCorrectedMessage, setAddCorrectedMessage] = useState('')
   const [addCorrectedResponse, setAddCorrectedResponse] = useState('')
   const [isSubmittingAdd, setIsSubmittingAdd] = useState(false)
@@ -61,7 +57,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
     applyFiltersAndSort()
     // Reset display limit when filters change
     setDisplayLimit(10)
-  }, [feedbacks, searchTerm, sortBy, filterVerdict, filterApply, filterUserId, filterDate])
+  }, [feedbacks, searchTerm, sortBy, filterUserId, filterDate])
 
   const loadFeedback = async () => {
     setIsLoading(true)
@@ -140,17 +136,17 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
           }
         }
         const mock = Array.from({ length: 20 }).map((_, i) => makeMock(i))
+          .filter((f: FeedbackWithChat) => f.corrected_response && String(f.corrected_response).trim() !== '')
         setFeedbacks(mock)
       } else {
-        const data = await fetchAllAdminFeedback()
-        // Load chat data for each feedback
+        const data = await fetchSupervisorCorrections()
         const feedbacksWithChat = await Promise.all(
           data.map(async (feedback) => {
-            const chatData = await fetchChatById(feedback.chat_id)
+            const chatData = feedback.chat_id ? await fetchChatById(feedback.chat_id) : null
             return {
               ...feedback,
               chatData,
-              isEnabled: true // Default to enabled
+              isEnabled: true
             }
           })
         )
@@ -171,20 +167,6 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
   const applyFiltersAndSort = () => {
     let filtered = [...feedbacks]
-
-    // Filter by verdict
-    if (filterVerdict !== 'all') {
-      filtered = filtered.filter(f => f.feedback_verdict === filterVerdict)
-    }
-
-    // Filter by apply status
-    if (filterApply !== 'all') {
-      if (filterApply === 'applied') {
-        filtered = filtered.filter(f => f.apply === true)
-      } else if (filterApply === 'not-applied') {
-        filtered = filtered.filter(f => !f.apply)
-      }
-    }
 
     // Filter by user ID
     if (filterUserId) {
@@ -276,8 +258,6 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
     setFilterUserId(null)
     setFilterDate(null)
     setSearchTerm('')
-    setFilterVerdict('all')
-    setFilterApply('all')
   }
 
   const handleStartEdit = (feedbackId: number, field: 'feedback' | 'correctedMessage' | 'corrected') => {
@@ -357,38 +337,20 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   }
 
   const handleSubmitAdd = async () => {
-    // For thumbs up, text fields are optional
-    // For thumbs down, at least one field should be filled
-    if (addVerdict === 'bad' && !addSupervisorFeedback && !addCorrectedResponse) {
-      alert('For negative feedback, please provide either supervisor feedback or corrected response.')
+    if (!addCorrectedMessage.trim() || !addCorrectedResponse.trim()) {
+      alert('Please provide both corrected message and corrected response.')
       return
     }
-    
     setIsSubmittingAdd(true)
     try {
-      // Submit feedback without chat_id (pass null)
-      await submitAdminFeedback(
-        null,
-        addVerdict,
-        addSupervisorFeedback,
-        addCorrectedMessage,
-        addCorrectedResponse
-      )
-      
-      // Success - close modal and reset fields
+      await submitAdminFeedback(null, 'bad', '', addCorrectedMessage.trim(), addCorrectedResponse.trim())
       setShowAddModal(false)
-      setAddSupervisorFeedback('')
       setAddCorrectedMessage('')
       setAddCorrectedResponse('')
-      setAddVerdict('good')
-      
-      // Show success message
-      alert('Admin feedback added successfully!')
-      
-      // Refresh feedback list
+      alert('Supervisor correction added successfully!')
       await loadFeedback()
     } catch (error) {
-      alert('Failed to submit feedback. Please try again.')
+      alert('Failed to submit. Please try again.')
     } finally {
       setIsSubmittingAdd(false)
     }
@@ -396,10 +358,8 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
   const handleCancelAdd = () => {
     setShowAddModal(false)
-    setAddSupervisorFeedback('')
     setAddCorrectedMessage('')
     setAddCorrectedResponse('')
-    setAddVerdict('good')
   }
 
   const formatDate = (dateString?: string) => {
@@ -453,7 +413,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
   if (isLoading) {
     return (
-      <div className="admin-card">
+      <div className="dashboard-section-card admin-feedback-section">
         <div className="flex items-center justify-center p-8">
           <p style={{ color: 'var(--admin-text-muted)' }}>{t('admin.loading')}</p>
         </div>
@@ -463,7 +423,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
   if (error) {
     return (
-      <div className="admin-card">
+      <div className="dashboard-section-card admin-feedback-section">
         <div className="p-4" style={{ color: 'var(--admin-danger)' }}>
           <p className="font-semibold mb-2">{t('admin.error')}</p>
           <p className="text-sm">{error}</p>
@@ -483,12 +443,12 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   }
 
   return (
-    <div className="admin-card">
+    <div className="dashboard-section-card admin-feedback-section">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-          {t('adminFeedback.title')} ({filteredFeedbacks.length} {t('adminFeedback.feedbackEntries')})
-        </h3>
+      <div className="section-header">
+        <h2 className="section-title">
+          {t('adminFeedback.supervisorCorrectionTitle')} ({filteredFeedbacks.length})
+        </h2>
         <button 
           className="icon-btn"
           onClick={handleRefresh}
@@ -501,49 +461,6 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
       {/* Controls Bar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        {/* Font Size Control */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>{t('adminFeedback.fontSize')}:</span>
-          <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
-            <button
-              onClick={() => setFontSize('small')}
-              className="px-3 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: fontSize === 'small' ? 'var(--admin-primary)' : 'transparent',
-                color: fontSize === 'small' ? '#041220' : 'var(--admin-text)',
-                fontSize: fs.sm
-              }}
-              title={t('adminFeedback.fontSizeSmall')}
-            >
-              A
-            </button>
-            <button
-              onClick={() => setFontSize('medium')}
-              className="px-3 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: fontSize === 'medium' ? 'var(--admin-primary)' : 'transparent',
-                color: fontSize === 'medium' ? '#041220' : 'var(--admin-text)',
-                fontSize: fs.base
-              }}
-              title={t('adminFeedback.fontSizeMedium')}
-            >
-              A
-            </button>
-            <button
-              onClick={() => setFontSize('large')}
-              className="px-3 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: fontSize === 'large' ? 'var(--admin-primary)' : 'transparent',
-                color: fontSize === 'large' ? '#041220' : 'var(--admin-text)',
-                fontSize: fs.base
-              }}
-              title={t('adminFeedback.fontSizeLarge')}
-            >
-              A
-            </button>
-          </div>
-        </div>
-
         {/* View Mode Toggle */}
         <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
           <button
@@ -667,93 +584,6 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
         </div>
       </div>
 
-      {/* Verdict Filter Tabs */}
-      <div className="flex gap-2 mb-4 flex-wrap items-center">
-        <button
-          onClick={() => setFilterVerdict('all')}
-          className={`px-4 py-2 rounded-md text-sm transition-colors ${
-            filterVerdict === 'all' ? 'font-semibold' : ''
-          }`}
-          style={{
-            backgroundColor: filterVerdict === 'all' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
-            color: filterVerdict === 'all' ? '#041220' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)'
-          }}
-        >
-          {t('adminFeedback.all')} ({feedbacks.length})
-        </button>
-        <button
-          onClick={() => setFilterVerdict('good')}
-          className={`px-4 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-            filterVerdict === 'good' ? 'font-semibold' : ''
-          }`}
-          style={{
-            backgroundColor: filterVerdict === 'good' ? 'var(--admin-success)' : 'rgba(9, 14, 34, 0.4)',
-            color: filterVerdict === 'good' ? '#ffffff' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)'
-          }}
-        >
-          <IconThumbsUp size={14} /> {t('adminFeedback.good')} ({feedbacks.filter(f => f.feedback_verdict === 'good').length})
-        </button>
-        <button
-          onClick={() => setFilterVerdict('bad')}
-          className={`px-4 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-            filterVerdict === 'bad' ? 'font-semibold' : ''
-          }`}
-          style={{
-            backgroundColor: filterVerdict === 'bad' ? 'var(--admin-danger)' : 'rgba(9, 14, 34, 0.4)',
-            color: filterVerdict === 'bad' ? '#ffffff' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)'
-          }}
-        >
-          <IconThumbsDown size={14} /> {t('adminFeedback.bad')} ({feedbacks.filter(f => f.feedback_verdict === 'bad').length})
-        </button>
-        
-        {/* Apply Filter */}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>{t('adminFeedback.tableHeader.apply')}:</span>
-          <button
-            onClick={() => setFilterApply('all')}
-            className={`px-3 py-2 rounded-md text-sm transition-colors ${
-              filterApply === 'all' ? 'font-semibold' : ''
-            }`}
-            style={{
-              backgroundColor: filterApply === 'all' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
-              color: filterApply === 'all' ? '#041220' : 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
-            }}
-          >
-            {t('adminFeedback.all')} ({feedbacks.length})
-          </button>
-          <button
-            onClick={() => setFilterApply('applied')}
-            className={`px-3 py-2 rounded-md text-sm transition-colors ${
-              filterApply === 'applied' ? 'font-semibold' : ''
-            }`}
-            style={{
-              backgroundColor: filterApply === 'applied' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
-              color: filterApply === 'applied' ? '#041220' : 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
-            }}
-          >
-            {t('adminFeedback.filterApplied')} ({feedbacks.filter(f => f.apply).length})
-          </button>
-          <button
-            onClick={() => setFilterApply('not-applied')}
-            className={`px-3 py-2 rounded-md text-sm transition-colors ${
-              filterApply === 'not-applied' ? 'font-semibold' : ''
-            }`}
-            style={{
-              backgroundColor: filterApply === 'not-applied' ? 'rgba(100, 116, 139, 0.4)' : 'rgba(9, 14, 34, 0.4)',
-              color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
-            }}
-          >
-            {t('adminFeedback.filterNotApplied')} ({feedbacks.filter(f => !f.apply).length})
-          </button>
-        </div>
-      </div>
-
       {/* Content */}
       {(() => {
         const displayedFeedbacks = filteredFeedbacks.slice(0, displayLimit)
@@ -762,7 +592,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
         if (filteredFeedbacks.length === 0) {
           return (
             <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
-              <p>{searchTerm || filterVerdict !== 'all' ? t('adminFeedback.noMatches') : t('adminFeedback.noFeedback')}</p>
+              <p>{searchTerm ? t('adminFeedback.noMatches') : t('adminFeedback.noFeedback')}</p>
             </div>
           )
         }
@@ -770,18 +600,26 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
         return viewMode === 'table' ? (
         /* Table View */
         <>
-        <div className="overflow-x-auto">
-          <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0, fontSize: fs.cell }}>
+        <div className="admin-feedback-table-wrap">
+          <table className="w-full admin-feedback-table">
+            <colgroup>
+              <col style={{ width: '200px' }} />
+              <col />
+              <col />
+              <col />
+              <col />
+              <col style={{ width: '52px' }} />
+              <col style={{ width: '52px' }} />
+            </colgroup>
             <thead>
-              <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', maxWidth: '100px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.date')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.role')}</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.verdict')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '150px', maxWidth: '250px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.feedback')}</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', maxWidth: '280px', width: '280px', fontSize: fs.header }}>Corrected Message</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '200px', maxWidth: '280px', width: '280px', fontSize: fs.header }}>Corrected Response</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.apply')}</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '60px', maxWidth: '60px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.delete')}</th>
+              <tr className="admin-feedback-table__head-row">
+                <th className="admin-feedback-table__th">{t('adminFeedback.tableHeader.date')}</th>
+                <th className="admin-feedback-table__th admin-feedback-table__th--user-message">User Message</th>
+                <th className="admin-feedback-table__th admin-feedback-table__th--chatbot-response">Chatbot Response</th>
+                <th className="admin-feedback-table__th admin-feedback-table__th--message">Corrected Message</th>
+                <th className="admin-feedback-table__th admin-feedback-table__th--response">Corrected Response</th>
+                <th className="admin-feedback-table__th admin-feedback-table__th--apply">{t('adminFeedback.tableHeader.apply')}</th>
+                <th className="admin-feedback-table__th admin-feedback-table__th--delete">{t('adminFeedback.tableHeader.delete')}</th>
               </tr>
             </thead>
             <tbody>
@@ -795,91 +633,20 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                     opacity: ((feedback as any)?.isEnabled ?? true) ? 1 : 0.5
                   }}
                 >
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
+                  <td className="admin-feedback-table__td">
                     {formatDate(feedback.updated_at || feedback.created_at)}
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '60px', overflow: 'hidden' }}>
-                    <div className="truncate" title={feedback.chatData?.user_id || 'Manual'}>
-                      {feedback.chatData?.user_id || 'Manual'}
+                  <td className="admin-feedback-table__td admin-feedback-table__td--user-message">
+                    <div className="truncate" title={feedback.chatData?.chat_message ?? ''} style={{ fontSize: fs.cell }}>
+                      {feedback.chatData?.chat_message ?? '-'}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-center" style={{ fontSize: fs.cell }}>
-                    {feedback.feedback_verdict === 'good' ? (
-                      <IconThumbsUp size={fontSize === 'small' ? 14 : fontSize === 'medium' ? 16 : 18} style={{ color: 'var(--admin-success)', display: 'inline' }} />
-                    ) : (
-                      <IconThumbsDown size={fontSize === 'small' ? 14 : fontSize === 'medium' ? 16 : 18} style={{ color: 'var(--admin-danger)', display: 'inline' }} />
-                    )}
+                  <td className="admin-feedback-table__td admin-feedback-table__td--chatbot-response">
+                    <div className="truncate" title={feedback.chatData?.response ?? ''} style={{ fontSize: fs.cell }}>
+                      {feedback.chatData?.response ?? '-'}
+                    </div>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', position: 'relative', fontSize: fs.cell, maxWidth: '250px', overflow: 'hidden' }}>
-                    {editingFeedback && editingFeedback.id === feedback.id && editingFeedback.field === 'feedback' ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <textarea
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          style={{
-                            padding: '6px',
-                            background: 'var(--admin-card-bg)',
-                            color: 'var(--admin-text)',
-                            border: '1px solid var(--admin-primary)',
-                            borderRadius: '4px',
-                            fontSize: fs.cell,
-                            minHeight: '60px',
-                            resize: 'vertical',
-                            width: '100%',
-                            fontFamily: 'inherit'
-                          }}
-                          autoFocus
-                        />
-                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={handleSaveEdit}
-                            style={{
-                              padding: '4px 8px',
-                              background: 'var(--admin-primary)',
-                              color: '#041220',
-                              border: 'none',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              cursor: 'pointer',
-                              fontWeight: 600
-                            }}
-                          >
-                            {t('adminFeedback.save')}
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            style={{
-                              padding: '4px 8px',
-                              background: 'rgba(9, 14, 34, 0.4)',
-                              color: 'var(--admin-text)',
-                              border: '1px solid var(--admin-border)',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {t('adminFeedback.cancel')}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div 
-                        className="truncate" 
-                        title={feedback.feedback_text || ''}
-                        onClick={() => handleStartEdit(feedback.id!, 'feedback')}
-                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px', fontSize: fs.cell }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgba(59, 230, 255, 0.1)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent'
-                        }}
-                      >
-                        {feedback.feedback_text || '-'}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', position: 'relative', fontSize: fs.cell, minWidth: '200px', maxWidth: '280px', width: '280px', overflow: 'hidden' }}>
+                  <td className="admin-feedback-table__td admin-feedback-table__td--message">
                     {editingFeedback && editingFeedback.id === feedback.id && editingFeedback.field === 'correctedMessage' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <textarea
@@ -933,22 +700,16 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                       </div>
                     ) : (
                       <div 
-                        className="truncate" 
+                        className="truncate editable-cell" 
                         title={feedback.corrected_message || ''}
                         onClick={() => handleStartEdit(feedback.id!, 'correctedMessage')}
-                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px', fontSize: fs.cell }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgba(59, 230, 255, 0.1)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent'
-                        }}
+                        style={{ cursor: 'pointer', borderRadius: '4px', fontSize: fs.cell }}
                       >
                         {feedback.corrected_message || '-'}
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', position: 'relative', fontSize: fs.cell, minWidth: '200px', maxWidth: '280px', width: '280px', overflow: 'hidden' }}>
+                  <td className="admin-feedback-table__td admin-feedback-table__td--response">
                     {editingFeedback && editingFeedback.id === feedback.id && editingFeedback.field === 'corrected' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <textarea
@@ -1002,45 +763,39 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                       </div>
                     ) : (
                       <div 
-                        className="truncate" 
+                        className="truncate editable-cell" 
                         title={(displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response) : ((feedback as any).chatData?.response_ko || feedback.corrected_response)) || ''}
                         onClick={() => handleStartEdit(feedback.id!, 'corrected')}
-                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px', fontSize: fs.cell }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgba(59, 230, 255, 0.1)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent'
-                        }}
+                        style={{ cursor: 'pointer', borderRadius: '4px', fontSize: fs.cell }}
                       >
                         {displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response || '-') : ((feedback as any).chatData?.response_ko || feedback.corrected_response || '-')}
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-center">
+                  <td className="admin-feedback-table__td admin-feedback-table__td--apply">
                     <button
                       onClick={() => toggleApply(feedback.id!)}
-                      className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+                      className="admin-feedback-table__apply-btn"
                       style={{
                         backgroundColor: feedback.apply ? 'var(--admin-primary)' : 'rgba(100, 116, 139, 0.3)'
                       }}
                       title={feedback.apply ? t('adminFeedback.appliedToPrompt') : t('adminFeedback.notApplied')}
                     >
                       <span
-                        className="inline-block h-3 w-3 transform rounded-full bg-white transition-transform"
+                        className="admin-feedback-table__apply-thumb"
                         style={{
                           transform: feedback.apply ? 'translateX(1.25rem)' : 'translateX(0.25rem)'
                         }}
                       />
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-center">
+                  <td className="admin-feedback-table__td admin-feedback-table__td--delete">
                     <button
                       onClick={() => handleDelete(feedback.id!)}
-                      className="icon-btn hover:bg-red-500/20 transition-colors"
+                      className="icon-btn admin-feedback-table__delete-btn"
                       title={t('adminFeedback.deleteFeedback')}
                     >
-                      <IconTrash size={16} style={{ color: 'var(--admin-danger)' }} />
+                      <IconTrash size={16} className="admin-feedback-table__delete-icon" />
                     </button>
                   </td>
                 </tr>
@@ -1220,7 +975,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       })()
       }
 
-      {/* Add Admin Feedback Modal */}
+      {/* Add Supervisor Correction Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div 
@@ -1233,9 +988,9 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
             }}
           >
             <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-                  Add Admin Feedback {addVerdict === 'good' ? '👍' : '👎'}
+                  Add Supervisor Correction
                 </h3>
                 <button
                   onClick={handleCancelAdd}
@@ -1248,59 +1003,9 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                   </svg>
                 </button>
               </div>
-              
-              {/* Verdict Selection */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
-                  Verdict:
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setAddVerdict('good')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                      addVerdict === 'good' ? 'font-semibold' : ''
-                    }`}
-                    style={{
-                      backgroundColor: addVerdict === 'good' ? 'var(--admin-success)' : 'rgba(9, 14, 34, 0.4)',
-                      color: addVerdict === 'good' ? '#ffffff' : 'var(--admin-text)',
-                      border: '1px solid var(--admin-border)'
-                    }}
-                  >
-                    <IconThumbsUp size={14} /> Good
-                  </button>
-                  <button
-                    onClick={() => setAddVerdict('bad')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                      addVerdict === 'bad' ? 'font-semibold' : ''
-                    }`}
-                    style={{
-                      backgroundColor: addVerdict === 'bad' ? 'var(--admin-danger)' : 'rgba(9, 14, 34, 0.4)',
-                      color: addVerdict === 'bad' ? '#ffffff' : 'var(--admin-text)',
-                      border: '1px solid var(--admin-border)'
-                    }}
-                  >
-                    <IconThumbsDown size={14} /> Bad
-                  </button>
-                </div>
-              </div>
-              
-              {/* Supervisor Feedback */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
-                  Supervisor Feedback:
-                </label>
-                <textarea
-                  value={addSupervisorFeedback}
-                  onChange={(e) => setAddSupervisorFeedback(e.target.value)}
-                  placeholder="Explain what was wrong with this response..."
-                  className="w-full h-24 resize-none text-sm p-3 rounded"
-                  style={{
-                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
-                    color: 'var(--admin-text)',
-                    border: '1px solid var(--admin-border)'
-                  }}
-                />
-              </div>
+              <p className="text-sm mb-4" style={{ color: 'var(--admin-text-muted)' }}>
+                Add a supervisor corrected message and response to create a Q&A that will be prioritized by the chatbot. The chatbot will reference the saved Q&As to answer any similar questions with the supervisor corrected response.
+              </p>
               
               {/* Corrected Message */}
               <div className="mb-4">

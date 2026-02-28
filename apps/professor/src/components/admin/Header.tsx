@@ -1,8 +1,9 @@
-import { IconBell, IconMoon, IconSun, IconUser, IconLogout, IconMessage, IconUsers } from '../../ui/icons'
+import { IconMoon, IconSun, IconUser, IconLogout, IconMessage, IconUsers, IconMenu, IconSettings } from '../../ui/icons'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../../theme/ThemeProvider'
 import { useTranslation } from '../../i18n/I18nProvider'
 import { withGroupParam } from '../../utils/navigation'
+import { useState } from 'react'
 
 interface HeaderProps {
   performanceScore: number
@@ -18,6 +19,7 @@ export default function AdminHeader({ performanceScore, performanceDate, current
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
   const { language, setLanguage, t } = useTranslation()
+  const [isNavMenuOpen, setIsNavMenuOpen] = useState(false)
   
   const getPerformanceLabel = (score: number) => {
     if (score >= 90) return t('admin.excellent')
@@ -28,6 +30,25 @@ export default function AdminHeader({ performanceScore, performanceDate, current
 
   const handleLogoClick = () => {
     navigate(withGroupParam('/admin/dashboard'))
+  }
+
+  const handleNavAction = (action: 'chat' | 'group' | 'settings' | 'logout') => {
+    setIsNavMenuOpen(false)
+    if (action === 'chat') {
+      navigate(withGroupParam('/chat'))
+      return
+    }
+    if (action === 'group') {
+      navigate('/group-management')
+      return
+    }
+    if (action === 'settings') {
+      navigate(withGroupParam('/settings'))
+      return
+    }
+    if (action === 'logout') {
+      onSignOut()
+    }
   }
 
   const displayTitle = customTitle || 'TecAce Ax Pro'
@@ -58,18 +79,7 @@ export default function AdminHeader({ performanceScore, performanceDate, current
           </span>
         </div>
         
-        <div className="header-actions">
-          <button 
-            className="icon-btn" 
-            aria-label={t('admin.goToChat')}
-            onClick={() => navigate(withGroupParam('/chat'))}
-            title={t('admin.goToChat')}
-          >
-            <IconMessage size={18} />
-          </button>
-          <button className="icon-btn" aria-label={t('admin.notifications')}>
-            <IconBell size={18} />
-          </button>
+        <div className="header-actions" style={{ position: 'relative' }}>
           <button 
             className="icon-btn" 
             aria-label={t('admin.toggleTheme')}
@@ -87,29 +97,135 @@ export default function AdminHeader({ performanceScore, performanceDate, current
             <option value="ko">KO</option>
           </select>
           <button 
-            className="icon-btn" 
-            aria-label={t('admin.userProfile')}
-            onClick={() => navigate(withGroupParam('/settings'))}
-            title={t('ui.settings')}
+            className="icon-btn"
+            aria-label={t('admin.navigation')}
+            onClick={() => setIsNavMenuOpen((open) => !open)}
+            title={t('admin.navigation')}
           >
-            <IconUser size={18} />
+            <IconMenu size={18} />
           </button>
-          <button 
-            className="icon-btn" 
-            aria-label="Group Management"
-            onClick={() => navigate('/group-management')}
-            title="Group Management"
-          >
-            <IconUsers size={18} />
-          </button>
-          <button 
-            className="icon-btn signout-btn" 
-            aria-label={t('admin.signOut')}
-            onClick={onSignOut}
-            title={t('admin.signOut')}
-          >
-            <IconLogout size={18} />
-          </button>
+
+          {isNavMenuOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                background: 'var(--admin-bg-card)',
+                border: '1px solid var(--admin-border)',
+                borderRadius: 10,
+                boxShadow: 'var(--admin-card-shadow)',
+                padding: '8px 0',
+                minWidth: 200,
+                zIndex: 200
+              }}
+            >
+              <button
+                onClick={() => handleNavAction('chat')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--admin-text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--admin-hover-bg)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                <IconMessage size={16} />
+                <span style={{ marginLeft: 8 }}>{language === 'ko' ? '채팅' : 'Chat'}</span>
+              </button>
+              <button
+                onClick={() => handleNavAction('group')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--admin-text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--admin-hover-bg)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                <IconUsers size={16} />
+                <span style={{ marginLeft: 8 }}>Group Management</span>
+              </button>
+              <button
+                onClick={() => handleNavAction('settings')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--admin-text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--admin-hover-bg)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                <IconSettings size={16} />
+                <span style={{ marginLeft: 8 }}>{t('ui.settings')}</span>
+              </button>
+              <button
+                onClick={() => handleNavAction('logout')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--admin-danger)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--admin-hover-bg)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                <IconLogout size={16} />
+                <span style={{ marginLeft: 8 }}>{t('admin.signOut')}</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

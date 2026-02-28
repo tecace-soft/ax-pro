@@ -31,6 +31,54 @@ export async function fetchAllAdminFeedback(): Promise<AdminFeedbackData[]> {
 }
 
 /**
+ * Fetch admin feedback that has a non-empty corrected_response (for Supervisor Correction section).
+ * Same as fetchAllAdminFeedback but only rows where corrected_response IS NOT NULL and != ''.
+ */
+export async function fetchSupervisorCorrections(): Promise<AdminFeedbackData[]> {
+  try {
+    const supabase = getSupabaseClient();
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
+    if (!groupId) return [];
+    const { data, error } = await supabase
+      .from('admin_feedback')
+      .select('*')
+      .eq('group_id', groupId)
+      .not('corrected_response', 'is', null)
+      .neq('corrected_response', '')
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(`Failed to fetch supervisor corrections: ${error.message}`);
+    return data || [];
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Fetch admin feedback that has non-empty feedback_text (for Administrator Instruction section).
+ * Same as fetchAllAdminFeedback but only rows where feedback_text IS NOT NULL and != ''.
+ */
+export async function fetchAdministratorInstructions(): Promise<AdminFeedbackData[]> {
+  try {
+    const supabase = getSupabaseClient();
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
+    if (!groupId) return [];
+    const { data, error } = await supabase
+      .from('admin_feedback')
+      .select('*')
+      .eq('group_id', groupId)
+      .not('feedback_text', 'is', null)
+      .neq('feedback_text', '')
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(`Failed to fetch administrator instructions: ${error.message}`);
+    return data || [];
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
  * Fetch all user feedback ordered by most recent first, filtered by group_id
  */
 export async function fetchAllUserFeedback(): Promise<UserFeedbackData[]> {

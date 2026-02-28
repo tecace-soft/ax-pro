@@ -52,7 +52,9 @@ export default function ProfessorRadarChart({
 
   const [, setIsModuleControlExpanded] = useState(false)
 
-  // Match left radar container height to Module Control height
+  const [radarSectionHovered, setRadarSectionHovered] = useState(false)
+  const [modulePanelHovered, setModulePanelHovered] = useState(false)
+
   const modulePanelRef = useRef<HTMLDivElement | null>(null)
   const [matchedHeight, setMatchedHeight] = useState<number>(0)
   useEffect(() => {
@@ -356,25 +358,22 @@ export default function ProfessorRadarChart({
   }
 
   return (
-    <div 
-      className="performance-radar-section"
-      style={{
-        padding: '16px 16px 8px 16px',
-        height: 'auto',
-        overflow: 'visible',
-        marginBottom: 0
-      }}
-    >
+    <>
       {/* Four column layout: Radar, Module Control, Engagement, Satisfaction */}
       <div 
         className="radar-main-layout"
         style={{
-          gap: '16px',
+          gap: '8px',
           alignItems: 'flex-start'
         }}
       >
         {/* Left side: Radar chart */}
-        <div className="radar-chart-section" style={{ padding: '12px 16px 12px 16px', minHeight: 360, maxHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'visible' }}>
+        <div
+          className={`radar-chart-section${radarSectionHovered ? ' is-hovered' : ''}`}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'visible' }}
+          onMouseEnter={() => setRadarSectionHovered(true)}
+          onMouseLeave={() => setRadarSectionHovered(false)}
+        >
           <div className="radar-chart-container" style={{ width: chartSize, height: chartSize, position: 'relative' }}>
             <div className="radar-chart-large">
               <svg
@@ -462,7 +461,7 @@ export default function ProfessorRadarChart({
         
         {/* Middle: Module Control panel (professor-only styling) */}
         <div
-          className="module-control-panel"
+          className={`module-control-panel${modulePanelHovered ? ' is-hovered' : ''}`}
           style={{
             background: 'rgba(8, 20, 35, 0.55)',
             border: '1px solid rgba(94, 126, 164, 0.18)',
@@ -475,6 +474,8 @@ export default function ProfessorRadarChart({
             overflowY: 'visible'
           }}
           ref={modulePanelRef}
+          onMouseEnter={() => setModulePanelHovered(true)}
+          onMouseLeave={() => setModulePanelHovered(false)}
         >
           {/* Header */}
           <div
@@ -704,8 +705,8 @@ export default function ProfessorRadarChart({
         `}
       </style>
 
-      {/* Performance Timeline - professor only: collapsed by default */}
-      {timelineData && timelineData.length > 0 && (
+      {/* Performance Timeline - professor only (disabled for now) */}
+      {false && timelineData && timelineData.length > 0 && (
         <div className="timeline-section-wrapper" style={{ marginTop: 0, minHeight: 0, padding: '2px 0 0 0', lineHeight: 1, borderTop: 'none' }}>
           {!timelineExpanded ? (
             <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 0, margin: 0 }}>
@@ -744,22 +745,22 @@ export default function ProfessorRadarChart({
               </div>
               <div style={{ display: 'flex', justifyContent: 'center', padding: 0, margin: 0, overflow: 'hidden' }}>
                 <div style={{ transform: 'scale(0.82)', transformOrigin: 'top center', margin: 0 }}>
-                <PerformanceTimeline
-                data={timelineData}
-                selectedDate={selectedDate}
-                onDateChange={onDateChange}
-                title="Performance Timeline"
-                includeSimulatedData={includeSimulatedData}
-                onIncludeSimulatedDataChange={onIncludeSimulatedDataChange}
-                estimationMode={estimationMode}
-                onEstimationModeChange={onEstimationModeChange}
-                />
+                  <PerformanceTimeline
+                    data={timelineData}
+                    selectedDate={selectedDate}
+                    onDateChange={onDateChange}
+                    title="Performance Timeline"
+                    includeSimulatedData={includeSimulatedData}
+                    onIncludeSimulatedDataChange={onIncludeSimulatedDataChange}
+                    estimationMode={estimationMode}
+                    onEstimationModeChange={onEstimationModeChange}
+                  />
                 </div>
               </div>
             </>
           )}
         </div>
       )}
-    </div>
+    </>
   )
 }

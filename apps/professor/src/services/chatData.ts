@@ -32,6 +32,26 @@ export async function fetchAllChatData(limit: number = 100): Promise<ChatData[]>
 }
 
 /**
+ * Get total count of chat rows for the current group (from URL/session).
+ */
+export async function getChatCountByGroup(): Promise<number> {
+  try {
+    const supabase = getSupabaseClient();
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
+    if (!groupId) return 0;
+    const { count, error } = await supabase
+      .from('chat')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_id', groupId);
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Fetch chat data for a specific session, filtered by group_id
  */
 export async function fetchChatDataBySession(sessionId: string): Promise<ChatData[]> {

@@ -575,6 +575,26 @@ export async function uploadSingleFileToSupabase(file: File): Promise<FileUpload
 }
 
 /**
+ * Get total count of files for the current group (knowledge base).
+ */
+export async function getFilesCountByGroup(): Promise<number> {
+  try {
+    const supabase = getSupabaseClient();
+    const { getGroupIdFromUrl } = await import('../utils/navigation');
+    const groupId = getGroupIdFromUrl();
+    if (!groupId) return 0;
+    const { count, error } = await supabase
+      .from('files')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_id', groupId);
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Fetch list of files from Supabase Storage, filtered by group_id
  */
 export async function fetchFilesFromSupabase(

@@ -12,11 +12,12 @@ import RecentConversations from '../../components/admin/RecentConversations'
 import TranslationHistory from '../../components/admin/TranslationHistory'
 import UserFeedbackList from '../../components/admin/UserFeedbackList'
 import AdminFeedbackList from '../../components/admin/AdminFeedbackList'
+import AdminInstructionList from '../../components/admin/AdminInstructionList'
 import KnowledgeManagementPage from '../KnowledgeManagement'
 import { fetchDailyAggregatesWithMode, DailyRow, EstimationMode, filterSimulatedData } from '../../services/dailyAggregates'
-import { fetchAllChatData } from '../../services/chatData'
+import { fetchAllChatData, getChatCountByGroup } from '../../services/chatData'
 import { fetchAllUserFeedback } from '../../services/feedback'
-import { fetchVectorDocuments } from '../../services/ragManagement'
+import { fetchVectorDocuments, getFilesCountByGroup } from '../../services/ragManagement'
 import { getSupabaseClient } from '../../services/supabaseUserSpecific'
 import { logout as clearSession, getSession } from '../../services/auth'
 import { useGroupAuth } from '../../hooks/useGroupAuth'
@@ -65,7 +66,9 @@ export default function AdminDashboard() {
   const [totalConversations, setTotalConversations] = useState(0)
   const [satisfactionRate, setSatisfactionRate] = useState(0)
   const [totalDocuments, setTotalDocuments] = useState(0)
-  
+  const [performanceCardConversations, setPerformanceCardConversations] = useState(0)
+  const [performanceCardDocuments, setPerformanceCardDocuments] = useState(0)
+
   // Professor-specific metrics
   const [totalQuestions, setTotalQuestions] = useState(0)
   const [avgQuestionsPerSession, setAvgQuestionsPerSession] = useState(0)
@@ -113,7 +116,7 @@ export default function AdminDashboard() {
     return session?.email === 'professor@tecace.com'
   })
   const [newSectionsExpanded, setNewSectionsExpanded] = useState(false) // Collapsed by default for professor
-  const [performanceRadarExpanded, setPerformanceRadarExpanded] = useState(true)
+  const [performanceRadarExpanded, setPerformanceRadarExpanded] = useState(false)
   const [dailyActivityExpanded, setDailyActivityExpanded] = useState(false) // Collapsed by default for professor
 
   // Service mode (Chatbot vs Translation) - Only available for professor
@@ -259,6 +262,10 @@ export default function AdminDashboard() {
       if (docsResponse.success) {
         setTotalDocuments(docsResponse.total)
       }
+
+      const [chatCount, filesCount] = await Promise.all([getChatCountByGroup(), getFilesCountByGroup()])
+      setPerformanceCardConversations(chatCount)
+      setPerformanceCardDocuments(filesCount)
     } catch (error) {
     }
   }
@@ -449,34 +456,135 @@ export default function AdminDashboard() {
                 {/* Performance Radar Section */}
                 <div className="dashboard-grid" style={{ display: 'block' }}>
                   <div className="grid-left">
-                    <div id="performance-radar" style={{ position: 'relative' }}>
-                      {isProfessor && (
+                    <div id="performance-radar" className="content-section">
+                      <div className="dashboard-section-card performance-section" style={{ position: 'relative' }}>
+                        <div className="section-header">
+                          <h2 className="section-title">
+                            Performance
+                          </h2>
+                        </div>
+                        <div className="performance-stats-row">
+                          <div className="performance-stat-card">
+                            <div className="performance-stat-icon">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                              </svg>
+                            </div>
+                            <div className="performance-stat-content">
+                              <div className="performance-stat-value">{performanceCardConversations}</div>
+                              <div className="performance-stat-label">Conversations</div>
+                            </div>
+                          </div>
+                          <div className="performance-stat-card">
+                            <div className="performance-stat-icon">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                              </svg>
+                            </div>
+                            <div className="performance-stat-content">
+                              <div className="performance-stat-value">100%</div>
+                              <div className="performance-stat-label">Satisfaction</div>
+                            </div>
+                          </div>
+                          <div className="performance-stat-card">
+                            <div className="performance-stat-icon">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                                <path d="M21 12v14c0 1.66-4 3-9 3s-9-1.34-9-3V12"/>
+                              </svg>
+                            </div>
+                            <div className="performance-stat-content">
+                              <div className="performance-stat-value">{performanceCardDocuments}</div>
+                              <div className="performance-stat-label">Documents</div>
+                            </div>
+                          </div>
+                          <div className="performance-stat-card">
+                            <div className="performance-stat-icon">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="12" y1="20" x2="12" y2="10"/>
+                                <line x1="18" y1="20" x2="18" y2="4"/>
+                                <line x1="6" y1="20" x2="6" y2="16"/>
+                              </svg>
+                            </div>
+                            <div className="performance-stat-content">
+                              <div className="performance-stat-value">89%</div>
+                              <div className="performance-stat-label">Performance</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`performance-details-collapsed ${performanceRadarExpanded ? 'performance-details-collapsed--hidden' : ''}`}>
+                          <div className="performance-metrics-row">
+                            <div className="performance-metric-item performance-metric-item--no-subtitle">
+                              <div className="performance-metric-label">Overall</div>
+                              <div className="performance-metric-value">{overallScore}</div>
+                            </div>
+                            <div className="performance-metric-item">
+                              <div className="performance-metric-label">{t('admin.relevance')}</div>
+                              <div className="performance-metric-subtitle">{t('admin.contentMatching')}</div>
+                              <div className="performance-metric-value">{radarProps.relevance}</div>
+                            </div>
+                            <div className="performance-metric-item">
+                              <div className="performance-metric-label">{t('admin.tone')}</div>
+                              <div className="performance-metric-subtitle">{t('admin.responseStyle')}</div>
+                              <div className="performance-metric-value">{radarProps.tone}</div>
+                            </div>
+                            <div className="performance-metric-item">
+                              <div className="performance-metric-label">{t('admin.length')}</div>
+                              <div className="performance-metric-subtitle">{t('admin.responseSize')}</div>
+                              <div className="performance-metric-value">{radarProps.length}</div>
+                            </div>
+                            <div className="performance-metric-item">
+                              <div className="performance-metric-label">{t('admin.accuracy')}</div>
+                              <div className="performance-metric-subtitle">{t('admin.correctAnswers')}</div>
+                              <div className="performance-metric-value">{radarProps.accuracy}</div>
+                            </div>
+                            <div className="performance-metric-item">
+                              <div className="performance-metric-label">{t('admin.toxicity')}</div>
+                              <div className="performance-metric-subtitle">{t('admin.safetyCheck')}</div>
+                              <div className="performance-metric-value">{radarProps.toxicity}</div>
+                            </div>
+                            <div className="performance-metric-item">
+                              <div className="performance-metric-label">{t('admin.promptInjection')}</div>
+                              <div className="performance-metric-subtitle">{t('admin.securityFilter')}</div>
+                              <div className="performance-metric-value">{radarProps.promptInjection}</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`performance-details-expanded ${performanceRadarExpanded ? 'performance-details-expanded--visible' : ''}`}>
+                          {isProfessor ? (
+                            <ProfessorRadarChart 
+                              {...radarProps}
+                              timelineData={filteredRadarData}
+                              selectedDate={selectedRadarDate}
+                              onDateChange={setSelectedRadarDate}
+                              includeSimulatedData={includeSimulatedData}
+                              onIncludeSimulatedDataChange={setIncludeSimulatedData}
+                              estimationMode={estimationMode}
+                              onEstimationModeChange={setEstimationMode}
+                            />
+                          ) : (
+                            <PerformanceRadar 
+                              {...radarProps}
+                              timelineData={filteredRadarData}
+                              selectedDate={selectedRadarDate}
+                              onDateChange={setSelectedRadarDate}
+                              includeSimulatedData={includeSimulatedData}
+                              onIncludeSimulatedDataChange={setIncludeSimulatedData}
+                              estimationMode={estimationMode}
+                              onEstimationModeChange={setEstimationMode}
+                            />
+                          )}
+                        </div>
                         <button
+                          type="button"
+                          className="performance-view-details-toggle"
                           onClick={() => setPerformanceRadarExpanded(!performanceRadarExpanded)}
-                          style={{
-                            position: 'absolute',
-                            top: 6,
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            zIndex: 5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: 28,
-                            height: 28,
-                            padding: 0,
-                            background: 'transparent',
-                            color: 'rgba(255,255,255,0.45)',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            fontSize: '12px',
-                            fontWeight: 600
-                          }}
-                          aria-label={performanceRadarExpanded ? 'Hide Performance Radar' : 'Show Performance Radar'}
+                          aria-expanded={performanceRadarExpanded}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          {performanceRadarExpanded ? t('admin.hideDetails') : t('admin.viewDetails')}
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 6, flexShrink: 0 }}>
                             {performanceRadarExpanded ? (
                               <polyline points="18,15 12,9 6,15"/>
                             ) : (
@@ -484,66 +592,13 @@ export default function AdminDashboard() {
                             )}
                           </svg>
                         </button>
-                      )}
-                      {performanceRadarExpanded && (
-                        isProfessor ? (
-                          <ProfessorRadarChart 
-                            {...radarProps}
-                            timelineData={filteredRadarData}
-                            selectedDate={selectedRadarDate}
-                            onDateChange={setSelectedRadarDate}
-                            includeSimulatedData={includeSimulatedData}
-                            onIncludeSimulatedDataChange={setIncludeSimulatedData}
-                            estimationMode={estimationMode}
-                            onEstimationModeChange={setEstimationMode}
-                          />
-                        ) : (
-                          <PerformanceRadar 
-                            {...radarProps}
-                            timelineData={filteredRadarData}
-                            selectedDate={selectedRadarDate}
-                            onDateChange={setSelectedRadarDate}
-                            includeSimulatedData={includeSimulatedData}
-                            onIncludeSimulatedDataChange={setIncludeSimulatedData}
-                            estimationMode={estimationMode}
-                            onEstimationModeChange={setEstimationMode}
-                          />
-                        )
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Show Research Analysis Button - Shown when hidden */}
-                {!newSectionsExpanded && (
-                  <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                    <button
-                      onClick={() => setNewSectionsExpanded(true)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        background: 'var(--admin-card-bg)',
-                        color: 'var(--admin-text)',
-                        border: '1px solid var(--admin-border)',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        fontSize: '14px',
-                        fontWeight: 500
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="6,9 12,15 18,9"/>
-                      </svg>
-                      {t('dashboard.showResearchAnalysis')}
-                    </button>
-                  </div>
-                )}
-                
-                {/* Research Field Analysis - Professional Layout for 1920x1080 */}
-                <div className="ai-research-stats-section" style={{ display: newSectionsExpanded ? 'block' : 'none' }}>
+                {/* Research Field Analysis - hidden for now */}
+                <div className="ai-research-stats-section" style={{ display: 'none' }}>
                   {/* Header Row - Title, View Mode, Toggle Button */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', gap: '12px' }}>
                     <h2 className="section-title" style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>{t('dashboard.researchFieldAnalysis')}</h2>
@@ -1026,8 +1081,8 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   
-                  {/* 24-Hour Activity Pattern - Detailed Mode Only */}
-                  {viewMode === 'detailed' && (
+                  {/* 24-Hour Activity Pattern - Detailed Mode Only (hidden for now) */}
+                  {false && viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
                       <h3 className="stat-card-title">{t('dashboard.hourlyActivityPattern')}</h3>
                       <div style={{ padding: '20px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
@@ -1125,8 +1180,8 @@ export default function AdminDashboard() {
                     </div>
                   )}
                   
-                  {/* Subject-Based Statistics - Detailed Mode Only */}
-                  {viewMode === 'detailed' && (
+                  {/* Subject-Based Statistics - Detailed Mode Only (hidden for now) */}
+                  {false && viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
                       <h3 className="stat-card-title">{t('dashboard.sessionAndSatisfaction')}</h3>
                       <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
@@ -1195,8 +1250,8 @@ export default function AdminDashboard() {
                     </div>
                   )}
                   
-                  {/* Real-time Activity Log - Detailed Mode Only */}
-                  {viewMode === 'detailed' && (
+                  {/* Real-time Activity Log - Detailed Mode Only (hidden for now) */}
+                  {false && viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
                       <h3 className="stat-card-title">{t('dashboard.realtimeActivityLog')}</h3>
                       <div style={{ padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
@@ -1280,8 +1335,8 @@ export default function AdminDashboard() {
                     </div>
                   )}
                   
-                  {/* System Status - Detailed Mode Only */}
-                  {viewMode === 'detailed' && (
+                  {/* System Status - Detailed Mode Only (hidden for now) */}
+                  {false && viewMode === 'detailed' && (
                     <div className="research-stat-card" style={{ marginTop: '16px' }}>
                       <h3 className="stat-card-title">{t('dashboard.systemPerformance')}</h3>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '12px', background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px' }}>
@@ -1324,36 +1379,8 @@ export default function AdminDashboard() {
 
                 {/* Content sections */}
                 <div className="content-module">
-                  {/* Show Daily Activity Button - Shown when hidden */}
-                  {!dailyActivityExpanded && (
-                    <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                      <button
-                        onClick={() => setDailyActivityExpanded(true)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '8px 16px',
-                          background: 'var(--admin-card-bg)',
-                          color: 'var(--admin-text)',
-                          border: '1px solid var(--admin-border)',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          fontSize: '14px',
-                          fontWeight: 500
-                        }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="6,9 12,15 18,9"/>
-                        </svg>
-                        {t('dashboard.showDailyMessageActivity')}
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* Daily Message Activity */}
-                  {dailyActivityExpanded && (
+                  {/* Daily Message Activity - hidden for now */}
+                  {false && dailyActivityExpanded && (
                     <div id="daily-message-activity" className="content-section">
                       <DailyMessageActivity />
                     </div>
@@ -1370,7 +1397,11 @@ export default function AdminDashboard() {
                   </div>
 
                   <div id="admin-feedback" className="content-section">
-                  <AdminFeedbackList onScrollToChat={handleScrollToChat} useMock={isProfessor} />
+                    <AdminFeedbackList onScrollToChat={handleScrollToChat} useMock={isProfessor} />
+                  </div>
+
+                  <div id="admin-instruction" className="content-section">
+                    <AdminInstructionList />
                   </div>
 
                   <div id="user-feedback" className="content-section">

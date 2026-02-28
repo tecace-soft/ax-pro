@@ -271,65 +271,6 @@ export default function AdminSidebar({
               </p>
             </div>
 
-            {/* Performance Badge */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              marginTop: '8px'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ 
-                  fontSize: '24px', 
-                  fontWeight: '700',
-                  background: 'linear-gradient(135deg, var(--admin-primary), var(--admin-accent))',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
-                }}>
-                  {performanceScore}%
-                </div>
-                <div style={{ 
-                  fontSize: '10px', 
-                  color: 'var(--admin-text-muted)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  {t('sidebar.performance')}
-                </div>
-                <div style={{ 
-                  fontSize: '9px', 
-                  color: 'var(--admin-text-muted)'
-                }}>
-                  {performanceDate || '9/10'}
-                </div>
-              </div>
-
-              <div style={{
-                padding: '6px 12px',
-                borderRadius: '12px',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                border: '1px solid rgba(16, 185, 129, 0.3)'
-              }}>
-                <div style={{ 
-                  fontSize: '10px', 
-                  fontWeight: '600',
-                  color: 'var(--admin-success)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  {t('sidebar.active')}
-                </div>
-                <div style={{ 
-                  fontSize: '9px', 
-                  color: 'var(--admin-text-muted)',
-                  textTransform: 'uppercase'
-                }}>
-                  {t('sidebar.status')}
-                </div>
-              </div>
-            </div>
-
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px', justifyContent: 'center' }}>
               <button
@@ -360,54 +301,6 @@ export default function AdminSidebar({
             </div>
           </div>
         </div>
-
-        {/* Metrics - Only show in chatbot mode */}
-        {serviceMode === 'chatbot' && (
-          <div className="sidebar-section">
-            <h3 className="sidebar-section-title">{t('admin.overview')}</h3>
-            <div className="metrics-grid">
-              <div className="metric-card">
-                <div className="metric-icon">
-                  <IconMessage size={20} />
-                </div>
-                <div className="metric-content">
-                  <div className="metric-value">{conversations}</div>
-                  <div className="metric-label">{t('admin.conversations')}</div>
-                </div>
-              </div>
-              
-              <div className="metric-card">
-                <div className="metric-icon">
-                  <IconActivity size={20} />
-                </div>
-                <div className="metric-content">
-                  <div className="metric-value">{satisfaction}%</div>
-                  <div className="metric-label">{t('admin.satisfaction')}</div>
-                </div>
-              </div>
-              
-              <div className="metric-card">
-                <div className="metric-icon">
-                  <IconDatabase size={20} />
-                </div>
-                <div className="metric-content">
-                  <div className="metric-value">{documents}</div>
-                  <div className="metric-label">{t('admin.documents')}</div>
-                </div>
-              </div>
-              
-              <div className="metric-card">
-                <div className="metric-icon">
-                  <IconBarChart size={20} />
-                </div>
-                <div className="metric-content">
-                  <div className="metric-value">{performanceScore}%</div>
-                  <div className="metric-label">{t('admin.performance')}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Admin Filters - Only show in translation mode */}
         {serviceMode === 'translation' && !isCollapsed && (
@@ -562,54 +455,6 @@ export default function AdminSidebar({
                       {language === 'en' ? 'Use the dropdown in the table header to switch active language.' : '우측 표 헤더의 드롭다운에서 활성 언어를 변경하세요.'}
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Metrics for Translation Mode - Show below filters */}
-        {serviceMode === 'translation' && !isCollapsed && (
-          <div className="sidebar-section">
-            <h3 className="sidebar-section-title">{t('admin.overview')}</h3>
-            <div className="metrics-grid">
-              <div className="metric-card">
-                <div className="metric-icon">
-                  <IconMessage size={20} />
-                </div>
-                <div className="metric-content">
-                  <div className="metric-value">{conversations}</div>
-                  <div className="metric-label">{t('admin.conversations')}</div>
-                </div>
-              </div>
-              
-              <div className="metric-card">
-                <div className="metric-icon">
-                  <IconActivity size={20} />
-                </div>
-                <div className="metric-content">
-                  <div className="metric-value">{satisfaction}%</div>
-                  <div className="metric-label">{t('admin.satisfaction')}</div>
-                </div>
-              </div>
-              
-              <div className="metric-card">
-                <div className="metric-icon">
-                  <IconDatabase size={20} />
-                </div>
-                <div className="metric-content">
-                  <div className="metric-value">{documents}</div>
-                  <div className="metric-label">{t('admin.documents')}</div>
-                </div>
-              </div>
-              
-              <div className="metric-card">
-                <div className="metric-icon">
-                  <IconBarChart size={20} />
-                </div>
-                <div className="metric-content">
-                  <div className="metric-value">{performanceScore}%</div>
-                  <div className="metric-label">{t('admin.performance')}</div>
                 </div>
               </div>
             </div>

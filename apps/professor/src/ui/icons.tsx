@@ -42,7 +42,9 @@ import {
 	ChevronUp,
 	ChevronLeft,
 	ChevronDown,
-	Copy
+	Copy,
+	Menu,
+	Plus
 } from 'lucide-react'
 
 export const IconGear = Settings
@@ -90,4 +92,6 @@ export const IconChevronUp = ChevronUp
 export const IconChevronLeft = ChevronLeft
 export const IconChevronDown = ChevronDown
 export const IconCopy = Copy
+export const IconMenu = Menu
+export const IconPlus = Plus
 

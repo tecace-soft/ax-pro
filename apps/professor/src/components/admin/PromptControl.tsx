@@ -191,55 +191,12 @@ export default function PromptControl() {
   }
 
   return (
-    <div className="admin-card">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
+    <div className="dashboard-section-card prompt-control-section">
+      <div className="section-header">
+        <h2 className="section-title">
           {t('admin.systemPrompt')}
-        </h3>
+        </h2>
         <div className="flex items-center gap-3">
-          {/* Font Size Control */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>{t('adminFeedback.fontSize')}:</span>
-            <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
-              <button
-                onClick={() => setFontSize('small')}
-                className="px-3 py-2 text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: fontSize === 'small' ? 'var(--admin-primary)' : 'transparent',
-                  color: fontSize === 'small' ? '#041220' : 'var(--admin-text)',
-                  fontSize: fs.sm
-                }}
-                title={t('adminFeedback.fontSizeSmall')}
-              >
-                A
-              </button>
-              <button
-                onClick={() => setFontSize('medium')}
-                className="px-3 py-2 text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: fontSize === 'medium' ? 'var(--admin-primary)' : 'transparent',
-                  color: fontSize === 'medium' ? '#041220' : 'var(--admin-text)',
-                  fontSize: fs.base
-                }}
-                title={t('adminFeedback.fontSizeMedium')}
-              >
-                A
-              </button>
-              <button
-                onClick={() => setFontSize('large')}
-                className="px-3 py-2 text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: fontSize === 'large' ? 'var(--admin-primary)' : 'transparent',
-                  color: fontSize === 'large' ? '#041220' : 'var(--admin-text)',
-                  fontSize: fs.base
-                }}
-                title={t('adminFeedback.fontSizeLarge')}
-              >
-                A
-              </button>
-            </div>
-          </div>
-
           <button
             onClick={() => {
               setShowHistory(!showHistory)

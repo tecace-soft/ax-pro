@@ -3,7 +3,7 @@ import { fetchAllChatData } from '../../services/chatData'
 import { submitAdminFeedback, getAdminFeedbackByChat, fetchAllUserFeedback } from '../../services/feedback'
 import { ChatData, AdminFeedbackData } from '../../services/supabaseUserSpecific'
 import { useTranslation } from '../../i18n/I18nProvider'
-import { IconRefresh, IconThumbsUp, IconThumbsDown } from '../../ui/icons'
+import { IconRefresh, IconThumbsUp, IconThumbsDown, IconPlus, IconCheck } from '../../ui/icons'
 
 interface AdminFeedbackModal {
   chatId: string
@@ -300,11 +300,8 @@ export default function RecentConversations({
 
   const handleSubmitFeedback = async () => {
     if (!feedbackModal) return
-    
-    // For thumbs up, text fields are optional
-    // For thumbs down, at least one field should be filled
-    if (feedbackModal.verdict === 'bad' && !supervisorFeedback && !correctedResponse) {
-      alert('For negative feedback, please provide either supervisor feedback or corrected response.')
+    if (feedbackModal.verdict === 'bad' && (!correctedMessage.trim() || !correctedResponse.trim())) {
+      alert('Please provide both corrected message and corrected response.')
       return
     }
     
@@ -479,7 +476,7 @@ export default function RecentConversations({
 
   if (isLoading) {
     return (
-      <div className="admin-card">
+      <div className="dashboard-section-card recent-conversations-section">
         <div className="flex items-center justify-center p-8">
           <p style={{ color: 'var(--admin-text-muted)' }}>{t('admin.loading')}</p>
         </div>
@@ -489,7 +486,7 @@ export default function RecentConversations({
 
   if (error) {
     return (
-      <div className="admin-card">
+      <div className="dashboard-section-card recent-conversations-section">
         <div className="p-4" style={{ color: 'var(--admin-danger)' }}>
           <p className="font-semibold mb-2">{t('admin.error')}</p>
           <p className="text-sm whitespace-pre-line mb-3">{error}</p>
@@ -523,12 +520,12 @@ export default function RecentConversations({
   const displayedConversations = filteredConversations.slice(0, displayLimit)
 
   return (
-    <div className="admin-card">
+    <div className="dashboard-section-card recent-conversations-section">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
+      <div className="section-header">
+        <h2 className="section-title">
           {t('admin.recentConversations')} ({filteredConversations.length})
-        </h3>
+        </h2>
         <button 
           className="icon-btn"
           onClick={handleRefresh}
@@ -612,49 +609,6 @@ export default function RecentConversations({
           />
         </div>
 
-        {/* Font Size Control */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>Font Size:</span>
-          <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
-            <button
-              onClick={() => setFontSize('small')}
-              className="px-3 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: fontSize === 'small' ? 'var(--admin-primary)' : 'transparent',
-                color: fontSize === 'small' ? '#041220' : 'var(--admin-text)',
-                fontSize: fs.sm
-              }}
-              title="Small"
-            >
-              A
-            </button>
-            <button
-              onClick={() => setFontSize('medium')}
-              className="px-3 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: fontSize === 'medium' ? 'var(--admin-primary)' : 'transparent',
-                color: fontSize === 'medium' ? '#041220' : 'var(--admin-text)',
-                fontSize: fs.base
-              }}
-              title="Medium"
-            >
-              A
-            </button>
-            <button
-              onClick={() => setFontSize('large')}
-              className="px-3 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: fontSize === 'large' ? 'var(--admin-primary)' : 'transparent',
-                color: fontSize === 'large' ? '#041220' : 'var(--admin-text)',
-                fontSize: fs.base
-              }}
-              title="Large"
-            >
-              A
-            </button>
-          </div>
-        </div>
-
         {/* Filter Indicators */}
         {(filterSessionId || filterUserId || filterDate) && (
           <div className="flex items-center gap-2">
@@ -723,16 +677,22 @@ export default function RecentConversations({
       ) : viewMode === 'table' ? (
         /* Table View */
         <div className="overflow-x-auto">
-          <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0, fontSize: fs.cell }}>
+          <table
+            className="w-full recent-conversations-table"
+            style={{ fontSize: fs.cell }}
+          >
             <thead>
-              <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
+              <tr className="recent-conversations-table__head-row" style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
                 <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', maxWidth: '100px', fontSize: fs.header }}>Date</th>
                 <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>User ID</th>
                 <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '90px', maxWidth: '90px', fontSize: fs.header }}>Session ID</th>
                 <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.header }}>User Message</th>
                 <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.header }}>AI Response</th>
                 <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>User FB</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '80px', maxWidth: '80px', fontSize: fs.header }}>Admin</th>
+                <th className="px-3 py-2 text-center font-medium recent-conversations-table__th-supervisor" style={{ color: 'var(--admin-text)', minWidth: '80px', maxWidth: '80px', fontSize: fs.header }}>
+                  <span className="block">Supervisor</span>
+                  <span className="block">Correction</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -809,39 +769,23 @@ export default function RecentConversations({
                     )}
                   </td>
                   <td className="px-3 py-2 text-center">
-                    {(conversation as any).admin_feedback ? (
-                      <div className="inline-flex items-center gap-1">
-                        {(conversation as any).admin_feedback.feedback_verdict === 'good' ? (
-                          <IconThumbsUp size={16} style={{ color: 'var(--admin-success)' }} />
-                        ) : (
-                          <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)' }} />
-                        )}
+                    {(() => {
+                      const af = (conversation as any).admin_feedback
+                      const hasCorrection = af && af.corrected_response != null && String(af.corrected_response).trim() !== ''
+                      return (
                         <button
-                          onClick={() => handleAdminFeedbackClick(conversation)}
-                          className="text-xs px-1 py-0.5 rounded hover:bg-blue-500/20"
-                          style={{ color: 'var(--admin-primary)' }}
+                          onClick={() => af ? handleAdminFeedbackClick(conversation) : handleFeedbackClick(conversation, 'bad')}
+                          className={`recent-conversations-table__add-supervisor-btn ${hasCorrection ? 'recent-conversations-table__add-supervisor-btn--has-correction' : ''}`}
+                          title={hasCorrection ? 'Edit supervisor correction' : 'Add supervisor correction'}
                         >
-                          Edit
+                          {hasCorrection ? (
+                            <IconCheck size={14} style={{ color: 'var(--admin-success)' }} />
+                          ) : (
+                            <IconPlus size={14} style={{ color: 'var(--admin-primary)' }} />
+                          )}
                         </button>
-                      </div>
-                    ) : (
-                      <div className="inline-flex gap-1">
-                        <button
-                          onClick={() => handleFeedbackClick(conversation, 'good')}
-                          className="p-1 rounded hover:bg-green-500/20"
-                          title="Good"
-                        >
-                          <IconThumbsUp size={14} style={{ color: 'var(--admin-success)' }} />
-                        </button>
-                        <button
-                          onClick={() => handleFeedbackClick(conversation, 'bad')}
-                          className="p-1 rounded hover:bg-red-500/20"
-                          title="Bad"
-                        >
-                          <IconThumbsDown size={14} style={{ color: 'var(--admin-danger)' }} />
-                        </button>
-                      </div>
-                    )}
+                      )
+                    })()}
                   </td>
                 </tr>
               ))}
@@ -1060,7 +1004,7 @@ export default function RecentConversations({
         </div>
       )}
 
-      {/* Admin Feedback Modal */}
+      {/* Admin Feedback Modal - Add/Edit Supervisor Correction */}
       {feedbackModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div 
@@ -1073,9 +1017,9 @@ export default function RecentConversations({
             }}
           >
             <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
-                  {feedbackModal.existingFeedback ? '✏️ Edit Admin Feedback' : 'Admin Feedback'} {feedbackModal.verdict === 'good' ? '👍' : '👎'}
+                  {feedbackModal.existingFeedback ? 'Edit Supervisor Correction' : 'Add Supervisor Correction'}
                 </h3>
                 <button
                   onClick={handleCancelFeedback}
@@ -1088,8 +1032,11 @@ export default function RecentConversations({
                   </svg>
                 </button>
               </div>
+              <p className="text-sm mb-4" style={{ color: 'var(--admin-text-muted)' }}>
+                Add a supervisor corrected message and response to create a Q&A that will be prioritized by the chatbot. The chatbot will reference the saved Q&As to answer any similar questions with the supervisor corrected response.
+              </p>
               
-              {/* User Message */}
+              {/* User Message (read-only) */}
               <div className="mb-4">
                 <p className="text-xs font-medium mb-2" style={{ color: 'var(--admin-text-muted)' }}>
                   {t('admin.userMessage')}:
@@ -1101,46 +1048,30 @@ export default function RecentConversations({
                     border: '1px solid var(--admin-border)'
                   }}
                 >
-                  <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
+                  <p className="text-sm" style={{ color: 'var(--admin-text-muted)', opacity: 0.65 }}>
                     {feedbackModal.userMessage}
                   </p>
                 </div>
               </div>
               
-              {/* AI Response */}
+              {/* AI Response (read-only, fixed height, scrollable) */}
               <div className="mb-4">
                 <p className="text-xs font-medium mb-2" style={{ color: 'var(--admin-text-muted)' }}>
                   {t('admin.aiResponse')}:
                 </p>
                 <div 
-                  className="p-3 rounded"
+                  className="p-3 rounded recent-conversations-modal__ai-response-box"
                   style={{ 
                     backgroundColor: 'rgba(9, 14, 34, 0.4)',
-                    border: '1px solid var(--admin-border)'
+                    border: '1px solid var(--admin-border)',
+                    height: '120px',
+                    overflowY: 'auto'
                   }}
                 >
-                  <p className="text-sm" style={{ color: 'var(--admin-text)' }}>
+                  <p className="text-sm" style={{ color: 'var(--admin-text-muted)', opacity: 0.65 }}>
                     {feedbackModal.aiResponse}
                   </p>
                 </div>
-              </div>
-              
-              {/* Supervisor Feedback */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
-                  Supervisor Feedback:
-                </label>
-                <textarea
-                  value={supervisorFeedback}
-                  onChange={(e) => setSupervisorFeedback(e.target.value)}
-                  placeholder="Explain what was wrong with this response..."
-                  className="w-full h-24 resize-none text-sm p-3 rounded"
-                  style={{
-                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
-                    color: 'var(--admin-text)',
-                    border: '1px solid var(--admin-border)'
-                  }}
-                />
               </div>
               
               {/* Corrected Message */}
@@ -1170,11 +1101,12 @@ export default function RecentConversations({
                   value={correctedResponse}
                   onChange={(e) => setCorrectedResponse(e.target.value)}
                   placeholder="Enter the corrected response..."
-                  className="w-full h-32 resize-none text-sm p-3 rounded"
+                  className="w-full resize-none text-sm p-3 rounded recent-conversations-modal__corrected-response"
                   style={{
                     backgroundColor: 'rgba(9, 14, 34, 0.6)',
                     color: 'var(--admin-text)',
-                    border: '1px solid var(--admin-border)'
+                    border: '1px solid var(--admin-border)',
+                    height: '120px'
                   }}
                 />
               </div>

@@ -313,7 +313,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
   if (isLoading) {
     return (
-      <div className="admin-card">
+      <div className="dashboard-section-card user-feedback-section">
         <div className="flex items-center justify-center p-8">
           <p style={{ color: 'var(--admin-text-muted)' }}>{t('admin.loading')}</p>
         </div>
@@ -323,7 +323,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
   if (error) {
     return (
-      <div className="admin-card">
+      <div className="dashboard-section-card user-feedback-section">
         <div className="p-4" style={{ color: 'var(--admin-danger)' }}>
           <p className="font-semibold mb-2">{t('admin.error')}</p>
           <p className="text-sm">{error}</p>
@@ -345,7 +345,7 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
   const displayedFeedbacks = filteredFeedbacks.slice(0, displayLimit)
 
   return (
-    <div className="admin-card">
+    <div className="dashboard-section-card user-feedback-section">
       <style>{`
         .highlight-row {
           animation: highlight-flash 2s ease-in-out;
@@ -357,10 +357,10 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
         }
       `}</style>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
+      <div className="section-header">
+        <h2 className="section-title">
           {t('admin.userFeedback')} ({filteredFeedbacks.length})
-        </h3>
+        </h2>
         <button 
           className="icon-btn"
           onClick={handleRefresh}
@@ -373,49 +373,6 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
 
       {/* Controls Bar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        {/* Font Size Control */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>{t('adminFeedback.fontSize')}:</span>
-          <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
-            <button
-              onClick={() => setFontSize('small')}
-              className="px-3 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: fontSize === 'small' ? 'var(--admin-primary)' : 'transparent',
-                color: fontSize === 'small' ? '#041220' : 'var(--admin-text)',
-                fontSize: fs.sm
-              }}
-              title={t('adminFeedback.fontSizeSmall')}
-            >
-              A
-            </button>
-            <button
-              onClick={() => setFontSize('medium')}
-              className="px-3 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: fontSize === 'medium' ? 'var(--admin-primary)' : 'transparent',
-                color: fontSize === 'medium' ? '#041220' : 'var(--admin-text)',
-                fontSize: fs.base
-              }}
-              title={t('adminFeedback.fontSizeMedium')}
-            >
-              A
-            </button>
-            <button
-              onClick={() => setFontSize('large')}
-              className="px-3 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: fontSize === 'large' ? 'var(--admin-primary)' : 'transparent',
-                color: fontSize === 'large' ? '#041220' : 'var(--admin-text)',
-                fontSize: fs.base
-              }}
-              title={t('adminFeedback.fontSizeLarge')}
-            >
-              A
-            </button>
-          </div>
-        </div>
-
         {/* View Mode Toggle */}
         <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
           <button
@@ -599,7 +556,10 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
       ) : viewMode === 'table' ? (
         /* Table View */
         <div className="overflow-x-auto">
-          <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0, fontSize: fs.cell }}>
+          <table
+            className="w-full user-feedback-table"
+            style={{ fontSize: fs.cell }}
+          >
             <thead>
               <tr style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
                 <th className="px-2 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '90px', maxWidth: '90px', fontSize: fs.header }}>{t('adminFeedback.tableHeader.date')}</th>

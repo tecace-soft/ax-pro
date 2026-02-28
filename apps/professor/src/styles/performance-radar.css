@@ -19,8 +19,8 @@
 /* Light mode performance radar */
 [data-theme="light"] .performance-radar-section {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #94a3b8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .performance-radar-section::before {
@@ -83,13 +83,22 @@
   color: #475569;
 }
 
-/* Two column layout */
+/* Two column layout - z-index so stats row above can capture hover when mouse moves up */
+.performance-section .radar-main-layout {
+  position: relative;
+  z-index: 0;
+}
+
 .radar-main-layout {
   display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 28px;
-  margin-top: 24px;
+  grid-template-columns: 1fr 360px;
+  gap: 12px;
   align-items: start;
+}
+
+.performance-section .radar-main-layout {
+  align-self: start;
+  width: 100%;
 }
 
 @media (max-width: 1200px) {
@@ -98,22 +107,23 @@
   }
 }
 
+/* Single definition: radar chart box. height: fit-content so hover only over content. */
 .radar-chart-section {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  background: rgba(18, 27, 61, 0.4);
-  border: 1px solid rgba(59, 230, 255, 0.15);
-  border-radius: 16px;
-  padding: 12px 8px; /* Minimal padding, controlled by inline styles */
+  background: transparent;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 0;
   overflow: visible;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: none;
   width: 100%;
-  /* min-height removed - controlled by inline styles to match Module Control panel */
+  height: fit-content;
+  min-height: 0;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .radar-chart-container {
@@ -450,27 +460,26 @@
 
 /* Module Control Side Panel */
 .module-control-panel {
-  background: rgba(18, 27, 61, 0.6);
-  border: 1px solid rgba(59, 230, 255, 0.15);
-  border-radius: 16px;
+  background: transparent;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
   padding: 0;
   overflow: hidden;
-  box-shadow: 
-    0 10px 25px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 [data-theme="light"] .module-control-panel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: transparent;
+  border: 1px solid var(--admin-border);
+  box-shadow: none;
 }
 
 .module-control-header-side {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 10px 14px;
   background: rgba(18, 27, 61, 0.8);
   border-bottom: 1px solid rgba(59, 230, 255, 0.2);
 }
@@ -490,7 +499,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
+  padding: 8px 14px;
   background: rgba(18, 27, 61, 0.4);
   border-bottom: 1px solid rgba(59, 230, 255, 0.1);
   transition: all 0.2s ease;
@@ -575,38 +584,72 @@
 .control-toggle-btn {
   padding: 6px 12px;
   border-radius: 6px;
-  border: none;
+  border: 1px solid transparent;
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 40px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  width: 52px;
+  min-width: 52px;
   text-align: center;
 }
 
 .control-toggle-btn.enabled {
-  background: #3be6ff;
-  color: #001122;
-  box-shadow: 0 2px 8px rgba(59, 230, 255, 0.4);
+  background: transparent;
+  color: #3be6ff;
+  border-color: #3be6ff;
+  box-shadow: none;            /* no glow when not hovered */
 }
 
 .control-toggle-btn.disabled {
   background: rgba(255, 255, 255, 0.2);
   color: rgba(255, 255, 255, 0.6);
+  border-color: var(--admin-border); /* gray border when OFF */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .control-toggle-btn:hover {
-  transform: scale(1.05);
+  /* no size change on hover */
 }
 
 .control-toggle-btn.enabled:hover {
-  background: #33d4ff;
-  box-shadow: 0 4px 12px rgba(59, 230, 255, 0.6);
+  /* tight glow, aligned directly around the button */
+  box-shadow: 0 0 4px currentColor;
 }
 
 .control-toggle-btn.disabled:hover {
-  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Per-metric ON colors: border and text use module color */
+.control-item-side[data-key="relevance"] .control-toggle-btn.enabled {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+.control-item-side[data-key="tone"] .control-toggle-btn.enabled {
+  color: #4ecdc4;
+  border-color: #4ecdc4;
+}
+
+.control-item-side[data-key="length"] .control-toggle-btn.enabled {
+  color: #45b7d1;
+  border-color: #45b7d1;
+}
+
+.control-item-side[data-key="accuracy"] .control-toggle-btn.enabled {
+  color: #96ceb4;
+  border-color: #96ceb4;
+}
+
+.control-item-side[data-key="toxicity"] .control-toggle-btn.enabled {
+  color: #feca57;
+  border-color: #feca57;
+}
+
+.control-item-side[data-key="promptInjection"] .control-toggle-btn.enabled {
+  color: #ff9ff3;
+  border-color: #ff9ff3;
 }
 
 /* 기존 토글 스위치 CSS 제거 */
@@ -651,7 +694,7 @@
   }
   
   .radar-chart-section {
-    padding: clamp(16px, 4vw, 20px);
+    padding: 0;
   }
   
   .control-list {
@@ -685,7 +728,7 @@
   }
   
   .radar-chart-section {
-    padding: 16px;
+    padding: 0;
     border-radius: 12px;
   }
   
@@ -1273,18 +1316,11 @@
 @media (min-width: 1400px) {
   .performance-radar-section,
   .daily-message-section {
-    padding: 32px;
-    margin: 0 32px;
     width: calc(100% - 64px);
   }
   
   .daily-message-section {
     margin: 32px 32px 0;
-  }
-  
-  .radar-chart-section,
-  .daily-message-content {
-    padding: 40px;
   }
   
   .radar-chart-large {
@@ -1320,6 +1356,57 @@
 .performance-radar-section,
 .daily-message-section {
   box-sizing: border-box;
+}
+
+/* When embedded inside unified dashboard cards, flatten the outer Performance Radar wrapper
+   (no hover or border on the outer wrapper) */
+.dashboard-section-card .performance-radar-section {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.dashboard-section-card .performance-radar-section::before {
+  content: none;
+}
+
+/* Hover state: only when .is-hovered is set by mouse enter on this div */
+.radar-chart-section.is-hovered,
+#performance-radar .radar-chart-section.is-hovered {
+  border: 1px solid var(--admin-primary) !important;
+  border-color: var(--admin-primary) !important;
+  background-color: rgba(8, 20, 35, 0.4) !important;
+}
+
+.module-control-panel {
+  background: transparent;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: none;
+  height: fit-content;
+  min-height: 0;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.module-control-panel.is-hovered,
+#performance-radar .module-control-panel.is-hovered {
+  border: 1px solid var(--admin-primary) !important;
+  border-color: var(--admin-primary) !important;
+  background-color: rgba(8, 20, 35, 0.4) !important;
+}
+
+[data-theme="light"] .radar-chart-section.is-hovered,
+[data-theme="light"] #performance-radar .radar-chart-section.is-hovered {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .module-control-panel.is-hovered,
+[data-theme="light"] #performance-radar .module-control-panel.is-hovered {
+  background-color: #f1f5f9 !important;
 }
 
 /* 컨테이너 정렬 */

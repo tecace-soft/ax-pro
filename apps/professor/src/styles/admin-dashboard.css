@@ -3365,21 +3365,13 @@ input:checked + .toggle-slider::before {
 
 /* 안쪽 프레임(보더 있는 영역)을 outer padding과 딱 맞춤 */
 #performance-radar .radar-content-wrapper,
-#performance-radar .radar-chart-section,
 #performance-radar .radar-container{
   width: 100% !important;
   max-width: none !important;
-  margin: 0 !important;                         /* 좌우 마진으로 폭이 줄어드는 문제 방지 */
+  margin: 0 !important;
   box-sizing: border-box !important;
 }
-
-/* 프레임 스타일(보더/라운드/배경)과 내부 패딩 통일 */
-#performance-radar .radar-chart-section{
-  background: rgba(9,14,34,0.30) !important;
-  border: 1px solid rgba(59,230,255,0.12) !important;
-  border-radius: 10px !important;
-  padding: var(--inner-pad) !important;
-}
+/* .radar-chart-section: see performance-radar.css (single source of truth) */
 
 /* 실제 차트 상하 여백 추가 (위/아래 답답함 해소) */
 #performance-radar .radar,
@@ -3935,7 +3927,6 @@ input:checked + .toggle-slider::before {
 }
 
 /* Performance Radar - Daily Message와 동일한 스타일로 통일 */
-.performance-radar-section {
   background: linear-gradient(135deg, rgba(18,27,61,0.40), rgba(13,20,44,0.40)) !important;
   border: 1px solid rgba(59,230,255,0.10) !important;
   border-radius: 12px !important;
@@ -5657,6 +5648,135 @@ input:checked + .toggle-slider::before {
 }
 
 .progress-bar {
+/* Light theme: darker borders, lighter grays for inputs/charts/cards/buttons */
+[data-theme="light"] .content-section,
+[data-theme="light"] .performance-section {
+  background: #ffffff;
+  border-color: #94a3b8;
+}
+
+[data-theme="light"] .feedback-display,
+[data-theme="light"] .feedback-text-display,
+[data-theme="light"] .inline-feedback-form {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .feedback-input,
+[data-theme="light"] .feedback-textarea {
+  background: #ffffff !important;
+  border-color: rgba(59, 230, 255, 0.15) !important;
+  color: #0f172a;
+}
+
+[data-theme="light"] .feedback-input:focus,
+[data-theme="light"] .feedback-textarea:focus {
+  background: #ffffff;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+}
+
+[data-theme="light"] .chart-bar.no-data {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .conversations-box {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .save-btn {
+  background: rgba(14, 165, 233, 0.15) !important;
+  border-color: rgba(14, 165, 233, 0.4) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .save-btn:hover {
+  background: rgba(14, 165, 233, 0.25) !important;
+  border-color: rgba(14, 165, 233, 0.6) !important;
+}
+
+[data-theme="light"] .cancel-btn {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .cancel-btn:hover {
+  background: rgba(239, 68, 68, 0.18) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+}
+
+[data-theme="light"] .submit-feedback-btn:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+}
+
+[data-theme="light"] .metric-card {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+[data-theme="light"] .metric-card:hover {
+  background: #f1f5f9;
+  border-color: var(--admin-primary);
+}
+
+[data-theme="light"] .profile-input {
+  background: #ffffff;
+  border-color: rgba(59, 230, 255, 0.15) !important;
+  color: #0f172a;
+}
+
+[data-theme="light"] .profile-input:focus {
+  background: #ffffff;
+  border-color: var(--admin-primary);
+}
+
+[data-theme="light"] .module-controls {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+[data-theme="light"] .control-item,
+[data-theme="light"] .control-item-side {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .control-item-side:hover {
+  background: #f8fafc;
+}
+
+[data-theme="light"] .search-input input {
+  background: #ffffff !important;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+[data-theme="light"] .search-input input::placeholder {
+  color: #64748b;
+}
+
+[data-theme="light"] .date-input,
+[data-theme="light"] .date-input input {
+  background: #ffffff !important;
+  border-color: rgba(59, 230, 255, 0.15) !important;
+  color: #0f172a;
+}
+
+[data-theme="light"] .date-input label {
+  color: #475569;
+}
+
+[data-theme="light"] .export-format-select {
+  background: #ffffff !important;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
   width: 100px;
   height: 4px;
   background: rgba(255, 255, 255, 0.1);
