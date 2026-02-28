@@ -243,7 +243,7 @@ export default function PromptControl() {
       <div className="space-y-4">
         <textarea
           ref={textareaRef}
-          className="w-full p-3 rounded-md font-mono"
+          className="w-full p-3 rounded-md font-mono prompt-control__textarea"
           style={{
             backgroundColor: 'rgba(9, 14, 34, 0.6)',
             border: '1px solid rgba(59, 230, 255, 0.15)',
