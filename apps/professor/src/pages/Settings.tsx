@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGroupAuth } from '../hooks/useGroupAuth';
 import { withGroupParam } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeProvider';
 import { useTranslation } from '../i18n/I18nProvider';
+import { IconMenu, IconMessage, IconBarChart, IconMoon, IconSun, IconDatabase, IconSettings, IconUsers, IconLogout } from '../ui/icons';
 import { useUICustomization } from '../hooks/useUICustomization';
 import { getGroupById, updateGroupName, getUsersByIds, updateGroupUsers, searchUsers, updateUserGroups, deleteGroupAndAllData, defaultSupabase, User, Group } from '../services/groupService';
 import { getSession, getUserRoleForGroup } from '../services/auth';
@@ -18,6 +19,9 @@ const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ui' | 'group' | 'chatkit'>('ui');
   const [searchParams] = useSearchParams();
   const { customization, updateCustomization, updateQuestion } = useUICustomization();
+  const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
+  const navMenuRef = useRef<HTMLDivElement | null>(null);
+  const navMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   
   // Local state for inputs to prevent saving on every keystroke
   const [localChatTitle, setLocalChatTitle] = useState(customization.chatTitle);
@@ -39,6 +43,20 @@ const Settings: React.FC = () => {
       setActiveTab('ui');
     }
   }, []);
+
+  useEffect(() => {
+    if (!isNavMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (navMenuRef.current?.contains(target)) return;
+      if (navMenuButtonRef.current?.contains(target)) return;
+      setIsNavMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNavMenuOpen]);
 
 
   const [showImageEditor, setShowImageEditor] = useState(false);
@@ -435,88 +453,253 @@ const Settings: React.FC = () => {
   return (
     <div style={{ backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {/* Header */}
-      <div className="flex justify-between items-center p-4 border-b" style={{ borderColor: 'var(--border)', flexShrink: 0 }}>
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => navigate(withGroupParam('/chat'))}
-            className="text-sm px-3 py-1 rounded border transition-colors hover:bg-gray-100"
-            style={{ 
-              backgroundColor: 'var(--card)', 
-              borderColor: 'var(--border)',
-              color: 'var(--text)'
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline-block', marginRight: '6px', verticalAlign: 'middle' }}>
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-            Chat
-          </button>
-          <button
-            onClick={() => navigate('/admin/dashboard')}
-            className="text-sm px-3 py-1 rounded border transition-colors hover:bg-gray-100"
-            style={{ 
-              backgroundColor: 'var(--card)', 
-              borderColor: 'var(--border)',
-              color: 'var(--text)'
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline-block', marginRight: '6px', verticalAlign: 'middle' }}>
-              <rect x="3" y="3" width="7" height="7"/>
-              <rect x="14" y="3" width="7" height="7"/>
-              <rect x="14" y="14" width="7" height="7"/>
-              <rect x="3" y="14" width="7" height="7"/>
-            </svg>
-            Dashboard
-          </button>
+      <div
+        className="dashboard-header settings-header"
+        style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}
+      >
+        <div className="flex items-center settings-header-logo" style={{ gap: '10px' }}>
+          <div className="logo-hexagon">
+            <div className="hexagon-outer">
+              <div className="hexagon-inner">
+              </div>
+            </div>
+          </div>
           <h1 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>
             Settings
           </h1>
         </div>
         
-        <div className="flex items-center space-x-4">
+        <div className="header-actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="text-sm px-3 py-1 rounded border transition-colors hover:bg-gray-100"
-            style={{ 
-              backgroundColor: 'var(--card)', 
-              borderColor: 'var(--border)',
-              color: 'var(--text)'
-            }}
+            className="icon-btn"
+            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            style={{ color: 'var(--text)' }}
           >
-            {theme === 'light' ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-              </svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="5"/>
-                <line x1="12" y1="1" x2="12" y2="3"/>
-                <line x1="12" y1="21" x2="12" y2="23"/>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                <line x1="1" y1="12" x2="3" y2="12"/>
-                <line x1="21" y1="12" x2="23" y2="12"/>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-              </svg>
-            )}
+            {theme === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />}
           </button>
           
           {/* Language Toggle */}
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
-            className="text-sm px-3 py-1 rounded border"
-            style={{ 
-              borderColor: 'var(--border)',
+            style={{
+              border: '1px solid var(--border)',
               color: 'var(--text)',
-              backgroundColor: 'var(--card)'
+              backgroundColor: 'var(--card)',
+              borderRadius: 8,
+              padding: '6px 10px',
+              fontSize: 13
             }}
           >
             <option value="en">EN</option>
             <option value="ko">KO</option>
           </select>
+          <button
+            ref={navMenuButtonRef}
+            onClick={() => setIsNavMenuOpen(open => !open)}
+            className="icon-btn"
+            aria-label="Navigation"
+            title="Navigation"
+            style={{ color: 'var(--text)' }}
+          >
+            <IconMenu size={18} />
+          </button>
+
+          {isNavMenuOpen && (
+            <div
+              ref={navMenuRef}
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
+                borderRadius: 10,
+                boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+                padding: '8px 0',
+                minWidth: 200,
+                zIndex: 200
+              }}
+            >
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  navigate(withGroupParam('/admin/dashboard'));
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconBarChart size={16} />
+                <span style={{ marginLeft: 8 }}>Dashboard</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  navigate(withGroupParam('/chat'));
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconMessage size={16} />
+                <span style={{ marginLeft: 8 }}>Chat</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  navigate(withGroupParam('/admin/knowledge-management'));
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconDatabase size={16} />
+                <span style={{ marginLeft: 8, whiteSpace: 'nowrap' }}>Knowledge Management</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  navigate(withGroupParam('/settings'));
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconSettings size={16} />
+                <span style={{ marginLeft: 8 }}>Settings</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  navigate('/group-management');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconUsers size={16} />
+                <span style={{ marginLeft: 8 }}>Group Management</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  window.location.href = '/logout';
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--admin-danger)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(248,113,113,0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconLogout size={16} />
+                <span style={{ marginLeft: 8 }}>Sign Out</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

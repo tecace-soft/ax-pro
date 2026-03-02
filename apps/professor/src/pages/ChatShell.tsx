@@ -14,7 +14,7 @@ import { withGroupParam } from '../utils/navigation';
 import { fetchSessionById } from '../services/chatData';
 import { useSearchParams } from 'react-router-dom';
 import { useSessions } from '../features/sessions/useSessions';
-import { IconSettings } from '../ui/icons';
+import { IconMenu, IconMessage, IconBarChart, IconMoon, IconSun, IconDatabase, IconSettings, IconUsers, IconLogout } from '../ui/icons';
 import { useMobile } from '../hooks/useMobile';
 
 const ChatShell: React.FC = () => {
@@ -34,6 +34,9 @@ const ChatShell: React.FC = () => {
   const lastGroupRoleCheckRef = useRef<string | null>(null);
   const isMobile = useMobile();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
+  const navMenuRef = useRef<HTMLDivElement | null>(null);
+  const navMenuButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Check auth and group on mount (also syncs URL) - only if user is logged in
   // For non-logged-in users, we skip this to allow access
@@ -228,42 +231,320 @@ const ChatShell: React.FC = () => {
     }
   }, [currentSessionId, isMobile]);
 
-  return (
-    <div style={{ height: '100vh', display: 'flex', overflow: 'hidden', backgroundColor: 'var(--bg)' }}>
-      {/* Mobile Overlay - Darkens background when sidebar is open */}
-      {isMobile && mobileSidebarOpen && user && (
-        <div
-          onClick={() => setMobileSidebarOpen(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 40,
-            transition: 'opacity 0.3s ease'
-          }}
-        />
-      )}
+  // Close header nav menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        navMenuRef.current &&
+        !navMenuRef.current.contains(target) &&
+        navMenuButtonRef.current &&
+        !navMenuButtonRef.current.contains(target)
+      ) {
+        setIsNavMenuOpen(false);
+      }
+    };
 
-      {/* Left Rail - Session List - Only show if user is logged in */}
-      {user && (
-      <div style={{ 
-        width: isMobile ? '280px' : '320px',
-        borderRight: isMobile ? 'none' : '1px solid var(--border)',
-        display: isMobile && !mobileSidebarOpen ? 'none' : 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        overflow: 'hidden',
-        position: isMobile ? 'fixed' : 'relative',
-        left: isMobile && !mobileSidebarOpen ? '-280px' : '0',
-        top: 0,
-        zIndex: 50,
-        backgroundColor: 'var(--bg)',
-        transition: 'left 0.3s ease',
-        boxShadow: isMobile ? '2px 0 8px rgba(0, 0, 0, 0.1)' : 'none'
-      }}>
+    if (isNavMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNavMenuOpen]);
+
+  return (
+    <div style={{ backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      {/* Header */}
+      <div
+        className="dashboard-header settings-header"
+        style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}
+      >
+        <div className="flex items-center settings-header-logo" style={{ gap: '10px' }}>
+          <div className="logo-hexagon">
+            <div className="hexagon-outer">
+              <div className="hexagon-inner">
+              </div>
+            </div>
+          </div>
+          <h1 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>
+            AX PRO
+          </h1>
+        </div>
+
+        <div className="header-actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="icon-btn"
+            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            style={{ color: 'var(--text)' }}
+          >
+            {theme === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />}
+          </button>
+
+          {/* Language Toggle */}
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
+            style={{
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              backgroundColor: 'var(--card)',
+              borderRadius: 8,
+              padding: '6px 10px',
+              fontSize: 13
+            }}
+          >
+            <option value="en">EN</option>
+            <option value="ko">KO</option>
+          </select>
+          <button
+            ref={navMenuButtonRef}
+            onClick={() => setIsNavMenuOpen(open => !open)}
+            className="icon-btn"
+            aria-label="Navigation"
+            title="Navigation"
+            style={{ color: 'var(--text)' }}
+          >
+            <IconMenu size={18} />
+          </button>
+
+          {isNavMenuOpen && (
+            <div
+              ref={navMenuRef}
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
+                borderRadius: 10,
+                boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+                padding: '8px 0',
+                minWidth: 200,
+                zIndex: 200
+              }}
+            >
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  navigate(withGroupParam('/admin/dashboard'));
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconBarChart size={16} />
+                <span style={{ marginLeft: 8 }}>Dashboard</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  navigate(withGroupParam('/chat'));
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconMessage size={16} />
+                <span style={{ marginLeft: 8 }}>Chat</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  navigate(withGroupParam('/admin/knowledge-management'));
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconDatabase size={16} />
+                <span style={{ marginLeft: 8, whiteSpace: 'nowrap' }}>Knowledge Management</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  navigate(withGroupParam('/settings'));
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconSettings size={16} />
+                <span style={{ marginLeft: 8 }}>Settings</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  navigate('/group-management');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconUsers size={16} />
+                <span style={{ marginLeft: 8 }}>Group Management</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsNavMenuOpen(false);
+                  handleLogout();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--admin-danger)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(248,113,113,0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <IconLogout size={16} />
+                <span style={{ marginLeft: 8 }}>{t('ui.signOut')}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main layout */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Mobile Overlay - Darkens background when sidebar is open */}
+        {isMobile && mobileSidebarOpen && user && (
+          <div
+            onClick={() => setMobileSidebarOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 40,
+              transition: 'opacity 0.3s ease'
+            }}
+          />
+        )}
+
+        {/* Left Rail - Session List - Only show if user is logged in */}
+        {user && (
+        <div style={{ 
+          width: isMobile ? '280px' : '320px',
+          borderRight: isMobile ? 'none' : '1px solid var(--border)',
+          display: isMobile && !mobileSidebarOpen ? 'none' : 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          overflow: 'hidden',
+          position: isMobile ? 'fixed' : 'relative',
+          left: isMobile && !mobileSidebarOpen ? '-280px' : '0',
+          top: 0,
+          zIndex: 50,
+          backgroundColor: 'var(--bg)',
+          transition: 'left 0.3s ease',
+          boxShadow: isMobile ? '2px 0 8px rgba(0, 0, 0, 0.1)' : 'none'
+        }}>
         {/* Header - Fixed at top, never scrolls */}
         <div style={{ 
           padding: '1rem',
@@ -274,13 +555,75 @@ const ChatShell: React.FC = () => {
           zIndex: 10
         }}>
           <div className="flex items-center justify-between" style={{ marginBottom: isMobile ? '0.75rem' : '1rem' }}>
-            <h1 className="font-semibold" style={{ 
-              color: 'var(--text)',
-              fontSize: isMobile ? '0.875rem' : '1.125rem'
-            }}>
-              {customization.chatTitle}
-            </h1>
+            <div className="flex items-center" style={{ gap: '0.5rem', minWidth: 0 }}>
+              <img 
+                src={customization.avatarUrl} 
+                alt="Chatbot Avatar" 
+                className="rounded-full flex-shrink-0"
+                style={{ 
+                  objectFit: 'cover',
+                  width: isMobile ? '32px' : '36px',
+                  height: isMobile ? '32px' : '36px'
+                }}
+                onError={(e) => {
+                  e.currentTarget.src = '/default-profile-avatar.png';
+                }}
+              />
+              <h1 className="font-semibold truncate" style={{ 
+                color: 'var(--text)',
+                fontSize: isMobile ? '0.875rem' : '1.125rem'
+              }}>
+                {customization.chatTitle}
+              </h1>
+            </div>
             <div className="flex items-center" style={{ gap: isMobile ? '0.5rem' : '0.5rem' }}>
+              {!isMobile && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const currentUrl = window.location.href;
+                      await navigator.clipboard.writeText(currentUrl);
+                      setUrlCopied(true);
+                      setTimeout(() => {
+                        setUrlCopied(false);
+                      }, 2000);
+                    } catch (error) {
+                    }
+                  }}
+                  className="rounded-md border flex items-center"
+                  style={{ 
+                    borderColor: 'var(--border)',
+                    color: 'var(--text-muted)',
+                    backgroundColor: 'var(--card)',
+                    padding: '0.25rem 0.5rem',
+                    fontSize: '0.75rem',
+                    gap: '0.35rem',
+                    minHeight: '32px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.15)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.color = 'var(--text)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--card)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.color = 'var(--text-muted)';
+                  }}
+                  title="Copy chat URL to clipboard"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                  </svg>
+                  <span>{urlCopied ? 'Copied!' : 'Share'}</span>
+                </button>
+              )}
               {/* Mobile Close Button */}
               {isMobile && (
                 <button
@@ -305,59 +648,6 @@ const ChatShell: React.FC = () => {
                   </svg>
                 </button>
               )}
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="rounded border"
-                style={{ 
-                  backgroundColor: 'var(--card)', 
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)',
-                  padding: isMobile ? '0.5rem' : '0.25rem 0.5rem',
-                  minWidth: '44px',
-                  minHeight: '44px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-                title={theme === 'light' ? t('ui.theme.dark') : t('ui.theme.light')}
-              >
-                {theme === 'light' ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="5"></circle>
-                    <line x1="12" y1="1" x2="12" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="23"></line>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                    <line x1="1" y1="12" x2="3" y2="12"></line>
-                    <line x1="21" y1="12" x2="23" y2="12"></line>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                  </svg>
-                )}
-              </button>
-              
-              {/* Language Toggle */}
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
-                className="rounded border bg-transparent"
-                style={{ 
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)',
-                  padding: isMobile ? '0.5rem' : '0.25rem 0.5rem',
-                  fontSize: isMobile ? '0.875rem' : '0.875rem',
-                  minWidth: '44px',
-                  minHeight: '44px'
-                }}
-              >
-                <option value="en">EN</option>
-                <option value="ko">KO</option>
-              </select>
             </div>
           </div>
           
@@ -381,67 +671,6 @@ const ChatShell: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center" style={{ gap: isMobile ? '0.5rem' : '0.5rem', flexShrink: 0 }}>
-              <button
-                onClick={() => {
-                  if (isMobile) setMobileSidebarOpen(false);
-                  navigate(withGroupParam('/admin/dashboard'));
-                }}
-                className="rounded-md border transition-colors"
-                style={{
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)',
-                  padding: isMobile ? '0.5rem' : '0.5rem',
-                  minWidth: '44px',
-                  minHeight: '44px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-                title={t('ui.dashboard')}
-              >
-                <svg width={isMobile ? "18" : "16"} height={isMobile ? "18" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="14" width="7" height="7"></rect>
-                  <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-              </button>
-              <button
-                onClick={() => {
-                  if (isMobile) setMobileSidebarOpen(false);
-                  navigate(withGroupParam('/settings'));
-                }}
-                className="rounded-md border transition-colors"
-                style={{
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)',
-                  padding: isMobile ? '0.5rem' : '0.5rem',
-                  minWidth: '44px',
-                  minHeight: '44px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-                title={t('ui.settings')}
-              >
-                <IconSettings size={isMobile ? 18 : 16} />
-              </button>
-              <button
-                onClick={() => {
-                  if (isMobile) setMobileSidebarOpen(false);
-                  handleLogout();
-                }}
-                className="link"
-                style={{
-                  fontSize: isMobile ? '0.75rem' : '0.875rem',
-                  padding: isMobile ? '0.5rem' : '0.25rem 0.5rem',
-                  minHeight: '44px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
-              >
-                {t('ui.signOut')}
-              </button>
             </div>
           </div>
         </div>
@@ -505,19 +734,6 @@ const ChatShell: React.FC = () => {
                     </svg>
                   </button>
                 )}
-                <img 
-                  src={customization.avatarUrl} 
-                  alt="Chatbot Avatar" 
-                  className="rounded-full flex-shrink-0"
-                  style={{ 
-                    objectFit: 'cover',
-                    width: isMobile ? '36px' : '40px',
-                    height: isMobile ? '36px' : '40px'
-                  }}
-                  onError={(e) => {
-                    e.currentTarget.src = '/default-profile-avatar.png';
-                  }}
-                />
                 <h2 className="font-medium truncate" style={{ 
                   color: 'var(--text)',
                   fontSize: isMobile ? '0.875rem' : '1.125rem'
@@ -532,74 +748,6 @@ const ChatShell: React.FC = () => {
                     return currentSession?.title || t('ui.newChatTitle');
                   })()}
                 </h2>
-              </div>
-              <div className="flex items-center" style={{ gap: isMobile ? '0.5rem' : '0.5rem', flexShrink: 0 }}>
-                {!isMobile && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        const currentUrl = window.location.href;
-                        await navigator.clipboard.writeText(currentUrl);
-                        setUrlCopied(true);
-                        setTimeout(() => {
-                          setUrlCopied(false);
-                        }, 2000);
-                      } catch (error) {
-                      }
-                    }}
-                    className="rounded-md border flex items-center"
-                    style={{ 
-                      borderColor: 'var(--border)',
-                      color: 'var(--text)',
-                      backgroundColor: 'var(--card)',
-                      padding: '0.375rem 0.75rem',
-                      fontSize: '0.875rem',
-                      gap: '0.5rem',
-                      minHeight: '44px'
-                    }}
-                    title="Copy chat URL to clipboard"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="18" cy="5" r="3"></circle>
-                      <circle cx="6" cy="12" r="3"></circle>
-                      <circle cx="18" cy="19" r="3"></circle>
-                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                    </svg>
-                    <span>{urlCopied ? 'Copied!' : 'Share'}</span>
-                  </button>
-                )}
-                <button
-                  onClick={async () => {
-                    try {
-                      const newSessionId = await createSession();
-                      if (newSessionId) {
-                        setCurrentSessionId(newSessionId);
-                        hasAutoCreatedSession.current = false;
-                      }
-                    } catch (error) {
-                    }
-                  }}
-                  className="rounded-md border flex items-center"
-                  style={{ 
-                    borderColor: 'var(--border)',
-                    color: 'var(--text)',
-                    backgroundColor: 'var(--card)',
-                    padding: isMobile ? '0.5rem' : '0.375rem 0.75rem',
-                    fontSize: isMobile ? '0.75rem' : '0.875rem',
-                    gap: isMobile ? '0.25rem' : '0.5rem',
-                    minWidth: isMobile ? '44px' : 'auto',
-                    minHeight: '44px',
-                    justifyContent: 'center'
-                  }}
-                  title="Start a new chat (⌘N or Ctrl+N)"
-                >
-                  <svg width={isMobile ? "18" : "14"} height={isMobile ? "18" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  {!isMobile && <span>{t('ui.newChat')}</span>}
-                </button>
               </div>
             </div>
             <ThreadView sessionId={currentSessionId} />
@@ -618,6 +766,7 @@ const ChatShell: React.FC = () => {
         )}
       </div>
     </div>
+  </div>
   );
 };
 

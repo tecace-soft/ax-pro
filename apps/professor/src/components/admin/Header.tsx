@@ -1,9 +1,9 @@
-import { IconMoon, IconSun, IconUser, IconLogout, IconMessage, IconUsers, IconMenu, IconSettings } from '../../ui/icons'
+import { IconMoon, IconSun, IconUser, IconLogout, IconMessage, IconUsers, IconMenu, IconSettings, IconDatabase, IconBarChart } from '../../ui/icons'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../../theme/ThemeProvider'
 import { useTranslation } from '../../i18n/I18nProvider'
 import { withGroupParam } from '../../utils/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface HeaderProps {
   performanceScore: number
@@ -20,6 +20,8 @@ export default function AdminHeader({ performanceScore, performanceDate, current
   const { theme, toggleTheme } = useTheme()
   const { language, setLanguage, t } = useTranslation()
   const [isNavMenuOpen, setIsNavMenuOpen] = useState(false)
+  const navMenuRef = useRef<HTMLDivElement | null>(null)
+  const navMenuButtonRef = useRef<HTMLButtonElement | null>(null)
   
   const getPerformanceLabel = (score: number) => {
     if (score >= 90) return t('admin.excellent')
@@ -32,14 +34,22 @@ export default function AdminHeader({ performanceScore, performanceDate, current
     navigate(withGroupParam('/admin/dashboard'))
   }
 
-  const handleNavAction = (action: 'chat' | 'group' | 'settings' | 'logout') => {
+  const handleNavAction = (action: 'dashboard' | 'chat' | 'group' | 'knowledge' | 'settings' | 'logout') => {
     setIsNavMenuOpen(false)
+    if (action === 'dashboard') {
+      navigate(withGroupParam('/admin/dashboard'))
+      return
+    }
     if (action === 'chat') {
       navigate(withGroupParam('/chat'))
       return
     }
     if (action === 'group') {
       navigate('/group-management')
+      return
+    }
+    if (action === 'knowledge') {
+      navigate(withGroupParam('/admin/knowledge-management'))
       return
     }
     if (action === 'settings') {
@@ -51,8 +61,22 @@ export default function AdminHeader({ performanceScore, performanceDate, current
     }
   }
 
-  const displayTitle = customTitle || 'TecAce Ax Pro'
-  const displayWelcome = customWelcome || 'TecAce Ax Pro'
+  const displayTitle = customTitle || 'AX PRO'
+  const displayWelcome = customWelcome || 'AX PRO'
+
+  useEffect(() => {
+    if (!isNavMenuOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (navMenuRef.current?.contains(target)) return
+      if (navMenuButtonRef.current?.contains(target)) return
+      setIsNavMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isNavMenuOpen])
 
   return (
     <header className="dashboard-header">
@@ -101,12 +125,14 @@ export default function AdminHeader({ performanceScore, performanceDate, current
             aria-label={t('admin.navigation')}
             onClick={() => setIsNavMenuOpen((open) => !open)}
             title={t('admin.navigation')}
+            ref={navMenuButtonRef}
           >
             <IconMenu size={18} />
           </button>
 
           {isNavMenuOpen && (
             <div
+              ref={navMenuRef}
               style={{
                 position: 'absolute',
                 top: 'calc(100% + 8px)',
@@ -120,6 +146,32 @@ export default function AdminHeader({ performanceScore, performanceDate, current
                 zIndex: 200
               }}
             >
+              <button
+                onClick={() => handleNavAction('dashboard')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--admin-text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--admin-hover-bg)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                <IconBarChart size={16} />
+                <span style={{ marginLeft: 8 }}>Dashboard</span>
+              </button>
               <button
                 onClick={() => handleNavAction('chat')}
                 style={{
@@ -147,7 +199,7 @@ export default function AdminHeader({ performanceScore, performanceDate, current
                 <span style={{ marginLeft: 8 }}>{language === 'ko' ? '채팅' : 'Chat'}</span>
               </button>
               <button
-                onClick={() => handleNavAction('group')}
+                onClick={() => handleNavAction('knowledge')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -169,8 +221,8 @@ export default function AdminHeader({ performanceScore, performanceDate, current
                   e.currentTarget.style.backgroundColor = 'transparent'
                 }}
               >
-                <IconUsers size={16} />
-                <span style={{ marginLeft: 8 }}>Group Management</span>
+                <IconDatabase size={16} />
+                <span style={{ marginLeft: 8, whiteSpace: 'nowrap' }}>{t('admin.knowledgeBase')}</span>
               </button>
               <button
                 onClick={() => handleNavAction('settings')}
@@ -197,6 +249,32 @@ export default function AdminHeader({ performanceScore, performanceDate, current
               >
                 <IconSettings size={16} />
                 <span style={{ marginLeft: 8 }}>{t('ui.settings')}</span>
+              </button>
+              <button
+                onClick={() => handleNavAction('group')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--admin-text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--admin-hover-bg)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                <IconUsers size={16} />
+                <span style={{ marginLeft: 8 }}>Group Management</span>
               </button>
               <button
                 onClick={() => handleNavAction('logout')}

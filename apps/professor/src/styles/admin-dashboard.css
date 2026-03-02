@@ -531,6 +531,7 @@ to{ opacity: 0;
 /* ì‚¬ì´ë"œë°" collapse ìŠ¤íƒ€ì¼ */ .dashboard-sidebar.collapsed{ width: 60px;
   min-width: 60px;
   padding: 12px; }
+.dashboard-sidebar.collapsed .sidebar-content{ display: none; }
 .dashboard-sidebar.collapsed .sidebar-header, .dashboard-sidebar.collapsed .ai-profile, .dashboard-sidebar.collapsed .key-metrics, .dashboard-sidebar.collapsed .search-section, .dashboard-sidebar.collapsed .filter-buttons, .dashboard-sidebar.collapsed .nav-buttons, .dashboard-sidebar.collapsed .recent-searches{ display: none; }
 .dashboard-sidebar.collapsed .sidebar-toggle{ right: -10px;
   width: 24px;

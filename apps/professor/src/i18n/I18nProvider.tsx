@@ -29,7 +29,7 @@ const translations = {
     'translation.realTimeStt': 'real-time STT',
     'translation.accuracy': 'Translation accuracy',
     'translation.textRecognition': 'Text recognition',
-    'app.brand': 'AX PRO PLATFORM',
+    'app.brand': 'AX PRO',
     'auth.title.chat': 'Sign in',
     'auth.title.admin': 'Sign in',
     'auth.subtitle.chat': 'Continue to the Chat Interface',

@@ -284,6 +284,8 @@
   border-right: 1px solid rgba(59, 230, 255, 0.08);
   overflow-y: auto;
   transition: width 0.3s ease;
+  position: relative;
+  flex-shrink: 0;
 }
 
 /* Light mode sidebar */
@@ -293,7 +295,52 @@
 }
 
 .dashboard-sidebar.collapsed {
-  width: 80px;
+  width: 60px;
+}
+
+.dashboard-sidebar.collapsed .sidebar-content {
+  display: none;
+}
+
+.dashboard-sidebar .sidebar-toggle {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  transform: translateY(-50%);
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 250;
+  color: #ffffff;
+  padding: 0;
+}
+
+.dashboard-sidebar .sidebar-toggle:hover {
+  box-shadow: none;
+}
+
+.dashboard-sidebar .toggle-icon {
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 0.2s ease, color 0.15s ease;
+  /* Match default input border color in dashboard content */
+  color: rgba(59, 230, 255, 0.4);
+}
+
+.dashboard-sidebar .sidebar-toggle:hover .toggle-icon {
+  /* Match prompt/input hover accent (#3be6ff) */
+  color: #3be6ff;
+}
+
+.dashboard-sidebar .toggle-icon.rotated {
+  transform: rotate(180deg);
 }
 
 .sidebar-content {
@@ -574,6 +621,15 @@
 /* Light mode hexagon inner */
 [data-theme="light"] .hexagon-inner {
   background: #f8fafc;
+}
+
+/* Settings page header hexagon overrides to match settings color scheme */
+.settings-header-logo .hexagon-outer {
+  background: var(--primary);
+}
+
+.settings-header-logo .hexagon-inner {
+  background: var(--card);
 }
 
 .logo-text {

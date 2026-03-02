@@ -5,8 +5,11 @@ import {
   IconMegaphone, 
   IconSettings,
   IconBarChart,
-  IconActivity,
-  IconFileText
+  IconFileText,
+  IconEdit,
+  IconLightbulb,
+  IconChevronLeft,
+  IconChevronRight
 } from '../../ui/icons'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -474,13 +477,6 @@ export default function AdminSidebar({
             </button>
             <button 
               className="nav-item"
-              onClick={() => handleNavigation('daily-message-activity')}
-            >
-              <IconActivity size={18} />
-              <span>{t('admin.activity')}</span>
-            </button>
-            <button 
-              className="nav-item"
               onClick={() => handleNavigation('recent-conversations')}
             >
               <IconMessage size={18} />
@@ -488,10 +484,24 @@ export default function AdminSidebar({
             </button>
             <button 
               className="nav-item"
+              onClick={() => handleNavigation('admin-feedback')}
+            >
+              <IconEdit size={18} />
+              <span>{t('adminFeedback.supervisorCorrectionTitle')}</span>
+            </button>
+            <button 
+              className="nav-item"
+              onClick={() => handleNavigation('admin-instruction')}
+            >
+              <IconLightbulb size={18} />
+              <span>{t('adminInstruction.title')}</span>
+            </button>
+            <button 
+              className="nav-item"
               onClick={() => handleNavigation('user-feedback')}
             >
               <IconMegaphone size={18} />
-              <span>{t('admin.feedback')}</span>
+              <span>{t('admin.userFeedback')}</span>
             </button>
             <button 
               className="nav-item"
@@ -511,7 +521,16 @@ export default function AdminSidebar({
         </div>
       </div>
 
-      {/* Sidebar collapse toggle removed per UX feedback */}
+      <button
+        type="button"
+        className="sidebar-toggle"
+        onClick={onToggleCollapse}
+        aria-label={isCollapsed ? (language === 'en' ? 'Expand sidebar' : '사이드바 확장') : (language === 'en' ? 'Collapse sidebar' : '사이드바 축소')}
+      >
+        <span className="toggle-icon">
+          {isCollapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />}
+        </span>
+      </button>
 
       {/* Manage Languages Modal */}
       {isManageLangOpen && (
@@ -644,4 +663,3 @@ export default function AdminSidebar({
     </aside>
   )
 }
-
