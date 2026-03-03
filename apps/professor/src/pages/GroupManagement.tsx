@@ -7,7 +7,7 @@ import { getUserByEmail } from '../services/authService';
 import { getUserGroups, Group } from '../services/groupService';
 import GroupCreationModal from '../components/GroupCreationModal';
 import { checkAndMigrateSettings } from '../services/migrateToUserSettings';
-import { IconUser, IconMoon, IconSun } from '../ui/icons';
+import { IconMoon, IconSun, IconLogout } from '../ui/icons';
 
 const GroupManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -120,68 +120,63 @@ const GroupManagement: React.FC = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }} data-theme={theme}>
       {/* Header */}
-      <header className="border-b" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Brand Name */}
-            <div className="flex items-center space-x-4">
-              <span className="text-lg font-semibold" style={{ color: 'var(--text)' }}>
-                {t('app.brand')}
-              </span>
-            </div>
-
-            {/* Right side controls */}
-            <div className="flex items-center space-x-4">
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="text-sm px-3 py-1 rounded border"
-                style={{ 
-                  backgroundColor: 'var(--card)', 
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)'
-                }}
-              >
-                {theme === 'light' ? t('ui.theme.dark') : t('ui.theme.light')}
-              </button>
-              
-              {/* Language Toggle */}
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
-                className="text-sm px-3 py-1 rounded border bg-transparent"
-                style={{ 
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)'
-                }}
-              >
-                <option value="en">{t('ui.lang.en')}</option>
-                <option value="ko">{t('ui.lang.ko')}</option>
-              </select>
-              
-              <button
-                onClick={() => navigate('/user-settings')}
-                className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                title={t('group.management.userSettings')}
-                style={{ color: 'var(--text)' }}
-              >
-                <IconUser size={20} />
-              </button>
-              
-              <button
-                onClick={handleSignOut}
-                className="px-4 py-2 rounded-md text-sm font-medium"
-                style={{
-                  backgroundColor: 'var(--danger)',
-                  color: 'white'
-                }}
-              >
-                {t('auth.signOut')}
-              </button>
+      <div
+        className="dashboard-header settings-header"
+        style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}
+      >
+        <div className="flex items-center settings-header-logo" style={{ gap: '10px' }}>
+          <div className="logo-hexagon">
+            <div className="hexagon-outer">
+              <div className="hexagon-inner">
+              </div>
             </div>
           </div>
+          <h1 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>
+            AX PRO
+          </h1>
         </div>
-      </header>
+
+        <div className="header-actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="icon-btn"
+            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            style={{ color: 'var(--text)' }}
+          >
+            {theme === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />}
+          </button>
+
+          {/* Language Toggle */}
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
+            style={{
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              backgroundColor: 'var(--card)',
+              borderRadius: 8,
+              padding: '6px 10px',
+              fontSize: 13
+            }}
+          >
+            <option value="en">EN</option>
+            <option value="ko">KO</option>
+          </select>
+
+          {/* Sign Out Icon */}
+          <button
+            onClick={handleSignOut}
+            className="icon-btn"
+            aria-label={t('auth.signOut')}
+            title={t('auth.signOut')}
+            style={{ color: 'var(--text)' }}
+          >
+            <IconLogout size={18} />
+          </button>
+        </div>
+      </div>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

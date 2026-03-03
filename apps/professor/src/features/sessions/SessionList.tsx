@@ -110,15 +110,18 @@ const SessionList: React.FC<SessionListProps> = ({ currentSessionId, onSessionSe
       </div>
 
       {/* Session List - ONLY this section scrolls when content overflows */}
-      <div style={{ 
-        flex: '1 1 0%',
-        overflowY: 'auto', 
-        overflowX: 'hidden',
-        minHeight: 0,
-        maxHeight: '100%',
-        position: 'relative',
-        WebkitOverflowScrolling: 'touch'
-      }}>
+      <div
+        className="chat-session-list__scroll"
+        style={{ 
+          flex: '1 1 0%',
+          overflowY: 'auto', 
+          overflowX: 'hidden',
+          minHeight: 0,
+          maxHeight: '100%',
+          position: 'relative',
+          WebkitOverflowScrolling: 'touch'
+        }}
+      >
         {loading ? (
           <div className="p-4">
             <div className="animate-pulse space-y-3">

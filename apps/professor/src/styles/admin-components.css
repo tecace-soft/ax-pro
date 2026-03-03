@@ -562,14 +562,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
+  padding: 0.5rem 2rem;
   background: linear-gradient(180deg, rgba(18,27,61,0.9), rgba(12,19,48,0.9));
   border-bottom: 1px solid rgba(59, 230, 255, 0.08);
   backdrop-filter: blur(10px);
   position: sticky;
   top: 0;
   z-index: 100;
-  height: 72px;
+  height: 56px;
 }
 
 /* Light mode header */
@@ -586,19 +586,19 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 10px;
 }
 
 .logo-hexagon {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   position: relative;
   flex-shrink: 0; /* Prevent shrinking */
 }
 
 .hexagon-outer {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   background: var(--admin-primary);
   clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
   display: flex;
@@ -608,8 +608,8 @@
 }
 
 .hexagon-inner {
-  width: 32px;
-  height: 32px;
+  width: 22px;
+  height: 22px;
   background: var(--admin-bg);
   clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
   position: absolute;
@@ -633,9 +633,10 @@
 }
 
 .logo-text {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 600;
   color: #ffffff;
+  line-height: 1.75rem;
 }
 
 /* Light mode logo text */
