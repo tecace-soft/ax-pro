@@ -284,7 +284,9 @@ export default function AdminInstructionList() {
                 {displayed.map((row, index) => (
                   <tr key={row.id} className="admin-instruction-table__row" style={{ backgroundColor: index % 2 === 0 ? 'rgba(9, 14, 34, 0.3)' : 'rgba(9, 14, 34, 0.2)', borderColor: 'var(--admin-border)' }}>
                     <td className="admin-instruction-table__td admin-instruction-table__td--date">{formatDate(row.updated_at || row.created_at)}</td>
-                    <td className="admin-instruction-table__td admin-instruction-table__td--instruction">{row.feedback_text || '-'}</td>
+                    <td className="admin-instruction-table__td admin-instruction-table__td--instruction" style={{ color: 'var(--admin-text)' }}>
+                      {row.feedback_text || '-'}
+                    </td>
                     <td className="admin-instruction-table__td admin-instruction-table__td--apply">
                       <button
                         onClick={() => toggleApply(row.id!)}

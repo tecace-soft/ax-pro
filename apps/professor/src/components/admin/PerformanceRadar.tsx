@@ -109,7 +109,7 @@ export default function PerformanceRadar({
     return `M ${points.join(' L ')} Z`
   }
 
-  // Calculate label coordinates - positioned right next to each data point
+  // Calculate label coordinates - positioned outside each data point
   const getLabelCoordinates = (index: number, total: number, value: number, isActive: boolean) => {
     // Get the active point index if this point is active
     const activePointIndex = isActive ? activeDataPoints.findIndex(p => 
@@ -126,11 +126,11 @@ export default function PerformanceRadar({
       const minRadius = 3
       const finalPointRadius = Math.max(minRadius, pointRadius)
       
-      // Position label right next to the point with small offset
-      let offset = 20 // Offset from point
+      // Position label outside the point with a larger offset so it never overlaps the dot
+      let offset = 40 // base offset from point
       const normalized = ((angle + 360) % 360)
       if (normalized <= 25 || normalized >= 335) {
-        offset += 15 // Extra space at top for scale labels
+        offset += 8 // small extra space at top
       }
       
       const labelRadius = finalPointRadius + offset
@@ -231,42 +231,59 @@ export default function PerformanceRadar({
           <div className="radar-chart-container">
             <div className="radar-chart-large">
               <svg className="radar-svg-large" width={chartSize} height={chartSize}>
+                <defs>
+                  <filter id="performanceRadarPointBlur" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+                  </filter>
+                  <filter id="performanceRadarLineBlur" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+                  </filter>
+                </defs>
                 {/* Background grid */}
                 {createBackgroundGrid()}
                 
                 {/* Radar polygon */}
+                {/* Blurred glow behind */}
                 <path
                   d={createRadarPath()}
-                  fill="rgba(59, 230, 255, 0.1)"
-                  stroke="rgba(59, 230, 255, 0.8)"
-                  strokeWidth="2"
+                  fill="rgba(59, 230, 255, 0.08)"
+                  stroke="rgba(59, 230, 255, 0.5)"
+                  strokeWidth="1.2"
+                  filter="url(#performanceRadarLineBlur)"
+                />
+                {/* Sharp line on top */}
+                <path
+                  d={createRadarPath()}
+                  fill="transparent"
+                  stroke="rgba(59, 230, 255, 0.9)"
+                  strokeWidth="1"
                 />
                 
-                {/* Data points */}
+                {/* Data points (dot only, no corner score text) */}
                 {activeDataPoints.map((point, index) => {
                   const coords = getPointCoordinates(index, activeDataPoints.length, point.value)
+                  const cx = coords.x + center
+                  const cy = coords.y + center
                   return (
                     <g key={index} className="radar-point-large">
+                      {/* Blurred glow behind */}
                       <circle
                         className="point-dot-large"
-                        cx={coords.x + center}
-                        cy={coords.y + center}
-                        r="6"
+                        cx={cx}
+                        cy={cy}
+                        r="4"
                         fill={point.color}
-                        stroke="white"
-                        strokeWidth="2"
+                        opacity={0.7}
+                        filter="url(#performanceRadarPointBlur)"
                       />
-                      <text
-                        x={coords.x + center}
-                        y={coords.y + center - 15}
-                        textAnchor="middle"
-                        className="point-score-box"
+                      {/* Sharp dot on top */}
+                      <circle
+                        className="point-dot-large"
+                        cx={cx}
+                        cy={cy}
+                        r="2.5"
                         fill={point.color}
-                        fontSize="12"
-                        fontWeight="bold"
-                      >
-                        {point.value}
-                      </text>
+                      />
                     </g>
                   )
                 })}
@@ -308,17 +325,14 @@ export default function PerformanceRadar({
                     left: `${labelX}px`,
                     top: `${labelY}px`,
                     transform: 'translate(-50%, -50%)',
-                    zIndex: 10,
-                    borderColor: isActive ? point.color : 'rgba(120, 140, 160, 0.2)',
-                    opacity: isActive ? 1 : 0.25,
-                    backgroundColor: isActive ? 'rgba(8, 20, 35, 0.8)' : 'rgba(8, 20, 35, 0.4)'
+                    zIndex: 10
                   }}
                 >
                   <div className="label-content">
-                    <span className="label-name" style={{ color: isActive ? point.color : 'rgba(180, 200, 220, 0.4)' }}>
+                    <span className="label-name">
                       {point.label.toUpperCase()}
                     </span>
-                    <span className="label-score" style={{ color: isActive ? point.color : 'rgba(180, 200, 220, 0.4)' }}>
+                    <span className="label-score">
                       {point.value}
                     </span>
                   </div>

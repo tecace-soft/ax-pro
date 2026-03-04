@@ -180,7 +180,7 @@ export default function ProfessorRadarChart({
     })
   }
 
-  // Calculate label coordinates near each data point (positioned right next to the point)
+  // Calculate label coordinates near each data point (positioned outside the point)
   const getLabelCoordinates = (activeIndex: number, value: number, activeCount: number) => {
     // Evenly distribute labels around circle based on active count
     const angleStep = 360 / activeCount
@@ -192,22 +192,22 @@ export default function ProfessorRadarChart({
     const minRadius = 3
     const finalPointRadius = Math.max(minRadius, pointRadius)
     
-    // Position label right next to the point - keep offset consistent for all points
+    // Position label outside the point - keep offset consistent for all points
     // Check if this is a top axis (where "100" scale label is)
     const normalized = ((angle + 360) % 360)
     const isTopAxis = normalized <= 25 || normalized >= 335 // Narrower range, just for top axis
     
-    // Base offset - keep it consistent for ALL points so labels are always close
-    let offset = 18 // Standard offset for all points, regardless of value
+    // Base offset - keep it consistent for ALL points
+    let offset = 40 // larger offset so labels clear the dots
     
     // Special handling ONLY for top axis to avoid "100" scale label overlap
     // Only when point is actually very close to "100" (high value)
     if (isTopAxis && value > 85) {
       // Point is very close to "100" label area - need to push label past it
-      offset = 40 // Larger offset to get past "100" label area
+      offset = 55 // Larger offset to get past previous top area
     } else if (isTopAxis && value > 75) {
       // Point is getting close to "100" area - moderate offset
-      offset = 25
+      offset = 40
     }
     // For all other cases (non-top axes, or top axes with lower values), keep 18px offset
     
@@ -270,7 +270,7 @@ export default function ProfessorRadarChart({
     // 3 active → triangle, 4 → square, 5 → pentagon, 6 → hexagon
     const sides = activeCount
 
-    // Grid rings at 0%, 20%, 40%, 60%, 80%, 100% intervals
+    // Grid rings at 20%, 40%, 60%, 80%, 100% intervals (no numeric labels)
     // Draw symmetrical polygon based on active count
     for (let percent = 0; percent <= 100; percent += 20) {
       const radius = (percent / 100) * maxRadius
@@ -326,36 +326,6 @@ export default function ProfessorRadarChart({
 
     // Scale labels - positioned exactly on hexagon grid lines
     
-    // Label "0" at center
-    gridLines.push(
-      <text key="scale-0" x={center} y={centerY} textAnchor="middle" dominantBaseline="middle" fill="rgba(180, 220, 255, 0.85)" fontSize="12" fontWeight={400}>0</text>
-    )
-    
-    // Labels 20, 40, 60, 80, 100 - position on top axis (first axis, i=0)
-    for (let percent = 20; percent <= 100; percent += 20) {
-      const radius = (percent / 100) * maxRadius
-      // Top axis is always at -90 degrees (i=0)
-      const topAxisAngleDeg = -90
-      const angleRad = topAxisAngleDeg * Math.PI / 180
-      const vertexX = center + Math.cos(angleRad) * radius
-      const vertexY = centerY + Math.sin(angleRad) * radius
-      
-      gridLines.push(
-        <text
-          key={`scale-${percent}`}
-          x={vertexX}
-          y={vertexY}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill="rgba(180, 220, 255, 0.85)"
-          fontSize="12"
-          fontWeight={400}
-        >
-          {percent}
-        </text>
-      )
-    }
-
     return gridLines
   }
 
@@ -384,6 +354,14 @@ export default function ProfessorRadarChart({
                 height={chartSize}
                 style={{ width: chartSize, height: chartSize, position: 'relative', left: 'auto', top: 'auto', transform: 'none' }}
               >
+                <defs>
+                  <filter id="profRadarPointBlur" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+                  </filter>
+                  <filter id="profRadarLineBlur" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+                  </filter>
+                </defs>
                 {/* Background grid */}
                 {createBackgroundGrid()}
                 
@@ -391,11 +369,20 @@ export default function ProfessorRadarChart({
                 {createRadarLines()}
                 
                 {/* Radar polygon */}
+                {/* Blurred glow behind */}
                 <path
                   d={createRadarPath()}
-                  fill="rgba(59, 230, 255, 0.1)"
-                  stroke="rgba(59, 230, 255, 0.8)"
-                  strokeWidth="2"
+                  fill="rgba(59, 230, 255, 0.08)"
+                  stroke="rgba(59, 230, 255, 0.5)"
+                  strokeWidth="1.2"
+                  filter="url(#profRadarLineBlur)"
+                />
+                {/* Sharp line on top */}
+                <path
+                  d={createRadarPath()}
+                  fill="transparent"
+                  stroke="rgba(59, 230, 255, 0.9)"
+                  strokeWidth="1"
                 />
                 
                 {/* Data points (dots) at each axis position (symmetrical) */}
@@ -411,15 +398,24 @@ export default function ProfessorRadarChart({
                   const pointY = centerY + Math.sin(angle * Math.PI / 180) * finalRadius
                   
                   return (
-                    <circle
-                      key={`point-${point.key}`}
-                      cx={pointX}
-                      cy={pointY}
-                      r="4"
-                      fill={point.color}
-                      stroke="rgba(255, 255, 255, 0.9)"
-                      strokeWidth="1.5"
-                    />
+                    <g key={`point-${point.key}`}>
+                      {/* Blurred glow behind */}
+                      <circle
+                        cx={pointX}
+                        cy={pointY}
+                        r="4"
+                        fill={point.color}
+                        opacity={0.7}
+                        filter="url(#profRadarPointBlur)"
+                      />
+                      {/* Sharp dot on top */}
+                      <circle
+                        cx={pointX}
+                        cy={pointY}
+                        r="2.5"
+                        fill={point.color}
+                      />
+                    </g>
                   )
                 })}
               </svg>

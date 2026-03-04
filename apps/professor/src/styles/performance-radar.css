@@ -158,48 +158,40 @@
   align-items: center;
   justify-content: center;
   z-index: 5;
-  background: rgba(18, 27, 61, 0.9);
-  border: 2px solid rgba(59, 230, 255, 0.4);
+  background: rgba(99, 149, 183, 0.7) !important;
+  border: none;
   border-radius: 50%;
-  width: clamp(70px, 15vw, 80px);
-  height: clamp(70px, 15vw, 80px);
-  backdrop-filter: blur(10px);
-  box-shadow: 
-    0 0 30px rgba(59, 230, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  width: clamp(90px, 18vw, 120px);
+  height: clamp(90px, 18vw, 120px);
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .center-score-large {
-  font-size: clamp(20px, 4vw, 24px);
-  font-weight: 800;
-  color: #61ff78;
-  text-shadow: 0 0 20px rgba(59, 230, 255, 0.5);
+  font-size: clamp(48px, 8.5vw, 64px);
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+  font-weight: 100;
+  color: #ffffff;
+  text-shadow: none;
   line-height: 1;
 }
 
 .center-label-large {
-  font-size: clamp(8px, 2vw, 10px);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: clamp(11px, 2.4vw, 13px);
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+  font-weight: 100;
+  color: #ffffff;
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-top: 2px;
 }
 
-/* Light mode overrides for radar center */
+/* Light mode: use same center styling as dark mode */
 [data-theme="light"] .radar-center-large {
-  background: transparent;
-  border-color: rgba(15, 23, 42, 0.12);
-  box-shadow: none;
 }
 
-[data-theme="light"] .center-score-large {
-  color: #15803d; /* match light-mode performance score green */
-  text-shadow: none;
-}
-
+[data-theme="light"] .center-score-large,
 [data-theme="light"] .center-label-large {
-  color: #0f172a;
 }
 
 /* 데이터 포인트 스타일 - 반응형 */
@@ -250,6 +242,7 @@
 /* 레이블 스타일 - 반응형 */
 .radar-label-clean {
   position: absolute;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
   font-size: clamp(11px, 2.5vw, 14px);
   font-weight: 600;
   color: #ffffff;
@@ -272,6 +265,13 @@
     0 6px 20px rgba(0, 0, 0, 0.4),
     0 0 30px rgba(59, 230, 255, 0.2);
   transition: all 0.3s ease;
+}
+
+/* Light mode: gridlines visible but not too dark */
+[data-theme="light"] .radar-svg-large > circle,
+[data-theme="light"] .radar-svg-large > line,
+[data-theme="light"] .radar-svg-large > polygon {
+  stroke: rgba(15, 23, 42, 0.16) !important;
 }
 
 /* Light mode: transparent label background on radar points */
@@ -297,6 +297,7 @@
 }
 
 .label-name {
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
   font-size: clamp(10px, 2vw, 12px);
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
@@ -305,6 +306,7 @@
 }
 
 .label-score {
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
   font-size: clamp(12px, 2.5vw, 14px);
   font-weight: 700;
   color: #3be6ff;
@@ -773,6 +775,7 @@
 /* 레이블 스타일 - 겹침 방지 및 자동 폰트 크기 조정 */
 .radar-label-clean {
   position: absolute;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
   font-size: clamp(10px, 2vw, 13px);
   font-weight: 600;
   color: #ffffff;
@@ -806,6 +809,7 @@
 }
 
 .label-name {
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
   font-size: clamp(8px, 1.8vw, 11px);
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
@@ -819,6 +823,7 @@
 }
 
 .label-score {
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
   font-size: clamp(10px, 2.2vw, 12px);
   font-weight: 700;
   color: #3be6ff;
@@ -946,29 +951,29 @@
   align-items: center;
   justify-content: center;
   z-index: 5;
-  background: rgba(18, 27, 61, 0.9);
-  border: 2px solid rgba(59, 230, 255, 0.4);
+  background: rgba(99, 149, 183, 0.7) !important;
+  border: none;
   border-radius: 50%;
-  width: 80px;
-  height: 80px;
-  backdrop-filter: blur(10px);
-  box-shadow: 
-    0 0 30px rgba(59, 230, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  width: clamp(90px, 18vw, 120px);
+  height: clamp(90px, 18vw, 120px);
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .center-score-large {
-  font-size: clamp(20px, 4vw, 24px);
-  font-weight: 800;
-  color: #61ff78;
-  text-shadow: 0 0 20px rgba(59, 230, 255, 0.5);
+  font-size: clamp(48px, 8.5vw, 64px);
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+  font-weight: 100;
+  color: #ffffff;
+  text-shadow: none;
   line-height: 1;
 }
 
 .center-label-large {
-  font-size: clamp(8px, 2vw, 10px);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: clamp(11px, 2.4vw, 13px);
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+  font-weight: 100;
+  color: #ffffff;
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-top: 2px;
@@ -1678,17 +1683,96 @@
   border-bottom: 1px solid rgba(59, 230, 255, 0.1);
 }
 
-/* ===== Final light-mode overrides for radar labels (ensure white-ish background, no text shadow) ===== */
-[data-theme="light"] .radar-chart-section .radar-label-clean,
-[data-theme="light"] #performance-radar .radar-label-clean {
-  background: rgba(255, 255, 255, 0.9) !important; /* 90% opacity */
-  backdrop-filter: none !important;
+/* ===== Final unified radar label style (no pill container, thin white text) ===== */
+.radar-chart-section .radar-label-clean,
+#performance-radar .radar-label-clean {
+  position: absolute !important;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 300 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.4px !important;
+  text-align: center !important;
+  z-index: 10 !important;
+  white-space: nowrap !important;
   text-shadow: none !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.radar-chart-section .radar-label-clean .label-name,
+#performance-radar .radar-label-clean .label-name,
+.radar-chart-section .radar-label-clean .label-score,
+#performance-radar .radar-label-clean .label-score {
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 300 !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+/* Prompt Injection label: force EXACTLY the same appearance as other labels */
+.radar-chart-section .radar-label-promptInjection,
+#performance-radar .radar-label-promptInjection,
+.radar-chart-section .radar-label-promptinjection,
+#performance-radar .radar-label-promptinjection {
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 300 !important;
+  letter-spacing: 0.4px !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.radar-chart-section .radar-label-promptInjection .label-name,
+#performance-radar .radar-label-promptInjection .label-name,
+.radar-chart-section .radar-label-promptInjection .label-score,
+#performance-radar .radar-label-promptInjection .label-score,
+.radar-chart-section .radar-label-promptinjection .label-name,
+#performance-radar .radar-label-promptinjection .label-name,
+.radar-chart-section .radar-label-promptinjection .label-score,
+#performance-radar .radar-label-promptinjection .label-score {
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 300 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.4px !important;
+  text-shadow: none !important;
+}
+
+/* Light mode: radar labels use black text */
+[data-theme="light"] .radar-chart-section .radar-label-clean,
+[data-theme="light"] #performance-radar .radar-label-clean,
+[data-theme="light"] .radar-chart-section .radar-label-clean .label-name,
+[data-theme="light"] #performance-radar .radar-label-clean .label-name,
+[data-theme="light"] .radar-chart-section .radar-label-clean .label-score,
+[data-theme="light"] #performance-radar .radar-label-clean .label-score,
+[data-theme="light"] .radar-chart-section .radar-label-promptInjection .label-name,
+[data-theme="light"] #performance-radar .radar-label-promptInjection .label-name,
+[data-theme="light"] .radar-chart-section .radar-label-promptInjection .label-score,
+[data-theme="light"] #performance-radar .radar-label-promptInjection .label-score,
+[data-theme="light"] .radar-chart-section .radar-label-promptinjection .label-name,
+[data-theme="light"] #performance-radar .radar-label-promptinjection .label-name,
+[data-theme="light"] .radar-chart-section .radar-label-promptinjection .label-score,
+[data-theme="light"] #performance-radar .radar-label-promptinjection .label-score {
+  color: #000000 !important;
 }
 
 /* 기존의 잘 작동하던 레이더 라벨 스타일 사용 */
 .radar-label-clean {
   position: absolute;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
   font-size: clamp(10px, 2vw, 13px);
   font-weight: 600;
   color: #ffffff;
@@ -1721,6 +1805,7 @@
 }
 
 .label-name {
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
   font-size: clamp(8px, 1.8vw, 11px);
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
@@ -1734,6 +1819,7 @@
 }
 
 .label-score {
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
   font-size: clamp(10px, 2.2vw, 12px);
   font-weight: 700;
   color: #3be6ff;
@@ -1754,10 +1840,15 @@
   transition: all 0.3s ease;
 }
 
-/* 비활성 레이블 스타일 */
+/* 비활성 레이블 스타일 - 배경/블러/특수 효과 제거, 단순 투명도만 낮춤 */
 .label-inactive {
   opacity: 0.4 !important;
-  filter: grayscale(0.7) !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
 }
 
 .label-inactive .label-name,
@@ -1789,4 +1880,14 @@
 .control-item[data-key="toxicity"],
 .control-item[data-key="promptInjection"] { 
   --item-color: var(--admin-primary); 
+}
+
+/* Force center circle background #6395b7 70% + no blur/shadow */
+#performance-radar .radar-chart-section .radar-chart-container .radar-chart-large .radar-center-large,
+.radar-chart-section .radar-chart-container .radar-chart-large .radar-center-large,
+#performance-radar .radar-center-large,
+.radar-center-large {
+  background: rgba(99, 149, 183, 0.7) !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
 }

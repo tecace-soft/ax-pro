@@ -703,7 +703,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                         className="truncate editable-cell" 
                         title={feedback.corrected_message || ''}
                         onClick={() => handleStartEdit(feedback.id!, 'correctedMessage')}
-                        style={{ cursor: 'pointer', borderRadius: '4px', fontSize: fs.cell }}
+                        style={{ cursor: 'pointer', borderRadius: '4px', fontSize: fs.cell, color: 'var(--admin-text)' }}
                       >
                         {feedback.corrected_message || '-'}
                       </div>
@@ -766,7 +766,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                         className="truncate editable-cell" 
                         title={(displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response) : ((feedback as any).chatData?.response_ko || feedback.corrected_response)) || ''}
                         onClick={() => handleStartEdit(feedback.id!, 'corrected')}
-                        style={{ cursor: 'pointer', borderRadius: '4px', fontSize: fs.cell }}
+                        style={{ cursor: 'pointer', borderRadius: '4px', fontSize: fs.cell, color: 'var(--admin-text)' }}
                       >
                         {displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response || '-') : ((feedback as any).chatData?.response_ko || feedback.corrected_response || '-')}
                       </div>
