@@ -51,13 +51,15 @@ export default function PerformanceRadar({
 
   const [, setIsModuleControlExpanded] = useState(false)
 
+  const primaryColor = 'var(--admin-primary)'
+
   const allDataPoints = [
-    { key: 'relevance', label: t('admin.relevance'), value: relevance, description: t('admin.contentMatching'), color: '#ff6b6b' },
-    { key: 'tone', label: t('admin.tone'), value: tone, description: t('admin.responseStyle'), color: '#4ecdc4' },
-    { key: 'length', label: t('admin.length'), value: length, description: t('admin.responseSize'), color: '#45b7d1' },
-    { key: 'accuracy', label: t('admin.accuracy'), value: accuracy, description: t('admin.correctAnswers'), color: '#96ceb4' },
-    { key: 'toxicity', label: t('admin.toxicity'), value: toxicity, description: t('admin.safetyCheck'), color: '#feca57' },
-    { key: 'promptInjection', label: t('admin.promptInjection'), value: promptInjection, description: t('admin.securityFilter'), color: '#ff9ff3' }
+    { key: 'relevance', label: t('admin.relevance'), value: relevance, description: t('admin.contentMatching'), color: primaryColor },
+    { key: 'tone', label: t('admin.tone'), value: tone, description: t('admin.responseStyle'), color: primaryColor },
+    { key: 'length', label: t('admin.length'), value: length, description: t('admin.responseSize'), color: primaryColor },
+    { key: 'accuracy', label: t('admin.accuracy'), value: accuracy, description: t('admin.correctAnswers'), color: primaryColor },
+    { key: 'toxicity', label: t('admin.toxicity'), value: toxicity, description: t('admin.safetyCheck'), color: primaryColor },
+    { key: 'promptInjection', label: t('admin.promptInjection'), value: promptInjection, description: t('admin.securityFilter'), color: primaryColor }
   ]
 
   const activeDataPoints = allDataPoints.filter(point => toggles[point.key as keyof typeof toggles])
@@ -341,82 +343,6 @@ export default function PerformanceRadar({
             {allDataPoints.map((point) => (
               <div key={point.key} className="control-item-side" data-key={point.key}>
                 <div className="control-info">
-                  <span className="control-icon" aria-hidden="true">
-                    {point.key === 'relevance' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <polyline
-                          points="13 3 6 14 11 14 10 21 18 10 13 10 13 3"
-                          fill="none"
-                          stroke={point.color}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                    {point.key === 'tone' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <circle cx="9" cy="9" r="3.5" fill="none" stroke={point.color} strokeWidth="2" />
-                        <path d="M15 4h3v9" fill="none" stroke={point.color} strokeWidth="2" strokeLinecap="round" />
-                        <circle cx="9" cy="15" r="3.5" fill="none" stroke={point.color} strokeWidth="2" />
-                      </svg>
-                    )}
-                    {point.key === 'length' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <rect x="4" y="7" width="16" height="10" rx="2" ry="2" fill="none" stroke={point.color} strokeWidth="2" />
-                        <line x1="7" y1="10" x2="17" y2="10" stroke={point.color} strokeWidth="2" />
-                      </svg>
-                    )}
-                    {point.key === 'accuracy' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="7" fill="none" stroke={point.color} strokeWidth="2" />
-                        <polyline
-                          points="9 12 11 14 15 10"
-                          fill="none"
-                          stroke={point.color}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                    {point.key === 'toxicity' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <polygon
-                          points="12 3 3 19 21 19 12 3"
-                          fill="none"
-                          stroke={point.color}
-                          strokeWidth="2"
-                          strokeLinejoin="round"
-                        />
-                        <circle cx="12" cy="15.5" r="1" fill={point.color} />
-                        <line x1="12" y1="9" x2="12" y2="13" stroke={point.color} strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                    )}
-                    {point.key === 'promptInjection' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <rect
-                          x="6"
-                          y="10"
-                          width="12"
-                          height="8"
-                          rx="2"
-                          ry="2"
-                          fill="none"
-                          stroke={point.color}
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M9 10V8a3 3 0 0 1 6 0v2"
-                          fill="none"
-                          stroke={point.color}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                  </span>
                   <div className="control-text">
                     <span className="control-label">{point.label}</span>
                     <span className="control-description">{point.description}</span>

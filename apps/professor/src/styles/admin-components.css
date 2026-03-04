@@ -1328,13 +1328,14 @@
 
 .performance-metric-value {
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 400;
   color: #61ff78;
   line-height: 1.2;
   margin-top: 6px;
 }
 
 .performance-metric-item--no-subtitle .performance-metric-value {
+  font-weight: 700;
   margin-top: 20px;
 }
 

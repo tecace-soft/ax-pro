@@ -211,7 +211,7 @@ export default function PromptControl() {
               fontSize: fs.sm
             }}
           >
-            📚 History
+            History
           </button>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -222,7 +222,7 @@ export default function PromptControl() {
               fontSize: fs.sm
             }}
           >
-            {isExpanded ? '📉 Collapse' : '📈 Expand'}
+            {isExpanded ? 'Collapse' : 'Expand'}
           </button>
           {lastRefreshed && (
             <span className="text-xs" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>

@@ -172,7 +172,7 @@
 .center-score-large {
   font-size: clamp(20px, 4vw, 24px);
   font-weight: 800;
-  color: #3be6ff;
+  color: #61ff78;
   text-shadow: 0 0 20px rgba(59, 230, 255, 0.5);
   line-height: 1;
 }
@@ -621,35 +621,15 @@
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* Per-metric ON colors: border and text use module color */
-.control-item-side[data-key="relevance"] .control-toggle-btn.enabled {
-  color: #ff6b6b;
-  border-color: #ff6b6b;
-}
-
-.control-item-side[data-key="tone"] .control-toggle-btn.enabled {
-  color: #4ecdc4;
-  border-color: #4ecdc4;
-}
-
-.control-item-side[data-key="length"] .control-toggle-btn.enabled {
-  color: #45b7d1;
-  border-color: #45b7d1;
-}
-
-.control-item-side[data-key="accuracy"] .control-toggle-btn.enabled {
-  color: #96ceb4;
-  border-color: #96ceb4;
-}
-
-.control-item-side[data-key="toxicity"] .control-toggle-btn.enabled {
-  color: #feca57;
-  border-color: #feca57;
-}
-
+/* ON state color for all metrics */
+.control-item-side[data-key="relevance"] .control-toggle-btn.enabled,
+.control-item-side[data-key="tone"] .control-toggle-btn.enabled,
+.control-item-side[data-key="length"] .control-toggle-btn.enabled,
+.control-item-side[data-key="accuracy"] .control-toggle-btn.enabled,
+.control-item-side[data-key="toxicity"] .control-toggle-btn.enabled,
 .control-item-side[data-key="promptInjection"] .control-toggle-btn.enabled {
-  color: #ff9ff3;
-  border-color: #ff9ff3;
+  color: var(--admin-primary);
+  border-color: var(--admin-primary);
 }
 
 /* 기존 토글 스위치 CSS 제거 */
@@ -958,7 +938,7 @@
 .center-score-large {
   font-size: clamp(20px, 4vw, 24px);
   font-weight: 800;
-  color: #3be6ff;
+  color: #61ff78;
   text-shadow: 0 0 20px rgba(59, 230, 255, 0.5);
   line-height: 1;
 }
@@ -1771,10 +1751,12 @@
   border-radius: 0 2px 2px 0;
 }
 
-/* 각 항목별 색상 변수 설정 */
-.control-item[data-key="relevance"] { --item-color: #ff6b6b; }
-.control-item[data-key="tone"] { --item-color: #4ecdc4; }
-.control-item[data-key="length"] { --item-color: #45b7d1; }
-.control-item[data-key="accuracy"] { --item-color: #96ceb4; }
-.control-item[data-key="toxicity"] { --item-color: #feca57; }
-.control-item[data-key="promptInjection"] { --item-color: #ff9ff3; }
+/* 각 항목별 색상 변수 설정 - 모두 동일 색상 사용 */
+.control-item[data-key="relevance"],
+.control-item[data-key="tone"],
+.control-item[data-key="length"],
+.control-item[data-key="accuracy"],
+.control-item[data-key="toxicity"],
+.control-item[data-key="promptInjection"] { 
+  --item-color: var(--admin-primary); 
+}
