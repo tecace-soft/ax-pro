@@ -186,6 +186,22 @@
   margin-top: 2px;
 }
 
+/* Light mode overrides for radar center */
+[data-theme="light"] .radar-center-large {
+  background: transparent;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: none;
+}
+
+[data-theme="light"] .center-score-large {
+  color: #15803d; /* match light-mode performance score green */
+  text-shadow: none;
+}
+
+[data-theme="light"] .center-label-large {
+  color: #0f172a;
+}
+
 /* 데이터 포인트 스타일 - 반응형 */
 .radar-point-large {
   position: absolute;
@@ -256,6 +272,12 @@
     0 6px 20px rgba(0, 0, 0, 0.4),
     0 0 30px rgba(59, 230, 255, 0.2);
   transition: all 0.3s ease;
+}
+
+/* Light mode: transparent label background on radar points */
+[data-theme="light"] .radar-label-clean {
+  background: #ffffff;
+  backdrop-filter: none;
 }
 
 .radar-label-clean:hover {
@@ -1654,6 +1676,14 @@
 
 .timeline-section-wrapper .timeline-single-row {
   border-bottom: 1px solid rgba(59, 230, 255, 0.1);
+}
+
+/* ===== Final light-mode overrides for radar labels (ensure white-ish background, no text shadow) ===== */
+[data-theme="light"] .radar-chart-section .radar-label-clean,
+[data-theme="light"] #performance-radar .radar-label-clean {
+  background: rgba(255, 255, 255, 0.9) !important; /* 90% opacity */
+  backdrop-filter: none !important;
+  text-shadow: none !important;
 }
 
 /* 기존의 잘 작동하던 레이더 라벨 스타일 사용 */
