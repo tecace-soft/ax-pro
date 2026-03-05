@@ -903,8 +903,8 @@
 .wc-crawl-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-top: 1px solid white;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   display: inline-block;

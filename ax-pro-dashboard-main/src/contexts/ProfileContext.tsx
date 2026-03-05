@@ -27,7 +27,7 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
       // 임시로 기본 프로필을 직접 설정
       const defaultProfile: UserProfile = {
         id: SHARED_PROFILE_ID,
-        displayName: 'TecAce Ax Pro',
+        displayName: 'AX PRO Platform',
         email: 'axpro@tecace.com',
         role: 'Main AI Assistant for HR Support',
         department: 'AI Support',
@@ -50,7 +50,7 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const defaultProfile: Partial<UserProfile> = {
         id: SHARED_PROFILE_ID,
-        displayName: 'TecAce Ax Pro',
+        displayName: 'AX PRO Platform',
         email: 'axpro@tecace.com',
         role: 'Main AI Assistant for HR Support',
         department: 'AI Support',

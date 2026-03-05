@@ -68,8 +68,8 @@ Additional features can be enabled or disabled in the configuration.
 After logging in, you should see:
 
 ✅ **Header Changes:**
-- Logo text shows "Professor Dashboard" instead of "TecAce Ax Pro"
-- Performance indicator shows "Welcome, Professor" instead of "TecAce Ax Pro"
+- Logo text shows "Professor Dashboard" instead of "AX PRO Platform"
+- Performance indicator shows "Welcome, Professor" instead of "AX PRO Platform"
 
 ✅ **Theme Changes:**
 - Primary buttons and highlights use Indigo color (#6366f1)
@@ -90,7 +90,7 @@ To see the difference, logout and login with the default admin account:
 - Email: `chatbot-admin@tecace.com`
 - Password: `admin1234`
 
-You should see the standard "TecAce Ax Pro" branding and default cyan/blue color scheme.
+You should see the standard "AX PRO Platform" branding and default cyan/blue color scheme.
 
 ---
 

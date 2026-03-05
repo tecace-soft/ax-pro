@@ -51,13 +51,15 @@ export default function PerformanceRadar({
 
   const [, setIsModuleControlExpanded] = useState(false)
 
+  const primaryColor = 'var(--admin-primary)'
+
   const allDataPoints = [
-    { key: 'relevance', label: t('admin.relevance'), value: relevance, description: t('admin.contentMatching'), color: '#ff6b6b' },
-    { key: 'tone', label: t('admin.tone'), value: tone, description: t('admin.responseStyle'), color: '#4ecdc4' },
-    { key: 'length', label: t('admin.length'), value: length, description: t('admin.responseSize'), color: '#45b7d1' },
-    { key: 'accuracy', label: t('admin.accuracy'), value: accuracy, description: t('admin.correctAnswers'), color: '#96ceb4' },
-    { key: 'toxicity', label: t('admin.toxicity'), value: toxicity, description: t('admin.safetyCheck'), color: '#feca57' },
-    { key: 'promptInjection', label: t('admin.promptInjection'), value: promptInjection, description: t('admin.securityFilter'), color: '#ff9ff3' }
+    { key: 'relevance', label: t('admin.relevance'), value: relevance, description: t('admin.contentMatching'), color: primaryColor },
+    { key: 'tone', label: t('admin.tone'), value: tone, description: t('admin.responseStyle'), color: primaryColor },
+    { key: 'length', label: t('admin.length'), value: length, description: t('admin.responseSize'), color: primaryColor },
+    { key: 'accuracy', label: t('admin.accuracy'), value: accuracy, description: t('admin.correctAnswers'), color: primaryColor },
+    { key: 'toxicity', label: t('admin.toxicity'), value: toxicity, description: t('admin.safetyCheck'), color: primaryColor },
+    { key: 'promptInjection', label: t('admin.promptInjection'), value: promptInjection, description: t('admin.securityFilter'), color: primaryColor }
   ]
 
   const activeDataPoints = allDataPoints.filter(point => toggles[point.key as keyof typeof toggles])
@@ -107,7 +109,7 @@ export default function PerformanceRadar({
     return `M ${points.join(' L ')} Z`
   }
 
-  // Calculate label coordinates - positioned right next to each data point
+  // Calculate label coordinates - positioned outside each data point
   const getLabelCoordinates = (index: number, total: number, value: number, isActive: boolean) => {
     // Get the active point index if this point is active
     const activePointIndex = isActive ? activeDataPoints.findIndex(p => 
@@ -124,11 +126,11 @@ export default function PerformanceRadar({
       const minRadius = 3
       const finalPointRadius = Math.max(minRadius, pointRadius)
       
-      // Position label right next to the point with small offset
-      let offset = 20 // Offset from point
+      // Position label outside the point with a larger offset so it never overlaps the dot
+      let offset = 40 // base offset from point
       const normalized = ((angle + 360) % 360)
       if (normalized <= 25 || normalized >= 335) {
-        offset += 15 // Extra space at top for scale labels
+        offset += 8 // small extra space at top
       }
       
       const labelRadius = finalPointRadius + offset
@@ -229,42 +231,59 @@ export default function PerformanceRadar({
           <div className="radar-chart-container">
             <div className="radar-chart-large">
               <svg className="radar-svg-large" width={chartSize} height={chartSize}>
+                <defs>
+                  <filter id="performanceRadarPointBlur" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+                  </filter>
+                  <filter id="performanceRadarLineBlur" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+                  </filter>
+                </defs>
                 {/* Background grid */}
                 {createBackgroundGrid()}
                 
                 {/* Radar polygon */}
+                {/* Blurred glow behind */}
                 <path
                   d={createRadarPath()}
-                  fill="rgba(59, 230, 255, 0.1)"
-                  stroke="rgba(59, 230, 255, 0.8)"
-                  strokeWidth="2"
+                  fill="rgba(59, 230, 255, 0.08)"
+                  stroke="rgba(59, 230, 255, 0.5)"
+                  strokeWidth="1.2"
+                  filter="url(#performanceRadarLineBlur)"
+                />
+                {/* Sharp line on top */}
+                <path
+                  d={createRadarPath()}
+                  fill="transparent"
+                  stroke="rgba(59, 230, 255, 0.9)"
+                  strokeWidth="1"
                 />
                 
-                {/* Data points */}
+                {/* Data points (dot only, no corner score text) */}
                 {activeDataPoints.map((point, index) => {
                   const coords = getPointCoordinates(index, activeDataPoints.length, point.value)
+                  const cx = coords.x + center
+                  const cy = coords.y + center
                   return (
                     <g key={index} className="radar-point-large">
+                      {/* Blurred glow behind */}
                       <circle
                         className="point-dot-large"
-                        cx={coords.x + center}
-                        cy={coords.y + center}
-                        r="6"
+                        cx={cx}
+                        cy={cy}
+                        r="4"
                         fill={point.color}
-                        stroke="white"
-                        strokeWidth="2"
+                        opacity={0.7}
+                        filter="url(#performanceRadarPointBlur)"
                       />
-                      <text
-                        x={coords.x + center}
-                        y={coords.y + center - 15}
-                        textAnchor="middle"
-                        className="point-score-box"
+                      {/* Sharp dot on top */}
+                      <circle
+                        className="point-dot-large"
+                        cx={cx}
+                        cy={cy}
+                        r="2.5"
                         fill={point.color}
-                        fontSize="12"
-                        fontWeight="bold"
-                      >
-                        {point.value}
-                      </text>
+                      />
                     </g>
                   )
                 })}
@@ -306,17 +325,14 @@ export default function PerformanceRadar({
                     left: `${labelX}px`,
                     top: `${labelY}px`,
                     transform: 'translate(-50%, -50%)',
-                    zIndex: 10,
-                    borderColor: isActive ? point.color : 'rgba(120, 140, 160, 0.2)',
-                    opacity: isActive ? 1 : 0.25,
-                    backgroundColor: isActive ? 'rgba(8, 20, 35, 0.8)' : 'rgba(8, 20, 35, 0.4)'
+                    zIndex: 10
                   }}
                 >
                   <div className="label-content">
-                    <span className="label-name" style={{ color: isActive ? point.color : 'rgba(180, 200, 220, 0.4)' }}>
+                    <span className="label-name">
                       {point.label.toUpperCase()}
                     </span>
-                    <span className="label-score" style={{ color: isActive ? point.color : 'rgba(180, 200, 220, 0.4)' }}>
+                    <span className="label-score">
                       {point.value}
                     </span>
                   </div>
@@ -341,82 +357,6 @@ export default function PerformanceRadar({
             {allDataPoints.map((point) => (
               <div key={point.key} className="control-item-side" data-key={point.key}>
                 <div className="control-info">
-                  <span className="control-icon" aria-hidden="true">
-                    {point.key === 'relevance' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <polyline
-                          points="13 3 6 14 11 14 10 21 18 10 13 10 13 3"
-                          fill="none"
-                          stroke={point.color}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                    {point.key === 'tone' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <circle cx="9" cy="9" r="3.5" fill="none" stroke={point.color} strokeWidth="2" />
-                        <path d="M15 4h3v9" fill="none" stroke={point.color} strokeWidth="2" strokeLinecap="round" />
-                        <circle cx="9" cy="15" r="3.5" fill="none" stroke={point.color} strokeWidth="2" />
-                      </svg>
-                    )}
-                    {point.key === 'length' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <rect x="4" y="7" width="16" height="10" rx="2" ry="2" fill="none" stroke={point.color} strokeWidth="2" />
-                        <line x1="7" y1="10" x2="17" y2="10" stroke={point.color} strokeWidth="2" />
-                      </svg>
-                    )}
-                    {point.key === 'accuracy' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="7" fill="none" stroke={point.color} strokeWidth="2" />
-                        <polyline
-                          points="9 12 11 14 15 10"
-                          fill="none"
-                          stroke={point.color}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                    {point.key === 'toxicity' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <polygon
-                          points="12 3 3 19 21 19 12 3"
-                          fill="none"
-                          stroke={point.color}
-                          strokeWidth="2"
-                          strokeLinejoin="round"
-                        />
-                        <circle cx="12" cy="15.5" r="1" fill={point.color} />
-                        <line x1="12" y1="9" x2="12" y2="13" stroke={point.color} strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                    )}
-                    {point.key === 'promptInjection' && (
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <rect
-                          x="6"
-                          y="10"
-                          width="12"
-                          height="8"
-                          rx="2"
-                          ry="2"
-                          fill="none"
-                          stroke={point.color}
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M9 10V8a3 3 0 0 1 6 0v2"
-                          fill="none"
-                          stroke={point.color}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                  </span>
                   <div className="control-text">
                     <span className="control-label">{point.label}</span>
                     <span className="control-description">{point.description}</span>

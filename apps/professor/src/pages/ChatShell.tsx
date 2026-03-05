@@ -264,14 +264,8 @@ const ChatShell: React.FC = () => {
         style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}
       >
         <div className="flex items-center settings-header-logo" style={{ gap: '10px' }}>
-          <div className="logo-hexagon">
-            <div className="hexagon-outer">
-              <div className="hexagon-inner">
-              </div>
-            </div>
-          </div>
           <h1 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>
-            AX PRO
+            AX PRO Platform
           </h1>
         </div>
 

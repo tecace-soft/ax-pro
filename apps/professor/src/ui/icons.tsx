@@ -38,6 +38,7 @@ import {
 	Download,
 	Eye,
 	Check,
+	CircleCheck,
 	AlertTriangle,
 	ChevronUp,
 	ChevronLeft,
@@ -87,6 +88,7 @@ export const IconRefresh = RefreshCw
 export const IconDownload = Download
 export const IconEye = Eye
 export const IconCheck = Check
+export const IconCircleCheck = CircleCheck
 export const IconAlertTriangle = AlertTriangle
 export const IconChevronUp = ChevronUp
 export const IconChevronLeft = ChevronLeft

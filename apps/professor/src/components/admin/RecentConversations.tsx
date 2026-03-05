@@ -3,7 +3,7 @@ import { fetchAllChatData } from '../../services/chatData'
 import { submitAdminFeedback, getAdminFeedbackByChat, fetchAllUserFeedback } from '../../services/feedback'
 import { ChatData, AdminFeedbackData } from '../../services/supabaseUserSpecific'
 import { useTranslation } from '../../i18n/I18nProvider'
-import { IconRefresh, IconThumbsUp, IconThumbsDown, IconPlus, IconCheck } from '../../ui/icons'
+import { IconRefresh, IconThumbsUp, IconThumbsDown, IconPlus, IconCircleCheck, IconMessage, IconDownload, IconChevronLeft, IconChevronRight } from '../../ui/icons'
 
 interface AdminFeedbackModal {
   chatId: string
@@ -14,8 +14,6 @@ interface AdminFeedbackModal {
 }
 
 type SortOption = 'date-desc' | 'date-asc' | 'user'
-type ViewMode = 'card' | 'table'
-
 interface RecentConversationsProps {
   scrollToChatId?: string | null
   highlightedChatId?: string | null
@@ -40,15 +38,15 @@ export default function RecentConversations({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('date-desc')
-  const [displayLimit, setDisplayLimit] = useState(10)
   const [exportFormat, setExportFormat] = useState<'CSV' | 'JSON'>('CSV')
   const [filterSessionId, setFilterSessionId] = useState<string | null>(null)
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState<string | null>(null)
   const [expandedChats, setExpandedChats] = useState<Set<string>>(new Set())
   const [userFeedbackModal, setUserFeedbackModal] = useState<{ chatId: string; feedback: any } | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium')
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 10
   
   // Font size mapping
   const fontSizeMap = {
@@ -64,6 +62,7 @@ export default function RecentConversations({
 
   useEffect(() => {
     applyFiltersAndSort()
+    setCurrentPage(1)
   }, [conversations, searchTerm, sortBy, filterSessionId, filterUserId, filterDate])
 
   // Handle scroll to specific chat
@@ -76,12 +75,11 @@ export default function RecentConversations({
         return newSet
       })
 
-      // Ensure the chat is displayed (increase limit if needed)
+      // Ensure the chat is on the current page
       const chatIndex = filteredConversations.findIndex(c => c.chat_id === scrollToChatId)
-      if (chatIndex !== -1 && chatIndex >= displayLimit) {
-        // Increase limit to show the chat (but cap at 20 if possible)
-        const newLimit = Math.min(chatIndex + 1, filteredConversations.length, Math.max(chatIndex + 1, 20))
-        setDisplayLimit(newLimit)
+      if (chatIndex !== -1) {
+        const targetPage = Math.floor(chatIndex / PAGE_SIZE) + 1
+        setCurrentPage(targetPage)
       }
 
       // Wait for DOM update, then scroll
@@ -116,7 +114,7 @@ export default function RecentConversations({
       
       attemptScroll()
     }
-  }, [scrollToChatId, onScrollComplete, filteredConversations, displayLimit])
+  }, [scrollToChatId, onScrollComplete, filteredConversations])
 
   const loadConversations = async () => {
     setIsLoading(true)
@@ -517,14 +515,20 @@ export default function RecentConversations({
     )
   }
 
-  const displayedConversations = filteredConversations.slice(0, displayLimit)
+  const totalConversations = filteredConversations.length
+  const totalPages = Math.max(1, Math.ceil(totalConversations / PAGE_SIZE))
+  const safePage = Math.min(currentPage, totalPages)
+  const startIndex = (safePage - 1) * PAGE_SIZE
+  const endIndex = startIndex + PAGE_SIZE
+  const displayedConversations = filteredConversations.slice(startIndex, endIndex)
 
   return (
     <div className="dashboard-section-card recent-conversations-section">
       {/* Header */}
       <div className="section-header">
         <h2 className="section-title">
-          {t('admin.recentConversations')} ({filteredConversations.length})
+          <IconMessage className="section-header-icon" size={18} style={{ flexShrink: 0 }} />
+          {t('admin.recentConversations')} <span className="section-count-badge">{filteredConversations.length}</span>
         </h2>
         <button 
           className="icon-btn"
@@ -538,41 +542,6 @@ export default function RecentConversations({
 
       {/* Controls Bar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        {/* View Mode Toggle */}
-        <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
-          <button
-            onClick={() => setViewMode('card')}
-            className="px-3 py-2 text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: viewMode === 'card' ? 'var(--admin-primary)' : 'transparent',
-              color: viewMode === 'card' ? '#041220' : 'var(--admin-text)',
-            }}
-            title="Card View"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-            </svg>
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className="px-3 py-2 text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: viewMode === 'table' ? 'var(--admin-primary)' : 'transparent',
-              color: viewMode === 'table' ? '#041220' : 'var(--admin-text)',
-            }}
-            title="Table View"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-        </div>
-        
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
           <span className="text-sm" style={{ color: 'var(--admin-text)' }}>{t('admin.sortBy')}:</span>
@@ -580,11 +549,6 @@ export default function RecentConversations({
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             className="px-3 py-2 rounded-md text-sm"
-            style={{
-              backgroundColor: 'rgba(9, 14, 34, 0.6)',
-              color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
-            }}
           >
             <option value="date-desc">{t('admin.dateTimeNewest')}</option>
             <option value="date-asc">{t('admin.dateTimeOldest')}</option>
@@ -601,11 +565,6 @@ export default function RecentConversations({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1 px-3 py-2 rounded-md text-sm"
-            style={{
-              backgroundColor: 'rgba(9, 14, 34, 0.6)',
-              color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
-            }}
           />
         </div>
 
@@ -642,13 +601,7 @@ export default function RecentConversations({
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <select
-            className="px-3 py-2 rounded-md text-sm"
-            style={{
-              backgroundColor: 'rgba(9, 14, 34, 0.6)',
-              color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)',
-              fontSize: fs.sm
-            }}
+            className="export-format-select px-3 py-2 rounded-md text-sm"
             value={exportFormat}
             onChange={(e) => setExportFormat(e.target.value as 'CSV' | 'JSON')}
           >
@@ -657,15 +610,9 @@ export default function RecentConversations({
           </select>
           <button
             onClick={handleExport}
-            className="px-4 py-2 rounded-md text-sm font-medium"
-            style={{
-              backgroundColor: 'rgba(59, 230, 255, 0.1)',
-              color: 'var(--admin-primary)',
-              border: '1px solid var(--admin-primary)',
-              fontSize: fs.sm
-            }}
+            className="dashboard-export-btn"
           >
-            Export
+            <IconDownload size={14} className="dashboard-export-btn__icon" /> Export
           </button>
         </div>
       </div>
@@ -674,41 +621,38 @@ export default function RecentConversations({
         <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
           <p>{searchTerm ? 'No conversations match your search' : 'No conversations found'}</p>
         </div>
-      ) : viewMode === 'table' ? (
-        /* Table View */
-        <div className="overflow-x-auto">
-          <table
-            className="w-full recent-conversations-table"
-            style={{ fontSize: fs.cell }}
-          >
+      ) : (
+        <div className="dashboard-section-table-wrap">
+          <table className="w-full recent-conversations-table">
+            <colgroup>
+              <col style={{ width: '160px' }} />
+              <col style={{ width: '200px' }} />
+              <col />
+              <col />
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '100px' }} />
+            </colgroup>
             <thead>
-              <tr className="recent-conversations-table__head-row" style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', borderBottom: '2px solid var(--admin-border)' }}>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '100px', maxWidth: '100px', fontSize: fs.header }}>Date</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>User ID</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', minWidth: '90px', maxWidth: '90px', fontSize: fs.header }}>Session ID</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.header }}>User Message</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--admin-text)', fontSize: fs.header }}>AI Response</th>
-                <th className="px-3 py-2 text-center font-medium" style={{ color: 'var(--admin-text)', minWidth: '70px', maxWidth: '70px', fontSize: fs.header }}>User FB</th>
-                <th className="px-3 py-2 text-center font-medium recent-conversations-table__th-supervisor" style={{ color: 'var(--admin-text)', minWidth: '80px', maxWidth: '80px', fontSize: fs.header }}>
+              <tr className="recent-conversations-table__head-row">
+                <th className="px-3 py-2 text-left">Date</th>
+                <th className="px-3 py-2 text-left">Session ID</th>
+                <th className="px-3 py-2 text-left">User Message</th>
+                <th className="px-3 py-2 text-left">AI Response</th>
+                <th className="px-3 py-2 text-center">User FB</th>
+                <th className="px-3 py-2 text-center recent-conversations-table__th-supervisor">
                   <span className="block">Supervisor</span>
                   <span className="block">Correction</span>
                 </th>
               </tr>
             </thead>
             <tbody>
-              {displayedConversations.map((conversation, index) => (
+              {displayedConversations.map((conversation) => (
                 <tr 
                   key={conversation.id}
                   id={`chat-${conversation.chat_id}`}
-                  className="border-b transition-colors hover:bg-gray-100/5"
-                  style={{
-                    backgroundColor: highlightedChatId === conversation.chat_id 
-                      ? 'rgba(59, 230, 255, 0.1)' 
-                      : index % 2 === 0 ? 'rgba(9, 14, 34, 0.3)' : 'rgba(9, 14, 34, 0.2)',
-                    borderColor: 'var(--admin-border)'
-                  }}
+                  className={highlightedChatId === conversation.chat_id ? 'recent-conversations-table__row--highlighted' : ''}
                 >
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell }}>
+                  <td className="px-3 py-2">
                     <button
                       onClick={() => handleFilterByDate(conversation.created_at || '')}
                       className="hover:underline cursor-pointer"
@@ -717,36 +661,27 @@ export default function RecentConversations({
                       {formatDate(conversation.created_at)}
                     </button>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '70px', overflow: 'hidden' }}>
-                    <button
-                      onClick={() => handleFilterByUser(conversation.user_id)}
-                      className="hover:underline cursor-pointer text-blue-300 truncate block w-full text-left"
-                      title={conversation.user_id}
-                    >
-                      {conversation.user_id}
-                    </button>
-                  </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '90px', overflow: 'hidden' }}>
+                  <td className="px-3 py-2" style={{ maxWidth: '90px', overflow: 'hidden' }}>
                     {conversation.session_id && (
                       <button
                         onClick={() => handleFilterBySession(conversation.session_id!)}
-                        className="hover:underline cursor-pointer text-green-300 truncate block w-full text-left"
+                        className="dashboard-table-session-link hover:underline cursor-pointer truncate block w-full text-left"
                         title={conversation.session_id}
                       >
                         {conversation.session_id}
                       </button>
                     )}
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text)', fontSize: fs.cell, maxWidth: '280px', overflow: 'hidden' }}>
+                  <td className="px-3 py-2" style={{ maxWidth: '280px', overflow: 'hidden' }}>
                     <div 
-                      className="truncate cursor-pointer hover:text-blue-400"
+                      className="truncate cursor-pointer hover:opacity-80"
                       onClick={() => handleFeedbackClick(conversation, 'good')}
                       title={conversation.chat_message}
                     >
                       {conversation.chat_message}
                     </div>
                   </td>
-                  <td className="px-3 py-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.cell, maxWidth: '300px', overflow: 'hidden' }}>
+                  <td className="px-3 py-2" style={{ maxWidth: '300px', overflow: 'hidden' }}>
                     <div className="truncate" title={conversation.response}>
                       {conversation.response}
                     </div>
@@ -765,23 +700,23 @@ export default function RecentConversations({
                         )}
                       </button>
                     ) : (
-                      <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>-</span>
+                      <span className="recent-conversations-table__user-fb-empty">-</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-3 py-2 text-center recent-conversations-table__supervisor-cell">
                     {(() => {
                       const af = (conversation as any).admin_feedback
                       const hasCorrection = af && af.corrected_response != null && String(af.corrected_response).trim() !== ''
                       return (
                         <button
                           onClick={() => af ? handleAdminFeedbackClick(conversation) : handleFeedbackClick(conversation, 'bad')}
-                          className={`recent-conversations-table__add-supervisor-btn ${hasCorrection ? 'recent-conversations-table__add-supervisor-btn--has-correction' : ''}`}
+                          className={hasCorrection ? 'recent-conversations-table__supervisor-check-btn' : 'recent-conversations-table__add-supervisor-btn'}
                           title={hasCorrection ? 'Edit supervisor correction' : 'Add supervisor correction'}
                         >
                           {hasCorrection ? (
-                            <IconCheck size={14} style={{ color: 'var(--admin-success)' }} />
+                            <IconCircleCheck size={14} className="recent-conversations-table__supervisor-check-icon" />
                           ) : (
-                            <IconPlus size={14} style={{ color: 'var(--admin-primary)' }} />
+                            <IconPlus size={14} />
                           )}
                         </button>
                       )
@@ -792,215 +727,58 @@ export default function RecentConversations({
             </tbody>
           </table>
         </div>
-      ) : (
-        /* Card View */
-        <div className="space-y-3">
-          {displayedConversations.map((conversation) => (
-            <div 
-              key={conversation.id}
-              id={`chat-${conversation.chat_id}`}
-              className="p-4 rounded-lg border transition-all duration-500"
-              style={{
-                backgroundColor: highlightedChatId === conversation.chat_id 
-                  ? 'rgba(59, 230, 255, 0.15)' 
-                  : 'rgba(9, 14, 34, 0.4)',
-                borderColor: highlightedChatId === conversation.chat_id 
-                  ? 'var(--admin-primary)' 
-                  : 'var(--admin-border)',
-                boxShadow: highlightedChatId === conversation.chat_id 
-                  ? '0 0 20px rgba(59, 230, 255, 0.3)' 
-                  : 'none'
-              }}
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <p className="text-xs mb-1" style={{ color: 'var(--admin-text-muted)' }}>
-                    User: 
-                    <button
-                      onClick={() => handleFilterByUser(conversation.user_id)}
-                      className={`ml-1 hover:underline cursor-pointer ${
-                        filterUserId === conversation.user_id 
-                          ? 'text-blue-400 font-semibold' 
-                          : 'text-blue-300'
-                      }`}
-                      title="Click to filter by this user"
-                    >
-                      {conversation.user_id}
-                    </button>
-                  </p>
-                  <p className="text-xs mb-1" style={{ color: 'var(--admin-text-muted)' }}>
-                    Chat ID: {conversation.chat_id}
-                  </p>
-                  {conversation.session_id && (
-                    <p className="text-xs mb-1" style={{ color: 'var(--admin-text-muted)' }}>
-                      Session: 
-                      <button
-                        onClick={() => handleFilterBySession(conversation.session_id!)}
-                        className={`ml-1 hover:underline cursor-pointer ${
-                          filterSessionId === conversation.session_id 
-                            ? 'text-green-400 font-semibold' 
-                            : 'text-green-300'
-                        }`}
-                        title="Click to filter by this session"
-                      >
-                        {conversation.session_id}
-                      </button>
-                    </p>
-                  )}
-                  <p className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
-                    <button
-                      onClick={() => handleFilterByDate(conversation.created_at || '')}
-                      className={`hover:underline cursor-pointer ${
-                        filterDate === conversation.created_at 
-                          ? 'text-purple-400 font-semibold' 
-                          : 'text-purple-300'
-                      }`}
-                      title="Click to filter by this date"
-                    >
-                      {formatDate(conversation.created_at)}
-                    </button>
-                  </p>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div>
-                  <p className="font-medium mb-1" style={{ color: 'var(--admin-primary)', fontSize: fs.sm }}>
-                    {t('admin.userMessage')}:
-                  </p>
-                  <p 
-                    className="cursor-pointer hover:bg-gray-100/10 p-2 rounded transition-colors" 
-                    style={{ color: 'var(--admin-text)', fontSize: fs.cell }}
-                    onClick={() => toggleExpanded(conversation.chat_id)}
-                    title="Click to expand/collapse"
-                  >
-                    {expandedChats.has(conversation.chat_id) 
-                      ? conversation.chat_message 
-                      : truncateText(conversation.chat_message)
-                    }
-                    {!expandedChats.has(conversation.chat_id) && conversation.chat_message.length > 100 && (
-                      <span className="text-blue-400 ml-1">... (click to expand)</span>
-                    )}
-                  </p>
-                </div>
-                
-                <div>
-                  <p className="font-medium mb-1" style={{ color: 'var(--admin-accent)', fontSize: fs.sm }}>
-                    {t('admin.aiResponse')}:
-                  </p>
-                  <p 
-                    className="cursor-pointer hover:bg-gray-100/10 p-2 rounded transition-colors" 
-                    style={{ color: 'var(--admin-text)', fontSize: fs.cell }}
-                    onClick={() => toggleExpanded(conversation.chat_id)}
-                    title="Click to expand/collapse"
-                  >
-                    {expandedChats.has(conversation.chat_id) 
-                      ? conversation.response 
-                      : truncateText(conversation.response)
-                    }
-                    {!expandedChats.has(conversation.chat_id) && conversation.response.length > 100 && (
-                      <span className="text-blue-400 ml-1">... (click to expand)</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Feedback Section - Compact Single Row */}
-              <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border)' }}>
-                {/* User Feedback - Left Side */}
-                <div className="flex items-center gap-2">
-                  {conversation.user_feedback ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>User:</span>
-                      {conversation.user_feedback.reaction === 'good' ? (
-                        <div className="flex items-center gap-1 text-green-500">
-                          <IconThumbsUp size={14} />
-                          <span className="text-xs">+</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-red-500">
-                          <IconThumbsDown size={14} />
-                          <span className="text-xs">-</span>
-                        </div>
-                      )}
-                      <button
-                        onClick={() => handleUserFeedbackClick(conversation.chat_id)}
-                        className="text-xs px-1.5 py-0.5 rounded transition-colors hover:bg-blue-500/20"
-                        style={{ color: 'var(--admin-primary, #3be6ff)' }}
-                        title="View user feedback details"
-                      >
-                        Details
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>No user feedback</span>
-                  )}
-                </div>
-
-                {/* Admin Feedback - Right Side */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>Admin:</span>
-                  {(conversation as any).admin_feedback ? (
-                    <div className="flex items-center gap-2">
-                      {(conversation as any).admin_feedback.feedback_verdict === 'good' ? (
-                        <div className="flex items-center gap-1 text-green-500">
-                          <IconThumbsUp size={14} />
-                          <span className="text-xs">Good</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-red-500">
-                          <IconThumbsDown size={14} />
-                          <span className="text-xs">Bad</span>
-                        </div>
-                      )}
-                      <button
-                        onClick={() => handleAdminFeedbackClick(conversation)}
-                        className="text-xs px-1.5 py-0.5 rounded transition-colors hover:bg-blue-500/20"
-                        style={{ color: 'var(--admin-primary, #3be6ff)' }}
-                        title="View/Edit admin feedback"
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleFeedbackClick(conversation, 'good')}
-                        className="p-1.5 rounded transition-colors hover:bg-green-500/20"
-                        title="Mark as good"
-                      >
-                        <IconThumbsUp size={14} style={{ color: 'var(--admin-success, #10b981)' }} />
-                      </button>
-                      <button
-                        onClick={() => handleFeedbackClick(conversation, 'bad')}
-                        className="p-1.5 rounded transition-colors hover:bg-red-500/20"
-                        title="Mark as bad"
-                      >
-                        <IconThumbsDown size={14} style={{ color: 'var(--admin-danger, #ef4444)' }} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
       )}
       
-      {/* Load More Button */}
-      {filteredConversations.length > displayLimit && (
-        <div className="mt-4 text-center">
-          <button
-            onClick={() => setDisplayLimit(prev => prev + 10)}
-            className="px-6 py-2 rounded-md text-sm font-medium"
-            style={{
-              background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
-              color: '#041220',
-              fontSize: fs.base
-            }}
-          >
-            {t('adminFeedback.loadMore')} ({filteredConversations.length - displayLimit} {t('adminFeedback.remaining')})
-          </button>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="dashboard-pagination-row">
+          <div className="dashboard-pagination">
+            <button
+              className="dashboard-pagination__arrow"
+              disabled={safePage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              aria-label="Previous page"
+            >
+              <IconChevronLeft size={14} />
+            </button>
+            {(() => {
+              const items: (number | 'ellipsis')[] = []
+              if (totalPages <= 6) {
+                for (let i = 1; i <= totalPages; i++) items.push(i)
+              } else {
+                if (safePage <= 3) {
+                  items.push(1, 2, 3, 4, 'ellipsis', totalPages)
+                } else if (safePage >= totalPages - 2) {
+                  items.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
+                } else {
+                  items.push(1, 'ellipsis', safePage - 1, safePage, safePage + 1, 'ellipsis', totalPages)
+                }
+              }
+              return items.map((item, idx) =>
+                item === 'ellipsis' ? (
+                  <span key={`ellipsis-${idx}`} className="dashboard-pagination__ellipsis">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    className={`dashboard-pagination__page ${item === safePage ? 'dashboard-pagination__page--active' : ''}`}
+                    onClick={() => setCurrentPage(item)}
+                  >
+                    {item}
+                  </button>
+                )
+              )
+            })()}
+            <button
+              className="dashboard-pagination__arrow"
+              disabled={safePage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              aria-label="Next page"
+            >
+              <IconChevronRight size={14} />
+            </button>
+          </div>
         </div>
       )}
 

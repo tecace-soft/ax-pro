@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useTheme } from '../../theme/ThemeProvider'
 import { useTranslation } from '../../i18n/I18nProvider'
+import { IconBarChart } from '../../ui/icons'
 import AdminHeader from '../../components/admin/Header'
 import AdminSidebar from '../../components/admin/Sidebar'
 import PerformanceRadar from '../../components/admin/PerformanceRadar'
@@ -457,62 +458,78 @@ export default function AdminDashboard() {
                 <div className="dashboard-grid" style={{ display: 'block' }}>
                   <div className="grid-left">
                     <div id="performance-radar" className="content-section">
+                      <div className="performance-stats-row">
+                        <div className="performance-stat-card">
+                          <div className="performance-stat-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                          </div>
+                          <div className="performance-stat-content">
+                            <div className="performance-stat-value">{performanceCardConversations}</div>
+                            <div className="performance-stat-label">Conversations</div>
+                          </div>
+                        </div>
+                        <div className="performance-stat-card">
+                          <div className="performance-stat-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                            </svg>
+                          </div>
+                          <div className="performance-stat-content">
+                            <div className="performance-stat-value">100%</div>
+                            <div className="performance-stat-label">Satisfaction</div>
+                          </div>
+                        </div>
+                        <div className="performance-stat-card">
+                          <div className="performance-stat-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                              <path d="M21 12v14c0 1.66-4 3-9 3s-9-1.34-9-3V12"/>
+                            </svg>
+                          </div>
+                          <div className="performance-stat-content">
+                            <div className="performance-stat-value">{performanceCardDocuments}</div>
+                            <div className="performance-stat-label">Documents</div>
+                          </div>
+                        </div>
+                        <div className="performance-stat-card">
+                          <div className="performance-stat-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="12" y1="20" x2="12" y2="10"/>
+                              <line x1="18" y1="20" x2="18" y2="4"/>
+                              <line x1="6" y1="20" x2="6" y2="16"/>
+                            </svg>
+                          </div>
+                          <div className="performance-stat-content">
+                            <div className="performance-stat-value">89%</div>
+                            <div className="performance-stat-label">Performance</div>
+                          </div>
+                        </div>
+                      </div>
                       <div className="dashboard-section-card performance-section" style={{ position: 'relative' }}>
                         <div className="section-header">
                           <h2 className="section-title">
+                            <IconBarChart className="section-header-icon" size={18} style={{ flexShrink: 0 }} />
                             Performance
                           </h2>
-                        </div>
-                        <div className="performance-stats-row">
-                          <div className="performance-stat-card">
-                            <div className="performance-stat-icon">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                              </svg>
-                            </div>
-                            <div className="performance-stat-content">
-                              <div className="performance-stat-value">{performanceCardConversations}</div>
-                              <div className="performance-stat-label">Conversations</div>
-                            </div>
-                          </div>
-                          <div className="performance-stat-card">
-                            <div className="performance-stat-icon">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                              </svg>
-                            </div>
-                            <div className="performance-stat-content">
-                              <div className="performance-stat-value">100%</div>
-                              <div className="performance-stat-label">Satisfaction</div>
-                            </div>
-                          </div>
-                          <div className="performance-stat-card">
-                            <div className="performance-stat-icon">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <ellipse cx="12" cy="5" rx="9" ry="3"/>
-                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-                                <path d="M21 12v14c0 1.66-4 3-9 3s-9-1.34-9-3V12"/>
-                              </svg>
-                            </div>
-                            <div className="performance-stat-content">
-                              <div className="performance-stat-value">{performanceCardDocuments}</div>
-                              <div className="performance-stat-label">Documents</div>
-                            </div>
-                          </div>
-                          <div className="performance-stat-card">
-                            <div className="performance-stat-icon">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="20" x2="12" y2="10"/>
-                                <line x1="18" y1="20" x2="18" y2="4"/>
-                                <line x1="6" y1="20" x2="6" y2="16"/>
-                              </svg>
-                            </div>
-                            <div className="performance-stat-content">
-                              <div className="performance-stat-value">89%</div>
-                              <div className="performance-stat-label">Performance</div>
-                            </div>
-                          </div>
+                          <button
+                            type="button"
+                            className="performance-view-details-toggle"
+                            onClick={() => setPerformanceRadarExpanded(!performanceRadarExpanded)}
+                            aria-expanded={performanceRadarExpanded}
+                          >
+                            {performanceRadarExpanded ? t('admin.hideDetails') : t('admin.viewDetails')}
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              {performanceRadarExpanded ? (
+                                <polyline points="18,15 12,9 6,15"/>
+                              ) : (
+                                <polyline points="6,9 12,15 18,9"/>
+                              )}
+                            </svg>
+                          </button>
                         </div>
                         <div className={`performance-details-collapsed ${performanceRadarExpanded ? 'performance-details-collapsed--hidden' : ''}`}>
                           <div className="performance-metrics-row">
@@ -577,21 +594,6 @@ export default function AdminDashboard() {
                             />
                           )}
                         </div>
-                        <button
-                          type="button"
-                          className="performance-view-details-toggle"
-                          onClick={() => setPerformanceRadarExpanded(!performanceRadarExpanded)}
-                          aria-expanded={performanceRadarExpanded}
-                        >
-                          {performanceRadarExpanded ? t('admin.hideDetails') : t('admin.viewDetails')}
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 6, flexShrink: 0 }}>
-                            {performanceRadarExpanded ? (
-                              <polyline points="18,15 12,9 6,15"/>
-                            ) : (
-                              <polyline points="6,9 12,15 18,9"/>
-                            )}
-                          </svg>
-                        </button>
                       </div>
                     </div>
                   </div>

@@ -13,7 +13,7 @@ This table stores global UI customization settings with a single row (id = 'glob
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | TEXT | Primary key, always 'global' |
-| `chat_title` | TEXT | Chatbot name (e.g., "TecAce Ax Pro") |
+| `chat_title` | TEXT | Chatbot name (e.g., "AX PRO Platform") |
 | `chat_subtitle` | TEXT | Chatbot description |
 | `avatar_url` | TEXT | URL or path to chatbot avatar image |
 | `question_1` | TEXT | First suggested question |

@@ -97,7 +97,7 @@
   margin-right: 12px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
 /* ì™„ì „ížˆ ìƒˆë¡­ê²Œ ë"ìžì¸ëœ X ë²„íŠ¼ */ .tag-remove-btn{ background: linear-gradient(135deg, rgba(255, 107, 107, 0.9) 0%, rgba(220, 53, 69, 0.9) 100%);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -189,7 +189,7 @@
   padding: 12px 16px;  /* ë" í° padding */
   height: 44px;         /* ë" í° ë†'ì´ */
   background: rgba(59, 230, 255, 0.1);  /* ë" ë°ì€ ë°°ê²½ */
-  border: 2px solid rgba(59, 230, 255, 0.4);  /* ë" ë'êº¼ìš´ í…Œë'ë¦¬ */
+  border: 1px solid rgba(59, 230, 255, 0.4);  /* ë" ë'êº¼ìš´ í…Œë'ë¦¬ */
   border-radius: 12px;  /* ë" ë'¥ê·¼ ëª¨ì„œë¦¬ */
   color: #ffffff;
   font-size: 14px;      /* ë" í° í°íŠ¸ */
@@ -435,7 +435,7 @@ to{ opacity: 0;
   flex: 1;
   min-width: 0; }
 .content-section{ width: 100%;
-  background: linear-gradient(180deg, rgba(18,27,61,0.4), rgba(13,20,44,0.4));
+  background: #121b33;
   border: 1px solid rgba(59,230,255,0.1);
   border-radius: 12px;
   padding: 24px;
@@ -640,7 +640,7 @@ to{ opacity: 0;
   /* ë" í° ë†'ì´ */
   background: rgba(59, 230, 255, 0.1);
   /* ë" ë°ì€ ë°°ê²½ */
-  border: 2px solid rgba(59, 230, 255, 0.4);
+  border: 1px solid rgba(59, 230, 255, 0.4);
   /* ë" ë'êº¼ìš´ í…Œë'ë¦¬ */
   border-radius: 12px;
   /* ë" ë'¥ê·¼ ëª¨ì„œë¦¬ */
@@ -748,7 +748,7 @@ to{ opacity: 0;
   /* gap: 1rem; */
   /* margin-bottom: 32px;  */
 }
-.performance-section{ background: linear-gradient(180deg, rgba(18,27,61,0.4), rgba(13,20,44,0.4));
+.performance-section{ background: #121b33;
   border: 1px solid rgba(59,230,255,0.1);
   border-radius: 12px;
   width: 100%; }
@@ -1106,7 +1106,7 @@ input:checked + .toggle-slider::before {
   border-radius: 4px; }
 .requests-container{ margin-top: 8px;
   padding-left: 16px;
-  border-left: 2px solid rgba(59,230,255,0.1); }
+  border-left: 1px solid rgba(59,230,255,0.1); }
 .request-item{ padding: 12px;
   margin-bottom: 12px;
   background: rgba(9,14,34,0.3);
@@ -1635,9 +1635,9 @@ input:checked + .toggle-slider::before {
   font-weight: 500; }
 /* Request actions */ .request-actions{ display: flex;
   gap: 8px; }
-/* Performance Section */ .performance-section{ background: var(--bg-secondary);
+/* Performance Section */ .performance-section{ background: #121b33;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 14px;
   /* padding: 2rem;
   */
   /* margin-bottom: 2rem;
@@ -2333,9 +2333,9 @@ input:checked + .toggle-slider::before {
   color: #3be6ff;
   border-left: 3px solid #3be6ff; }
 /* ì„¹ì…˜ ID ìŠ¤íƒ€ì¼ */ #performance-radar, #daily-message-activity, #system-status, #environment-controls, #content-module{ scroll-margin-top: 20px; }
-/* Content ì„¹ì…˜ë"¤ ìŠ¤íƒ€ì¼ */ .content-section, .conversations-section, .prompt-control-section{ background: linear-gradient(180deg, rgba(18,27,61,0.4), rgba(13,20,44,0.4));
+/* Content section styling */ .content-section, .conversations-section, .prompt-control-section{ background: #121b33;
   border: 1px solid rgba(59,230,255,0.1);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 24px;
   margin-bottom: 24px; }
 .section-header{ margin-bottom: 20px; }
@@ -2401,7 +2401,7 @@ input:checked + .toggle-slider::before {
   border-color: rgba(59, 230, 255, 0.6); }
 /* ì²´í¬ë°•ìŠ¤ ìŠ¤íƒ€ì¼ */ .scope-checkbox{ width: 16px;
   height: 16px;
-  border: 2px solid rgba(59, 230, 255, 0.5);
+  border: 1px solid rgba(59, 230, 255, 0.5);
   border-radius: 3px;
   background: transparent;
   position: relative;
@@ -2436,7 +2436,7 @@ input:checked + .toggle-slider::before {
   padding: 12px 50px 12px 16px;
   height: 44px;
   background: rgba(59, 230, 255, 0.1);
-  border: 2px solid rgba(59, 230, 255, 0.4);
+  border: 1px solid rgba(59, 230, 255, 0.4);
   border-radius: 12px;
   color: #ffffff;
   font-size: 14px;
@@ -2701,7 +2701,7 @@ input:checked + .toggle-slider::before {
 .loading-spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid rgba(59, 230, 255, 0.3);
+  border: 1px solid rgba(59, 230, 255, 0.3);
   border-top: 2px solid #3be6ff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -2782,7 +2782,7 @@ input:checked + .toggle-slider::before {
 /* Custom Checkbox */ .search-option input[type="checkbox"]{ display: none; }
 .checkbox-custom{ width: 18px;
   height: 18px;
-  border: 2px solid rgba(59, 230, 255, 0.4);
+  border: 1px solid rgba(59, 230, 255, 0.4);
   border-radius: 4px;
   background: rgba(18, 27, 61, 0.8);
   position: relative;
@@ -3083,12 +3083,12 @@ input:checked + .toggle-slider::before {
   padding: var(--panel-pad);
 }
 
-/* 카드 톤(배경/테두리/라운드)도 통일 – 기존 모양 유지하되 한 번만 정의 */
+/* 카드 톤(배경/테두리/라운드)도 통일 */
 #performance-radar,
 #daily-message-activity{
-  background: linear-gradient(180deg, rgba(18,27,61,0.40), rgba(13,20,44,0.40));
+  background: #121b33;
   border: 1px solid rgba(59,230,255,0.10);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 }
 
@@ -3569,36 +3569,47 @@ input:checked + .toggle-slider::before {
   justify-content: center;
   z-index: 5;
   background: rgba(18, 27, 61, 0.9);
-  border: 2px solid rgba(59, 230, 255, 0.4);
+  border: 1px solid rgba(59, 230, 255, 0.4);
   border-radius: 50%;
-  width: min(80px, 20vw); /* 최대 80px, 화면 너비의 20% */
-  height: min(80px, 20vw);
-  backdrop-filter: blur(10px);
-  box-shadow: 
-    0 0 30px rgba(59, 230, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  width: clamp(90px, 18vw, 120px);
+  height: clamp(90px, 18vw, 120px);
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .center-score-large {
-  font-size: min(24px, 5vw); /* 최대 24px, 화면 너비의 5% */
-  font-weight: 800;
-  color: #3be6ff;
-  text-shadow: 0 0 20px rgba(59, 230, 255, 0.5);
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+  font-size: clamp(48px, 8.5vw, 64px);
+  font-weight: 100;
+  color: #ffffff;
+  text-shadow: none;
   line-height: 1;
 }
 
 .center-label-large {
-  font-size: min(10px, 2.5vw); /* 최대 10px, 화면 너비의 2.5% */
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+  font-size: clamp(11px, 2.4vw, 13px);
+  font-weight: 100;
+  color: #ffffff;
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-top: 2px;
 }
 
+/* Force center circle background + no blur/shadow so grid can show through */
+#performance-radar .radar-chart-section .radar-chart-container .radar-chart-large .radar-center-large,
+.radar-chart-section .radar-chart-container .radar-chart-large .radar-center-large,
+#performance-radar .radar-center-large,
+.radar-center-large {
+  background: rgba(99, 149, 183, 0.7) !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
 /* 레이블 반응형 개선 */
 .radar-label-clean {
   position: absolute !important;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif !important;
   font-size: 14px !important;
   font-weight: 600 !important;
   color: #ffffff !important;
@@ -3637,6 +3648,7 @@ input:checked + .toggle-slider::before {
 
 /* 레이블 이름 자동 폰트 크기 */
 .radar-label-clean .label-name {
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif !important;
   font-size: clamp(9px, 1.8vw, 13px) !important;
   line-height: 1.1 !important;
   white-space: nowrap !important;
@@ -3647,6 +3659,7 @@ input:checked + .toggle-slider::before {
 
 /* 레이블 점수 자동 폰트 크기 */
 .radar-label-clean .label-score {
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif !important;
   font-size: clamp(11px, 2.2vw, 15px) !important;
   line-height: 1 !important;
 }
@@ -3686,8 +3699,8 @@ input:checked + .toggle-slider::before {
   }
   
   .radar-center-large {
-    width: min(70px, 18vw);
-    height: min(70px, 18vw);
+    width: clamp(80px, 16vw, 105px);
+    height: clamp(80px, 16vw, 105px);
   }
 }
 
@@ -3698,8 +3711,8 @@ input:checked + .toggle-slider::before {
   }
   
   .radar-center-large {
-    width: min(60px, 16vw);
-    height: min(60px, 16vw);
+    width: clamp(75px, 14vw, 95px);
+    height: clamp(75px, 14vw, 95px);
   }
   
   .radar-label-clean {
@@ -3715,8 +3728,8 @@ input:checked + .toggle-slider::before {
   }
   
   .radar-center-large {
-    width: min(50px, 14vw);
-    height: min(50px, 14vw);
+    width: clamp(65px, 12vw, 85px);
+    height: clamp(65px, 12vw, 85px);
   }
   
   .radar-label-clean {
@@ -4143,7 +4156,7 @@ input:checked + .toggle-slider::before {
 
 .bar-value.has-data {
   box-shadow: 0 6px 16px rgba(59, 230, 255, 0.5);
-  border: 2px solid rgba(59, 230, 255, 0.8);
+  border: 1px solid rgba(59, 230, 255, 0.8);
 }
 
 .bar-value.no-data {
@@ -4315,7 +4328,7 @@ input:checked + .toggle-slider::before {
 
 .daily-message-section .bar-value.has-data {
   box-shadow: 0 6px 16px rgba(59, 230, 255, 0.5);
-  border: 2px solid rgba(59, 230, 255, 0.8);
+  border: 1px solid rgba(59, 230, 255, 0.8);
 }
 
 .daily-message-section .bar-value.no-data {
@@ -4414,7 +4427,7 @@ input:checked + .toggle-slider::before {
 
 .daily-message-section .bar-value.has-data {
   box-shadow: 0 6px 16px rgba(59, 230, 255, 0.5);
-  border: 2px solid rgba(59, 230, 255, 0.8);
+  border: 1px solid rgba(59, 230, 255, 0.8);
 }
 
 .daily-message-section .bar-value.no-data {
@@ -5587,7 +5600,7 @@ input:checked + .toggle-slider::before {
 .loading-spinner-small {
 	width: 16px;
 	height: 16px;
-	border: 2px solid rgba(59, 230, 255, 0.2);
+	border: 1px solid rgba(59, 230, 255, 0.2);
 	border-top: 2px solid #3be6ff;
 	border-radius: 50%;
 	animation: spin 1s linear infinite;
@@ -5648,11 +5661,19 @@ input:checked + .toggle-slider::before {
 }
 
 .progress-bar {
-/* Light theme: darker borders, lighter grays for inputs/charts/cards/buttons */
+/* Light theme: section backgrounds */
 [data-theme="light"] .content-section,
-[data-theme="light"] .performance-section {
-  background: #ffffff;
+[data-theme="light"] .performance-section,
+[data-theme="light"] .conversations-section,
+[data-theme="light"] .prompt-control-section,
+[data-theme="light"] .message-activity-section {
+  background: #f5f7fa;
   border-color: #94a3b8;
+}
+
+[data-theme="light"] #performance-radar,
+[data-theme="light"] #daily-message-activity {
+  background: #f5f7fa !important;
 }
 
 [data-theme="light"] .feedback-display,

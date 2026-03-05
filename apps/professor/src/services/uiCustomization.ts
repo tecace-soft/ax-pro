@@ -3,7 +3,7 @@ import { UICustomization } from './settings';
 import { getSession } from './auth';
 
 export const DEFAULT_CUSTOMIZATION: UICustomization = {
-  chatTitle: 'AX PRO',
+  chatTitle: 'AX PRO Platform',
   chatSubtitle: 'Select a conversation from the sidebar or start a new chat',
   avatarUrl: '/default-profile-avatar.png',
   suggestedQuestions: {

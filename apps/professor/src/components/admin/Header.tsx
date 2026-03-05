@@ -61,8 +61,8 @@ export default function AdminHeader({ performanceScore, performanceDate, current
     }
   }
 
-  const displayTitle = customTitle || 'AX PRO'
-  const displayWelcome = customWelcome || 'AX PRO'
+  const displayTitle = customTitle || 'AX PRO Platform'
+  const displayWelcome = customWelcome || 'AX PRO Platform'
 
   useEffect(() => {
     if (!isNavMenuOpen) return
@@ -82,21 +82,12 @@ export default function AdminHeader({ performanceScore, performanceDate, current
     <header className="dashboard-header">
       <div className="header-left">
         <div className="logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
-          <div className="logo-hexagon">
-            <div className="hexagon-outer">
-              <div className="hexagon-inner">
-              </div>
-            </div>
-          </div>
           <span className="logo-text">{displayTitle}</span>
         </div>
       </div>
       
       <div className="header-right">
         <div className="performance-indicator">
-          <span className="performance-text">
-            {displayWelcome}: {performanceScore}% ({getPerformanceLabel(performanceScore)}{performanceDate ? `, ${performanceDate}` : ''})
-          </span>
           <span className="current-time" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {userEmail && <span style={{ color: 'var(--admin-text-muted)', fontSize: '13px' }}>{userEmail}</span>}
             <span>{currentTime}</span>
