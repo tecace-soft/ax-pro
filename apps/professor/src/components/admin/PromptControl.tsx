@@ -205,23 +205,13 @@ export default function PromptControl() {
                 loadPromptHistory()
               }
             }}
-            className="px-3 py-1 text-xs rounded transition-colors hover:bg-blue-500/20"
-            style={{ 
-              color: 'var(--admin-primary)',
-              border: '1px solid rgba(59, 230, 255, 0.3)',
-              fontSize: fs.sm
-            }}
+            className="prompt-control__header-btn"
           >
             History
           </button>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="px-3 py-1 text-xs rounded transition-colors hover:bg-blue-500/20"
-            style={{ 
-              color: 'var(--admin-primary)',
-              border: '1px solid rgba(59, 230, 255, 0.3)',
-              fontSize: fs.sm
-            }}
+            className="prompt-control__header-btn"
           >
             {isExpanded ? 'Collapse' : 'Expand'}
           </button>
