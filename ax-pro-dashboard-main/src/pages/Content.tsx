@@ -1343,7 +1343,7 @@ export default function Content({ startDate, endDate, onDateChange }: ContentPro
 											id="admin-feedback-filter-input"
 											type="text"
 											className="input"
-											placeholder="Search feedback..."
+											placeholder="Search supervisor corrections..."
 											value={adminFeedbackFilter}
 											onChange={(e) => setAdminFeedbackFilter(e.target.value)}
 										/>

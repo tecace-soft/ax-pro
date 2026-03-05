@@ -2,11 +2,9 @@ import { useState, useEffect } from 'react'
 import { fetchAdministratorInstructions, deleteAdminFeedback, submitAdminFeedback } from '../../services/feedback'
 import { AdminFeedbackData } from '../../services/supabaseUserSpecific'
 import { useTranslation } from '../../i18n/I18nProvider'
-import { IconRefresh, IconTrash } from '../../ui/icons'
+import { IconRefresh, IconTrash, IconLightbulb, IconDownload, IconChevronLeft, IconChevronRight } from '../../ui/icons'
 
 type SortOption = 'date-desc' | 'date-asc'
-type ViewMode = 'card' | 'table'
-
 export default function AdminInstructionList() {
   const { t } = useTranslation()
   const [instructions, setInstructions] = useState<AdminFeedbackData[]>([])
@@ -16,9 +14,8 @@ export default function AdminInstructionList() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('date-desc')
-  const [viewMode, setViewMode] = useState<ViewMode>('table')
-  const [displayLanguage, setDisplayLanguage] = useState<'en' | 'ko'>('en')
-  const [displayLimit, setDisplayLimit] = useState<number>(10)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 10
   const [showAddModal, setShowAddModal] = useState(false)
   const [addInstructionText, setAddInstructionText] = useState('')
   const [isSubmittingAdd, setIsSubmittingAdd] = useState(false)
@@ -29,7 +26,7 @@ export default function AdminInstructionList() {
 
   useEffect(() => {
     applyFiltersAndSort()
-    setDisplayLimit(10)
+    setCurrentPage(1)
   }, [instructions, searchTerm, sortBy])
 
   const loadInstructions = async () => {
@@ -175,14 +172,19 @@ export default function AdminInstructionList() {
     )
   }
 
-  const displayed = filteredInstructions.slice(0, displayLimit)
-  const hasMore = filteredInstructions.length > displayLimit
+  const totalInstructions = filteredInstructions.length
+  const totalPages = Math.max(1, Math.ceil(totalInstructions / PAGE_SIZE))
+  const safePage = Math.min(currentPage, totalPages)
+  const startIndex = (safePage - 1) * PAGE_SIZE
+  const endIndex = startIndex + PAGE_SIZE
+  const displayed = filteredInstructions.slice(startIndex, endIndex)
 
   return (
     <div className="dashboard-section-card admin-instruction-section">
       <div className="section-header">
         <h2 className="section-title">
-          {t('adminInstruction.title')} ({filteredInstructions.length})
+          <IconLightbulb className="section-header-icon" size={18} style={{ flexShrink: 0 }} />
+          {t('adminInstruction.title')} <span className="section-count-badge">{filteredInstructions.length}</span>
         </h2>
         <button className="icon-btn" onClick={handleRefresh} disabled={isRefreshing} title={t('actions.refresh')}>
           <IconRefresh size={18} className={isRefreshing ? 'animate-spin' : ''} />
@@ -190,25 +192,6 @@ export default function AdminInstructionList() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
-          <button
-            onClick={() => setViewMode('card')}
-            className="px-3 py-2 text-sm font-medium transition-colors"
-            style={{ backgroundColor: viewMode === 'card' ? 'var(--admin-primary)' : 'transparent', color: viewMode === 'card' ? '#041220' : 'var(--admin-text)' }}
-            title={t('adminFeedback.cardView')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className="px-3 py-2 text-sm font-medium transition-colors"
-            style={{ backgroundColor: viewMode === 'table' ? 'var(--admin-primary)' : 'transparent', color: viewMode === 'table' ? '#041220' : 'var(--admin-text)' }}
-            title={t('adminFeedback.tableView')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
-          </button>
-        </div>
-
         <div className="flex items-center gap-2">
           <span className="text-sm" style={{ color: 'var(--admin-text)' }}>{t('adminFeedback.sortBy')}</span>
           <select
@@ -233,27 +216,12 @@ export default function AdminInstructionList() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm" style={{ color: 'var(--admin-text)' }}>{t('adminFeedback.language')}</span>
-          <select
-            value={displayLanguage}
-            onChange={(e) => setDisplayLanguage(e.target.value as 'en' | 'ko')}
-            className="px-3 py-2 rounded-md text-sm admin-instruction-select"
-          >
-            <option value="en">English</option>
-            <option value="ko">한국어</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <select className="px-3 py-2 rounded-md text-sm admin-instruction-select" defaultValue="CSV">
+          <select className="export-format-select px-3 py-2 rounded-md text-sm admin-instruction-select" defaultValue="CSV">
             <option>CSV</option>
             <option>JSON</option>
           </select>
-          <button onClick={handleExport} className="px-4 py-2 rounded-md text-sm font-medium admin-instruction-export-btn">
-            {t('adminFeedback.export')}
-          </button>
-          <button onClick={() => setShowAddModal(true)} className="px-4 py-2 rounded-md text-sm font-medium admin-instruction-add-btn">
-            Add
+          <button onClick={handleExport} className="dashboard-export-btn">
+            <IconDownload size={14} className="dashboard-export-btn__icon" /> {t('adminFeedback.export')}
           </button>
         </div>
       </div>
@@ -262,15 +230,15 @@ export default function AdminInstructionList() {
         <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
           <p>{searchTerm ? t('adminFeedback.noMatches') : t('adminInstruction.noInstructions')}</p>
         </div>
-      ) : viewMode === 'table' ? (
+      ) : (
         <>
           <div className="admin-instruction-table-wrap">
             <table className="w-full admin-instruction-table">
               <colgroup>
-                <col style={{ width: '200px' }} />
+                <col style={{ width: '160px' }} />
                 <col />
-                <col style={{ width: '52px' }} />
-                <col style={{ width: '52px' }} />
+                <col style={{ width: '68px' }} />
+                <col style={{ width: '68px' }} />
               </colgroup>
               <thead>
                 <tr className="admin-instruction-table__head-row">
@@ -282,7 +250,7 @@ export default function AdminInstructionList() {
               </thead>
               <tbody>
                 {displayed.map((row, index) => (
-                  <tr key={row.id} className="admin-instruction-table__row" style={{ backgroundColor: index % 2 === 0 ? 'rgba(9, 14, 34, 0.3)' : 'rgba(9, 14, 34, 0.2)', borderColor: 'var(--admin-border)' }}>
+                  <tr key={row.id} className="admin-instruction-table__row">
                     <td className="admin-instruction-table__td admin-instruction-table__td--date">{formatDate(row.updated_at || row.created_at)}</td>
                     <td className="admin-instruction-table__td admin-instruction-table__td--instruction" style={{ color: 'var(--admin-text)' }}>
                       {row.feedback_text || '-'}
@@ -307,45 +275,55 @@ export default function AdminInstructionList() {
               </tbody>
             </table>
           </div>
-          {hasMore && (
-            <div className="flex justify-center mt-4">
-              <button onClick={() => setDisplayLimit(prev => prev + 10)} className="px-6 py-2 rounded-md text-sm font-medium admin-instruction-load-more">
-                {t('adminFeedback.loadMore')} ({filteredInstructions.length - displayLimit} {t('adminFeedback.remaining')})
-              </button>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          <div className="space-y-3">
-            {displayed.map((row) => (
-              <div key={row.id} className="rounded-lg border admin-instruction-card" style={{ backgroundColor: 'rgba(9, 14, 34, 0.4)', borderColor: 'var(--admin-border)' }}>
-                <div className="p-4 flex justify-between items-start gap-4">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm" style={{ color: 'var(--admin-text-muted)', marginBottom: 4 }}>{formatDate(row.updated_at || row.created_at)}</p>
-                    <p className="text-sm" style={{ color: 'var(--admin-text)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{row.feedback_text || '-'}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
-                      onClick={() => toggleApply(row.id!)}
-                      className="admin-feedback-table__apply-btn"
-                      style={{ backgroundColor: row.apply ? 'var(--admin-primary)' : 'rgba(100, 116, 139, 0.3)' }}
-                    >
-                      <span className="admin-feedback-table__apply-thumb" style={{ transform: row.apply ? 'translateX(1.25rem)' : 'translateX(0.25rem)' }} />
-                    </button>
-                    <button onClick={() => handleDelete(row.id!)} className="icon-btn admin-feedback-table__delete-btn">
-                      <IconTrash size={16} className="admin-feedback-table__delete-icon" />
-                    </button>
-                  </div>
-                </div>
+          {totalPages > 1 && (
+            <div className="dashboard-pagination-row">
+              <div className="dashboard-pagination">
+                <button
+                  className="dashboard-pagination__arrow"
+                  disabled={safePage === 1}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  aria-label="Previous page"
+                >
+                  <IconChevronLeft size={14} />
+                </button>
+                {(() => {
+                  const items: (number | 'ellipsis')[] = []
+                  if (totalPages <= 6) {
+                    for (let i = 1; i <= totalPages; i++) items.push(i)
+                  } else {
+                    if (safePage <= 3) {
+                      items.push(1, 2, 3, 4, 'ellipsis', totalPages)
+                    } else if (safePage >= totalPages - 2) {
+                      items.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
+                    } else {
+                      items.push(1, 'ellipsis', safePage - 1, safePage, safePage + 1, 'ellipsis', totalPages)
+                    }
+                  }
+                  return items.map((item, idx) =>
+                    item === 'ellipsis' ? (
+                      <span key={`ellipsis-${idx}`} className="dashboard-pagination__ellipsis">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        className={`dashboard-pagination__page ${item === safePage ? 'dashboard-pagination__page--active' : ''}`}
+                        onClick={() => setCurrentPage(item)}
+                      >
+                        {item}
+                      </button>
+                    )
+                  )
+                })()}
+                <button
+                  className="dashboard-pagination__arrow"
+                  disabled={safePage === totalPages}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  aria-label="Next page"
+                >
+                  <IconChevronRight size={14} />
+                </button>
               </div>
-            ))}
-          </div>
-          {hasMore && (
-            <div className="flex justify-center mt-4">
-              <button onClick={() => setDisplayLimit(prev => prev + 10)} className="px-6 py-2 rounded-md text-sm font-medium admin-instruction-load-more">
-                {t('adminFeedback.loadMore')} ({filteredInstructions.length - displayLimit} {t('adminFeedback.remaining')})
-              </button>
             </div>
           )}
         </>

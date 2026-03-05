@@ -371,7 +371,7 @@ export default function Sidebar({
   const [searchValue, setSearchValue] = useState('')
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [profileData, setProfileData] = useState({
-    name: 'TecAce Ax Pro',
+    name: 'AX PRO Platform',
     role: 'Main AI Assistant for HR Support',
     initials: 'AI',
     avatar: '/default-profile-avatar.png' // 바로 기본 이미지로 설정
@@ -626,7 +626,7 @@ export default function Sidebar({
                   </>
                 ) : (
                   <>
-                    <h3 className="profile-name">TecAce Ax Pro</h3>
+                    <h3 className="profile-name">AX PRO Platform</h3>
                     <p className="profile-role">Main AI Assistant for HR Support</p>
                   </>
                 )}

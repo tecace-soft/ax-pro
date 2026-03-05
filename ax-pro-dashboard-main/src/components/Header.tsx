@@ -34,14 +34,14 @@ export default function Header({ performanceScore, performanceDate, currentTime,
               </div>
             </div>
           </div>
-          <span className="logo-text">TecAce Ax Pro</span>
+          <span className="logo-text">AX PRO Platform</span>
         </div>
       </div>
       
       <div className="header-right">
         <div className="performance-indicator">
           <span className="performance-text">
-            TecAce Ax Pro: {performanceScore}% ({getPerformanceLabel(performanceScore)}{performanceDate ? `, ${performanceDate}` : ''})
+            AX PRO Platform: {performanceScore}% ({getPerformanceLabel(performanceScore)}{performanceDate ? `, ${performanceDate}` : ''})
           </span>
           <span className="current-time">{currentTime}</span>
         </div>

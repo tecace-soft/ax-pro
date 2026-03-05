@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { fetchSystemPrompt, updateSystemPrompt, forcePromptReload, fetchPromptHistory, deletePrompt } from '../../services/prompt'
-import { IconRefresh } from '../../ui/icons'
+import { IconRefresh, IconFileText } from '../../ui/icons'
 import { useTranslation } from '../../i18n/I18nProvider'
 
 interface PromptHistory {
@@ -194,6 +194,7 @@ export default function PromptControl() {
     <div className="dashboard-section-card prompt-control-section">
       <div className="section-header">
         <h2 className="section-title">
+          <IconFileText className="section-header-icon" size={18} style={{ flexShrink: 0 }} />
           {t('admin.systemPrompt')}
         </h2>
         <div className="flex items-center gap-3">
@@ -243,11 +244,8 @@ export default function PromptControl() {
       <div className="space-y-4">
         <textarea
           ref={textareaRef}
-          className="w-full p-3 rounded-md font-mono prompt-control__textarea"
+          className="w-full font-mono prompt-control__textarea"
           style={{
-            backgroundColor: 'rgba(9, 14, 34, 0.6)',
-            border: '1px solid rgba(59, 230, 255, 0.15)',
-            color: 'var(--admin-text)',
             fontSize: fs.cell,
             minHeight: isExpanded ? '80vh' : '300px',
             maxHeight: isExpanded ? 'none' : '400px',
@@ -365,10 +363,8 @@ export default function PromptControl() {
         
         <div className="flex justify-end">
           <button 
-            className="px-6 py-2 rounded-md font-medium transition-all"
+            className="dashboard-export-btn"
             style={{
-              background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
-              color: '#041220',
               fontSize: fs.base,
               opacity: isLoading || isUpdating ? 0.5 : 1,
               cursor: isLoading || isUpdating ? 'not-allowed' : 'pointer'

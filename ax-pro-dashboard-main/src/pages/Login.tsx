@@ -20,7 +20,7 @@ export default function Login() {
 	return (
 		<div className="screen">
 			<div className="card login-card">
-				<div className="app-title">TecAce Ax Pro</div>
+				<div className="app-title">AX PRO Platform</div>
 				<p className="muted">Enter access code to continue</p>
 				<form onSubmit={onSubmit} className="login-form">
 					<input

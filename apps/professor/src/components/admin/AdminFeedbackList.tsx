@@ -3,15 +3,13 @@ import { fetchSupervisorCorrections, deleteAdminFeedback, submitAdminFeedback } 
 import { fetchChatById } from '../../services/chatData'
 import { AdminFeedbackData, ChatData } from '../../services/supabaseUserSpecific'
 import { useTranslation } from '../../i18n/I18nProvider'
-import { IconRefresh, IconThumbsUp, IconThumbsDown, IconTrash } from '../../ui/icons'
+import { IconRefresh, IconThumbsUp, IconThumbsDown, IconTrash, IconEdit, IconDownload, IconChevronLeft, IconChevronRight } from '../../ui/icons'
 
 interface FeedbackWithChat extends AdminFeedbackData {
   chatData?: ChatData | null
 }
 
 type SortOption = 'date-desc' | 'date-asc' | 'verdict'
-type ViewMode = 'card' | 'table'
-
 interface AdminFeedbackListProps {
   onScrollToChat?: (chatId: string) => void
   useMock?: boolean
@@ -28,9 +26,9 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   const [sortBy, setSortBy] = useState<SortOption>('date-desc')
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [displayLanguage, setDisplayLanguage] = useState<'en' | 'ko'>('en')
-  const [displayLimit, setDisplayLimit] = useState<number>(10)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 10
   const [editingFeedback, setEditingFeedback] = useState<{ id: number; field: 'feedback' | 'correctedMessage' | 'corrected'; originalValue: string } | null>(null)
   const [editValue, setEditValue] = useState<string>('')
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium')
@@ -55,8 +53,8 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
   useEffect(() => {
     applyFiltersAndSort()
-    // Reset display limit when filters change
-    setDisplayLimit(10)
+    // Reset to first page when filters change
+    setCurrentPage(1)
   }, [feedbacks, searchTerm, sortBy, filterUserId, filterDate])
 
   const loadFeedback = async () => {
@@ -447,7 +445,8 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       {/* Header */}
       <div className="section-header">
         <h2 className="section-title">
-          {t('adminFeedback.supervisorCorrectionTitle')} ({filteredFeedbacks.length})
+          <IconEdit className="section-header-icon" size={18} style={{ flexShrink: 0 }} />
+          {t('adminFeedback.supervisorCorrectionTitle')} <span className="section-count-badge">{filteredFeedbacks.length}</span>
         </h2>
         <button 
           className="icon-btn"
@@ -461,41 +460,6 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
       {/* Controls Bar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        {/* View Mode Toggle */}
-        <div className="flex items-center gap-1 rounded-md overflow-hidden" style={{ border: '1px solid var(--admin-border)' }}>
-          <button
-            onClick={() => setViewMode('card')}
-            className="px-3 py-2 text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: viewMode === 'card' ? 'var(--admin-primary)' : 'transparent',
-              color: viewMode === 'card' ? '#041220' : 'var(--admin-text)',
-            }}
-            title={t('adminFeedback.cardView')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-            </svg>
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className="px-3 py-2 text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: viewMode === 'table' ? 'var(--admin-primary)' : 'transparent',
-              color: viewMode === 'table' ? '#041220' : 'var(--admin-text)',
-            }}
-            title={t('adminFeedback.tableView')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-        </div>
-
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
           <span className="text-sm" style={{ color: 'var(--admin-text)' }}>{t('adminFeedback.sortBy')}</span>
@@ -503,11 +467,6 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             className="px-3 py-2 rounded-md text-sm"
-            style={{
-              backgroundColor: 'rgba(9, 14, 34, 0.6)',
-              color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
-            }}
           >
             <option value="date-desc">{t('adminFeedback.sortDateNewest')}</option>
             <option value="date-asc">{t('adminFeedback.sortDateOldest')}</option>
@@ -524,37 +483,13 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1 px-3 py-2 rounded-md text-sm"
-            style={{
-              backgroundColor: 'rgba(9, 14, 34, 0.6)',
-              color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
-            }}
           />
-        </div>
-
-        {/* Language Selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm" style={{ color: 'var(--admin-text)', fontSize: fs.sm }}>{t('adminFeedback.language')}</span>
-          <select
-            value={displayLanguage}
-            onChange={(e) => setDisplayLanguage(e.target.value as 'en' | 'ko')}
-            className="px-3 py-2 rounded-md text-sm"
-            style={{ backgroundColor: 'rgba(9, 14, 34, 0.6)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)', fontSize: fs.sm }}
-          >
-            <option value="en">English</option>
-            <option value="ko">한국어</option>
-          </select>
         </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <select
-            className="px-3 py-2 rounded-md text-sm"
-            style={{
-              backgroundColor: 'rgba(9, 14, 34, 0.6)',
-              color: 'var(--admin-text)',
-              border: '1px solid var(--admin-border)'
-            }}
+            className="export-format-select px-3 py-2 rounded-md text-sm"
             defaultValue="CSV"
           >
             <option>CSV</option>
@@ -562,34 +497,23 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
           </select>
           <button
             onClick={handleExport}
-            className="px-4 py-2 rounded-md text-sm font-medium"
-            style={{
-              backgroundColor: 'rgba(59, 230, 255, 0.1)',
-              color: 'var(--admin-primary)',
-              border: '1px solid var(--admin-primary)'
-            }}
+            className="dashboard-export-btn"
           >
-            {t('adminFeedback.export')}
-          </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 rounded-md text-sm font-medium"
-            style={{
-              background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
-              color: '#041220'
-            }}
-          >
-            Add
+            <IconDownload size={14} className="dashboard-export-btn__icon" /> {t('adminFeedback.export')}
           </button>
         </div>
       </div>
 
       {/* Content */}
       {(() => {
-        const displayedFeedbacks = filteredFeedbacks.slice(0, displayLimit)
-        const hasMore = filteredFeedbacks.length > displayLimit
+        const totalFeedbacks = filteredFeedbacks.length
+        const totalPages = Math.max(1, Math.ceil(totalFeedbacks / PAGE_SIZE))
+        const safePage = Math.min(currentPage, totalPages)
+        const startIndex = (safePage - 1) * PAGE_SIZE
+        const endIndex = startIndex + PAGE_SIZE
+        const displayedFeedbacks = filteredFeedbacks.slice(startIndex, endIndex)
 
-        if (filteredFeedbacks.length === 0) {
+        if (totalFeedbacks === 0) {
           return (
             <div className="text-center p-8" style={{ color: 'var(--admin-text-muted)' }}>
               <p>{searchTerm ? t('adminFeedback.noMatches') : t('adminFeedback.noFeedback')}</p>
@@ -597,19 +521,22 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
           )
         }
 
-        return viewMode === 'table' ? (
-        /* Table View */
+        return (
         <>
         <div className="admin-feedback-table-wrap">
           <table className="w-full admin-feedback-table">
             <colgroup>
-              <col style={{ width: '200px' }} />
-              <col />
-              <col />
-              <col />
-              <col />
-              <col style={{ width: '52px' }} />
-              <col style={{ width: '52px' }} />
+              {/* Date (fixed) */}
+              <col style={{ width: '160px' }} />
+              {/* User Message & Chatbot Response: narrower */}
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '16%' }} />
+              {/* Corrected Message & Corrected Response: wider */}
+              <col style={{ width: '34%' }} />
+              <col style={{ width: '34%' }} />
+              {/* Apply / Delete (fixed) */}
+              <col style={{ width: '68px' }} />
+              <col style={{ width: '68px' }} />
             </colgroup>
             <thead>
               <tr className="admin-feedback-table__head-row">
@@ -623,26 +550,26 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
               </tr>
             </thead>
             <tbody>
-              {displayedFeedbacks.map((feedback, index) => (
+              {displayedFeedbacks.map((feedback) => (
                 <tr 
                   key={feedback.id}
-                  className="border-b transition-colors hover:bg-gray-100/5"
-                  style={{
-                    backgroundColor: index % 2 === 0 ? 'rgba(9, 14, 34, 0.3)' : 'rgba(9, 14, 34, 0.2)',
-                    borderColor: 'var(--admin-border)',
-                    opacity: ((feedback as any)?.isEnabled ?? true) ? 1 : 0.5
-                  }}
+                  style={{ opacity: ((feedback as any)?.isEnabled ?? true) ? 1 : 0.5 }}
                 >
                   <td className="admin-feedback-table__td">
-                    {formatDate(feedback.updated_at || feedback.created_at)}
+                    <div
+                      className="truncate"
+                      title={formatDate(feedback.updated_at || feedback.created_at)}
+                    >
+                      {formatDate(feedback.updated_at || feedback.created_at)}
+                    </div>
                   </td>
                   <td className="admin-feedback-table__td admin-feedback-table__td--user-message">
-                    <div className="truncate" title={feedback.chatData?.chat_message ?? ''} style={{ fontSize: fs.cell }}>
+                    <div className="truncate" title={feedback.chatData?.chat_message ?? ''}>
                       {feedback.chatData?.chat_message ?? '-'}
                     </div>
                   </td>
                   <td className="admin-feedback-table__td admin-feedback-table__td--chatbot-response">
-                    <div className="truncate" title={feedback.chatData?.response ?? ''} style={{ fontSize: fs.cell }}>
+                    <div className="truncate" title={feedback.chatData?.response ?? ''}>
                       {feedback.chatData?.response ?? '-'}
                     </div>
                   </td>
@@ -703,7 +630,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                         className="truncate editable-cell" 
                         title={feedback.corrected_message || ''}
                         onClick={() => handleStartEdit(feedback.id!, 'correctedMessage')}
-                        style={{ cursor: 'pointer', borderRadius: '4px', fontSize: fs.cell, color: 'var(--admin-text)' }}
+                        style={{ cursor: 'pointer', borderRadius: '4px' }}
                       >
                         {feedback.corrected_message || '-'}
                       </div>
@@ -766,7 +693,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                         className="truncate editable-cell" 
                         title={(displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response) : ((feedback as any).chatData?.response_ko || feedback.corrected_response)) || ''}
                         onClick={() => handleStartEdit(feedback.id!, 'corrected')}
-                        style={{ cursor: 'pointer', borderRadius: '4px', fontSize: fs.cell, color: 'var(--admin-text)' }}
+                        style={{ cursor: 'pointer', borderRadius: '4px' }}
                       >
                         {displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response || '-') : ((feedback as any).chatData?.response_ko || feedback.corrected_response || '-')}
                       </div>
@@ -803,171 +730,55 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
             </tbody>
           </table>
         </div>
-        {hasMore && (
-          <div className="flex justify-center mt-4">
-            <button
-              onClick={() => setDisplayLimit(prev => prev + 10)}
-              className="px-6 py-2 rounded-md text-sm font-medium"
-              style={{
-                background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
-                color: '#041220',
-                fontSize: fs.base
-              }}
-            >
-              {t('adminFeedback.loadMore')} ({filteredFeedbacks.length - displayLimit} {t('adminFeedback.remaining')})
-            </button>
-          </div>
-        )}
-        </>
-      ) : (
-        /* Card View */
-        <>
-        <div className="space-y-3">
-          {displayedFeedbacks.map((feedback) => (
-            <div 
-              key={feedback.id}
-              className="rounded-lg border"
-              style={{
-                backgroundColor: 'rgba(9, 14, 34, 0.4)',
-                borderColor: 'var(--admin-border)',
-                opacity: ((feedback as any)?.isEnabled ?? true) ? 1 : 0.5
-              }}
-            >
-              <div className="p-4">
-                {/* Header Row */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      {feedback.feedback_verdict === 'good' ? (
-                        <IconThumbsUp size={16} style={{ color: 'var(--admin-success)' }} />
-                      ) : (
-                        <IconThumbsDown size={16} style={{ color: 'var(--admin-danger)' }} />
-                      )}
-                      <span className="text-sm font-semibold" style={{ color: 'var(--admin-text)' }}>
-                        User: {feedback.chatData?.user_id || 'Manual Input'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>
-                      {formatDate(feedback.updated_at || feedback.created_at)}
+        {totalPages > 1 && (
+          <div className="dashboard-pagination-row">
+            <div className="dashboard-pagination">
+              <button
+                className="dashboard-pagination__arrow"
+                disabled={safePage === 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                aria-label="Previous page"
+              >
+                <IconChevronLeft size={14} />
+              </button>
+              {(() => {
+                const items: (number | 'ellipsis')[] = []
+                if (totalPages <= 6) {
+                  for (let i = 1; i <= totalPages; i++) items.push(i)
+                } else {
+                  if (safePage <= 3) {
+                    items.push(1, 2, 3, 4, 'ellipsis', totalPages)
+                  } else if (safePage >= totalPages - 2) {
+                    items.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
+                  } else {
+                    items.push(1, 'ellipsis', safePage - 1, safePage, safePage + 1, 'ellipsis', totalPages)
+                  }
+                }
+                return items.map((item, idx) =>
+                  item === 'ellipsis' ? (
+                    <span key={`ellipsis-${idx}`} className="dashboard-pagination__ellipsis">
+                      …
                     </span>
-                    {/* Apply to Prompt Toggle */}
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <span className="text-xs" style={{ color: 'var(--admin-text)' }}>
-                        {t('adminFeedback.applyToPrompt')}
-                      </span>
-                      <button
-                        onClick={() => toggleApply(feedback.id!)}
-                        className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                        style={{
-                          backgroundColor: feedback.apply ? 'var(--admin-primary)' : 'rgba(100, 116, 139, 0.3)'
-                        }}
-                      >
-                        <span
-                          className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                          style={{
-                            transform: feedback.apply ? 'translateX(1.5rem)' : 'translateX(0.25rem)'
-                          }}
-                        />
-                      </button>
-                    </label>
-                    {/* Delete Button */}
+                  ) : (
                     <button
-                      onClick={() => handleDelete(feedback.id!)}
-                      className="icon-btn hover:bg-red-500/20 transition-colors"
-                      title={t('adminFeedback.deleteFeedback')}
+                      key={item}
+                      className={`dashboard-pagination__page ${item === safePage ? 'dashboard-pagination__page--active' : ''}`}
+                      onClick={() => setCurrentPage(item)}
                     >
-                      <IconTrash size={16} style={{ color: 'var(--admin-danger)' }} />
+                      {item}
                     </button>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="space-y-3">
-                  {/* User Message */}
-                  {feedback.chatData?.chat_message && (
-                    <div>
-                      <p className="font-medium mb-1" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>
-                        {t('adminFeedback.userMessage')}
-                      </p>
-                      <p style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
-                        {feedback.chatData.chat_message}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Chat ID */}
-                  <p className="mb-2" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>
-                    {t('adminFeedback.chatId')} 
-                    <button
-                      onClick={() => onScrollToChat?.(feedback.chat_id)}
-                      className="ml-1 text-blue-400 hover:text-blue-300 underline cursor-pointer"
-                      title="Click to scroll to this chat in Recent Conversations"
-                    >
-                      {feedback.chat_id}
-                    </button>
-                  </p>
-
-                  {/* Original AI Response */}
-                  {feedback.chatData?.response && (
-                    <div>
-                      <p className="font-medium mb-1" style={{ color: 'var(--admin-text-muted)', fontSize: fs.sm }}>
-                        {t('adminFeedback.originalResponse')}
-                      </p>
-                      <p style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
-                        {feedback.chatData.response}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Supervisor Feedback */}
-                  {feedback.feedback_text && (
-                    <div>
-                      <p className="font-medium mb-1" style={{ color: 'var(--admin-warning, #ff9800)', fontSize: fs.sm }}>
-                        {t('adminFeedback.supervisorFeedback')}
-                      </p>
-                      <p style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
-                        {feedback.feedback_text}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Corrected Response */}
-                  {feedback.corrected_response && (
-                    <div 
-                      className="p-3 rounded"
-                      style={{ 
-                        backgroundColor: 'rgba(59, 230, 255, 0.05)',
-                        border: '1px solid rgba(59, 230, 255, 0.2)'
-                      }}
-                    >
-                      <p className="font-medium mb-1" style={{ color: 'var(--admin-primary)', fontSize: fs.sm }}>
-                        {t('adminFeedback.correctedResponse')}
-                      </p>
-                      <p style={{ color: 'var(--admin-text)', fontSize: fs.cell }}>
-                        {displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response) : ((feedback as any).chatData?.response_ko || feedback.corrected_response)}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+                  )
+                )
+              })()}
+              <button
+                className="dashboard-pagination__arrow"
+                disabled={safePage === totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                aria-label="Next page"
+              >
+                <IconChevronRight size={14} />
+              </button>
             </div>
-          ))}
-        </div>
-        {hasMore && (
-          <div className="flex justify-center mt-4">
-            <button
-              onClick={() => setDisplayLimit(prev => prev + 10)}
-              className="px-6 py-2 rounded-md text-sm font-medium"
-              style={{
-                background: 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))',
-                color: '#041220',
-                fontSize: fs.base
-              }}
-            >
-              {t('adminFeedback.loadMore')} ({filteredFeedbacks.length - displayLimit} {t('adminFeedback.remaining')})
-            </button>
           </div>
         )}
         </>
