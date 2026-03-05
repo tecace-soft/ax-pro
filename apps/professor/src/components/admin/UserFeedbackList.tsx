@@ -451,44 +451,23 @@ export default function UserFeedbackList({ onScrollToChat }: UserFeedbackListPro
       {/* Reaction Filter Tabs */}
       <div className="mb-4 flex gap-2">
         <button
+          type="button"
           onClick={() => setFilterReaction('all')}
-          className={`px-4 py-2 rounded-md text-sm transition-colors ${
-            filterReaction === 'all' ? 'font-semibold' : ''
-          }`}
-          style={{
-            backgroundColor: filterReaction === 'all' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
-            color: filterReaction === 'all' ? '#041220' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)',
-            fontSize: fs.sm
-          }}
+          className={`user-feedback-reaction-btn ${filterReaction === 'all' ? 'user-feedback-reaction-btn--active' : ''}`}
         >
           {t('adminFeedback.all')} ({feedbacks.length})
         </button>
         <button
+          type="button"
           onClick={() => setFilterReaction('good')}
-          className={`px-4 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-            filterReaction === 'good' ? 'font-semibold' : ''
-          }`}
-          style={{
-            backgroundColor: filterReaction === 'good' ? 'var(--admin-success)' : 'rgba(9, 14, 34, 0.4)',
-            color: filterReaction === 'good' ? '#ffffff' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)',
-            fontSize: fs.sm
-          }}
+          className={`user-feedback-reaction-btn flex items-center gap-2 ${filterReaction === 'good' ? 'user-feedback-reaction-btn--active' : ''}`}
         >
           <IconThumbsUp size={14} /> {t('adminFeedback.good')} ({feedbacks.filter(f => f.reaction === 'good').length})
         </button>
         <button
+          type="button"
           onClick={() => setFilterReaction('bad')}
-          className={`px-4 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-            filterReaction === 'bad' ? 'font-semibold' : ''
-          }`}
-          style={{
-            backgroundColor: filterReaction === 'bad' ? 'var(--admin-danger)' : 'rgba(9, 14, 34, 0.4)',
-            color: filterReaction === 'bad' ? '#ffffff' : 'var(--admin-text)',
-            border: '1px solid var(--admin-border)',
-            fontSize: fs.sm
-          }}
+          className={`user-feedback-reaction-btn flex items-center gap-2 ${filterReaction === 'bad' ? 'user-feedback-reaction-btn--active' : ''}`}
         >
           <IconThumbsDown size={14} /> {t('adminFeedback.bad')} ({feedbacks.filter(f => f.reaction === 'bad').length})
         </button>
