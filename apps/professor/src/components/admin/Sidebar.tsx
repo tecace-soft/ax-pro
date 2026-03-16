@@ -1,8 +1,8 @@
-import { 
-  IconMessage, 
-  IconHistory, 
-  IconDatabase, 
-  IconMegaphone, 
+import {
+  IconMessage,
+  IconHistory,
+  IconDatabase,
+  IconMegaphone,
   IconSettings,
   IconBarChart,
   IconFileText,
@@ -35,11 +35,11 @@ interface SidebarProps {
   onAvailableLanguagesChange?: (langs: string[]) => void
 }
 
-export default function AdminSidebar({ 
+export default function AdminSidebar({
   serviceMode = 'chatbot',
-  conversations, 
-  satisfaction, 
-  documents, 
+  conversations,
+  satisfaction,
+  documents,
   performanceScore,
   performanceDate,
   isCollapsed,
@@ -51,16 +51,16 @@ export default function AdminSidebar({
   onSelectedLanguageChange,
   onAvailableLanguagesChange
 }: SidebarProps) {
-  
+
   // Check if current user is professor (only professor should see translation feature)
   const isProfessor = getSession()?.email === 'professor@tecace.com'
   const navigate = useNavigate()
   const location = useLocation()
   const { customization, updateCustomization } = useUICustomization()
   const { t, language } = useTranslation()
-  
+
   const isDashboardPage = location.pathname === '/admin/dashboard'
-  
+
   // Admin filters
   const [userType, setUserType] = useState<'professor' | 'assistant'>('professor')
   const [selectedYear, setSelectedYear] = useState<string>('2025')
@@ -71,11 +71,11 @@ export default function AdminSidebar({
   const [isManageSubjectOpen, setIsManageSubjectOpen] = useState(false)
   // per-subject managed translation target languages (always include en/ko)
   const [managedLangBySubject, setManagedLangBySubject] = useState<Record<string, string[]>>({
-    'machine-learning': ['en','ko','ja','zh','fr'],
-    'computer-vision': ['en','ko','fr','de','it'],
-    'ai-introduction': ['en','ko','ja','zh','es'],
-    'big-data-analysis': ['en','ko','ja','zh','pt'],
-    'logistic-regression': ['en','ko','ja','zh','ru']
+    'machine-learning': ['en', 'ko', 'ja', 'zh', 'fr'],
+    'computer-vision': ['en', 'ko', 'fr', 'de', 'it'],
+    'ai-introduction': ['en', 'ko', 'ja', 'zh', 'es'],
+    'big-data-analysis': ['en', 'ko', 'ja', 'zh', 'pt'],
+    'logistic-regression': ['en', 'ko', 'ja', 'zh', 'ru']
   })
 
   // Subject management (add/remove and localized names) - Updated with actual YouTube lecture titles
@@ -137,7 +137,7 @@ export default function AdminSidebar({
 
   // Build the displayed language list from managedLangBySubject
   const languageList = useMemo(() => {
-    const values = managedLangBySubject[selectedSubject] || ['en','ko']
+    const values = managedLangBySubject[selectedSubject] || ['en', 'ko']
     // map to labels based on current UI language
     const valueToLabel: Record<string, string> = {
       en: '🇺🇸 ' + (language === 'en' ? 'English' : 'English'),
@@ -157,7 +157,7 @@ export default function AdminSidebar({
     return values.map(v => ({ value: v, label: valueToLabel[v] || v }))
   }, [managedLangBySubject, selectedSubject, language])
 
-  const allLanguageValues = ['en','ko','ja','zh','es','hi','fr','ar','pt','ru','de','it','tr']
+  const allLanguageValues = ['en', 'ko', 'ja', 'zh', 'es', 'hi', 'fr', 'ar', 'pt', 'ru', 'de', 'it', 'tr']
   const addableLanguages = useMemo(() => {
     const current = new Set(managedLangBySubject[selectedSubject] || [])
     return allLanguageValues.filter(v => !current.has(v))
@@ -165,7 +165,7 @@ export default function AdminSidebar({
 
   // notify parent whenever available languages for current subject change
   useEffect(() => {
-    onAvailableLanguagesChange && onAvailableLanguagesChange(managedLangBySubject[selectedSubject] || ['en','ko'])
+    onAvailableLanguagesChange && onAvailableLanguagesChange(managedLangBySubject[selectedSubject] || ['en', 'ko'])
   }, [managedLangBySubject, selectedSubject])
 
   const handleNavigation = (sectionId: string) => {
@@ -220,14 +220,14 @@ export default function AdminSidebar({
             </div>
           </div>
         )}
-        
+
         {/* Avatar Section */}
         <div className="sidebar-section" style={{ paddingBottom: '20px', borderBottom: '1px solid var(--admin-border)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
             {/* Avatar with status indicator */}
             <div style={{ position: 'relative' }}>
-              <img 
-                src={customization.avatarUrl} 
+              <img
+                src={customization.avatarUrl}
                 alt="Chatbot Avatar"
                 style={{
                   width: '100px',
@@ -242,7 +242,7 @@ export default function AdminSidebar({
                 }}
               />
               {/* Active status indicator */}
-              <div 
+              <div
                 style={{
                   position: 'absolute',
                   bottom: '5px',
@@ -255,19 +255,19 @@ export default function AdminSidebar({
                 }}
               />
             </div>
-            
+
             {/* Bot Info */}
             <div style={{ textAlign: 'center', width: '100%', padding: '0 12px' }}>
-              <h3 style={{ 
-                fontSize: '16px', 
-                fontWeight: '600', 
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: '600',
                 color: 'var(--admin-text)',
                 marginBottom: '4px'
               }}>
                 {customization.chatTitle}
               </h3>
-              <p style={{ 
-                fontSize: '12px', 
+              <p style={{
+                fontSize: '12px',
                 color: 'var(--admin-text-muted)'
               }}>
                 {customization.chatSubtitle}
@@ -287,13 +287,13 @@ export default function AdminSidebar({
                   fontSize: '12px',
                   fontWeight: '500',
                   color: 'var(--admin-text)',
-                  backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                  backgroundColor: 'var(--admin-card-bg)',
                   border: '1px solid var(--admin-border)',
                   cursor: 'pointer',
                   transition: 'all 0.2s'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(59, 230, 255, 0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(9, 14, 34, 0.6)'}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--admin-hover-bg)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--admin-card-bg)'}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
@@ -308,7 +308,7 @@ export default function AdminSidebar({
         {/* Admin Filters - Only show in translation mode */}
         {serviceMode === 'translation' && !isCollapsed && (
           <div className="sidebar-section">
-            
+
             {/* User Type Selection */}
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '6px' }}>{language === 'en' ? 'User Type' : '사용자 유형'}</div>
@@ -353,7 +353,7 @@ export default function AdminSidebar({
             {/* Term & Subject Selection */}
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '6px' }}>{language === 'en' ? 'Term' : '학기'}</div>
-              
+
               {/* Combined Term dropdown (Year + Season) */}
               <div style={{ marginBottom: '12px' }}>
                 <select
@@ -375,7 +375,7 @@ export default function AdminSidebar({
                     fontSize: '12px'
                   }}
                 >
-                  {['2025','2024','2023'].flatMap((y) => ([
+                  {['2025', '2024', '2023'].flatMap((y) => ([
                     { v: `${y}-winter`, l: language === 'en' ? `${y} Winter` : `${y} 겨울` },
                     { v: `${y}-fall`, l: language === 'en' ? `${y} Fall` : `${y} 가을` },
                     { v: `${y}-summer`, l: language === 'en' ? `${y} Summer` : `${y} 여름` },
@@ -399,8 +399,8 @@ export default function AdminSidebar({
                       {language === 'en' ? 'Manage' : '관리'}
                     </button>
                   </div>
-                  <div style={{ 
-                    background: 'var(--admin-card-bg)', 
+                  <div style={{
+                    background: 'var(--admin-card-bg)',
                     border: '1px solid var(--admin-border)',
                     borderRadius: '6px',
                     maxHeight: '300px',
@@ -409,8 +409,8 @@ export default function AdminSidebar({
                     {managedSubjects.map((subj) => (
                       <button
                         key={subj}
-                        onClick={() => { 
-                          setSelectedSubject(subj); 
+                        onClick={() => {
+                          setSelectedSubject(subj);
                           // default to English for every subject change
                           setSelectedLanguage('en');
                           onSelectedLanguageChange && onSelectedLanguageChange('en')
@@ -465,52 +465,52 @@ export default function AdminSidebar({
         )}
 
         {/* Navigation */}
-        <div className="sidebar-section">
+        <div className="sidebar-section sidebar-nav-section">
           <h3 className="sidebar-section-title">{t('admin.navigation')}</h3>
           <nav className="sidebar-nav">
-            <button 
+            <button
               className="nav-item"
               onClick={() => handleNavigation('performance-radar')}
             >
               <IconBarChart size={18} />
               <span>{t('admin.performance')}</span>
             </button>
-            <button 
+            <button
               className="nav-item"
               onClick={() => handleNavigation('recent-conversations')}
             >
               <IconMessage size={18} />
               <span>{t('admin.conversations')}</span>
             </button>
-            <button 
+            <button
               className="nav-item"
               onClick={() => handleNavigation('admin-feedback')}
             >
               <IconEdit size={18} />
               <span>{t('adminFeedback.supervisorCorrectionTitle')}</span>
             </button>
-            <button 
+            <button
               className="nav-item"
               onClick={() => handleNavigation('admin-instruction')}
             >
               <IconLightbulb size={18} />
               <span>{t('adminInstruction.title')}</span>
             </button>
-            <button 
+            <button
               className="nav-item"
               onClick={() => handleNavigation('user-feedback')}
             >
               <IconMegaphone size={18} />
               <span>{t('admin.userFeedback')}</span>
             </button>
-            <button 
+            <button
               className="nav-item"
               onClick={() => handleNavigation('prompt-control')}
             >
               <IconFileText size={18} />
               <span>Prompt</span>
             </button>
-            <button 
+            <button
               className="nav-item"
               onClick={() => navigate(withGroupParam('/admin/knowledge-management'))}
             >
@@ -644,7 +644,7 @@ export default function AdminSidebar({
                   if (!slug || !en || !ko) return
                   setManagedSubjects(prev => Array.from(new Set([...prev, slug])))
                   setSubjectLabelMap(prev => ({ ...prev, [slug]: { en, ko } }))
-                  setManagedLangBySubject(prev => ({ ...prev, [slug]: ['en','ko'] }))
+                  setManagedLangBySubject(prev => ({ ...prev, [slug]: ['en', 'ko'] }))
                 }}
                 style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text)', cursor: 'pointer', flex: '0 0 auto' }}
               >

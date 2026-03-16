@@ -15,23 +15,19 @@ const Landing: React.FC = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
-  
+
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: ''
   });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const [showPassword, setShowPassword] = useState(false);
-  const [isQuickLoginExpanded, setIsQuickLoginExpanded] = useState(false);
 
   // Check if user is already logged in
-  // Always redirect to group-management as the initial landing page
   React.useEffect(() => {
     const session = getSession();
     if (session) {
-      // Super admins go to super-admin page
       if (session.isSuperAdmin) {
         navigate('/super-admin');
       } else {
@@ -40,22 +36,9 @@ const Landing: React.FC = () => {
     }
   }, [navigate]);
 
-  // Check backend availability
-  React.useEffect(() => {
-    const checkBackend = async () => {
-      const available = await isBackendAvailable();
-      setBackendStatus(available ? 'available' : 'unavailable');
-    };
-    checkBackend();
-  }, []);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Clear error when user starts typing
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (error) setError(null);
   };
 
@@ -65,33 +48,23 @@ const Landing: React.FC = () => {
     setError(null);
 
     try {
-      // Try backend API first
       await authApi.demoLogin(formData.email, formData.password);
-      
-      // Also store in local session for compatibility
       const session = await login(formData.email, formData.password);
-      
       if (session) {
-        // Super admins go to super-admin page
         if (session.isSuperAdmin) {
           navigate('/super-admin');
         } else {
-          // All other users go to group management after login
           navigate('/group-management');
         }
       } else {
         setError(t('auth.error'));
       }
     } catch (apiError) {
-      // Fallback to local auth if backend is not available
       const session = await login(formData.email, formData.password);
-      
       if (session) {
-        // Super admins go to super-admin page
         if (session.isSuperAdmin) {
           navigate('/super-admin');
         } else {
-          // All other users go to group management after login
           navigate('/group-management');
         }
       } else {
@@ -102,123 +75,209 @@ const Landing: React.FC = () => {
     }
   };
 
-
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg)' }}>
-      {/* Header with theme and language controls */}
-      <div className="flex justify-between items-center p-4">
-        <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-          {t('app.brand')}
+    <div className="auth-page" data-theme={theme} style={{ overflowY: 'auto' }}>
+      {/* Animated background orbs */}
+      <div
+        className="auth-orb"
+        style={{
+          width: 500,
+          height: 500,
+          background: 'radial-gradient(circle, rgba(41,195,255,0.18) 0%, transparent 70%)',
+          top: -100,
+          right: -100,
+          animationDelay: '0s'
+        }}
+      />
+      <div
+        className="auth-orb"
+        style={{
+          width: 400,
+          height: 400,
+          background: 'radial-gradient(circle, rgba(124,140,255,0.15) 0%, transparent 70%)',
+          bottom: 100,
+          left: -80,
+          animationDelay: '4s'
+        }}
+      />
+
+      {/* Header */}
+      <div className="auth-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Logo icon */}
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #1a3a6e 0%, #0f2550 100%)',
+            border: '1.5px solid rgba(41,195,255,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 0 12px rgba(41,195,255,0.25)'
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#29c3ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <span style={{ color: theme === 'light' ? '#1e293b' : '#d3dcff', fontSize: 15, fontWeight: 600, letterSpacing: '0.3px' }}>
+            AX PRO Platform
+          </span>
         </div>
-        <div className="flex items-center space-x-4">
-          {/* Theme Toggle */}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Theme Toggle - icon only */}
           <button
             onClick={toggleTheme}
-            className="text-sm px-3 py-1 rounded border"
-            style={{ 
-              backgroundColor: 'var(--card)', 
-              borderColor: 'var(--border)',
-              color: 'var(--text)'
-            }}
+            className="auth-header-btn"
+            aria-label="Toggle theme"
+            title={theme === 'light' ? 'Switch to Dark mode' : 'Switch to Light mode'}
+            style={{ width: 34, height: 34, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            {theme === 'light' ? t('ui.theme.dark') : t('ui.theme.light')}
+            {theme === 'light' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            )}
           </button>
-          
-          {/* Language Toggle */}
+
+          {/* Language Select */}
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
-            className="text-sm px-3 py-1 rounded border bg-transparent"
-            style={{ 
-              borderColor: 'var(--border)',
-              color: 'var(--text)'
-            }}
+            className="auth-header-select"
           >
-            <option value="en">{t('ui.lang.en')}</option>
-            <option value="ko">{t('ui.lang.ko')}</option>
+            <option value="en">EN</option>
+            <option value="ko">KO</option>
           </select>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-6">
-          {/* Header */}
-          <div className="text-center">
-            <h2 className="text-3xl font-light" style={{ color: 'var(--text)' }}>
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 24px',
+      }}>
+        <div style={{ width: '100%', maxWidth: 420 }}>
+          {/* Brand heading */}
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            <h1 style={{
+              color: theme === 'light' ? '#1e293b' : '#d3dcff',
+              fontSize: 28,
+              fontWeight: 700,
+              margin: 0,
+              letterSpacing: '-0.5px',
+              lineHeight: 1.2
+            }}>
               {t('auth.title.chat')}
-            </h2>
-            <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            </h1>
+            <p style={{
+              color: theme === 'light' ? '#64748b' : '#8895b8',
+              fontSize: 14,
+              marginTop: 10,
+              lineHeight: 1.5
+            }}>
               {t('auth.subtitle.chat')}
             </p>
           </div>
 
-          {/* Login Form */}
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div className="card py-8 px-6 rounded-lg">
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                    {t('auth.email')}
-                  </label>
+          {/* Login Card */}
+          <div className="auth-glass-card" style={{ padding: '32px 28px' }}>
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: 20 }}>
+                <label className="auth-label" htmlFor="email">
+                  {t('auth.email')}
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="auth-input"
+                  placeholder={t('auth.email')}
+                />
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <label className="auth-label" htmlFor="password">
+                  {t('auth.password')}
+                </label>
+                <div style={{ position: 'relative' }}>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     required
-                    value={formData.email}
+                    value={formData.password}
                     onChange={handleInputChange}
-                    className="input w-full px-3 py-2 rounded-md"
-                    placeholder={t('auth.email')}
+                    className="auth-input"
+                    placeholder={t('auth.password')}
+                    style={{ paddingRight: 42 }}
                   />
-                </div>
-                
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-                    {t('auth.password')}
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      required
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="input w-full px-3 py-2 pr-10 rounded-md"
-                      placeholder={t('auth.password')}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm px-2 py-1"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      {showPassword ? (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      ) : (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                          <line x1="1" y1="1" x2="23" y2="23"/>
-                        </svg>
-                      )}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: 12,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#5a6a8a',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    {showPassword ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
 
               {/* Error Message */}
               {error && (
-                <div className="mt-4 p-3 rounded-md error">
-                  <p className="text-sm">{error}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                    {t('auth.demoHint')}
-                  </p>
+                <div style={{
+                  marginBottom: 16,
+                  padding: '10px 14px',
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: 10,
+                  color: '#f87171',
+                  fontSize: 13
+                }}>
+                  {error}
+                  <p style={{ color: '#8895b8', fontSize: 12, marginTop: 4 }}>{t('auth.demoHint')}</p>
                 </div>
               )}
 
@@ -226,124 +285,89 @@ const Landing: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="btn-primary w-full mt-6 flex justify-center py-2 px-4 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="auth-btn-primary"
               >
-                {isLoading ? '...' : t('auth.continue')}
+                {isLoading ? (
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                    Loading...
+                  </span>
+                ) : t('auth.continue')}
               </button>
+            </form>
+
+            {/* Signup Link */}
+            <div style={{ textAlign: 'center', marginTop: 20 }}>
+              <p style={{ color: '#8895b8', fontSize: 13 }}>
+                {t('auth.newUser')}{' '}
+                <Link
+                  to="/signup"
+                  style={{ color: '#29c3ff', fontWeight: 600, textDecoration: 'none' }}
+                  onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                  onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                >
+                  {t('auth.createAccount')}
+                </Link>
+              </p>
             </div>
-          </form>
-
-          {/* Signup Link */}
-          <div className="text-center mt-6">
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              {t('auth.newUser')}{' '}
-              <Link
-                to="/signup"
-                className="font-medium hover:underline"
-                style={{ color: 'var(--primary)' }}
-              >
-                {t('auth.createAccount')}
-              </Link>
-            </p>
           </div>
-
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="mt-auto py-6 px-4 border-t" style={{ borderColor: 'var(--border)' }}>
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" style={{ justifyItems: 'center' }}>
-            {/* Company Info */}
+      <footer style={{
+        padding: '20px 24px',
+        borderTop: '1px solid rgba(100,160,255,0.08)',
+        background: 'rgba(10,20,50,0.4)'
+      }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, marginBottom: 16, justifyItems: 'center' }}>
             <div style={{ textAlign: 'center' }}>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>{t('footer.tecace')}</h3>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                {t('footer.tecaceDescription')}
-              </p>
+              <h3 style={{ color: '#9aa7cc', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{t('footer.tecace')}</h3>
+              <p style={{ color: '#5a6880', fontSize: 11, lineHeight: 1.6 }}>{t('footer.tecaceDescription')}</p>
             </div>
-
-            {/* Product */}
             <div style={{ textAlign: 'center' }}>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>{t('footer.product')}</h3>
-              <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)', listStyle: 'none', padding: 0 }}>
+              <h3 style={{ color: '#9aa7cc', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{t('footer.product')}</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#5a6880', fontSize: 11, lineHeight: 2 }}>
                 <li>{t('footer.aiAssistantPlatform')}</li>
                 <li>{t('footer.knowledgeManagement')}</li>
                 <li>{t('footer.analyticsDashboard')}</li>
               </ul>
             </div>
-
-            {/* Company */}
             <div style={{ textAlign: 'center' }}>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>{t('footer.company')}</h3>
-              <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)', listStyle: 'none', padding: 0 }}>
-                <li>
-                  <a 
-                    href="https://tecace.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="hover:opacity-80 transition-opacity"
-                  >
-                    {t('footer.aboutUs')}
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="https://tecace.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="hover:opacity-80 transition-opacity"
-                  >
-                    {t('footer.contact')}
-                  </a>
-                </li>
+              <h3 style={{ color: '#9aa7cc', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{t('footer.company')}</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#5a6880', fontSize: 11, lineHeight: 2 }}>
+                <li><a href="https://tecace.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>{t('footer.aboutUs')}</a></li>
+                <li><a href="https://tecace.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>{t('footer.contact')}</a></li>
               </ul>
             </div>
-
-            {/* Resources */}
             <div style={{ textAlign: 'center' }}>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>{t('footer.resources')}</h3>
-              <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)', listStyle: 'none', padding: 0 }}>
-                <li>
-                  <a 
-                    href="https://tecace.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="hover:opacity-80 transition-opacity"
-                  >
-                    {t('footer.documentation')}
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="https://tecace.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="hover:opacity-80 transition-opacity"
-                  >
-                    {t('footer.support')}
-                  </a>
-                </li>
+              <h3 style={{ color: '#9aa7cc', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{t('footer.resources')}</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#5a6880', fontSize: 11, lineHeight: 2 }}>
+                <li><a href="https://tecace.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>{t('footer.documentation')}</a></li>
+                <li><a href="https://tecace.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>{t('footer.support')}</a></li>
               </ul>
             </div>
           </div>
-
-          {/* Copyright */}
-          <div className="pt-4 border-t text-center" style={{ borderColor: 'var(--border)' }}>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          <div style={{ borderTop: '1px solid rgba(100,160,255,0.06)', paddingTop: 12, textAlign: 'center' }}>
+            <p style={{ color: '#4a5575', fontSize: 11 }}>
               © 2025-2026 TecAce Software, Ltd. All rights reserved. |{' '}
-              <a 
-                href="https://tecace.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="hover:opacity-80 transition-opacity"
-                style={{ color: 'var(--primary)' }}
-              >
+              <a href="https://tecace.com" target="_blank" rel="noopener noreferrer" style={{ color: '#29c3ff' }}>
                 tecace.com
               </a>
             </p>
           </div>
         </div>
       </footer>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

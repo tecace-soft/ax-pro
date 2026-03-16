@@ -13,7 +13,7 @@ const GroupManagement: React.FC = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
-  
+
   const [groups, setGroups] = useState<Group[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -21,15 +21,12 @@ const GroupManagement: React.FC = () => {
   const [userName, setUserName] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Check authentication on component mount
   useEffect(() => {
     const session = getSession();
     if (!session) {
       navigate('/', { replace: true });
       return;
     }
-    
-    // Load user data and groups
     loadUserData(session.email);
     loadGroups();
   }, [navigate]);
@@ -37,11 +34,8 @@ const GroupManagement: React.FC = () => {
   const loadUserData = async (email: string) => {
     try {
       const user = await getUserByEmail(email);
-      if (user) {
-        setUserName(`${user.first_name} ${user.last_name}`);
-      }
-    } catch (error) {
-    }
+      if (user) setUserName(`${user.first_name} ${user.last_name}`);
+    } catch (error) { }
   };
 
   const loadGroups = async () => {
@@ -63,39 +57,23 @@ const GroupManagement: React.FC = () => {
     navigate('/', { replace: true });
   };
 
-  const handleCreateGroup = () => {
-    setIsModalOpen(true);
-  };
-
   const handleGroupCreated = async (groupId: string) => {
-    // Reload groups after creation
     await loadGroups();
-    
-    // Navigate to admin dashboard with group ID in URL only
     navigate(`/admin/dashboard?group=${groupId}`);
   };
 
-  // Open group - navigate with group ID in URL only (no session storage)
   const handleOpenGroup = async (group: Group) => {
     const session = getSession();
-    if (!session) {
-      return;
-    }
-
-    // Check group-based role from Supabase
+    if (!session) return;
     try {
       const { getUserRoleForGroup } = await import('../services/auth');
       const groupRole = await getUserRoleForGroup(group.group_id);
-      // Route: both admins and users -> dashboard
-      // Group ID is ONLY in URL - allows multiple tabs with different groups
       if (groupRole === 'admin' || groupRole === 'user') {
         navigate(`/admin/dashboard?group=${group.group_id}`);
       } else {
-        // User is not a member of this group
         navigate(`/group-management`);
       }
     } catch (error) {
-      // Fallback: navigate all users to dashboard
       navigate(`/admin/dashboard?group=${group.group_id}`);
     }
   };
@@ -111,132 +89,173 @@ const GroupManagement: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      year: 'numeric', month: 'short', day: 'numeric'
     });
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }} data-theme={theme}>
+    <div
+      data-theme={theme}
+      style={{
+        minHeight: '100vh',
+        height: '100%',
+        overflowY: 'auto',
+        background: theme === 'light'
+          ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f8fafc 100%)'
+          : 'radial-gradient(1200px 600px at 70% -10%, rgba(41,195,255,0.12), transparent 60%), radial-gradient(900px 500px at 10% 0%, rgba(124,140,255,0.10), transparent 55%), linear-gradient(180deg, #0c1330 0%, #0a1026 60%, #080e20 100%)',
+        position: 'relative'
+      }}
+    >
+      {/* Background orbs */}
+      {theme !== 'light' && (
+        <>
+          <div style={{
+            position: 'fixed', top: -100, right: -100, width: 500, height: 500,
+            borderRadius: '50%', background: 'radial-gradient(circle, rgba(41,195,255,0.1) 0%, transparent 70%)',
+            filter: 'blur(60px)', pointerEvents: 'none', zIndex: 0
+          }} />
+          <div style={{
+            position: 'fixed', bottom: 100, left: -60, width: 400, height: 400,
+            borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,140,255,0.08) 0%, transparent 70%)',
+            filter: 'blur(60px)', pointerEvents: 'none', zIndex: 0
+          }} />
+        </>
+      )}
+
       {/* Header */}
-      <div
-        className="dashboard-header settings-header"
-        style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}
-      >
-        <div className="flex items-center settings-header-logo" style={{ gap: '10px' }}>
-          <h1 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>
-            AX PRO Platform
-          </h1>
+      <div className="auth-header" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #1a3a6e 0%, #0f2550 100%)',
+            border: '1.5px solid rgba(41,195,255,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 12px rgba(41,195,255,0.25)'
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#29c3ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <span style={{ color: theme === 'light' ? '#1e293b' : '#d3dcff', fontSize: 15, fontWeight: 600 }}>AX PRO Platform</span>
         </div>
 
-        <div className="header-actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="icon-btn"
-            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            style={{ color: 'var(--text)' }}
-          >
-            {theme === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {userName && (
+            <span style={{ color: theme === 'light' ? '#4f6080' : '#8895b8', fontSize: 13, marginRight: 4 }}>{userName}</span>
+          )}
+          <button onClick={toggleTheme} className="auth-header-btn" style={{ gap: 4 }}>
+            {theme === 'light' ? <IconMoon size={14} /> : <IconSun size={14} />}
           </button>
-
-          {/* Language Toggle */}
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
-            style={{
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-              backgroundColor: 'var(--card)',
-              borderRadius: 8,
-              padding: '6px 10px',
-              fontSize: 13
-            }}
+            className="auth-header-select"
           >
             <option value="en">EN</option>
             <option value="ko">KO</option>
           </select>
-
-          {/* Sign Out Icon */}
-          <button
-            onClick={handleSignOut}
-            className="icon-btn"
-            aria-label={t('auth.signOut')}
-            title={t('auth.signOut')}
-            style={{ color: 'var(--text)' }}
-          >
-            <IconLogout size={18} />
+          <button onClick={handleSignOut} className="auth-header-btn" title={t('auth.signOut')} style={{ gap: 4 }}>
+            <IconLogout size={14} />
           </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main style={{ maxWidth: 1200, margin: '0 auto', padding: '36px 24px', position: 'relative', zIndex: 1 }}>
         {/* Page Title */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--text)' }}>
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{ color: theme === 'light' ? '#1e293b' : '#d3dcff', fontSize: 26, fontWeight: 700, margin: 0, letterSpacing: '-0.3px' }}>
             {t('group.management.title')}
           </h1>
+          <p style={{ color: theme === 'light' ? '#64748b' : '#8895b8', fontSize: 14, marginTop: 8 }}>
+            {groups.length > 0 ? `${groups.length} ${t('group.management.members')}` : ''}
+          </p>
         </div>
 
         {/* Search and Controls */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
             {/* Search Bar */}
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5" style={{ color: 'var(--text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  placeholder={t('group.management.searchPlaceholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border rounded-md"
-                  style={{
-                    backgroundColor: 'var(--card)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text)'
-                  }}
-                />
-              </div>
+            <div style={{ flex: 1, maxWidth: 360, position: 'relative' }}>
+              <svg
+                style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#5a6a8a', pointerEvents: 'none' }}
+                width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder={t('group.management.searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '9px 14px 9px 38px',
+                  background: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(8, 20, 50, 0.6)',
+                  border: theme === 'light' ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(100,160,255,0.15)',
+                  borderRadius: 10,
+                  color: theme === 'light' ? '#1e293b' : '#d3dcff',
+                  fontSize: 14,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  backdropFilter: 'blur(8px)',
+                  boxShadow: theme === 'light' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none'
+                }}
+              />
             </div>
 
-            {/* Filter and View Controls */}
-            <div className="flex items-center space-x-4">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {/* View Toggle */}
-              <div className="flex rounded-md border" style={{ borderColor: 'var(--border)' }}>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 ${viewMode === 'grid' ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
-                  style={{ color: 'var(--text)' }}
-                  title="Grid view"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 ${viewMode === 'list' ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
-                  style={{ color: 'var(--text)' }}
-                  title="List view"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                  </svg>
-                </button>
+              <div style={{
+                display: 'flex',
+                border: theme === 'light' ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(100,160,255,0.15)',
+                borderRadius: 8,
+                overflow: 'hidden',
+                background: theme === 'light' ? 'rgba(255,255,255,0.8)' : 'rgba(8,20,50,0.4)'
+              }}>
+                {['grid', 'list'].map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setViewMode(mode as 'grid' | 'list')}
+                    style={{
+                      padding: '7px 12px',
+                      background: viewMode === mode ? (theme === 'light' ? 'rgba(26,140,255,0.1)' : 'rgba(41,195,255,0.15)') : 'transparent',
+                      border: 'none',
+                      color: viewMode === mode ? (theme === 'light' ? '#1a8cff' : '#29c3ff') : (theme === 'light' ? '#64748b' : '#8895b8'),
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {mode === 'grid' ? (
+                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
               </div>
 
               {/* New Group Button */}
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="btn-primary px-4 py-2 rounded-md text-sm font-medium"
+                style={{
+                  padding: '8px 18px',
+                  background: 'linear-gradient(135deg, #29c3ff 0%, #1a8cff 100%)',
+                  border: 'none',
+                  borderRadius: 10,
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'opacity 0.2s, transform 0.2s',
+                  boxShadow: '0 4px 15px rgba(41,195,255,0.3)'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 + {t('group.management.newGroup')}
               </button>
@@ -246,182 +265,151 @@ const GroupManagement: React.FC = () => {
 
         {/* Groups Content */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--primary)' }}></div>
-              <p style={{ color: 'var(--text-muted)' }}>{t('group.management.loading')}</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '50%',
+                border: '3px solid rgba(41,195,255,0.2)',
+                borderTopColor: '#29c3ff',
+                animation: 'spin 0.8s linear infinite',
+                margin: '0 auto 16px'
+              }} />
+              <p style={{ color: '#8895b8', fontSize: 14 }}>{t('group.management.loading')}</p>
             </div>
           </div>
         ) : filteredGroups.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--primary-light)' }}>
-                <svg className="w-8 h-8" style={{ color: 'var(--primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div style={{ textAlign: 'center', padding: '80px 0' }}>
+            <div style={{ maxWidth: 400, margin: '0 auto' }}>
+              <div style={{
+                width: 72, height: 72, borderRadius: '50%',
+                background: 'rgba(41,195,255,0.08)', border: '1px solid rgba(41,195,255,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 20px'
+              }}>
+                <svg width="32" height="32" style={{ color: '#29c3ff' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--text)' }}>
+              <h3 style={{ color: theme === 'light' ? '#1e293b' : '#d3dcff', fontSize: 18, fontWeight: 600, marginBottom: 8 }}>
                 {t('group.management.empty.title')}
               </h3>
-              <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+              <p style={{ color: theme === 'light' ? '#64748b' : '#8895b8', fontSize: 14, marginBottom: 24 }}>
                 {t('group.management.empty.description')}
               </p>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="btn-primary px-6 py-3 rounded-md text-sm font-medium"
+                style={{
+                  padding: '10px 24px',
+                  background: 'linear-gradient(135deg, #29c3ff 0%, #1a8cff 100%)',
+                  border: 'none', borderRadius: 10,
+                  color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                  boxShadow: '0 4px 15px rgba(41,195,255,0.3)'
+                }}
               >
                 {t('group.management.newGroup')}
               </button>
             </div>
           </div>
         ) : (
-          // Make the groups section scrollable when there are many groups
-          <div className="max-h-[60vh] overflow-y-auto pr-1">
-            <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+          <div style={{ maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', paddingRight: 4 }}>
+            <div style={viewMode === 'grid'
+              ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }
+              : { display: 'flex', flexDirection: 'column', gap: 10 }
+            }>
               {filteredGroups.map((group) => (
-              viewMode === 'grid' ? (
                 <div
                   key={group.id}
-                  className="group rounded-lg border p-6 cursor-pointer transition-colors duration-200"
-                  style={{
-                    backgroundColor: 'var(--card)',
-                    borderColor: 'var(--border)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(156, 163, 175, 0.4)';
-                    const arrow = e.currentTarget.querySelector('svg[data-arrow="true"]') as HTMLElement;
-                    if (arrow) {
-                      arrow.style.transform = 'translateX(5px)';
-                      arrow.style.color = 'var(--text)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    const arrow = e.currentTarget.querySelector('svg[data-arrow="true"]') as HTMLElement;
-                    if (arrow) {
-                      arrow.style.transform = 'translateX(0)';
-                      arrow.style.color = 'var(--text-muted)';
-                    }
-                  }}
+                  className="group-card"
+                  style={{ padding: viewMode === 'grid' ? '20px 22px' : '16px 20px', cursor: 'pointer' }}
                   onClick={() => handleOpenGroup(group)}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>
-                        {group.name}
-                      </h3>
-                      <div className="mb-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          isUserAdministrator(group) 
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                        }`}>
+                  {viewMode === 'grid' ? (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <div style={{
+                          width: 40, height: 40, borderRadius: 10,
+                          background: 'linear-gradient(135deg, rgba(41,195,255,0.15), rgba(124,140,255,0.15))',
+                          border: '1px solid rgba(41,195,255,0.2)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                          <svg width="20" height="20" style={{ color: '#29c3ff' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                        </div>
+                        <svg width="16" height="16" style={{ color: '#5a6a8a' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                      <h3 style={{ color: theme === 'light' ? '#1e293b' : '#d3dcff', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>{group.name}</h3>
+                      <div style={{ marginBottom: 10 }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', padding: '3px 10px',
+                          borderRadius: 20, fontSize: 11, fontWeight: 600,
+                          background: isUserAdministrator(group) ? 'rgba(41,195,255,0.12)' : 'rgba(124,140,255,0.12)',
+                          border: `1px solid ${isUserAdministrator(group) ? 'rgba(41,195,255,0.25)' : 'rgba(124,140,255,0.25)'}`,
+                          color: isUserAdministrator(group) ? '#29c3ff' : '#7c8cff'
+                        }}>
                           {isUserAdministrator(group) ? t('group.management.role.administrator') : t('group.management.role.user')}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-4 text-xs" style={{ color: 'var(--text-muted)' }}>
+                      <div style={{ display: 'flex', gap: 12, color: theme === 'light' ? '#94a3b8' : '#5a6a8a', fontSize: 12 }}>
                         <span>{group.users.length + 1} {t('group.management.members')}</span>
                         <span>•</span>
                         <span>{t('group.management.created')} {formatDate(group.created_at)}</span>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <svg 
-                        data-arrow="true"
-                        className="w-5 h-5 transition-all duration-200" 
-                        style={{ 
-                          color: 'var(--text-muted)',
-                          transform: 'translateX(0)'
-                        }}
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  key={group.id}
-                  className="group rounded-lg border p-4 cursor-pointer transition-colors duration-200"
-                  style={{
-                    backgroundColor: 'var(--card)',
-                    borderColor: 'var(--border)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(156, 163, 175, 0.4)';
-                    const arrow = e.currentTarget.querySelector('svg[data-arrow="true"]') as HTMLElement;
-                    if (arrow) {
-                      arrow.style.transform = 'translateX(5px)';
-                      arrow.style.color = 'var(--text)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    const arrow = e.currentTarget.querySelector('svg[data-arrow="true"]') as HTMLElement;
-                    if (arrow) {
-                      arrow.style.transform = 'translateX(0)';
-                      arrow.style.color = 'var(--text-muted)';
-                    }
-                  }}
-                  onClick={() => handleOpenGroup(group)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 flex items-center space-x-6">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--text)' }}>
-                          {group.name}
-                        </h3>
-                        <div className="flex items-center space-x-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-                          <span>{group.users.length + 1} {t('group.management.members')}</span>
-                          <span>•</span>
-                          <span>{t('group.management.created')} {formatDate(group.created_at)}</span>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={{
+                          width: 38, height: 38, borderRadius: 9,
+                          background: 'linear-gradient(135deg, rgba(41,195,255,0.15), rgba(124,140,255,0.15))',
+                          border: '1px solid rgba(41,195,255,0.2)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                        }}>
+                          <svg width="18" height="18" style={{ color: '#29c3ff' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 style={{ color: theme === 'light' ? '#1e293b' : '#d3dcff', fontSize: 15, fontWeight: 600, margin: '0 0 4px' }}>{group.name}</h3>
+                          <div style={{ display: 'flex', gap: 10, color: theme === 'light' ? '#94a3b8' : '#5a6a8a', fontSize: 12 }}>
+                            <span>{group.users.length + 1} {t('group.management.members')}</span>
+                            <span>•</span>
+                            <span>{formatDate(group.created_at)}</span>
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          isUserAdministrator(group) 
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                        }`}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{
+                          padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                          background: isUserAdministrator(group) ? 'rgba(41,195,255,0.12)' : 'rgba(124,140,255,0.12)',
+                          border: `1px solid ${isUserAdministrator(group) ? 'rgba(41,195,255,0.25)' : 'rgba(124,140,255,0.25)'}`,
+                          color: isUserAdministrator(group) ? '#29c3ff' : '#7c8cff'
+                        }}>
                           {isUserAdministrator(group) ? t('group.management.role.administrator') : t('group.management.role.user')}
                         </span>
+                        <svg width="16" height="16" style={{ color: '#5a6a8a' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center space-x-2 ml-4">
-                      <svg 
-                        data-arrow="true"
-                        className="w-5 h-5 transition-all duration-200" 
-                        style={{ 
-                          color: 'var(--text-muted)',
-                          transform: 'translateX(0)'
-                        }}
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
+                  )}
                 </div>
-              )
-            ))}
+              ))}
             </div>
           </div>
         )}
       </main>
 
-      {/* Group Creation Modal */}
       <GroupCreationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onGroupCreated={handleGroupCreated}
       />
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 };
