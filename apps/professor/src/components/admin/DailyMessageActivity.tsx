@@ -174,15 +174,15 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
       const allUsers = new Set<string>()
       let userFeedbackMatches = 0
       let adminFeedbackMatches = 0
-      
+
       // WORKAROUND: Since chat table doesn't have chat_id field that matches feedback.chat_id,
       // we'll distribute feedback proportionally across days based on message count
       chats.forEach(chat => {
         if (!chat.created_at) return
-        
+
         const chatDate = new Date(chat.created_at).toISOString().split('T')[0]
         const dayData = dayMap.get(chatDate)
-        
+
         if (dayData) {
           dayData.messageCount++
           dayData.uniqueUsers.add(chat.user_id)
@@ -195,7 +195,7 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
         if (!fb.created_at) return
         const fbDate = new Date(fb.created_at).toISOString().split('T')[0]
         const dayData = dayMap.get(fbDate)
-        
+
         if (dayData) {
           dayData.userFeedbackCount++
           if (fb.reaction === 'good') dayData.userGoodCount++
@@ -208,7 +208,7 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
       adminFeedbacks.forEach(fb => {
         const fbDate = new Date(fb.updated_at || fb.created_at || '').toISOString().split('T')[0]
         const dayData = dayMap.get(fbDate)
-        
+
         if (dayData) {
           dayData.adminFeedbackCount++
           if (fb.feedback_verdict === 'good') dayData.adminGoodCount++
@@ -317,7 +317,7 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
               ))}
             </select>
           </div>
-          
+
           {/* Custom Date Inputs */}
           {showCustomRange && (
             <div className="flex items-center gap-2">
@@ -355,7 +355,7 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
               />
             </div>
           )}
-          
+
           {/* Date Range Display */}
           <div className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
             {startDate} to {endDate}
@@ -364,19 +364,19 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
       </div>
 
       {/* Stats Grid */}
-      <div 
-        style={{ 
-          display: 'grid', 
+      <div
+        style={{
+          display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
           gap: '12px',
           marginBottom: '20px'
         }}
       >
-        <div 
+        <div
           style={{
             padding: '12px 16px',
             borderRadius: '8px',
-            backgroundColor: 'rgba(9, 14, 34, 0.4)',
+            backgroundColor: 'var(--admin-card-bg)',
             border: '1px solid var(--admin-border)'
           }}
         >
@@ -391,11 +391,11 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
           </div>
         </div>
 
-        <div 
+        <div
           style={{
             padding: '12px 16px',
             borderRadius: '8px',
-            backgroundColor: 'rgba(9, 14, 34, 0.4)',
+            backgroundColor: 'var(--admin-card-bg)',
             border: '1px solid var(--admin-border)'
           }}
         >
@@ -410,11 +410,11 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
           </div>
         </div>
 
-        <div 
+        <div
           style={{
             padding: '12px 16px',
             borderRadius: '8px',
-            backgroundColor: 'rgba(9, 14, 34, 0.4)',
+            backgroundColor: 'var(--admin-card-bg)',
             border: '1px solid var(--admin-border)'
           }}
         >
@@ -429,11 +429,11 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
           </div>
         </div>
 
-        <div 
+        <div
           style={{
             padding: '12px 16px',
             borderRadius: '8px',
-            backgroundColor: 'rgba(9, 14, 34, 0.4)',
+            backgroundColor: 'var(--admin-card-bg)',
             border: '1px solid var(--admin-border)'
           }}
         >
@@ -453,11 +453,10 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => setViewMode('messages')}
-          className={`px-4 py-2 rounded-md text-sm transition-colors ${
-            viewMode === 'messages' ? 'font-semibold' : ''
-          }`}
+          className={`px-4 py-2 rounded-md text-sm transition-colors ${viewMode === 'messages' ? 'font-semibold' : ''
+            }`}
           style={{
-            backgroundColor: viewMode === 'messages' ? 'var(--admin-primary)' : 'rgba(9, 14, 34, 0.4)',
+            backgroundColor: viewMode === 'messages' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
             color: viewMode === 'messages' ? '#041220' : 'var(--admin-text)',
             border: '1px solid var(--admin-border)'
           }}
@@ -466,11 +465,10 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
         </button>
         <button
           onClick={() => setViewMode('feedback')}
-          className={`px-4 py-2 rounded-md text-sm transition-colors ${
-            viewMode === 'feedback' ? 'font-semibold' : ''
-          }`}
+          className={`px-4 py-2 rounded-md text-sm transition-colors ${viewMode === 'feedback' ? 'font-semibold' : ''
+            }`}
           style={{
-            backgroundColor: viewMode === 'feedback' ? 'var(--admin-success)' : 'rgba(9, 14, 34, 0.4)',
+            backgroundColor: viewMode === 'feedback' ? 'var(--admin-success)' : 'var(--admin-card-bg)',
             color: viewMode === 'feedback' ? '#ffffff' : 'var(--admin-text)',
             border: '1px solid var(--admin-border)'
           }}
@@ -479,11 +477,10 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
         </button>
         <button
           onClick={() => setViewMode('admin')}
-          className={`px-4 py-2 rounded-md text-sm transition-colors ${
-            viewMode === 'admin' ? 'font-semibold' : ''
-          }`}
+          className={`px-4 py-2 rounded-md text-sm transition-colors ${viewMode === 'admin' ? 'font-semibold' : ''
+            }`}
           style={{
-            backgroundColor: viewMode === 'admin' ? 'var(--admin-accent)' : 'rgba(9, 14, 34, 0.4)',
+            backgroundColor: viewMode === 'admin' ? 'var(--admin-accent)' : 'var(--admin-card-bg)',
             color: viewMode === 'admin' ? '#ffffff' : 'var(--admin-text)',
             border: '1px solid var(--admin-border)'
           }}
@@ -504,7 +501,7 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
       ) : (
         <div>
           {/* Chart Area */}
-          <div style={{ 
+          <div style={{
             height: '200px',
             display: 'flex',
             alignItems: 'flex-end',
@@ -516,7 +513,7 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
               const value = getValue(item)
               const score = getScore(item)
               const heightPercent = maxValue > 0 ? (value / maxValue) * 100 : 0
-              
+
               // Debug: Log values for first few items
               if (index < 3) {
                 console.log(`📊 Day ${index} (${item.date}):`, {
@@ -529,9 +526,9 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
                   correctedCount: item.correctedResponseCount
                 })
               }
-              
+
               return (
-                <div 
+                <div
                   key={item.date}
                   style={{
                     flex: 1,
@@ -550,8 +547,8 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
                         position: 'absolute',
                         top: `calc(${100 - heightPercent}% - 25px)`,
                         backgroundColor: viewMode === 'messages' ? 'var(--admin-primary)' :
-                                       viewMode === 'feedback' ? 'var(--admin-success)' :
-                                       'var(--admin-accent)',
+                          viewMode === 'feedback' ? 'var(--admin-success)' :
+                            'var(--admin-accent)',
                         color: viewMode === 'messages' ? '#041220' : '#ffffff',
                         padding: '2px 8px',
                         borderRadius: '12px',
@@ -562,17 +559,17 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
                       {value}
                     </div>
                   )}
-                  
+
                   {/* Bar */}
                   <div
                     style={{
                       width: '100%',
                       maxWidth: '40px',
                       height: value > 0 ? `${heightPercent}%` : '2px',
-                      background: value > 0 ? 
+                      background: value > 0 ?
                         (viewMode === 'messages' ? 'linear-gradient(180deg, var(--admin-primary), var(--admin-primary-600))' :
-                         viewMode === 'feedback' ? 'linear-gradient(180deg, var(--admin-success), #0d9488)' :
-                         'linear-gradient(180deg, var(--admin-accent), #8b5cf6)') :
+                          viewMode === 'feedback' ? 'linear-gradient(180deg, var(--admin-success), #0d9488)' :
+                            'linear-gradient(180deg, var(--admin-accent), #8b5cf6)') :
                         'rgba(100, 116, 139, 0.2)',
                       borderRadius: '4px 4px 0 0',
                       cursor: 'pointer',
@@ -588,13 +585,13 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
           </div>
 
           {/* Date Labels */}
-          <div style={{ 
+          <div style={{
             display: 'flex',
             gap: '8px',
             paddingTop: '12px'
           }}>
             {data.map((item) => (
-              <div 
+              <div
                 key={`label-${item.date}`}
                 style={{
                   flex: 1,
@@ -609,20 +606,20 @@ export default function DailyMessageActivity({ startDate: propStartDate, endDate
           </div>
 
           {/* Info Banner */}
-          <div 
+          <div
             className="mt-4 p-3 rounded text-xs flex items-center gap-2"
-            style={{ 
+            style={{
               backgroundColor: 'rgba(59, 230, 255, 0.05)',
               color: 'var(--admin-text-muted)',
               border: '1px solid rgba(59, 230, 255, 0.1)'
             }}
           >
-            <svg 
-              width="14" 
-              height="14" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
               strokeWidth="2"
             >
               <circle cx="12" cy="12" r="10"></circle>

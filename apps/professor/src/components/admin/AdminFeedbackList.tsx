@@ -32,13 +32,13 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   const [editingFeedback, setEditingFeedback] = useState<{ id: number; field: 'feedback' | 'correctedMessage' | 'corrected'; originalValue: string } | null>(null)
   const [editValue, setEditValue] = useState<string>('')
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium')
-  
+
   // Add supervisor correction modal state
   const [showAddModal, setShowAddModal] = useState(false)
   const [addCorrectedMessage, setAddCorrectedMessage] = useState('')
   const [addCorrectedResponse, setAddCorrectedResponse] = useState('')
   const [isSubmittingAdd, setIsSubmittingAdd] = useState(false)
-  
+
   // Font size mapping
   const fontSizeMap = {
     small: { base: '11px', sm: '10px', header: '10px', cell: '11px' },
@@ -60,7 +60,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   const loadFeedback = async () => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
       if (useMock) {
         // Generate richer mock feedbacks for professor account
@@ -185,7 +185,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(f => 
+      filtered = filtered.filter(f =>
         f.chat_id?.toLowerCase().includes(term) ||
         f.feedback_text?.toLowerCase().includes(term) ||
         f.corrected_response?.toLowerCase().includes(term) ||
@@ -198,11 +198,11 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'date-desc':
-          return new Date(b.updated_at || b.created_at || '').getTime() - 
-                 new Date(a.updated_at || a.created_at || '').getTime()
+          return new Date(b.updated_at || b.created_at || '').getTime() -
+            new Date(a.updated_at || a.created_at || '').getTime()
         case 'date-asc':
-          return new Date(a.updated_at || a.created_at || '').getTime() - 
-                 new Date(b.updated_at || b.created_at || '').getTime()
+          return new Date(a.updated_at || a.created_at || '').getTime() -
+            new Date(b.updated_at || b.created_at || '').getTime()
         case 'verdict':
           return (a.feedback_verdict || '').localeCompare(b.feedback_verdict || '')
         default:
@@ -218,7 +218,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
     if (!feedback) return
 
     const newApplyValue = !feedback.apply
-    setFeedbacks(prev => prev.map(f => 
+    setFeedbacks(prev => prev.map(f =>
       f.id === feedbackId ? { ...f, apply: newApplyValue } : f
     ))
 
@@ -228,7 +228,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
       await updateAdminFeedbackField(feedbackId, { apply: newApplyValue })
     } catch (error) {
       // Revert on error
-      setFeedbacks(prev => prev.map(f => 
+      setFeedbacks(prev => prev.map(f =>
         f.id === feedbackId ? { ...f, apply: !newApplyValue } : f
       ))
     }
@@ -261,18 +261,18 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   const handleStartEdit = (feedbackId: number, field: 'feedback' | 'correctedMessage' | 'corrected') => {
     const feedback = feedbacks.find(f => f.id === feedbackId)
     if (!feedback) return
-    
+
     let value = ''
     if (field === 'feedback') {
       value = feedback.feedback_text || ''
     } else if (field === 'correctedMessage') {
       value = feedback.corrected_message || ''
     } else {
-      value = displayLanguage === 'en' 
+      value = displayLanguage === 'en'
         ? ((feedback as any).chatData?.response_en || feedback.corrected_response || '')
         : ((feedback as any).chatData?.response_ko || feedback.corrected_response || '')
     }
-    
+
     setEditingFeedback({ id: feedbackId, field, originalValue: value })
     setEditValue(value)
   }
@@ -284,7 +284,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
   const handleSaveEdit = async () => {
     if (!editingFeedback) return
-    
+
     const feedback = feedbacks.find(f => f.id === editingFeedback.id)
     if (!feedback) return
 
@@ -295,24 +295,24 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
 
     try {
       const { updateAdminFeedbackField } = await import('../../services/feedback')
-      
+
       if (editingFeedback.field === 'feedback') {
         await updateAdminFeedbackField(editingFeedback.id, { feedback_text: editValue })
-        setFeedbacks(prev => prev.map(f => 
+        setFeedbacks(prev => prev.map(f =>
           f.id === editingFeedback.id ? { ...f, feedback_text: editValue } : f
         ))
       } else if (editingFeedback.field === 'correctedMessage') {
         await updateAdminFeedbackField(editingFeedback.id, { corrected_message: editValue })
-        setFeedbacks(prev => prev.map(f => 
+        setFeedbacks(prev => prev.map(f =>
           f.id === editingFeedback.id ? { ...f, corrected_message: editValue } : f
         ))
       } else {
         await updateAdminFeedbackField(editingFeedback.id, { corrected_response: editValue })
-        setFeedbacks(prev => prev.map(f => 
+        setFeedbacks(prev => prev.map(f =>
           f.id === editingFeedback.id ? { ...f, corrected_response: editValue } : f
         ))
       }
-      
+
       setEditingFeedback(null)
       setEditValue('')
     } catch (error) {
@@ -379,7 +379,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
   const handleExport = () => {
     // Export enabled feedbacks to CSV
     const enabledFeedbacks = filteredFeedbacks.filter(f => (f as any)?.isEnabled ?? true)
-    
+
     if (enabledFeedbacks.length === 0) {
       alert('No enabled feedback to export')
       return
@@ -425,7 +425,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
         <div className="p-4" style={{ color: 'var(--admin-danger)' }}>
           <p className="font-semibold mb-2">{t('admin.error')}</p>
           <p className="text-sm">{error}</p>
-          <button 
+          <button
             onClick={loadFeedback}
             className="mt-3 px-4 py-2 rounded-md text-sm"
             style={{
@@ -448,7 +448,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
           <IconEdit className="section-header-icon" size={18} style={{ flexShrink: 0 }} />
           {t('adminFeedback.supervisorCorrectionTitle')} <span className="section-count-badge">{filteredFeedbacks.length}</span>
         </h2>
-        <button 
+        <button
           className="icon-btn"
           onClick={handleRefresh}
           disabled={isRefreshing}
@@ -522,276 +522,276 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
         }
 
         return (
-        <>
-        <div className="admin-feedback-table-wrap">
-          <table className="w-full admin-feedback-table">
-            <colgroup>
-              {/* Date (fixed) */}
-              <col style={{ width: '160px' }} />
-              {/* User Message & Chatbot Response: narrower */}
-              <col style={{ width: '16%' }} />
-              <col style={{ width: '16%' }} />
-              {/* Corrected Message & Corrected Response: wider */}
-              <col style={{ width: '34%' }} />
-              <col style={{ width: '34%' }} />
-              {/* Apply / Delete (fixed) */}
-              <col style={{ width: '68px' }} />
-              <col style={{ width: '68px' }} />
-            </colgroup>
-            <thead>
-              <tr className="admin-feedback-table__head-row">
-                <th className="admin-feedback-table__th">{t('adminFeedback.tableHeader.date')}</th>
-                <th className="admin-feedback-table__th admin-feedback-table__th--user-message">User Message</th>
-                <th className="admin-feedback-table__th admin-feedback-table__th--chatbot-response">Chatbot Response</th>
-                <th className="admin-feedback-table__th admin-feedback-table__th--message">Corrected Message</th>
-                <th className="admin-feedback-table__th admin-feedback-table__th--response">Corrected Response</th>
-                <th className="admin-feedback-table__th admin-feedback-table__th--apply">{t('adminFeedback.tableHeader.apply')}</th>
-                <th className="admin-feedback-table__th admin-feedback-table__th--delete">{t('adminFeedback.tableHeader.delete')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayedFeedbacks.map((feedback) => (
-                <tr 
-                  key={feedback.id}
-                  style={{ opacity: ((feedback as any)?.isEnabled ?? true) ? 1 : 0.5 }}
-                >
-                  <td className="admin-feedback-table__td">
-                    <div
-                      className="truncate"
-                      title={formatDate(feedback.updated_at || feedback.created_at)}
+          <>
+            <div className="admin-feedback-table-wrap">
+              <table className="w-full admin-feedback-table">
+                <colgroup>
+                  {/* Date (fixed) */}
+                  <col style={{ width: '160px' }} />
+                  {/* User Message & Chatbot Response: narrower */}
+                  <col style={{ width: '16%' }} />
+                  <col style={{ width: '16%' }} />
+                  {/* Corrected Message & Corrected Response: wider */}
+                  <col style={{ width: '34%' }} />
+                  <col style={{ width: '34%' }} />
+                  {/* Apply / Delete (fixed) */}
+                  <col style={{ width: '68px' }} />
+                  <col style={{ width: '68px' }} />
+                </colgroup>
+                <thead>
+                  <tr className="admin-feedback-table__head-row">
+                    <th className="admin-feedback-table__th">{t('adminFeedback.tableHeader.date')}</th>
+                    <th className="admin-feedback-table__th admin-feedback-table__th--user-message">User Message</th>
+                    <th className="admin-feedback-table__th admin-feedback-table__th--chatbot-response">Chatbot Response</th>
+                    <th className="admin-feedback-table__th admin-feedback-table__th--message">Corrected Message</th>
+                    <th className="admin-feedback-table__th admin-feedback-table__th--response">Corrected Response</th>
+                    <th className="admin-feedback-table__th admin-feedback-table__th--apply">{t('adminFeedback.tableHeader.apply')}</th>
+                    <th className="admin-feedback-table__th admin-feedback-table__th--delete">{t('adminFeedback.tableHeader.delete')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedFeedbacks.map((feedback) => (
+                    <tr
+                      key={feedback.id}
+                      style={{ opacity: ((feedback as any)?.isEnabled ?? true) ? 1 : 0.5 }}
                     >
-                      {formatDate(feedback.updated_at || feedback.created_at)}
-                    </div>
-                  </td>
-                  <td className="admin-feedback-table__td admin-feedback-table__td--user-message">
-                    <div className="truncate" title={feedback.chatData?.chat_message ?? ''}>
-                      {feedback.chatData?.chat_message ?? '-'}
-                    </div>
-                  </td>
-                  <td className="admin-feedback-table__td admin-feedback-table__td--chatbot-response">
-                    <div className="truncate" title={feedback.chatData?.response ?? ''}>
-                      {feedback.chatData?.response ?? '-'}
-                    </div>
-                  </td>
-                  <td className="admin-feedback-table__td admin-feedback-table__td--message">
-                    {editingFeedback && editingFeedback.id === feedback.id && editingFeedback.field === 'correctedMessage' ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <textarea
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          style={{
-                            padding: '6px',
-                            background: 'var(--admin-card-bg)',
-                            color: 'var(--admin-text)',
-                            border: '1px solid var(--admin-primary)',
-                            borderRadius: '4px',
-                            fontSize: fs.cell,
-                            minHeight: '60px',
-                            resize: 'vertical',
-                            width: '100%',
-                            fontFamily: 'inherit'
-                          }}
-                          autoFocus
-                        />
-                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={handleSaveEdit}
-                            style={{
-                              padding: '4px 8px',
-                              background: 'var(--admin-primary)',
-                              color: '#041220',
-                              border: 'none',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              cursor: 'pointer',
-                              fontWeight: 600
-                            }}
-                          >
-                            {t('adminFeedback.save')}
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            style={{
-                              padding: '4px 8px',
-                              background: 'rgba(9, 14, 34, 0.4)',
-                              color: 'var(--admin-text)',
-                              border: '1px solid var(--admin-border)',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {t('adminFeedback.cancel')}
-                          </button>
+                      <td className="admin-feedback-table__td">
+                        <div
+                          className="truncate"
+                          title={formatDate(feedback.updated_at || feedback.created_at)}
+                        >
+                          {formatDate(feedback.updated_at || feedback.created_at)}
                         </div>
-                      </div>
-                    ) : (
-                      <div 
-                        className="truncate editable-cell" 
-                        title={feedback.corrected_message || ''}
-                        onClick={() => handleStartEdit(feedback.id!, 'correctedMessage')}
-                        style={{ cursor: 'pointer', borderRadius: '4px' }}
-                      >
-                        {feedback.corrected_message || '-'}
-                      </div>
-                    )}
-                  </td>
-                  <td className="admin-feedback-table__td admin-feedback-table__td--response">
-                    {editingFeedback && editingFeedback.id === feedback.id && editingFeedback.field === 'corrected' ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <textarea
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          style={{
-                            padding: '6px',
-                            background: 'var(--admin-card-bg)',
-                            color: 'var(--admin-text)',
-                            border: '1px solid var(--admin-primary)',
-                            borderRadius: '4px',
-                            fontSize: fs.cell,
-                            minHeight: '60px',
-                            resize: 'vertical',
-                            width: '100%',
-                            fontFamily: 'inherit'
-                          }}
-                          autoFocus
-                        />
-                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={handleSaveEdit}
-                            style={{
-                              padding: '4px 8px',
-                              background: 'var(--admin-primary)',
-                              color: '#041220',
-                              border: 'none',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              cursor: 'pointer',
-                              fontWeight: 600
-                            }}
-                          >
-                            {t('adminFeedback.save')}
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            style={{
-                              padding: '4px 8px',
-                              background: 'rgba(9, 14, 34, 0.4)',
-                              color: 'var(--admin-text)',
-                              border: '1px solid var(--admin-border)',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {t('adminFeedback.cancel')}
-                          </button>
+                      </td>
+                      <td className="admin-feedback-table__td admin-feedback-table__td--user-message">
+                        <div className="truncate" title={feedback.chatData?.chat_message ?? ''}>
+                          {feedback.chatData?.chat_message ?? '-'}
                         </div>
-                      </div>
-                    ) : (
-                      <div 
-                        className="truncate editable-cell" 
-                        title={(displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response) : ((feedback as any).chatData?.response_ko || feedback.corrected_response)) || ''}
-                        onClick={() => handleStartEdit(feedback.id!, 'corrected')}
-                        style={{ cursor: 'pointer', borderRadius: '4px' }}
-                      >
-                        {displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response || '-') : ((feedback as any).chatData?.response_ko || feedback.corrected_response || '-')}
-                      </div>
-                    )}
-                  </td>
-                  <td className="admin-feedback-table__td admin-feedback-table__td--apply">
-                    <button
-                      onClick={() => toggleApply(feedback.id!)}
-                      className="admin-feedback-table__apply-btn"
-                      style={{
-                        backgroundColor: feedback.apply ? 'var(--admin-primary)' : 'rgba(100, 116, 139, 0.3)'
-                      }}
-                      title={feedback.apply ? t('adminFeedback.appliedToPrompt') : t('adminFeedback.notApplied')}
-                    >
-                      <span
-                        className="admin-feedback-table__apply-thumb"
-                        style={{
-                          transform: feedback.apply ? 'translateX(1.25rem)' : 'translateX(0.25rem)'
-                        }}
-                      />
-                    </button>
-                  </td>
-                  <td className="admin-feedback-table__td admin-feedback-table__td--delete">
-                    <button
-                      onClick={() => handleDelete(feedback.id!)}
-                      className="icon-btn admin-feedback-table__delete-btn"
-                      title={t('adminFeedback.deleteFeedback')}
-                    >
-                      <IconTrash size={16} className="admin-feedback-table__delete-icon" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 && (
-          <div className="dashboard-pagination-row">
-            <div className="dashboard-pagination">
-              <button
-                className="dashboard-pagination__arrow"
-                disabled={safePage === 1}
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                aria-label="Previous page"
-              >
-                <IconChevronLeft size={14} />
-              </button>
-              {(() => {
-                const items: (number | 'ellipsis')[] = []
-                if (totalPages <= 6) {
-                  for (let i = 1; i <= totalPages; i++) items.push(i)
-                } else {
-                  if (safePage <= 3) {
-                    items.push(1, 2, 3, 4, 'ellipsis', totalPages)
-                  } else if (safePage >= totalPages - 2) {
-                    items.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
-                  } else {
-                    items.push(1, 'ellipsis', safePage - 1, safePage, safePage + 1, 'ellipsis', totalPages)
-                  }
-                }
-                return items.map((item, idx) =>
-                  item === 'ellipsis' ? (
-                    <span key={`ellipsis-${idx}`} className="dashboard-pagination__ellipsis">
-                      …
-                    </span>
-                  ) : (
-                    <button
-                      key={item}
-                      className={`dashboard-pagination__page ${item === safePage ? 'dashboard-pagination__page--active' : ''}`}
-                      onClick={() => setCurrentPage(item)}
-                    >
-                      {item}
-                    </button>
-                  )
-                )
-              })()}
-              <button
-                className="dashboard-pagination__arrow"
-                disabled={safePage === totalPages}
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                aria-label="Next page"
-              >
-                <IconChevronRight size={14} />
-              </button>
+                      </td>
+                      <td className="admin-feedback-table__td admin-feedback-table__td--chatbot-response">
+                        <div className="truncate" title={feedback.chatData?.response ?? ''}>
+                          {feedback.chatData?.response ?? '-'}
+                        </div>
+                      </td>
+                      <td className="admin-feedback-table__td admin-feedback-table__td--message">
+                        {editingFeedback && editingFeedback.id === feedback.id && editingFeedback.field === 'correctedMessage' ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <textarea
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              style={{
+                                padding: '6px',
+                                background: 'var(--admin-card-bg)',
+                                color: 'var(--admin-text)',
+                                border: '1px solid var(--admin-primary)',
+                                borderRadius: '4px',
+                                fontSize: fs.cell,
+                                minHeight: '60px',
+                                resize: 'vertical',
+                                width: '100%',
+                                fontFamily: 'inherit'
+                              }}
+                              autoFocus
+                            />
+                            <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                              <button
+                                onClick={handleSaveEdit}
+                                style={{
+                                  padding: '4px 8px',
+                                  background: 'var(--admin-primary)',
+                                  color: '#041220',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  fontSize: '11px',
+                                  cursor: 'pointer',
+                                  fontWeight: 600
+                                }}
+                              >
+                                {t('adminFeedback.save')}
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                style={{
+                                  padding: '4px 8px',
+                                  background: 'var(--admin-card-bg)',
+                                  color: 'var(--admin-text)',
+                                  border: '1px solid var(--admin-border)',
+                                  borderRadius: '4px',
+                                  fontSize: '11px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {t('adminFeedback.cancel')}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="truncate editable-cell"
+                            title={feedback.corrected_message || ''}
+                            onClick={() => handleStartEdit(feedback.id!, 'correctedMessage')}
+                            style={{ cursor: 'pointer', borderRadius: '4px' }}
+                          >
+                            {feedback.corrected_message || '-'}
+                          </div>
+                        )}
+                      </td>
+                      <td className="admin-feedback-table__td admin-feedback-table__td--response">
+                        {editingFeedback && editingFeedback.id === feedback.id && editingFeedback.field === 'corrected' ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <textarea
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              style={{
+                                padding: '6px',
+                                background: 'var(--admin-card-bg)',
+                                color: 'var(--admin-text)',
+                                border: '1px solid var(--admin-primary)',
+                                borderRadius: '4px',
+                                fontSize: fs.cell,
+                                minHeight: '60px',
+                                resize: 'vertical',
+                                width: '100%',
+                                fontFamily: 'inherit'
+                              }}
+                              autoFocus
+                            />
+                            <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                              <button
+                                onClick={handleSaveEdit}
+                                style={{
+                                  padding: '4px 8px',
+                                  background: 'var(--admin-primary)',
+                                  color: '#041220',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  fontSize: '11px',
+                                  cursor: 'pointer',
+                                  fontWeight: 600
+                                }}
+                              >
+                                {t('adminFeedback.save')}
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                style={{
+                                  padding: '4px 8px',
+                                  background: 'rgba(9, 14, 34, 0.4)',
+                                  color: 'var(--admin-text)',
+                                  border: '1px solid var(--admin-border)',
+                                  borderRadius: '4px',
+                                  fontSize: '11px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {t('adminFeedback.cancel')}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="truncate editable-cell"
+                            title={(displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response) : ((feedback as any).chatData?.response_ko || feedback.corrected_response)) || ''}
+                            onClick={() => handleStartEdit(feedback.id!, 'corrected')}
+                            style={{ cursor: 'pointer', borderRadius: '4px' }}
+                          >
+                            {displayLanguage === 'en' ? ((feedback as any).chatData?.response_en || feedback.corrected_response || '-') : ((feedback as any).chatData?.response_ko || feedback.corrected_response || '-')}
+                          </div>
+                        )}
+                      </td>
+                      <td className="admin-feedback-table__td admin-feedback-table__td--apply">
+                        <button
+                          onClick={() => toggleApply(feedback.id!)}
+                          className="admin-feedback-table__apply-btn"
+                          style={{
+                            backgroundColor: feedback.apply ? 'var(--admin-primary)' : 'rgba(100, 116, 139, 0.3)'
+                          }}
+                          title={feedback.apply ? t('adminFeedback.appliedToPrompt') : t('adminFeedback.notApplied')}
+                        >
+                          <span
+                            className="admin-feedback-table__apply-thumb"
+                            style={{
+                              transform: feedback.apply ? 'translateX(1.25rem)' : 'translateX(0.25rem)'
+                            }}
+                          />
+                        </button>
+                      </td>
+                      <td className="admin-feedback-table__td admin-feedback-table__td--delete">
+                        <button
+                          onClick={() => handleDelete(feedback.id!)}
+                          className="icon-btn admin-feedback-table__delete-btn"
+                          title={t('adminFeedback.deleteFeedback')}
+                        >
+                          <IconTrash size={16} className="admin-feedback-table__delete-icon" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        )}
-        </>
-      )
+            {totalPages > 1 && (
+              <div className="dashboard-pagination-row">
+                <div className="dashboard-pagination">
+                  <button
+                    className="dashboard-pagination__arrow"
+                    disabled={safePage === 1}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    aria-label="Previous page"
+                  >
+                    <IconChevronLeft size={14} />
+                  </button>
+                  {(() => {
+                    const items: (number | 'ellipsis')[] = []
+                    if (totalPages <= 6) {
+                      for (let i = 1; i <= totalPages; i++) items.push(i)
+                    } else {
+                      if (safePage <= 3) {
+                        items.push(1, 2, 3, 4, 'ellipsis', totalPages)
+                      } else if (safePage >= totalPages - 2) {
+                        items.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
+                      } else {
+                        items.push(1, 'ellipsis', safePage - 1, safePage, safePage + 1, 'ellipsis', totalPages)
+                      }
+                    }
+                    return items.map((item, idx) =>
+                      item === 'ellipsis' ? (
+                        <span key={`ellipsis-${idx}`} className="dashboard-pagination__ellipsis">
+                          …
+                        </span>
+                      ) : (
+                        <button
+                          key={item}
+                          className={`dashboard-pagination__page ${item === safePage ? 'dashboard-pagination__page--active' : ''}`}
+                          onClick={() => setCurrentPage(item)}
+                        >
+                          {item}
+                        </button>
+                      )
+                    )
+                  })()}
+                  <button
+                    className="dashboard-pagination__arrow"
+                    disabled={safePage === totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    aria-label="Next page"
+                  >
+                    <IconChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )
       })()
       }
 
       {/* Add Supervisor Correction Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div 
+          <div
             className="rounded-lg max-w-2xl w-full mx-4"
-            style={{ 
+            style={{
               backgroundColor: 'var(--admin-bg-card)',
               border: '1px solid var(--admin-border)',
               maxHeight: '90vh',
@@ -817,7 +817,7 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
               <p className="text-sm mb-4" style={{ color: 'var(--admin-text-muted)' }}>
                 Add a supervisor corrected message and response to create a Q&A that will be prioritized by the chatbot. The chatbot will reference the saved Q&As to answer any similar questions with the supervisor corrected response.
               </p>
-              
+
               {/* Corrected Message */}
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
@@ -829,13 +829,13 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                   placeholder="Enter the corrected user message..."
                   className="w-full h-24 resize-none text-sm p-3 rounded"
                   style={{
-                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                    backgroundColor: 'var(--admin-card-bg)',
                     color: 'var(--admin-text)',
                     border: '1px solid var(--admin-border)'
                   }}
                 />
               </div>
-              
+
               {/* Corrected Response */}
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
@@ -847,13 +847,13 @@ export default function AdminFeedbackList({ onScrollToChat, useMock = false }: A
                   placeholder="Enter the corrected response..."
                   className="w-full h-32 resize-none text-sm p-3 rounded"
                   style={{
-                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                    backgroundColor: 'var(--admin-card-bg)',
                     color: 'var(--admin-text)',
                     border: '1px solid var(--admin-border)'
                   }}
                 />
               </div>
-              
+
               {/* Action Buttons */}
               <div className="flex justify-end gap-3">
                 <button

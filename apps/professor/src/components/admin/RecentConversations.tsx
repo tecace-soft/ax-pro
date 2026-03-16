@@ -20,10 +20,10 @@ interface RecentConversationsProps {
   onScrollComplete?: () => void
 }
 
-export default function RecentConversations({ 
-  scrollToChatId, 
-  highlightedChatId, 
-  onScrollComplete 
+export default function RecentConversations({
+  scrollToChatId,
+  highlightedChatId,
+  onScrollComplete
 }: RecentConversationsProps) {
   const { t } = useTranslation()
   const [conversations, setConversations] = useState<ChatData[]>([])
@@ -47,7 +47,7 @@ export default function RecentConversations({
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium')
   const [currentPage, setCurrentPage] = useState(1)
   const PAGE_SIZE = 10
-  
+
   // Font size mapping
   const fontSizeMap = {
     small: { base: '11px', sm: '10px', header: '10px', cell: '11px' },
@@ -87,22 +87,22 @@ export default function RecentConversations({
         setTimeout(() => {
           const chatElement = document.getElementById(`chat-${scrollToChatId}`)
           if (chatElement) {
-            chatElement.scrollIntoView({ 
-              behavior: 'smooth', 
-              block: 'center' 
+            chatElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center'
             })
             // Add highlight effect
             chatElement.style.transition = 'all 0.3s ease'
             chatElement.style.backgroundColor = 'rgba(59, 230, 255, 0.2)'
             chatElement.style.borderColor = 'var(--admin-primary)'
             chatElement.style.boxShadow = '0 0 20px rgba(59, 230, 255, 0.4)'
-            
+
             setTimeout(() => {
               chatElement.style.backgroundColor = ''
               chatElement.style.borderColor = ''
               chatElement.style.boxShadow = ''
             }, 3000)
-            
+
             onScrollComplete?.()
           } else if (attempt < 3) {
             // Retry up to 3 times with increasing delays
@@ -111,7 +111,7 @@ export default function RecentConversations({
           }
         }, attempt === 0 ? 200 : 300 * (attempt + 1))
       }
-      
+
       attemptScroll()
     }
   }, [scrollToChatId, onScrollComplete, filteredConversations])
@@ -119,20 +119,20 @@ export default function RecentConversations({
   const loadConversations = async () => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
       // Fetch chat data, user feedback, and admin feedback
       const [chatData, userFeedbackData] = await Promise.all([
         fetchAllChatData(50), // Fetch last 50 conversations
         fetchAllUserFeedback()
       ])
-      
+
       // Create maps for feedback by chat_id
       const userFeedbackMap = new Map<string, any>()
       userFeedbackData.forEach(feedback => {
         userFeedbackMap.set(feedback.chat_id, feedback)
       })
-      
+
       // Fetch admin feedback for each chat
       const conversationsWithFeedback = await Promise.all(
         chatData.map(async (chat) => {
@@ -144,7 +144,7 @@ export default function RecentConversations({
           }
         })
       )
-      
+
       setConversations(conversationsWithFeedback)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load conversations'
@@ -167,19 +167,19 @@ export default function RecentConversations({
         fetchAllChatData(50),
         fetchAllUserFeedback()
       ])
-      
+
       // Create a map of user feedback by chat_id
       const userFeedbackMap = new Map<string, any>()
       userFeedbackData.forEach(feedback => {
         userFeedbackMap.set(feedback.chat_id, feedback)
       })
-      
+
       // Associate user feedback with each chat
       const conversationsWithFeedback = chatData.map(chat => ({
         ...chat,
         user_feedback: userFeedbackMap.get(chat.chat_id) || null
       }))
-      
+
       setConversations(conversationsWithFeedback)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to refresh conversations')
@@ -214,7 +214,7 @@ export default function RecentConversations({
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(c => 
+      filtered = filtered.filter(c =>
         c.user_id?.toLowerCase().includes(term) ||
         String(c.id || '').toLowerCase().includes(term) ||
         c.chat_id?.toLowerCase().includes(term) ||
@@ -258,7 +258,7 @@ export default function RecentConversations({
   const handleFeedbackClick = async (conversation: ChatData, verdict: 'good' | 'bad') => {
     // Check if feedback already exists
     const existingFeedback = await getAdminFeedbackByChat(conversation.chat_id)
-    
+
     // If feedback exists and verdict is different, show confirmation
     if (existingFeedback && existingFeedback.feedback_verdict !== verdict) {
       const verdictText = existingFeedback.feedback_verdict === 'good' ? 'positive' : 'negative'
@@ -268,12 +268,12 @@ export default function RecentConversations({
         `Are you sure you would like to change it to a ${newVerdictText} review? ` +
         `This will remove the previously saved ${verdictText} feedback.`
       )
-      
+
       if (!confirmed) {
         return
       }
     }
-    
+
     setFeedbackModal({
       chatId: conversation.chat_id,
       userMessage: conversation.chat_message || '',
@@ -281,7 +281,7 @@ export default function RecentConversations({
       verdict,
       existingFeedback
     })
-    
+
     // Pre-fill with existing feedback if available
     if (existingFeedback) {
       setSupervisorFeedback(existingFeedback.feedback_text || '')
@@ -302,7 +302,7 @@ export default function RecentConversations({
       alert('Please provide both corrected message and corrected response.')
       return
     }
-    
+
     setIsSubmitting(true)
     try {
       // Upsert handles both insert and update automatically
@@ -313,16 +313,16 @@ export default function RecentConversations({
         correctedMessage,
         correctedResponse
       )
-      
+
       // Success - close modal
       setFeedbackModal(null)
       setSupervisorFeedback('')
       setCorrectedMessage('')
       setCorrectedResponse('')
-      
+
       // Show success message
       alert('Admin feedback submitted successfully!')
-      
+
       // Refresh conversations to show updated feedback
       handleRefresh()
     } catch (error) {
@@ -356,8 +356,8 @@ export default function RecentConversations({
       // Find the conversation with this chatId
       const conversation = conversations.find(c => c.chat_id === chatId)
       if (conversation && conversation.user_feedback) {
-        setUserFeedbackModal({ 
-          chatId, 
+        setUserFeedbackModal({
+          chatId,
           feedback: conversation.user_feedback
         })
       } else {
@@ -444,11 +444,11 @@ export default function RecentConversations({
         `"${item.userMessage.replace(/"/g, '""')}"`,
         `"${item.aiResponse.replace(/"/g, '""')}"`
       ])
-      
+
       const csvContent = [headers, ...csvData]
         .map(row => row.join(','))
         .join('\n')
-      
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const link = document.createElement('a')
       const url = URL.createObjectURL(blob)
@@ -500,7 +500,7 @@ export default function RecentConversations({
               </ol>
             </div>
           )}
-          <button 
+          <button
             onClick={loadConversations}
             className="mt-3 px-4 py-2 rounded-md text-sm"
             style={{
@@ -530,7 +530,7 @@ export default function RecentConversations({
           <IconMessage className="section-header-icon" size={18} style={{ flexShrink: 0 }} />
           {t('admin.recentConversations')} <span className="section-count-badge">{filteredConversations.length}</span>
         </h2>
-        <button 
+        <button
           className="icon-btn"
           onClick={handleRefresh}
           disabled={isRefreshing}
@@ -647,7 +647,7 @@ export default function RecentConversations({
             </thead>
             <tbody>
               {displayedConversations.map((conversation) => (
-                <tr 
+                <tr
                   key={conversation.id}
                   id={`chat-${conversation.chat_id}`}
                   className={highlightedChatId === conversation.chat_id ? 'recent-conversations-table__row--highlighted' : ''}
@@ -673,7 +673,7 @@ export default function RecentConversations({
                     )}
                   </td>
                   <td className="px-3 py-2" style={{ maxWidth: '280px', overflow: 'hidden' }}>
-                    <div 
+                    <div
                       className="truncate cursor-pointer hover:opacity-80"
                       onClick={() => handleFeedbackClick(conversation, 'good')}
                       title={conversation.chat_message}
@@ -728,7 +728,7 @@ export default function RecentConversations({
           </table>
         </div>
       )}
-      
+
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="dashboard-pagination-row">
@@ -785,9 +785,9 @@ export default function RecentConversations({
       {/* Admin Feedback Modal - Add/Edit Supervisor Correction */}
       {feedbackModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div 
+          <div
             className="rounded-lg max-w-2xl w-full mx-4"
-            style={{ 
+            style={{
               backgroundColor: 'var(--admin-bg-card)',
               border: '1px solid var(--admin-border)',
               maxHeight: '90vh',
@@ -813,45 +813,45 @@ export default function RecentConversations({
               <p className="text-sm mb-4" style={{ color: 'var(--admin-text-muted)' }}>
                 Add a supervisor corrected message and response to create a Q&A that will be prioritized by the chatbot. The chatbot will reference the saved Q&As to answer any similar questions with the supervisor corrected response.
               </p>
-              
+
               {/* User Message (read-only) */}
               <div className="mb-4">
                 <p className="text-xs font-medium mb-2" style={{ color: 'var(--admin-text-muted)' }}>
                   {t('admin.userMessage')}:
                 </p>
-                <div 
+                <div
                   className="p-3 rounded"
-                  style={{ 
-                    backgroundColor: 'rgba(9, 14, 34, 0.4)',
+                  style={{
+                    backgroundColor: 'var(--admin-card-bg)',
                     border: '1px solid var(--admin-border)'
                   }}
                 >
-                  <p className="text-sm" style={{ color: 'var(--admin-text-muted)', opacity: 0.65 }}>
+                  <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
                     {feedbackModal.userMessage}
                   </p>
                 </div>
               </div>
-              
+
               {/* AI Response (read-only, fixed height, scrollable) */}
               <div className="mb-4">
                 <p className="text-xs font-medium mb-2" style={{ color: 'var(--admin-text-muted)' }}>
                   {t('admin.aiResponse')}:
                 </p>
-                <div 
+                <div
                   className="p-3 rounded recent-conversations-modal__ai-response-box"
-                  style={{ 
-                    backgroundColor: 'rgba(9, 14, 34, 0.4)',
+                  style={{
+                    backgroundColor: 'var(--admin-card-bg)',
                     border: '1px solid var(--admin-border)',
                     height: '120px',
                     overflowY: 'auto'
                   }}
                 >
-                  <p className="text-sm" style={{ color: 'var(--admin-text-muted)', opacity: 0.65 }}>
+                  <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
                     {feedbackModal.aiResponse}
                   </p>
                 </div>
               </div>
-              
+
               {/* Corrected Message */}
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
@@ -863,13 +863,13 @@ export default function RecentConversations({
                   placeholder="Enter the corrected user message..."
                   className="w-full h-24 resize-none text-sm p-3 rounded"
                   style={{
-                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                    backgroundColor: 'var(--admin-card-bg)',
                     color: 'var(--admin-text)',
                     border: '1px solid var(--admin-border)'
                   }}
                 />
               </div>
-              
+
               {/* Corrected Response */}
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2" style={{ color: 'var(--admin-text)' }}>
@@ -881,14 +881,14 @@ export default function RecentConversations({
                   placeholder="Enter the corrected response..."
                   className="w-full resize-none text-sm p-3 rounded recent-conversations-modal__corrected-response"
                   style={{
-                    backgroundColor: 'rgba(9, 14, 34, 0.6)',
+                    backgroundColor: 'var(--admin-card-bg)',
                     color: 'var(--admin-text)',
                     border: '1px solid var(--admin-border)',
                     height: '120px'
                   }}
                 />
               </div>
-              
+
               {/* Action Buttons */}
               <div className="flex justify-end gap-3">
                 <button
@@ -924,9 +924,9 @@ export default function RecentConversations({
       {/* User Feedback Modal */}
       {userFeedbackModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div 
+          <div
             className="bg-white rounded-xl shadow-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto border-2"
-            style={{ 
+            style={{
               backgroundColor: 'var(--admin-card)',
               borderColor: 'var(--admin-border)',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
@@ -949,15 +949,15 @@ export default function RecentConversations({
                 </svg>
               </button>
             </div>
-            
+
             <div className="space-y-6">
               {/* Chat Info */}
               <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--admin-bg-secondary)' }}>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="font-semibold text-sm" style={{ color: 'var(--admin-text)' }}>Chat ID:</span>
-                  <span className="text-xs font-mono px-2 py-1 rounded" style={{ 
-                    backgroundColor: 'var(--admin-primary)', 
-                    color: 'white' 
+                  <span className="text-xs font-mono px-2 py-1 rounded" style={{
+                    backgroundColor: 'var(--admin-primary)',
+                    color: 'white'
                   }}>
                     {userFeedbackModal.chatId}
                   </span>
@@ -966,11 +966,11 @@ export default function RecentConversations({
                   {new Date().toLocaleString()}
                 </div>
               </div>
-              
+
               {userFeedbackModal.feedback ? (
                 <div className="space-y-4">
                   {/* User Rating */}
-                  <div className="flex items-center gap-4 p-4 rounded-lg border-2" style={{ 
+                  <div className="flex items-center gap-4 p-4 rounded-lg border-2" style={{
                     borderColor: userFeedbackModal.feedback.reaction === 'good' ? '#10b981' : '#ef4444',
                     backgroundColor: userFeedbackModal.feedback.reaction === 'good' ? '#f0fdf4' : '#fef2f2'
                   }}>
@@ -980,21 +980,21 @@ export default function RecentConversations({
                       ) : (
                         <IconThumbsDown size={24} className="text-red-600" />
                       )}
-                      <span className="font-semibold text-lg" style={{ 
+                      <span className="font-semibold text-lg" style={{
                         color: userFeedbackModal.feedback.reaction === 'good' ? '#059669' : '#dc2626'
                       }}>
                         {userFeedbackModal.feedback.reaction === 'good' ? 'Positive Feedback' : 'Negative Feedback'}
                       </span>
                     </div>
                   </div>
-                  
+
                   {/* User Comment */}
                   {userFeedbackModal.feedback.feedback_text && (
                     <div>
                       <h4 className="font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--admin-text)' }}>
                         💬 User's Comment:
                       </h4>
-                      <div className="p-4 rounded-lg border-2" style={{ 
+                      <div className="p-4 rounded-lg border-2" style={{
                         backgroundColor: 'var(--admin-bg-secondary)',
                         borderColor: 'var(--admin-border)'
                       }}>
@@ -1004,7 +1004,7 @@ export default function RecentConversations({
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Feedback Date */}
                   <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--admin-text-muted)' }}>
                     <span>📅</span>
@@ -1020,13 +1020,13 @@ export default function RecentConversations({
                 </div>
               )}
             </div>
-            
+
             <div className="flex justify-center mt-8">
               <button
                 onClick={() => setUserFeedbackModal(null)}
                 className="px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105"
-                style={{ 
-                  backgroundColor: 'var(--admin-primary)', 
+                style={{
+                  backgroundColor: 'var(--admin-primary)',
                   color: 'white',
                   boxShadow: '0 4px 14px 0 rgba(59, 230, 255, 0.3)'
                 }}

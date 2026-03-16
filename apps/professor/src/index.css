@@ -1,13 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
   overflow: hidden;
-  font-family: 'Söhne', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', 'Söhne', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -28,61 +31,314 @@ code {
 
 /* Hide scrollbar but keep functionality */
 .overflow-y-auto {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
 }
 
 .overflow-y-auto::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
+  /* Chrome, Safari, Opera */
 }
 
 /* Custom scrollbar for settings content - thumb only, visible on hover */
 .settings-content-scrollable {
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: transparent transparent; /* Firefox - thumb and track transparent by default */
+  scrollbar-width: thin;
+  /* Firefox */
+  scrollbar-color: transparent transparent;
+  /* Firefox - thumb and track transparent by default */
 }
 
 .settings-content-scrollable:hover {
-  scrollbar-color: rgba(128, 128, 128, 0.5) transparent; /* Firefox - show thumb on hover */
+  scrollbar-color: rgba(41, 195, 255, 0.3) transparent;
+  /* Firefox - show thumb on hover */
 }
 
 .settings-content-scrollable::-webkit-scrollbar {
-  width: 8px; /* Chrome, Safari, Opera */
+  width: 8px;
+  /* Chrome, Safari, Opera */
 }
 
 .settings-content-scrollable::-webkit-scrollbar-track {
-  background: transparent; /* Hide track */
+  background: transparent;
+  /* Hide track */
 }
 
 .settings-content-scrollable::-webkit-scrollbar-thumb {
-  background: transparent; /* Hide thumb by default */
+  background: transparent;
+  /* Hide thumb by default */
   border-radius: 4px;
   transition: background 0.2s ease;
 }
 
 .settings-content-scrollable:hover::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, 0.5); /* Show thumb on hover */
+  background: rgba(41, 195, 255, 0.3);
+  /* Show thumb on hover */
 }
 
 .settings-content-scrollable::-webkit-scrollbar-thumb:hover {
-  background: rgba(128, 128, 128, 0.7); /* Darker on thumb hover */
+  background: rgba(41, 195, 255, 0.5);
+  /* Brighter on thumb hover */
 }
 
-/* Chat page sidebar - session list scrollbar (no white track) */
+/* Chat page sidebar - session list scrollbar */
 .chat-session-list__scroll::-webkit-scrollbar {
   width: 8px;
 }
+
 .chat-session-list__scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .chat-session-list__scroll::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.5);
+  background: rgba(41, 195, 255, 0.3);
   border-radius: 4px;
 }
+
 .chat-session-list__scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.7);
+  background: rgba(41, 195, 255, 0.5);
 }
+
 .chat-session-list__scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+  scrollbar-color: rgba(41, 195, 255, 0.3) transparent;
+}
+
+/* Auth page glassmorphism styles */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(1200px 600px at 70% -10%, rgba(41, 195, 255, 0.14), transparent 60%),
+    radial-gradient(900px 500px at 10% 0%, rgba(124, 140, 255, 0.12), transparent 55%),
+    linear-gradient(180deg, #0c1330 0%, #0a1026 60%, #080e20 100%);
+}
+
+[data-theme="light"] .auth-page {
+  background:
+    radial-gradient(ellipse 900px 600px at 80% -5%, rgba(99, 102, 241, 0.2) 0%, transparent 65%),
+    radial-gradient(ellipse 700px 500px at 10% 90%, rgba(14, 165, 233, 0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 500px 400px at 50% 40%, rgba(168, 85, 247, 0.1) 0%, transparent 65%),
+    radial-gradient(ellipse 600px 300px at 90% 90%, rgba(59, 130, 246, 0.12) 0%, transparent 60%),
+    linear-gradient(145deg, #f5f7ff 0%, #eef0ff 30%, #f0f8ff 65%, #f8fafc 100%);
+}
+
+.auth-glass-card {
+  background: rgba(18, 27, 61, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(100, 160, 255, 0.15);
+  box-shadow: 0 8px 40px rgba(3, 8, 28, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+}
+
+[data-theme="light"] .auth-glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.04),
+    0 12px 40px rgba(99, 102, 241, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.auth-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(8, 20, 50, 0.6);
+  border: 1px solid rgba(100, 160, 255, 0.18);
+  border-radius: 10px;
+  color: #d3dcff;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.auth-input::placeholder {
+  color: #5a6a8a;
+}
+
+.auth-input:focus {
+  border-color: #29c3ff;
+  box-shadow: 0 0 0 3px rgba(41, 195, 255, 0.15);
+}
+
+[data-theme="light"] .auth-input {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .auth-input::placeholder {
+  color: #9ca3af;
+}
+
+[data-theme="light"] .auth-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.auth-btn-primary {
+  width: 100%;
+  padding: 11px 20px;
+  background: linear-gradient(135deg, #29c3ff 0%, #1a8cff 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 20px rgba(41, 195, 255, 0.35);
+  letter-spacing: 0.3px;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(41, 195, 255, 0.45);
+}
+
+.auth-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auth-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #9aa7cc;
+}
+
+[data-theme="light"] .auth-label {
+  color: #475569;
+}
+
+/* Animated background orbs */
+.auth-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  animation: orbFloat 8s ease-in-out infinite;
+}
+
+@keyframes orbFloat {
+
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: translateY(-20px) scale(1.05);
+    opacity: 0.6;
+  }
+}
+
+/* Group management cards */
+.group-card {
+  background: rgba(18, 27, 61, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(100, 160, 255, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(3, 8, 28, 0.4);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.group-card:hover {
+  border-color: rgba(41, 195, 255, 0.25);
+  box-shadow: 0 8px 32px rgba(3, 8, 28, 0.5), 0 0 0 1px rgba(41, 195, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+[data-theme="light"] .group-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(99, 102, 241, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .group-card:hover {
+  border-color: rgba(14, 165, 233, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Header glass style */
+.auth-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: rgba(10, 20, 50, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(100, 160, 255, 0.1);
+}
+
+[data-theme="light"] .auth-header {
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+}
+
+.auth-header-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(41, 195, 255, 0.08);
+  border: 1px solid rgba(41, 195, 255, 0.15);
+  border-radius: 8px;
+  color: #9aa7cc;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.auth-header-btn:hover {
+  background: rgba(41, 195, 255, 0.15);
+  border-color: rgba(41, 195, 255, 0.3);
+  color: #d3dcff;
+}
+
+[data-theme="light"] .auth-header-btn {
+  background: rgba(14, 165, 233, 0.08);
+  border-color: rgba(14, 165, 233, 0.2);
+  color: #475569;
+}
+
+[data-theme="light"] .auth-header-btn:hover {
+  background: rgba(14, 165, 233, 0.15);
+  color: #0f172a;
+}
+
+.auth-header-select {
+  padding: 6px 10px;
+  background: rgba(41, 195, 255, 0.08);
+  border: 1px solid rgba(41, 195, 255, 0.15);
+  border-radius: 8px;
+  color: #9aa7cc;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.auth-header-select:hover {
+  background: rgba(41, 195, 255, 0.15);
+  border-color: rgba(41, 195, 255, 0.3);
+  color: #d3dcff;
+}
+
+[data-theme="light"] .auth-header-select {
+  background: rgba(14, 165, 233, 0.08);
+  border-color: rgba(14, 165, 233, 0.2);
+  color: #475569;
 }

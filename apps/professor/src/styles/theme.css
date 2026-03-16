@@ -1,66 +1,92 @@
 /* Theme CSS Variables for AX Pro Platform */
 
-:root[data-theme="light"] {
-  --bg: #ffffff;
-  --bg-secondary: #f7f7f8;
+:root[data-theme="light"],
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --bg-secondary: #f1f5f9;
   --card: #ffffff;
-  --text: #2d2d2d;
-  --text-secondary: #6e6e80;
-  --text-muted: #8e8ea0;
-  --border: #e5e5e5;
-  --border-light: #f0f0f0;
-  --primary: #2d2d2d;
-  --primary-hover: #1a1a1a;
-  --primary-light: #f0f0f0;
-  --success: #4caf50;
-  --success-light: #e8f5e8;
-  --error: #f44336;
-  --error-light: #ffebee;
-  --warning: #ff9800;
-  --warning-light: #fff3e0;
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --text: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border: rgba(99, 102, 241, 0.2);
+  --border-light: #e2e8f0;
+  --primary: #0ea5e9;
+  --primary-hover: #0284c7;
+  --primary-light: rgba(14, 165, 233, 0.1);
+  --success: #16a34a;
+  --success-light: #dcfce7;
+  --error: #dc2626;
+  --error-light: #fee2e2;
+  --warning: #d97706;
+  --warning-light: #fef3c7;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-blur: 12px;
+  --glass-border: rgba(99, 102, 241, 0.2);
 }
 
-:root[data-theme="dark"] {
-  --bg: #212121;
-  --bg-secondary: #2f2f2f;
-  --card: #2f2f2f;
-  --text: #ececec;
-  --text-secondary: #b4b4b4;
-  --text-muted: #8a8a8a;
-  --border: #404040;
-  --border-light: #4a4a4a;
-  --primary: #ececec;
-  --primary-hover: #ffffff;
-  --primary-light: #404040;
-  --success: #4caf50;
-  --success-light: #1b5e20;
-  --error: #f44336;
-  --error-light: #b71c1c;
-  --warning: #ff9800;
-  --warning-light: #e65100;
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+:root,
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  --bg: #0a1026;
+  --bg-secondary: #0f1734;
+  --card: rgba(18, 27, 61, 0.85);
+  --text: #d3dcff;
+  --text-secondary: #9aa7cc;
+  --text-muted: #8895b8;
+  --border: rgba(59, 230, 255, 0.08);
+  --border-light: rgba(59, 230, 255, 0.04);
+  --primary: #29c3ff;
+  --primary-hover: #1aa7df;
+  --primary-light: rgba(41, 195, 255, 0.12);
+  --success: #22c55e;
+  --success-light: rgba(34, 197, 94, 0.15);
+  --error: #ef4444;
+  --error-light: rgba(239, 68, 68, 0.15);
+  --warning: #f59e0b;
+  --warning-light: rgba(245, 158, 11, 0.15);
+  --shadow: 0 8px 30px rgba(3, 8, 28, 0.65), 0 0 0 1px rgba(59, 230, 255, 0.04);
+  --shadow-lg: 0 16px 48px rgba(3, 8, 28, 0.8), 0 0 0 1px rgba(59, 230, 255, 0.06);
+  --glass-bg: rgba(18, 27, 61, 0.7);
+  --glass-blur: 12px;
+  --glass-border: rgba(100, 160, 255, 0.15);
 }
 
-/* Base styles using CSS variables */
+/* Base styles */
 body {
   background-color: var(--bg);
   color: var(--text);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Card styles */
+/* Dark mode body gradient */
+[data-theme="dark"] body,
+body {
+  background: radial-gradient(1200px 600px at 70% -10%, rgba(41,195,255,0.12), transparent 60%),
+    radial-gradient(900px 500px at 10% 0%, rgba(124,140,255,0.10), transparent 55%),
+    linear-gradient(180deg, #0c1330 0%, #0a1026 60%, #080e20 100%);
+  background-attachment: fixed;
+}
+
+[data-theme="light"] body {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  background-attachment: fixed;
+}
+
+/* Card styles - glass effect */
 .card {
-  background-color: var(--card);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
   box-shadow: var(--shadow);
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
   box-shadow: var(--shadow-lg);
+  border-color: rgba(59, 230, 255, 0.15);
 }
 
 /* Text styles */
@@ -78,52 +104,61 @@ body {
 
 /* Button styles */
 .btn-primary {
-  background-color: var(--primary);
-  color: var(--bg);
-  border: 1px solid var(--primary);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  background: linear-gradient(135deg, #29c3ff 0%, #1a8cff 100%);
+  color: #ffffff;
+  border: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 15px rgba(41, 195, 255, 0.3);
+}
+
+.btn-primary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(41, 195, 255, 0.4);
+}
+
+.btn-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(41, 195, 255, 0.3);
 }
 
 /* Message bubble styles */
 .message-user {
-  background-color: #40414f !important;
+  background: linear-gradient(135deg, rgba(41, 195, 255, 0.2), rgba(124, 140, 255, 0.2));
   color: #ffffff !important;
   border-radius: 18px 18px 4px 18px;
+  border: 1px solid rgba(41, 195, 255, 0.2);
 }
 
 .message-assistant {
-  background-color: var(--bg-secondary);
+  background-color: var(--card);
   color: var(--text);
-  border: none;
+  border: 1px solid var(--border);
   border-radius: 18px 18px 18px 4px;
-}
-
-.btn-primary:hover {
-  background-color: var(--primary-hover);
-  border-color: var(--primary-hover);
-}
-
-.btn-primary:focus {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
 }
 
 /* Input styles */
 .input {
-  background-color: var(--card);
-  border: 1px solid var(--border);
+  background: rgba(10, 16, 38, 0.6);
+  border: 1px solid var(--glass-border);
   color: var(--text);
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input:focus {
   border-color: var(--primary);
   outline: none;
-  box-shadow: 0 0 0 3px var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(41, 195, 255, 0.15);
 }
 
 .input::placeholder {
   color: var(--text-muted);
+}
+
+[data-theme="light"] .input {
+  background: rgba(255, 255, 255, 0.8);
 }
 
 /* Error states */
@@ -164,6 +199,6 @@ body {
 }
 
 /* Smooth transitions for theme changes */
-* {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+*, *::before, *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }

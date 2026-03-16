@@ -273,14 +273,19 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Sidebar Styles */
 .dashboard-sidebar {
   width: 280px;
-  background: linear-gradient(180deg, rgba(18,27,61,0.6), rgba(13,20,44,0.6));
+  background: linear-gradient(180deg, rgba(18, 27, 61, 0.6), rgba(13, 20, 44, 0.6));
   border-right: 1px solid rgba(59, 230, 255, 0.08);
   overflow-y: auto;
   transition: width 0.3s ease;
@@ -298,7 +303,51 @@
   width: 60px;
 }
 
+/* Collapsed: hide full sidebar-content, show icon-only nav instead */
 .dashboard-sidebar.collapsed .sidebar-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  gap: 4px;
+  overflow: hidden;
+}
+
+/* Hide everything except nav in collapsed state */
+.dashboard-sidebar.collapsed .sidebar-section:not(.sidebar-nav-section),
+.dashboard-sidebar.collapsed .sidebar-section-title,
+.dashboard-sidebar.collapsed .sidebar-section>*:not(.sidebar-nav) {
+  display: none;
+}
+
+/* Show only navigation section in collapsed state */
+.dashboard-sidebar.collapsed .sidebar-nav-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 0;
+  margin-bottom: 0;
+}
+
+/* Collapsed nav items - icon only */
+.dashboard-sidebar.collapsed .nav-item {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.dashboard-sidebar.collapsed .nav-item span {
+  display: none;
+}
+
+/* Collapsed Settings button area - hide */
+.dashboard-sidebar.collapsed .sidebar-section:first-child {
   display: none;
 }
 
@@ -620,7 +669,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 2rem;
-  background: linear-gradient(180deg, rgba(18,27,61,0.9), rgba(12,19,48,0.9));
+  background: linear-gradient(180deg, rgba(18, 27, 61, 0.9), rgba(12, 19, 48, 0.9));
   border-bottom: 1px solid rgba(59, 230, 255, 0.08);
   backdrop-filter: blur(10px);
   position: sticky;
@@ -650,7 +699,8 @@
   width: 30px;
   height: 30px;
   position: relative;
-  flex-shrink: 0; /* Prevent shrinking */
+  flex-shrink: 0;
+  /* Prevent shrinking */
 }
 
 .hexagon-outer {
@@ -723,7 +773,7 @@
 
 .current-time {
   font-size: 12px;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
   white-space: nowrap;
 }
 
@@ -752,7 +802,7 @@
 }
 
 .icon-btn:hover {
-  background: rgba(124,140,255,0.08);
+  background: rgba(124, 140, 255, 0.08);
   color: var(--admin-text);
 }
 
@@ -866,6 +916,19 @@
   box-shadow: 0 0 0 1px rgba(47, 66, 110, 0.35), 0 0 12px rgba(47, 66, 110, 0.4);
 }
 
+/* Light mode dashboard section card */
+[data-theme="light"] .dashboard-section-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .dashboard-section-card:hover {
+  border-color: #cbd5e1;
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
 .dashboard-section-card .section-header {
   margin-left: -16px;
   margin-right: -16px;
@@ -877,7 +940,7 @@
 }
 
 [data-theme="light"] .dashboard-section-card .section-header {
-  border-bottom-color: #ffffff;
+  border-bottom-color: #e2e8f0;
 }
 
 /* Recent Conversations specific tweaks */
@@ -886,17 +949,9 @@
   background-color: #121b33;
 }
 
-.dashboard-section-table-wrap {
-  display: block;
-  width: 100%;
-  border-radius: 0;
-  overflow: hidden;
-}
-
-.recent-conversations-table {
-  border-collapse: collapse;
-  width: 100%;
-  table-layout: fixed;
+[data-theme="light"] .recent-conversations-section.dashboard-section-card:hover {
+  border-color: #cbd5e1;
+  background-color: #ffffff;
 }
 
 .recent-conversations-table thead tr {
@@ -905,14 +960,27 @@
   height: 50px;
 }
 
+[data-theme="light"] .recent-conversations-table thead tr {
+  border-top-color: #e2e8f0;
+  border-bottom-color: #e2e8f0;
+}
+
 .recent-conversations-table__head-row {
   background-color: #172136;
+}
+
+[data-theme="light"] .recent-conversations-table__head-row {
+  background-color: #f8fafc;
 }
 
 .recent-conversations-table__head-row th {
   padding: 10px 12px;
   vertical-align: middle;
   color: #566179;
+}
+
+[data-theme="light"] .recent-conversations-table__head-row th {
+  color: #64748b;
 }
 
 .recent-conversations-table__th-supervisor {
@@ -929,6 +997,10 @@
   background-color: transparent;
   border-bottom: 1px solid #2a395b;
   transition: background-color 0.15s ease;
+}
+
+[data-theme="light"] .recent-conversations-table tbody tr {
+  border-bottom-color: #e2e8f0;
 }
 
 .recent-conversations-table tbody tr:hover {
@@ -1043,6 +1115,16 @@
 
 .dashboard-table-load-more:hover {
   background-color: rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="light"] .dashboard-table-load-more {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+
+[data-theme="light"] .dashboard-table-load-more:hover {
+  background-color: #dbeafe;
 }
 
 /* Dashboard table pagination (shared across admin tables) */
@@ -2184,4 +2266,3 @@
   border: none !important;
   box-shadow: none !important;
 }
-
