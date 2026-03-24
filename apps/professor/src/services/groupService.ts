@@ -95,58 +95,50 @@ export async function createGroup(groupData: CreateGroupData): Promise<Group> {
     // and save its ID to the group's vector_store_id column.
     {
       try {
-        const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
-        if (!openaiApiKey) {
-        } else {
-          // Build unique vector store name: "Vector Store - <group name> - YYMMDDhhmmss"
-          const now = new Date();
-          const pad = (n: number) => n.toString().padStart(2, '0');
-          const year = now.getFullYear().toString().slice(-2); // YY
-          const month = pad(now.getMonth() + 1);               // MM
-          const day = pad(now.getDate());                      // DD
-          const hour = pad(now.getHours());                    // hh
-          const minute = pad(now.getMinutes());                // mm
-          const seconds = pad(now.getSeconds());               // ss
-          const timestamp = `${year}${month}${day}${hour}${minute}${seconds}`;
-          const vectorStoreName = `Vector Store - ${groupData.name} - ${timestamp}`;
-          const response = await fetch('https://api.openai.com/v1/vector_stores', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${openaiApiKey}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              name: vectorStoreName
-            })
-          });
-          if (response.ok) {
-            const vsData = await response.json();
-            const vectorStoreId = vsData?.id;
-            if (vectorStoreId) {
-              const { error: updateError } = await defaultSupabase
-                .from('group')
-                .update({ vector_store_id: vectorStoreId })
-                .eq('group_id', groupData.group_id);
+        const now = new Date();
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        const year = now.getFullYear().toString().slice(-2);
+        const month = pad(now.getMonth() + 1);
+        const day = pad(now.getDate());
+        const hour = pad(now.getHours());
+        const minute = pad(now.getMinutes());
+        const seconds = pad(now.getSeconds());
+        const timestamp = `${year}${month}${day}${hour}${minute}${seconds}`;
+        const vectorStoreName = `Vector Store - ${groupData.name} - ${timestamp}`;
+        const response = await fetch('/api/openai/vector-stores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: vectorStoreName }),
+        });
+        if (response.ok) {
+          const vsData = await response.json();
+          const vectorStoreId = vsData?.id;
+          if (vectorStoreId) {
+            const { error: updateError } = await defaultSupabase
+              .from('group')
+              .update({ vector_store_id: vectorStoreId })
+              .eq('group_id', groupData.group_id);
 
-              if (updateError) {
-              } else {
-                // Also reflect this in the returned group object
-                (data as any).vector_store_id = vectorStoreId;
+            if (updateError) {
+              if (import.meta.env.DEV) {
+                console.warn('[createGroup] Supabase update vector_store_id failed:', updateError.message);
               }
             } else {
+              (data as any).vector_store_id = vectorStoreId;
             }
-          } else {
-            const errorText = await response.text();
-            let errorJson: any;
-            try {
-              errorJson = JSON.parse(errorText);
-            } catch {
-              errorJson = { error: errorText };
-            }
+          } else if (import.meta.env.DEV) {
+            console.warn('[createGroup] OpenAI response missing vector store id', vsData);
+          }
+        } else {
+          const errBody = await response.json().catch(() => ({}));
+          if (import.meta.env.DEV) {
+            console.warn('[createGroup] Vector store API error', response.status, errBody);
           }
         }
       } catch (openaiError) {
-        // Do not throw here; group creation in Supabase has already succeeded
+        if (import.meta.env.DEV) {
+          console.warn('[createGroup] Vector store request failed', openaiError);
+        }
       }
     }
     // NOTE: openai_chat check removed - always creating vector store
@@ -533,87 +525,32 @@ export async function deleteGroupAndAllData(groupId: string): Promise<void> {
       throw e;
     }
 
-    // 10) Always delete OpenAI vector store and associated files (openai_chat check removed)
+    // 10) OpenAI: list → delete each file (Files API uses file_id) → delete vector store (via same-origin proxy; OPENAI_API_KEY on server)
     if (groupData.vector_store_id) {
       try {
-        const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
-        if (!openaiApiKey) {
-        } else {
-          const vectorStoreId = groupData.vector_store_id;
-          
-          // Step 1: Get list of files in the vector store
-          const listFilesUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
-          
-          const listResponse = await fetch(listFilesUrl, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${openaiApiKey}`,
-            },
-          });
-          
-          if (listResponse.ok) {
-            const listData = await listResponse.json();
-            const files = listData?.data || [];
-            
-            // Step 2: Delete each file from OpenAI
-            if (files.length > 0) {
-              let deletedCount = 0;
-              let failedCount = 0;
-              
-              for (const file of files) {
-                const fileId = file.id;
-                if (!fileId) {
-                  continue;
-                }
-                
-                try {
-                  const deleteFileUrl = `https://api.openai.com/v1/files/${fileId}`;
-                  const deleteFileResponse = await fetch(deleteFileUrl, {
-                    method: 'DELETE',
-                    headers: {
-                      'Authorization': `Bearer ${openaiApiKey}`,
-                    },
-                  });
-                  
-                  if (deleteFileResponse.ok) {
-                    const deleteData = await deleteFileResponse.json().catch(() => ({}));
-                    deletedCount++;
-                  } else {
-                    const errorData = await deleteFileResponse.json().catch(() => ({ error: 'Unknown error' }));
-                    failedCount++;
-                  }
-                } catch (fileError) {
-                  failedCount++;
-                }
-              }
-            } else {
+        const vectorStoreId = groupData.vector_store_id;
+        const encVs = encodeURIComponent(vectorStoreId);
+        const listResponse = await fetch(`/api/openai/vector-stores/${encVs}/files`, { method: 'GET' });
+
+        if (listResponse.ok) {
+          const listData = await listResponse.json();
+          const files = listData?.data || [];
+
+          for (const file of files) {
+            const openAiFileId = file.file_id || file.id;
+            if (!openAiFileId) continue;
+            try {
+              await fetch(`/api/openai/files/${encodeURIComponent(openAiFileId)}`, { method: 'DELETE' });
+            } catch {
+              /* continue cleanup */
             }
-          } else {
-            const errorData = await listResponse.json().catch(() => ({ error: 'Unknown error' }));
-            // Continue with vector store deletion even if we couldn't list files
-          }
-          
-          // Step 3: Delete the vector store itself
-          const deleteVectorStoreUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}`;
-          
-          const deleteResponse = await fetch(deleteVectorStoreUrl, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${openaiApiKey}`,
-            },
-          });
-          if (deleteResponse.ok) {
-            const responseData = await deleteResponse.json().catch(() => ({}));
-          } else {
-            const errorData = await deleteResponse.json().catch(() => ({ error: 'Unknown error' }));
-            // Don't throw here - continue with group deletion even if vector store deletion fails
-            // The vector store can be manually cleaned up later if needed
           }
         }
-      } catch (openaiError) {
-        // Don't throw here - continue with group deletion even if vector store deletion fails
+
+        await fetch(`/api/openai/vector-stores/${encVs}`, { method: 'DELETE' });
+      } catch {
+        /* group row delete still proceeds */
       }
-    } else {
     }
 
     // 11) Finally, delete the group row itself
