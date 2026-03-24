@@ -2,6 +2,7 @@
 // In production (Render), environment variables are provided by the platform.
 import dotenv from 'dotenv';
 import express from 'express';
+import axios from 'axios';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -1078,8 +1079,8 @@ app.post('/session', async (req, res) => {
 // Configure multer for memory storage (we'll forward to OpenAI)
 const upload = multer({ storage: multer.memoryStorage() });
 
-// POST /api/openai/files - Proxy endpoint for OpenAI file uploads (to avoid CORS)
-app.post('/api/openai/files', requireAuth, upload.single('file'), async (req, res) => {
+// POST /api/openai/files — proxy uploads (browser cannot call api.openai.com; app auth is Supabase, not Express session)
+app.post('/api/openai/files', upload.single('file'), async (req, res) => {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   
   if (!OPENAI_API_KEY) {
@@ -1091,35 +1092,218 @@ app.post('/api/openai/files', requireAuth, upload.single('file'), async (req, re
   }
 
   try {
-    // Reconstruct FormData for OpenAI
     const FormData = (await import('form-data')).default;
     const formData = new FormData();
     formData.append('purpose', req.body.purpose || 'assistants');
     formData.append('file', req.file.buffer, {
       filename: req.file.originalname,
-      contentType: req.file.mimetype,
+      contentType: req.file.mimetype || 'application/octet-stream',
     });
 
-    // Forward the request to OpenAI
-    const openaiResponse = await fetch('https://api.openai.com/v1/files', {
-      method: 'POST',
+    // Node's native fetch does not reliably stream the `form-data` package body; OpenAI then sees no `file` field.
+    const axiosResponse = await axios.post('https://api.openai.com/v1/files', formData, {
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         ...formData.getHeaders(),
       },
-      body: formData as any,
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+      validateStatus: () => true,
+      responseType: 'json',
     });
 
-    const data = await openaiResponse.json();
-    
-    if (!openaiResponse.ok) {
-      return res.status(openaiResponse.status).json(data);
+    const status = axiosResponse.status;
+    const data =
+      axiosResponse.data && typeof axiosResponse.data === 'object'
+        ? (axiosResponse.data as Record<string, unknown>)
+        : {
+            error: {
+              message:
+                typeof axiosResponse.data === 'string'
+                  ? axiosResponse.data.slice(0, 500)
+                  : `Unexpected response (HTTP ${status})`,
+            },
+          };
+
+    if (status < 200 || status >= 300) {
+      return res.status(status).json(data);
     }
 
     res.json(data);
   } catch (error: any) {
     console.error('Error proxying OpenAI file upload:', error);
     res.status(500).json({ error: 'Failed to upload file to OpenAI', message: error.message });
+  }
+});
+
+// POST /api/openai/vector-stores — create vector store (browser cannot call api.openai.com due to CORS)
+app.post('/api/openai/vector-stores', async (req, res) => {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+  }
+  const name = req.body?.name;
+  if (typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ error: 'name is required' });
+  }
+  try {
+    const openaiResponse = await fetch('https://api.openai.com/v1/vector_stores', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2',
+      },
+      body: JSON.stringify({ name: name.trim() }),
+    });
+    const data = await openaiResponse.json().catch(() => ({}));
+    if (!openaiResponse.ok) {
+      console.error('[OpenAI vector-stores proxy] OpenAI error', openaiResponse.status, data);
+      return res.status(openaiResponse.status).json(data);
+    }
+    res.json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[OpenAI vector-stores proxy]', err);
+    res.status(500).json({ error: 'Failed to create vector store', message });
+  }
+});
+
+const openAiVectorStoreHeaders = (apiKey: string) => ({
+  Authorization: `Bearer ${apiKey}`,
+  'OpenAI-Beta': 'assistants=v2',
+});
+
+// GET /api/openai/vector-stores/:vsId/files
+app.get('/api/openai/vector-stores/:vsId/files', async (req, res) => {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+  }
+  const { vsId } = req.params;
+  const q = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  try {
+    const openaiResponse = await fetch(
+      `https://api.openai.com/v1/vector_stores/${encodeURIComponent(vsId)}/files${q}`,
+      { method: 'GET', headers: openAiVectorStoreHeaders(OPENAI_API_KEY) }
+    );
+    const data = await openaiResponse.json().catch(() => ({}));
+    if (!openaiResponse.ok) {
+      console.error('[OpenAI vs files list]', openaiResponse.status, data);
+      return res.status(openaiResponse.status).json(data);
+    }
+    res.json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[OpenAI vs files list]', err);
+    res.status(500).json({ error: 'Failed to list vector store files', message });
+  }
+});
+
+// POST /api/openai/vector-stores/:vsId/files — attach file (body forwarded to OpenAI)
+app.post('/api/openai/vector-stores/:vsId/files', async (req, res) => {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+  }
+  const { vsId } = req.params;
+  try {
+    const openaiResponse = await fetch(
+      `https://api.openai.com/v1/vector_stores/${encodeURIComponent(vsId)}/files`,
+      {
+        method: 'POST',
+        headers: {
+          ...openAiVectorStoreHeaders(OPENAI_API_KEY),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(req.body ?? {}),
+      }
+    );
+    const data = await openaiResponse.json().catch(() => ({}));
+    if (!openaiResponse.ok) {
+      console.error('[OpenAI vs attach file]', openaiResponse.status, data);
+      return res.status(openaiResponse.status).json(data);
+    }
+    res.json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[OpenAI vs attach file]', err);
+    res.status(500).json({ error: 'Failed to attach file to vector store', message });
+  }
+});
+
+// DELETE /api/openai/vector-stores/:vsId/files/:fileId
+app.delete('/api/openai/vector-stores/:vsId/files/:fileId', async (req, res) => {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+  }
+  const { vsId, fileId } = req.params;
+  try {
+    const openaiResponse = await fetch(
+      `https://api.openai.com/v1/vector_stores/${encodeURIComponent(vsId)}/files/${encodeURIComponent(fileId)}`,
+      { method: 'DELETE', headers: openAiVectorStoreHeaders(OPENAI_API_KEY) }
+    );
+    const data = await openaiResponse.json().catch(() => ({}));
+    if (!openaiResponse.ok) {
+      console.error('[OpenAI vs remove file]', openaiResponse.status, data);
+      return res.status(openaiResponse.status).json(data);
+    }
+    res.json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[OpenAI vs remove file]', err);
+    res.status(500).json({ error: 'Failed to remove file from vector store', message });
+  }
+});
+
+// DELETE /api/openai/vector-stores/:vsId
+app.delete('/api/openai/vector-stores/:vsId', async (req, res) => {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+  }
+  const { vsId } = req.params;
+  try {
+    const openaiResponse = await fetch(
+      `https://api.openai.com/v1/vector_stores/${encodeURIComponent(vsId)}`,
+      { method: 'DELETE', headers: openAiVectorStoreHeaders(OPENAI_API_KEY) }
+    );
+    const data = await openaiResponse.json().catch(() => ({}));
+    if (!openaiResponse.ok) {
+      console.error('[OpenAI vs delete]', openaiResponse.status, data);
+      return res.status(openaiResponse.status).json(data);
+    }
+    res.json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[OpenAI vs delete]', err);
+    res.status(500).json({ error: 'Failed to delete vector store', message });
+  }
+});
+
+// DELETE /api/openai/files/:fileId
+app.delete('/api/openai/files/:fileId', async (req, res) => {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY environment variable is not set' });
+  }
+  const { fileId } = req.params;
+  try {
+    const openaiResponse = await fetch(
+      `https://api.openai.com/v1/files/${encodeURIComponent(fileId)}`,
+      { method: 'DELETE', headers: { Authorization: `Bearer ${OPENAI_API_KEY}` } }
+    );
+    const data = await openaiResponse.json().catch(() => ({}));
+    if (!openaiResponse.ok) {
+      console.error('[OpenAI file delete]', openaiResponse.status, data);
+      return res.status(openaiResponse.status).json(data);
+    }
+    res.json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[OpenAI file delete]', err);
+    res.status(500).json({ error: 'Failed to delete OpenAI file', message });
   }
 });
 

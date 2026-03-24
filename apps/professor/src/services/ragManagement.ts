@@ -19,6 +19,73 @@ export interface FileUploadResult {
   message: string;
   fileName?: string;
   error?: string;
+  openaiFileId?: string;
+}
+
+async function deleteOpenAIFileViaProxy(fileId: string): Promise<void> {
+  try {
+    await fetch(`/api/openai/files/${encodeURIComponent(fileId)}`, { method: 'DELETE' });
+  } catch {
+    /* best-effort rollback */
+  }
+}
+
+/** Upload one file to OpenAI via same-origin API (OPENAI_API_KEY on server). */
+export async function uploadFileToOpenAIViaProxy(file: File): Promise<
+  { ok: true; id: string } | { ok: false; message: string }
+> {
+  try {
+    const formData = new FormData();
+    formData.append('purpose', 'assistants');
+    formData.append('file', file, file.name);
+
+    const res = await fetch('/api/openai/files', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const raw = await res.text();
+    let body: Record<string, unknown> = {};
+    try {
+      body = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    } catch {
+      return {
+        ok: false,
+        message: raw?.slice(0, 400) || `Upload API returned non-JSON (HTTP ${res.status}).`,
+      };
+    }
+
+    if (!res.ok) {
+      const err = body.error as { message?: string } | string | undefined;
+      const msg =
+        typeof err === 'object' && err?.message
+          ? err.message
+          : typeof err === 'string'
+            ? err
+            : (body.message as string) ||
+              `OpenAI file upload failed (HTTP ${res.status}).`;
+      return { ok: false, message: msg };
+    }
+
+    const id = body.id;
+    if (typeof id !== 'string' || !id) {
+      return {
+        ok: false,
+        message: 'OpenAI did not return a file id. Check OPENAI_API_KEY and server logs.',
+      };
+    }
+    return { ok: true, id };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+      return {
+        ok: false,
+        message:
+          'Could not reach /api/openai/files. Start the professor API server (e.g. port 3001) with Vite dev proxy, or use a deployment that serves the API on the same origin.',
+      };
+    }
+    return { ok: false, message: msg };
+  }
 }
 
 export interface RAGFile {
@@ -407,15 +474,39 @@ async function getUniqueFileName(supabase: any, originalName: string): Promise<s
 }
 
 /**
- * Upload files to Supabase Storage
+ * Upload files: OpenAI Files API first (required), then Supabase storage + `files` row.
+ * On any failure after OpenAI upload, rolls back OpenAI file and/or storage.
  */
 export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadResult[]> {
   const results: FileUploadResult[] = [];
   const supabase = getSupabaseClient();
-  
+  const { getSession } = await import('./auth');
+  const { getGroupIdFromUrl } = await import('../utils/navigation');
+  const session = getSession();
+  const groupId = getGroupIdFromUrl();
+
+  if (!groupId) {
+    const err =
+      'No group selected. Open Knowledge Management from the admin dashboard with a group (URL must include ?group=...).';
+    return files.map((f) => ({
+      success: false,
+      message: 'Upload failed',
+      fileName: f.name,
+      error: err,
+    }));
+  }
+  if (!session?.userId) {
+    const err = 'You must be signed in to upload files.';
+    return files.map((f) => ({
+      success: false,
+      message: 'Upload failed',
+      fileName: f.name,
+      error: err,
+    }));
+  }
+
   for (const file of files) {
     try {
-      // Validate file first
       const validation = validateFile(file);
       if (!validation.valid) {
         results.push({
@@ -427,138 +518,94 @@ export async function uploadFilesToSupabase(files: File[]): Promise<FileUploadRe
         continue;
       }
 
-      // Sanitize filename to avoid unicode issues
-      let sanitizedName = sanitizeFileName(file.name);
+      const sanitizedName = sanitizeFileName(file.name);
       let contentType = file.type || 'application/octet-stream';
-      
-      // Normalize .md files to always use text/markdown (not text/x-markdown or other variants)
       if (sanitizedName.toLowerCase().endsWith('.md')) {
         contentType = 'text/markdown';
       }
-      
-      // Set content type for .txt files
       if (sanitizedName.toLowerCase().endsWith('.txt')) {
         contentType = 'text/plain';
       }
-      
-      // Show warning if filename was changed (only for sanitization, not conversion)
-      
-      // Get unique filename (macOS style - add (1), (2) if duplicate)
+
       const uniqueFileName = await getUniqueFileName(supabase, sanitizedName);
       const filePath = `files/${uniqueFileName}`;
 
-
-      // Create a new File object with updated content type if needed
       let fileToUpload: File = file;
       if (sanitizedName.toLowerCase().endsWith('.md') && file.type !== 'text/markdown') {
-        // Create a new File with markdown content type (normalize text/x-markdown to text/markdown)
         fileToUpload = new File([file], uniqueFileName, { type: 'text/markdown' });
       } else if (sanitizedName.toLowerCase().endsWith('.txt') && file.type !== 'text/plain') {
-        // Create a new File with plain text content type for .txt files
         fileToUpload = new File([file], uniqueFileName, { type: 'text/plain' });
       }
 
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
+      const openai = await uploadFileToOpenAIViaProxy(fileToUpload);
+      if (!openai.ok) {
+        results.push({
+          success: false,
+          message: 'OpenAI upload failed',
+          fileName: file.name,
+          error: openai.message,
+        });
+        continue;
+      }
+      const openaiFileId = openai.id;
+
+      const { error: storageError } = await supabase.storage
         .from(SUPABASE_BUCKET)
         .upload(filePath, fileToUpload, {
           cacheControl: '3600',
           upsert: false,
-          contentType: contentType, // Explicitly set content type
+          contentType,
         });
 
-      if (error) {
+      if (storageError) {
+        await deleteOpenAIFileViaProxy(openaiFileId);
         results.push({
           success: false,
-          message: 'Failed to upload file',
+          message: 'Storage upload failed',
           fileName: file.name,
-          error: error.message,
+          error: storageError.message,
         });
         continue;
       }
 
+      const { error: dbError } = await supabase.from('files').insert([
+        {
+          file_name: uniqueFileName,
+          group_id: groupId,
+          user_id: session.userId,
+          file_path: filePath,
+          file_size: file.size,
+          file_type: contentType,
+          is_indexed: false,
+          openai_file_id: openaiFileId,
+        },
+      ]);
 
-      // Save file metadata to database table with group_id
-      const { getSession } = await import('./auth');
-      const { getGroupIdFromUrl } = await import('../utils/navigation');
-      const session = getSession();
-      const groupId = getGroupIdFromUrl();
-      
-      // Always upload to OpenAI (openai_chat check removed)
-      let openaiFileId: string | null = null;
-      if (groupId) {
-        try {
-          // NOTE: openai_chat check removed - always using OpenAI route
-            // Upload to OpenAI API
-            try {
-              const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
-              if (openaiApiKey) {
-                const formData = new FormData();
-                formData.append('purpose', 'assistants');
-                formData.append('file', file); // Use original file for OpenAI
-                
-                const openaiResponse = await fetch('https://api.openai.com/v1/files', {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${openaiApiKey}`,
-                  },
-                  body: formData,
-                });
-                
-                if (openaiResponse.ok) {
-                  const openaiData = await openaiResponse.json();
-                  openaiFileId = openaiData.id;
-                } else {
-                  // Don't fail the entire upload if OpenAI upload fails
-                }
-              }
-            } catch (openaiError: any) {
-              // Don't fail the entire upload if OpenAI upload fails
-            }
-          // NOTE: OpenAI Chat disabled route commented out - always using OpenAI route
-          // } else {
-          //   
-          // }
-        } catch (error) {
-          // Continue with normal upload if OpenAI upload fails
-        }
-      }
-      
-      if (groupId && session?.userId) {
-        try {
-          const { error: dbError } = await supabase
-            .from('files')
-            .insert([{
-              file_name: uniqueFileName,
-              group_id: groupId,
-              user_id: session.userId,
-              file_path: filePath,
-              file_size: file.size,
-              file_type: contentType, // Use the determined content type (text/markdown for .txt files)
-              is_indexed: false,
-              openai_file_id: openaiFileId
-            }]);
-          
-          if (dbError) {
-            // Don't fail the upload if DB insert fails
-          }
-        } catch (dbErr) {
-          // Don't fail the upload if DB insert fails
-        }
+      if (dbError) {
+        await supabase.storage.from(SUPABASE_BUCKET).remove([filePath]);
+        await deleteOpenAIFileViaProxy(openaiFileId);
+        results.push({
+          success: false,
+          message: 'Database save failed',
+          fileName: file.name,
+          error: dbError.message,
+        });
+        continue;
       }
 
       results.push({
         success: true,
         message: 'File uploaded successfully',
         fileName: uniqueFileName,
+        openaiFileId,
       });
-
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
       results.push({
         success: false,
         message: 'Failed to upload file',
         fileName: file.name,
-        error: error.message || 'Unknown error',
+        error: msg,
       });
     }
   }
@@ -701,23 +748,15 @@ export async function fetchFilesFromSupabase(
       // Always use OpenAI vector store to determine sync status (openai_chat check removed)
       if (vectorStoreId) {
         try {
-          const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
-          if (openaiApiKey) {
-            const listUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
-
-            const response = await fetch(listUrl, {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${openaiApiKey}`,
-              },
-            });
+          const encVs = encodeURIComponent(vectorStoreId);
+          const response = await fetch(`/api/openai/vector-stores/${encVs}/files`, { method: 'GET' });
 
             if (response.ok) {
               const data = await response.json();
               const filesArray: any[] = Array.isArray(data?.data) ? data.data : [];
               const indexedIds = new Set<string>(
                 filesArray
-                  .map((f: any) => f?.id)
+                  .map((f: any) => f?.file_id || f?.id)
                   .filter((id: any) => typeof id === 'string' && id.length > 0)
               );
 
@@ -774,7 +813,6 @@ export async function fetchFilesFromSupabase(
               }
 
             }
-          }
         } catch (openaiError) {
           // If OpenAI check fails, leave existing syncStatus values (based on is_indexed) as-is
         }
@@ -1043,84 +1081,36 @@ export async function deleteFileFromSupabase(fileName: string): Promise<{ succes
           vectorStoreId = groupData.vector_store_id || undefined;
         }
 
-        // Always delete from OpenAI if we have the necessary IDs
         if (openaiFileId && vectorStoreId) {
           try {
-            const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
-            if (openaiApiKey) {
-              // Step 1: List files in vector store to find the vector store file entry
-              const listFilesUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
+            const encVs = encodeURIComponent(vectorStoreId);
+            const listFilesResponse = await fetch(`/api/openai/vector-stores/${encVs}/files`, {
+              method: 'GET',
+            });
 
-              const listFilesResponse = await fetch(listFilesUrl, {
-                method: 'GET',
-                headers: {
-                  'Authorization': `Bearer ${openaiApiKey}`,
-                },
-              });
+            let vectorStoreFileId: string | null = null;
 
-              let vectorStoreFileId: string | null = null;
-
-              if (listFilesResponse.ok) {
-                const listFilesData = await listFilesResponse.json();
-                const files = listFilesData?.data || [];
-
-                // Find the file that matches our openai_file_id
-                // The file object in the vector store has an 'id' field that should match openai_file_id
-                const matchingFile = files.find((f: any) => f.id === openaiFileId || f.file_id === openaiFileId);
-                
-                if (matchingFile) {
-                  vectorStoreFileId = matchingFile.id;
-                } else {
-                }
-              } else {
-                const errorData = await listFilesResponse.json().catch(() => ({ error: 'Unknown error' }));
-              }
-
-              // Step 2: Remove file from OpenAI vector store (if found)
-              if (vectorStoreFileId) {
-                const removeFromVectorStoreUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files/${vectorStoreFileId}`;
-
-                const removeFromVectorStoreResponse = await fetch(removeFromVectorStoreUrl, {
-                  method: 'DELETE',
-                  headers: {
-                    'Authorization': `Bearer ${openaiApiKey}`,
-                  },
-                });
-
-
-                if (removeFromVectorStoreResponse.ok) {
-                  const removeData = await removeFromVectorStoreResponse.json().catch(() => ({}));
-                } else {
-                  const errorData = await removeFromVectorStoreResponse.json().catch(() => ({ error: 'Unknown error' }));
-                  // Continue with deletion even if this fails
-                }
-              } else {
-              }
-
-              // Step 3: Delete file from OpenAI
-              const deleteFileUrl = `https://api.openai.com/v1/files/${openaiFileId}`;
-
-              const deleteFileResponse = await fetch(deleteFileUrl, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': `Bearer ${openaiApiKey}`,
-                },
-              });
-
-
-              if (deleteFileResponse.ok) {
-                const deleteData = await deleteFileResponse.json().catch(() => ({}));
-              } else {
-                const errorData = await deleteFileResponse.json().catch(() => ({ error: 'Unknown error' }));
-                // Continue with Supabase deletion even if this fails
+            if (listFilesResponse.ok) {
+              const listFilesData = await listFilesResponse.json();
+              const files = listFilesData?.data || [];
+              const matchingFile = files.find(
+                (f: any) => f.file_id === openaiFileId || f.id === openaiFileId
+              );
+              if (matchingFile?.id) {
+                vectorStoreFileId = matchingFile.id;
               }
             }
-          } catch (openaiError: any) {
-            // Continue with Supabase deletion even if OpenAI deletion fails
-          }
-        } else {
-          if (!openaiFileId) {
-          } else if (!vectorStoreId) {
+
+            if (vectorStoreFileId) {
+              await fetch(
+                `/api/openai/vector-stores/${encVs}/files/${encodeURIComponent(vectorStoreFileId)}`,
+                { method: 'DELETE' }
+              );
+            }
+
+            await fetch(`/api/openai/files/${encodeURIComponent(openaiFileId)}`, { method: 'DELETE' });
+          } catch {
+            /* Supabase deletion still runs */
           }
         }
       } catch (error) {
@@ -1738,16 +1728,6 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
           message: `File does not have an OpenAI file ID. Please re-upload the file with OpenAI Chat enabled.`,
         };
       }
-      // Make API call to add file to OpenAI vector store
-      const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
-      if (!openaiApiKey) {
-        return {
-          success: false,
-          message: 'OpenAI API key not configured. Please set VITE_OPENAI_API_KEY in your .env file.',
-        };
-      }
-      
-      // Get vector_store_id from group data
       if (!vectorStoreId) {
         return {
           success: false,
@@ -1782,53 +1762,45 @@ export async function indexFileToVector(fileName: string): Promise<{ success: bo
       } catch (error) {
       }
       
-      const openaiUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
-      // Build request body with optional chunking_strategy
-      const requestBody: any = {
-        file_id: openaiFileId
+      const encVs = encodeURIComponent(vectorStoreId);
+      const requestBody: Record<string, unknown> = {
+        file_id: openaiFileId,
       };
-      
-      // Add chunking_strategy if both chunk_size and chunk_overlap are available
+
       if (chunkSize !== null && chunkOverlap !== null && chunkSize > 0 && chunkOverlap >= 0) {
         requestBody.chunking_strategy = {
           type: 'static',
           static: {
             max_chunk_size_tokens: chunkSize,
-            chunk_overlap_tokens: chunkOverlap
-          }
-        };
-      } else {
-      }
-      
-      const startTime = Date.now();
-      try {
-        const response = await fetch(openaiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openaiApiKey}`,
-            'Content-Type': 'application/json',
+            chunk_overlap_tokens: chunkOverlap,
           },
+        };
+      }
+
+      try {
+        const response = await fetch(`/api/openai/vector-stores/${encVs}/files`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
         });
-        
-        const duration = Date.now() - startTime;
         if (response.ok) {
-          const responseData = await response.json();
           return {
             success: true,
             message: `File added to OpenAI vector store successfully.`,
           };
-        } else {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          return {
-            success: false,
-            message: `Failed to add file to OpenAI vector store: ${errorData.error?.message || 'Unknown error'}`,
-          };
         }
-      } catch (openaiError: any) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' })) as {
+          error?: { message?: string };
+        };
         return {
           success: false,
-          message: `Error adding file to OpenAI vector store: ${openaiError?.message || 'Unknown error'}`,
+          message: `Failed to add file to OpenAI vector store: ${errorData.error?.message || JSON.stringify(errorData)}`,
+        };
+      } catch (openaiError: unknown) {
+        const msg = openaiError instanceof Error ? openaiError.message : 'Unknown error';
+        return {
+          success: false,
+          message: `Error adding file to OpenAI vector store: ${msg}`,
         };
       }
     }
@@ -2390,16 +2362,6 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
     // Always use OpenAI vector store to determine sync status
     if (vectorStoreId) {
       try {
-        const openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
-        if (!openaiApiKey) {
-          return {
-            success: false,
-            syncStatus: 'error',
-            message: 'OpenAI API key not configured. Please set VITE_OPENAI_API_KEY in your .env file.',
-          };
-        }
-
-        // Look up this file's OpenAI file ID in the files table
         const { data: fileRecord, error: fileError } = await supabase
           .from('files')
           .select('openai_file_id, is_indexed')
@@ -2424,16 +2386,10 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
           };
         }
 
-        const listUrl = `https://api.openai.com/v1/vector_stores/${vectorStoreId}/files`;
-        const response = await fetch(listUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${openaiApiKey}`,
-          },
-        });
+        const encVs = encodeURIComponent(vectorStoreId);
+        const response = await fetch(`/api/openai/vector-stores/${encVs}/files`, { method: 'GET' });
 
         if (!response.ok) {
-          const errorText = await response.text();
           return {
             success: false,
             syncStatus: 'error',
@@ -2445,7 +2401,7 @@ export async function checkFileSyncStatus(fileName: string): Promise<{
         const filesArray: any[] = Array.isArray(data?.data) ? data.data : [];
         const indexedIds = new Set<string>(
           filesArray
-            .map((f: any) => f?.id)
+            .map((f: any) => f?.file_id || f?.id)
             .filter((id: any) => typeof id === 'string' && id.length > 0)
         );
 

@@ -147,76 +147,37 @@ const WebCrawler: React.FC = () => {
           // Upload to Supabase and OpenAI
           const uploadResults = await uploadFilesToSupabase([fileObj]);
           
-          if (uploadResults.length > 0 && uploadResults[0].success) {
-            // Get the uploaded file info from database
-            const { getSupabaseClient } = await import('../../services/supabaseUserSpecific');
-            const supabase = getSupabaseClient();
-            const groupId = getGroupIdFromUrl();
-            const session = getSession();
-            
-            if (groupId && session) {
-              // Find the file that was just uploaded
-              // Get the actual uploaded filename from the upload result
-              const uploadedFileName = uploadResults[0].fileName || fileName;
-              const baseFileName = uploadedFileName.replace(/\.(txt|md)$/i, '').replace(/\s*\(\d+\)$/, '');
-              
-              const { data: uploadedFiles, error: queryError } = await supabase
-                .from('files')
-                .select('file_name, openai_file_id, file_path')
-                .eq('group_id', groupId)
-                .eq('user_id', session.userId)
-                .order('created_at', { ascending: false })
-                .limit(20);
-              
-              if (uploadedFiles && uploadedFiles.length > 0) {
-                // Find matching file - try exact match first, then base name match
-                let uploadedFile = uploadedFiles.find(f => 
-                  f.file_name.toLowerCase() === uploadedFileName.toLowerCase()
-                );
-                
-                if (!uploadedFile) {
-                  // Try base name match (without extension and duplicate suffix)
-                  uploadedFile = uploadedFiles.find(f => {
-                    const dbBaseName = f.file_name.replace(/\.(txt|md)$/i, '').replace(/\s*\(\d+\)$/, '');
-                    return dbBaseName.toLowerCase() === baseFileName.toLowerCase();
-                  });
-                }
-                
-                // Fallback to most recent if still not found
-                if (!uploadedFile) {
-                  uploadedFile = uploadedFiles[0];
-                }
-                
-                transformedFiles.push({
-                  fileName: fileName,
-                  content: item.content,
-                  url: item.url,
-                  openaiFileId: uploadedFile.openai_file_id,
-                  filePath: uploadedFile.file_path,
-                  dbFileName: uploadedFile.file_name
-                });
-              } else {
-                // If database query fails, still add file but without IDs
-                transformedFiles.push({
-                  fileName: fileName,
-                  content: item.content,
-                  url: item.url
-                });
-              }
-            } else {
-              // If no group/session, still add file but without IDs
-              transformedFiles.push({
-                fileName: fileName,
-                content: item.content,
-                url: item.url
-              });
-            }
-          } else {
-            // Upload failed, but still add to list for user to see
+          if (uploadResults.length > 0 && !uploadResults[0].success) {
+            setError(
+              uploadResults[0].error ||
+                uploadResults[0].message ||
+                'Upload failed (OpenAI file id required).'
+            );
             transformedFiles.push({
               fileName: fileName,
               content: item.content,
-              url: item.url
+              url: item.url,
+            });
+            continue;
+          }
+
+          if (uploadResults.length > 0 && uploadResults[0].success) {
+            const ur = uploadResults[0];
+            const dbName = ur.fileName || fileName;
+            transformedFiles.push({
+              fileName: fileName,
+              content: item.content,
+              url: item.url,
+              openaiFileId: ur.openaiFileId,
+              filePath: `files/${dbName}`,
+              dbFileName: dbName,
+            });
+          } else if (uploadResults.length === 0) {
+            setError('Upload returned no result.');
+            transformedFiles.push({
+              fileName: fileName,
+              content: item.content,
+              url: item.url,
             });
           }
         } catch (uploadError) {

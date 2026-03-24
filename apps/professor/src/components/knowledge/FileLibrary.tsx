@@ -111,6 +111,7 @@ const FileLibrary: React.FC = () => {
   }, [indexRequestTimes]);
   const [showIndexingModal, setShowIndexingModal] = useState(false);
   const [showRetrievalModal, setShowRetrievalModal] = useState(false);
+  const [uploadFailureModalText, setUploadFailureModalText] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set()); // file.id를 저장
   const [chunkSize, setChunkSize] = useState<string>('');
   const [chunkOverlap, setChunkOverlap] = useState<string>('');
@@ -1029,28 +1030,44 @@ const FileLibrary: React.FC = () => {
   const uploadFiles = async (files: File[]) => {
     setIsUploading(true);
     setUploadResults([]);
+    setUploadFailureModalText(null);
 
     try {
       const results = await uploadFilesToSupabase(files);
       setUploadResults(results);
 
-      // Show success/error messages
-      const successCount = results.filter(r => r.success).length;
-      const failCount = results.filter(r => !r.success).length;
-      const failedResults = results.filter(r => !r.success);
+      const successCount = results.filter((r) => r.success).length;
+      const failCount = results.filter((r) => !r.success).length;
+      const failedResults = results.filter((r) => !r.success);
 
       if (successCount > 0) {
         showToast(t('knowledge.uploadSuccess', { count: successCount }), 'success');
       }
       if (failCount > 0) {
-        const errorMessages = failedResults.map(r => r.message).join(', ');
-        showToast(t('knowledge.uploadFailed', { count: failCount, errors: errorMessages }), 'error');
+        const detail = failedResults
+          .map((r) => `${r.fileName ?? 'file'}: ${r.error || r.message}`)
+          .join('\n');
+        setUploadFailureModalText(
+          failCount === 1
+            ? `${failedResults[0].fileName ?? 'File'}\n\n${failedResults[0].error || failedResults[0].message}`
+            : `${failCount} file(s) could not be uploaded (OpenAI + storage + database must all succeed).\n\n${detail}`
+        );
+        showToast(
+          t('knowledge.uploadFailed', {
+            count: failCount,
+            errors: detail.slice(0, 100) + (detail.length > 100 ? '…' : ''),
+          }),
+          'error'
+        );
       }
-      
-      // Immediately refresh the file list to show new files
-      await loadFiles();
-      
-    } catch (error) {
+
+      if (successCount > 0) {
+        await loadFiles();
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Upload failed';
+      setUploadFailureModalText(msg);
+      showToast(msg, 'error');
     } finally {
       setIsUploading(false);
     }
@@ -2210,7 +2227,49 @@ const FileLibrary: React.FC = () => {
           </div>
         </div>
       )}
-      
+
+      {uploadFailureModalText && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4"
+          onClick={() => setUploadFailureModalText(null)}
+        >
+          <div
+            className="rounded-xl shadow-2xl p-6 max-w-lg w-full border-2 max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'var(--card, #2f2f2f)',
+              borderColor: 'var(--admin-border, #444)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold" style={{ color: '#f87171' }}>
+                Upload failed
+              </h3>
+              <button
+                type="button"
+                onClick={() => setUploadFailureModalText(null)}
+                className="rounded-full p-2"
+                style={{ color: 'var(--admin-text-muted)' }}
+                aria-label="Close"
+              >
+                <IconX size={20} />
+              </button>
+            </div>
+            <p className="text-sm whitespace-pre-wrap break-words" style={{ color: 'var(--admin-text, #e5e5e5)' }}>
+              {uploadFailureModalText}
+            </p>
+            <button
+              type="button"
+              onClick={() => setUploadFailureModalText(null)}
+              className="mt-6 w-full py-2 rounded-lg font-medium text-white"
+              style={{ backgroundColor: '#3b82f6' }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
