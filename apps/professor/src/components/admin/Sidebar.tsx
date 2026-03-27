@@ -523,7 +523,7 @@ export default function AdminSidebar({
               onClick={() => navigate(withGroupParam('/admin/ontology-management'))}
             >
               <IconBrain size={18} />
-              <span>Ontology</span>
+              <span>Ontology Management</span>
             </button>
           </nav>
         </div>

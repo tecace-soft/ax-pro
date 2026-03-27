@@ -181,6 +181,10 @@ export function useOntologySavedBrowse(groupId: string, auth?: OntologyRequestAu
     void loadProperties();
   }, [subTab, loadProperties]);
 
+  const refreshAll = useCallback(async () => {
+    await Promise.all([loadEntities(), loadAliases(), loadRelationships(), loadProperties()]);
+  }, [loadEntities, loadAliases, loadRelationships, loadProperties]);
+
   return {
     subTab,
     setSubTab,
@@ -212,5 +216,6 @@ export function useOntologySavedBrowse(groupId: string, auth?: OntologyRequestAu
     refreshAliases: loadAliases,
     refreshRelationships: loadRelationships,
     refreshProperties: loadProperties,
+    refreshAll,
   };
 }

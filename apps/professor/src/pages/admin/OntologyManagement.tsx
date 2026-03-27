@@ -23,7 +23,7 @@ export default function OntologyManagement() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [result, setResult] = useState<OntologyExtractPreviewResponse | null>(null);
+  const [previewDraft, setPreviewDraft] = useState<OntologyExtractPreviewResponse | null>(null);
   const [saveResult, setSaveResult] = useState<OntologyApproveAndSaveResponse | null>(null);
 
   const groupId = useMemo(() => searchParams.get('group') || '', [searchParams]);
@@ -58,9 +58,9 @@ export default function OntologyManagement() {
         },
         authContext
       );
-      setResult(preview);
+      setPreviewDraft(JSON.parse(JSON.stringify(preview)) as OntologyExtractPreviewResponse);
     } catch (e) {
-      setResult(null);
+      setPreviewDraft(null);
       setError(e instanceof Error ? e.message : 'Failed to extract ontology preview');
     } finally {
       setIsLoading(false);
@@ -68,7 +68,7 @@ export default function OntologyManagement() {
   };
 
   const onApproveAndSave = async () => {
-    if (!hasGroup || !hasUserId || !result || busy) return;
+    if (!hasGroup || !hasUserId || !previewDraft || busy) return;
     setIsSaving(true);
     setSaveError(null);
     setSaveResult(null);
@@ -77,13 +77,13 @@ export default function OntologyManagement() {
         {
           group_id: String(groupId),
           source_type: 'manual_entry',
-          source_text: result.source_text.trim(),
+          source_text: previewDraft.source_text.trim(),
           created_by: createdByUserId,
-          entities: result.entities,
-          aliases: result.aliases,
-          relationships: result.relationships,
-          properties: result.properties,
-          warnings: result.warnings,
+          entities: previewDraft.entities,
+          aliases: previewDraft.aliases,
+          relationships: previewDraft.relationships,
+          properties: previewDraft.properties,
+          warnings: previewDraft.warnings,
         },
         authContext
       );
@@ -149,7 +149,8 @@ export default function OntologyManagement() {
             onApproveAndSave={onApproveAndSave}
             error={error}
             saveError={saveError}
-            result={result}
+            previewDraft={previewDraft}
+            setPreviewDraft={setPreviewDraft}
             saveResult={saveResult}
           />
         )}

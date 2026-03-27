@@ -163,6 +163,22 @@ export interface OntologyListResponse {
   count: number;
 }
 
+/** List row `id` may be uuid string or int8 serialized as number (PostgREST / JSON). */
+export function normalizeOntologyId(raw: unknown): string | null {
+  if (raw == null) return null;
+  if (typeof raw === 'string') {
+    const s = raw.trim();
+    return s ? s : null;
+  }
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return String(Math.trunc(raw));
+  }
+  if (typeof raw === 'bigint') {
+    return raw.toString();
+  }
+  return null;
+}
+
 async function ontologyGet(pathWithQuery: string, authContext?: OntologyRequestAuthContext): Promise<OntologyListResponse> {
   const res = await fetch(pathWithQuery, {
     method: 'GET',
@@ -216,6 +232,58 @@ export async function fetchOntologyPropertiesList(
   if (params.q?.trim()) sp.set('q', params.q.trim());
   if (params.include_deprecated) sp.set('include_deprecated', 'true');
   return ontologyGet(`/api/ontology/properties?${sp.toString()}`, authContext);
+}
+
+export interface EntityDeleteImpactResponse {
+  group_id: string;
+  entity_id: string;
+  cascade: {
+    aliases: number;
+    relationships: number;
+    properties: number;
+  };
+}
+
+export async function fetchEntityDeleteImpact(
+  params: { group_id: string; entity_id: string },
+  authContext?: OntologyRequestAuthContext
+): Promise<EntityDeleteImpactResponse> {
+  const sp = new URLSearchParams({ group_id: params.group_id, entity_id: params.entity_id });
+  const res = await fetch(`/api/ontology/entity-delete-impact?${sp.toString()}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: ontologyHeaders(authContext),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = formatOntologyFailureMessage(res.status, data, 'Failed to load delete impact');
+    throw new OntologyApiError(res.status, message, data);
+  }
+  return data as EntityDeleteImpactResponse;
+}
+
+export type OntologyDeleteResource = 'entity' | 'alias' | 'relationship' | 'property';
+
+export async function deleteOntologySavedRow(
+  payload: { resource: OntologyDeleteResource; group_id: string; id: unknown },
+  authContext?: OntologyRequestAuthContext
+): Promise<{ deleted: true }> {
+  const id = normalizeOntologyId(payload.id);
+  if (!id) {
+    throw new OntologyApiError(400, 'Invalid or missing id', undefined);
+  }
+  const res = await fetch('/api/ontology/delete', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...ontologyHeaders(authContext) },
+    body: JSON.stringify({ resource: payload.resource, group_id: payload.group_id, id }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = formatOntologyFailureMessage(res.status, data, 'Delete failed');
+    throw new OntologyApiError(res.status, message, data);
+  }
+  return data as { deleted: true };
 }
 
 /**

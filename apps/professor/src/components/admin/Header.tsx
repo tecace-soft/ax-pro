@@ -243,7 +243,7 @@ export default function AdminHeader({ performanceScore, performanceDate, current
                 }}
               >
                 <IconBrain size={16} />
-                <span style={{ marginLeft: 8, whiteSpace: 'nowrap' }}>Ontology</span>
+                <span style={{ marginLeft: 8, whiteSpace: 'nowrap' }}>Ontology Management</span>
               </button>
               <button
                 onClick={() => handleNavAction('settings')}

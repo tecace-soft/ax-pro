@@ -25,6 +25,13 @@ import {
   resolveOntologyForUserMessage,
   validateResolveQueryBody,
 } from '../services/ontologyResolveQuery.ts';
+import {
+  deleteOntologyRow,
+  getEntityDeleteImpact,
+  OntologyDeleteError,
+  parseOntologyId,
+  type OntologyDeleteResource,
+} from '../services/ontologyDelete.ts';
 
 export interface OntologyRouterDeps {
   /** Cookie demo auth + admin role (same pattern as server/index.ts). */
@@ -138,6 +145,93 @@ export function createOntologyRouter(deps: OntologyRouterDeps): Router {
   router.get('/aliases', requireAdmin, listHandler('aliases'));
   router.get('/relationships', requireAdmin, listHandler('relationships'));
   router.get('/properties', requireAdmin, listHandler('properties'));
+
+  router.get('/entity-delete-impact', requireAdmin, async (req, res) => {
+    const missing = missingForOntologyPersist();
+    if (missing.length > 0) {
+      return res.status(503).json({
+        error: 'Ontology persistence is not configured',
+        missingEnv: missing,
+      });
+    }
+
+    const parsed = parseOntologyListBaseQuery(req.query as Record<string, unknown>);
+    if (!parsed.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: parsed.errors });
+    }
+
+    const entity_id = parseOntologyId(req.query.entity_id);
+    if (!entity_id) {
+      return res.status(400).json({ error: 'Validation failed', details: ['entity_id query parameter is required'] });
+    }
+
+    if (!listGroupIdMatchesHeader(req, parsed.group_id)) {
+      return res.status(403).json({ error: 'Forbidden', details: 'group_id must match x-ax-group-id header' });
+    }
+
+    try {
+      const impact = await getEntityDeleteImpact(parsed.group_id, entity_id);
+      return res.json(impact);
+    } catch (err: unknown) {
+      console.error('[ontology/entity-delete-impact]', err);
+      if (err instanceof OntologyDeleteError) {
+        return res.status(502).json({ error: 'Impact query failed', code: err.code, message: err.message });
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ error: 'Impact query failed', message });
+    }
+  });
+
+  router.post('/delete', requireAdmin, async (req, res) => {
+    const missing = missingForOntologyPersist();
+    if (missing.length > 0) {
+      return res.status(503).json({
+        error: 'Ontology persistence is not configured',
+        missingEnv: missing,
+      });
+    }
+
+    const body = req.body as Record<string, unknown> | undefined;
+    const resource = typeof body?.resource === 'string' ? body.resource.trim() : '';
+    const group_id = typeof body?.group_id === 'string' ? body.group_id.trim() : '';
+    const id = parseOntologyId(body?.id);
+
+    const allowed: OntologyDeleteResource[] = ['entity', 'alias', 'relationship', 'property'];
+    if (!allowed.includes(resource as OntologyDeleteResource)) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: ['resource must be one of: entity, alias, relationship, property'],
+      });
+    }
+    if (!group_id) {
+      return res.status(400).json({ error: 'Validation failed', details: ['group_id is required'] });
+    }
+    if (!id) {
+      return res.status(400).json({ error: 'Validation failed', details: ['id is required'] });
+    }
+
+    if (!listGroupIdMatchesHeader(req, group_id)) {
+      return res.status(403).json({ error: 'Forbidden', details: 'group_id must match x-ax-group-id header' });
+    }
+
+    try {
+      await deleteOntologyRow(resource as OntologyDeleteResource, group_id, id);
+      return res.json({ deleted: true });
+    } catch (err: unknown) {
+      console.error('[ontology/delete]', err);
+      if (err instanceof OntologyDeleteError) {
+        if (err.code === 'not_found') {
+          return res.status(404).json({ error: err.message, code: err.code });
+        }
+        if (err.code === 'supabase_not_configured') {
+          return res.status(503).json({ error: err.message, code: err.code, missingEnv: missingForOntologyPersist() });
+        }
+        return res.status(502).json({ error: err.message, code: err.code });
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ error: 'Delete failed', message });
+    }
+  });
 
   router.get('/health', (_req, res) => {
     const env = getOntologyServerEnv();
