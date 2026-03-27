@@ -1,4 +1,4 @@
-import { IconMoon, IconSun, IconUser, IconLogout, IconMessage, IconUsers, IconMenu, IconSettings, IconDatabase, IconBarChart } from '../../ui/icons'
+import { IconMoon, IconSun, IconUser, IconLogout, IconMessage, IconUsers, IconMenu, IconSettings, IconDatabase, IconBarChart, IconBrain } from '../../ui/icons'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../../theme/ThemeProvider'
 import { useTranslation } from '../../i18n/I18nProvider'
@@ -34,7 +34,7 @@ export default function AdminHeader({ performanceScore, performanceDate, current
     navigate(withGroupParam('/admin/dashboard'))
   }
 
-  const handleNavAction = (action: 'dashboard' | 'chat' | 'group' | 'knowledge' | 'settings' | 'logout') => {
+  const handleNavAction = (action: 'dashboard' | 'chat' | 'group' | 'knowledge' | 'ontology' | 'settings' | 'logout') => {
     setIsNavMenuOpen(false)
     if (action === 'dashboard') {
       navigate(withGroupParam('/admin/dashboard'))
@@ -50,6 +50,10 @@ export default function AdminHeader({ performanceScore, performanceDate, current
     }
     if (action === 'knowledge') {
       navigate(withGroupParam('/admin/knowledge-management'))
+      return
+    }
+    if (action === 'ontology') {
+      navigate(withGroupParam('/admin/ontology-management'))
       return
     }
     if (action === 'settings') {
@@ -214,6 +218,32 @@ export default function AdminHeader({ performanceScore, performanceDate, current
               >
                 <IconDatabase size={16} />
                 <span style={{ marginLeft: 8, whiteSpace: 'nowrap' }}>{t('admin.knowledgeBase')}</span>
+              </button>
+              <button
+                onClick={() => handleNavAction('ontology')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: 'calc(100% - 8px)',
+                  padding: '8px 12px',
+                  margin: '0 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--admin-text)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--admin-hover-bg)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                <IconBrain size={16} />
+                <span style={{ marginLeft: 8, whiteSpace: 'nowrap' }}>Ontology</span>
               </button>
               <button
                 onClick={() => handleNavAction('settings')}

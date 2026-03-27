@@ -8,6 +8,7 @@ import {
   IconFileText,
   IconEdit,
   IconLightbulb,
+  IconBrain,
   IconChevronLeft,
   IconChevronRight
 } from '../../ui/icons'
@@ -516,6 +517,13 @@ export default function AdminSidebar({
             >
               <IconDatabase size={18} />
               <span>{t('admin.knowledgeBase')}</span>
+            </button>
+            <button
+              className="nav-item"
+              onClick={() => navigate(withGroupParam('/admin/ontology-management'))}
+            >
+              <IconBrain size={18} />
+              <span>Ontology</span>
             </button>
           </nav>
         </div>

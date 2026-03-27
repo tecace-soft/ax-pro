@@ -15,6 +15,7 @@ import UserFeedbackList from '../../components/admin/UserFeedbackList'
 import AdminFeedbackList from '../../components/admin/AdminFeedbackList'
 import AdminInstructionList from '../../components/admin/AdminInstructionList'
 import KnowledgeManagementPage from '../KnowledgeManagement'
+import OntologyManagement from './OntologyManagement'
 import { fetchDailyAggregatesWithMode, DailyRow, EstimationMode, filterSimulatedData } from '../../services/dailyAggregates'
 import { fetchAllChatData, getChatCountByGroup } from '../../services/chatData'
 import { fetchAllUserFeedback } from '../../services/feedback'
@@ -413,6 +414,8 @@ export default function AdminDashboard() {
           <main className="dashboard-main">
             {location.pathname === '/admin/knowledge-management' ? (
               <KnowledgeManagementPage />
+            ) : location.pathname === '/admin/ontology-management' ? (
+              <OntologyManagement />
             ) : serviceMode === 'translation' && isProfessor ? (
               // Translation Service Mode
               <div style={{ padding: '20px' }}>

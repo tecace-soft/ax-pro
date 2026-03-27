@@ -11,7 +11,7 @@ export default defineConfig({
     allowedHosts: ['stg-ax-pro.onrender.com', 'professor-ax-pro.onrender.com', 'ax-pro.tecace.com', 'localhost', '127.0.0.1'],
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3011',
         changeOrigin: true,
         secure: false
       }

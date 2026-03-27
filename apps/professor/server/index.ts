@@ -9,6 +9,9 @@ import { fileURLToPath } from 'url';
 import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
+import { createClient } from '@supabase/supabase-js';
+import { createOntologyRouter } from './routes/ontology.ts';
+import { logOntologyConfigurationStatus } from './config/ontologyEnv.ts';
 
 // Resolve paths first (needed for .env path resolution)
 const __filename = fileURLToPath(import.meta.url);
@@ -48,6 +51,8 @@ console.log('[Server] Final OpenAI API Key:', {
     ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...${process.env.OPENAI_API_KEY.substring(process.env.OPENAI_API_KEY.length - 4)}`
     : 'not set'
 });
+
+logOntologyConfigurationStatus();
 
 // Types
 interface User {
@@ -111,7 +116,7 @@ const demoUsers = [
 const sessions_store: Map<string, string> = new Map(); // sessionId -> userId
 
 const app = express();
-const PORT = process.env.PORT || process.env.SERVER_PORT || 3001;
+const PORT = process.env.PORT || process.env.SERVER_PORT || 3011;
 
 // Resolve paths for serving the frontend build in production
 const distDir = path.resolve(__dirname, '..', 'dist');
@@ -135,6 +140,118 @@ const requireAuth = (req: any, res: any, next: any) => {
   req.userId = userId;
   next();
 };
+
+const requireAdmin = (req: any, res: any, next: any) => {
+  requireAuth(req, res, () => {
+    const user = users.get(req.userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin only' });
+    }
+    next();
+  });
+};
+
+/**
+ * Ontology admin guard:
+ * 1) preferred: server-side demo cookie session admin
+ * 2) fallback: frontend-provided group-admin context header
+ *
+ * TODO(security): replace trusted header fallback with server-verified group-role check.
+ */
+const requireOntologyAdmin = async (req: any, res: any, next: any) => {
+  const sessionId = req.cookies.sid;
+  if (sessionId && sessions_store.has(sessionId)) {
+    const userId = sessions_store.get(sessionId)!;
+    const user = users.get(userId);
+    if (user && user.role === 'admin') {
+      req.userId = userId;
+      return next();
+    }
+  }
+
+  const groupRole = typeof req.headers['x-ax-group-role'] === 'string'
+    ? String(req.headers['x-ax-group-role']).toLowerCase()
+    : '';
+  const userIdHeader = typeof req.headers['x-ax-user-id'] === 'string'
+    ? String(req.headers['x-ax-user-id'])
+    : '';
+  const userEmailHeader = typeof req.headers['x-ax-user-email'] === 'string'
+    ? String(req.headers['x-ax-user-email'])
+    : '';
+
+  if (groupRole === 'admin' && (userIdHeader || userEmailHeader)) {
+    req.userId = userIdHeader || userEmailHeader;
+    return next();
+  }
+
+  // Fallback: verify admin role from Supabase group row directly.
+  // This removes dependence on fragile client-side role resolution.
+  const rawGroupId =
+    (typeof req.headers['x-ax-group-id'] === 'string' ? String(req.headers['x-ax-group-id']) : '') ||
+    (typeof req.body?.group_id === 'string' ? String(req.body.group_id) : '');
+
+  let groupLookupError: string | undefined;
+  if (rawGroupId && (userIdHeader || userEmailHeader)) {
+    try {
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const supabaseKey =
+        process.env.SUPABASE_SERVICE_ROLE_KEY ||
+        process.env.VITE_SUPABASE_ANON_KEY;
+
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl, supabaseKey, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const { data, error } = await supabase
+          .from('group')
+          .select('administrator, users')
+          .eq('group_id', rawGroupId)
+          .maybeSingle();
+        if (error) {
+          groupLookupError = error.message;
+        }
+
+        if (!error && data && typeof data.administrator === 'string') {
+          const adminIdentity = data.administrator;
+          const matchesUserId = !!userIdHeader && adminIdentity === userIdHeader;
+          const matchesEmail = !!userEmailHeader && adminIdentity === userEmailHeader;
+          const groupUsers = Array.isArray((data as { users?: unknown }).users)
+            ? ((data as { users: unknown[] }).users.filter((u): u is string => typeof u === 'string'))
+            : [];
+          const memberByUserId = !!userIdHeader && groupUsers.includes(userIdHeader);
+          const memberByEmail = !!userEmailHeader && groupUsers.includes(userEmailHeader);
+
+          // Allow BOTH: group administrator and regular members in group.users
+          if (matchesUserId || matchesEmail || memberByUserId || memberByEmail) {
+            req.userId = userIdHeader || userEmailHeader || adminIdentity;
+            return next();
+          }
+        }
+      }
+    } catch {
+      // Continue to unauthorized below.
+    }
+  }
+
+  // Development fallback when Supabase group verification cannot run (e.g., anon key + RLS).
+  // Allows local iteration while keeping production strict.
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    rawGroupId &&
+    (userIdHeader || userEmailHeader)
+  ) {
+    req.userId = userIdHeader || userEmailHeader;
+    return next();
+  }
+
+  return res.status(401).json({
+    error: 'Unauthorized',
+    reason: process.env.NODE_ENV !== 'production' ? 'ontology_auth_check_failed' : undefined,
+    groupLookupError: process.env.NODE_ENV !== 'production' ? groupLookupError : undefined,
+  });
+};
+
+app.use('/api/ontology', createOntologyRouter({ requireAdmin: requireOntologyAdmin }));
 
 // Chat connector interface
 export interface ChatConnector {

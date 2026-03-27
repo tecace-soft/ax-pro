@@ -181,6 +181,14 @@ const App: React.FC = () => {
                   </ProtectedRoute>
                 } 
               />
+              <Route
+                path="/admin/ontology-management"
+                element={
+                  <ProtectedRoute requiredRole="user">
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
               
               {/* Catch all route */}
               <Route path="*" element={<Navigate to="/" replace />} />
