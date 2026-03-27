@@ -185,6 +185,8 @@ async function openAiChatCompletionsJson(
     throw new Error(errMsg);
   }
 
+  console.log('[ontology/extract] OpenAI full JSON response:\n', JSON.stringify(data, null, 2));
+
   const choices = data.choices as Array<{ message?: { content?: string | null } }> | undefined;
   const content = choices?.[0]?.message?.content;
   if (typeof content !== 'string') {

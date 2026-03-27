@@ -9,7 +9,7 @@
  *   - SUPABASE_SERVICE_ROLE_KEY
  *
  * Optional:
- *   - OPENAI_MODEL — chat model for extraction (default: gpt-4o-mini).
+ *   - OPENAI_MODEL — chat model for extraction (default: gpt-4.1-mini).
  *     Legacy: ONTOLOGY_EXTRACTION_MODEL is still read if OPENAI_MODEL is unset.
  *   - ONTOLOGY_TABLE — target table name (default: hr_ontology_ingestions).
  *
@@ -33,7 +33,7 @@ export function getOntologyServerEnv(): OntologyServerEnv {
   const openaiModel =
     (process.env.OPENAI_MODEL && process.env.OPENAI_MODEL.trim()) ||
     (process.env.ONTOLOGY_EXTRACTION_MODEL && process.env.ONTOLOGY_EXTRACTION_MODEL.trim()) ||
-    'gpt-4o-mini';
+    'gpt-4.1-mini';
 
   cached = {
     openaiApiKey: process.env.OPENAI_API_KEY?.trim() || undefined,
