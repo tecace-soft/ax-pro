@@ -49,7 +49,8 @@ export default function EditableOntologyCell({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const textInputRef = useRef<HTMLInputElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const selectRef = useRef<HTMLSelectElement | null>(null);
 
   const display = rawString(value);
@@ -68,7 +69,12 @@ export default function EditableOntologyCell({
 
   useEffect(() => {
     if (!editing) return;
-    const el = kind === 'select' ? selectRef.current : inputRef.current;
+    const el =
+      kind === 'select'
+        ? selectRef.current
+        : kind === 'textarea'
+          ? textareaRef.current
+          : textInputRef.current;
     if (!el) return;
     el.focus();
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
@@ -188,7 +194,7 @@ export default function EditableOntologyCell({
   if (kind === 'textarea' && editing) {
     return (
       <textarea
-        ref={inputRef}
+        ref={textareaRef}
         className="ontology-editable-control"
         value={draft}
         disabled={saving}
@@ -209,7 +215,7 @@ export default function EditableOntologyCell({
   if (editing && kind === 'text') {
     return (
       <input
-        ref={inputRef}
+        ref={textInputRef}
         className="ontology-editable-control"
         type="text"
         value={draft}
