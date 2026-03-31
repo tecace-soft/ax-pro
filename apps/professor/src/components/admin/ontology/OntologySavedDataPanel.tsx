@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState, type CSSProperties } from 'react';
 import { Trash2 } from 'lucide-react';
+import { useTranslation } from '../../../i18n/I18nProvider';
+import { IconPlus, IconRefresh } from '../../../ui/icons';
 import type { OntologyRequestAuthContext } from '../../../services/ontology';
 import {
   ONTOLOGY_ENTITY_TYPES_OPTIONS,
-  ONTOLOGY_RELATION_TYPES_OPTIONS,
   OntologyApiError,
   deleteOntologySavedRow,
   fetchEntityDeleteImpact,
@@ -12,6 +13,11 @@ import {
   type OntologyDeleteResource,
 } from '../../../services/ontology';
 import { useOntologySavedBrowse } from '../../../hooks/useOntologySavedBrowse';
+import EditableOntologyCell from './EditableOntologyCell';
+import OntologyCreateModal from './OntologyCreateModal';
+
+const PROPERTY_VALUE_TYPES = ['string', 'number', 'boolean', 'date'] as const;
+const PROPERTY_STATUS_OPTIONS = ['active', 'deprecated'] as const;
 
 const tableWrap: CSSProperties = {
   overflowX: 'auto',
@@ -32,10 +38,16 @@ const thStyle: CSSProperties = {
 };
 
 const tdStyle: CSSProperties = {
-  padding: '8px 10px',
+  padding: 0,
   borderBottom: '1px solid var(--admin-border)',
   fontSize: '13px',
-  verticalAlign: 'top',
+  verticalAlign: 'middle',
+};
+
+const tdInnerStyle: CSSProperties = {
+  padding: '8px 10px',
+  minHeight: '38px',
+  boxSizing: 'border-box',
 };
 
 function cell(v: unknown): string {
@@ -77,6 +89,7 @@ export default function OntologySavedDataPanel({
 }) {
   const b = useOntologySavedBrowse(groupId, authContext);
   const { refreshAll } = b;
+  const { t } = useTranslation();
 
   const [deleteDialog, setDeleteDialog] = useState<
     | null
@@ -96,7 +109,17 @@ export default function OntologySavedDataPanel({
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [impactLoading, setImpactLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const rowDeleteDisabled = deleteBusy || impactLoading;
+
+  const toolbarRight: CSSProperties = {
+    marginLeft: 'auto',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+    alignItems: 'center',
+  };
 
   const closeDialog = useCallback(() => {
     if (deleteBusy) return;
@@ -212,6 +235,9 @@ export default function OntologySavedDataPanel({
       {deleteError && !deleteDialog && (
         <p style={{ color: '#ef4444', margin: 0, fontSize: '13px' }}>{deleteError}</p>
       )}
+      {editError && (
+        <p style={{ color: '#ef4444', margin: 0, fontSize: '13px' }}>{editError}</p>
+      )}
 
       <div className="km-tabs" style={{ marginBottom: 0 }}>
         {subTabs.map((t) => (
@@ -269,12 +295,19 @@ export default function OntologySavedDataPanel({
             </label>
             <button
               type="button"
-              className="km-tab"
-              style={{ padding: '8px 12px', cursor: 'pointer' }}
+              className="icon-btn"
               onClick={() => void b.refreshEntities()}
+              disabled={b.loadingEntities}
+              title={t('actions.refresh')}
+              aria-label={t('actions.refresh')}
             >
-              Refresh
+              <IconRefresh size={18} className={b.loadingEntities ? 'animate-spin' : ''} />
             </button>
+            <div style={toolbarRight}>
+              <button type="button" className="dashboard-export-btn" onClick={() => setCreateOpen(true)}>
+                <IconPlus size={14} className="dashboard-export-btn__icon" /> Add
+              </button>
+            </div>
           </div>
           {b.loadingEntities && <p style={{ color: 'var(--admin-text-muted)' }}>Loading entities…</p>}
           {b.errorEntities && (
@@ -285,29 +318,79 @@ export default function OntologySavedDataPanel({
           )}
           {!b.loadingEntities && b.entities.length > 0 && (
             <div style={tableWrap}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
-                    {['display_name', 'canonical_name', 'entity_type', 'status', 'description', 'id', 'source_id', 'updated_at'].map(
-                      (col) => (
-                        <th key={col} style={thStyle}>
-                          {col}
-                        </th>
-                      )
-                    )}
+                    {['display_name', 'entity_type', 'description'].map((col) => (
+                      <th key={col} style={thStyle}>
+                        {col === 'display_name' ? 'Entity' : col === 'entity_type' ? 'Type' : 'Description'}
+                      </th>
+                    ))}
                     <th key="_delete" style={thAction} aria-label="Delete" />
                   </tr>
                 </thead>
                 <tbody>
                   {b.entities.map((row, idx) => (
                     <tr key={cell(row.id) + String(idx)}>
-                      {['display_name', 'canonical_name', 'entity_type', 'status', 'description', 'id', 'source_id', 'updated_at'].map(
-                        (col) => (
-                          <td key={col} style={tdStyle}>
-                            {cell(row[col])}
-                          </td>
-                        )
-                      )}
+                      {['display_name', 'entity_type', 'description'].map((col) => (
+                        <td key={col} style={tdStyle}>
+                          {readRowId(row) ? (
+                            col === 'entity_type' ? (
+                              <EditableOntologyCell
+                                groupId={groupId}
+                                rowId={readRowId(row)!}
+                                resource="entity"
+                                columnKey="entity_type"
+                                value={row.entity_type}
+                                kind="select"
+                                selectOptions={ONTOLOGY_ENTITY_TYPES_OPTIONS}
+                                disabled={rowDeleteDisabled}
+                                authContext={authContext}
+                                onSaved={() => {
+                                  setEditError(null);
+                                  void refreshAll();
+                                }}
+                                onError={setEditError}
+                              />
+                            ) : col === 'description' ? (
+                              <EditableOntologyCell
+                                groupId={groupId}
+                                rowId={readRowId(row)!}
+                                resource="entity"
+                                columnKey="description"
+                                value={row.description}
+                                kind="text"
+                                formatCommit={(d) => d.trim() || null}
+                                disabled={rowDeleteDisabled}
+                                authContext={authContext}
+                                onSaved={() => {
+                                  setEditError(null);
+                                  void refreshAll();
+                                }}
+                                onError={setEditError}
+                              />
+                            ) : (
+                              <EditableOntologyCell
+                                groupId={groupId}
+                                rowId={readRowId(row)!}
+                                resource="entity"
+                                columnKey="display_name"
+                                value={row.display_name}
+                                kind="text"
+                                disabled={rowDeleteDisabled}
+                                authContext={authContext}
+                                onSaved={() => {
+                                  setEditError(null);
+                                  void refreshAll();
+                                }}
+                                onError={setEditError}
+                              />
+                            )
+                          ) : (
+                            <div style={tdInnerStyle}>{cell(row[col])}</div>
+                          )}
+                        </td>
+                      ))}
                       <td style={tdAction}>
                         <button
                           type="button"
@@ -357,12 +440,19 @@ export default function OntologySavedDataPanel({
             </label>
             <button
               type="button"
-              className="km-tab"
-              style={{ padding: '8px 12px', cursor: 'pointer' }}
+              className="icon-btn"
               onClick={() => void b.refreshAliases()}
+              disabled={b.loadingAliases}
+              title={t('actions.refresh')}
+              aria-label={t('actions.refresh')}
             >
-              Refresh
+              <IconRefresh size={18} className={b.loadingAliases ? 'animate-spin' : ''} />
             </button>
+            <div style={toolbarRight}>
+              <button type="button" className="dashboard-export-btn" onClick={() => setCreateOpen(true)}>
+                <IconPlus size={14} className="dashboard-export-btn__icon" /> Add
+              </button>
+            </div>
           </div>
           {b.loadingAliases && <p style={{ color: 'var(--admin-text-muted)' }}>Loading aliases…</p>}
           {b.errorAliases && <p style={{ color: '#ef4444', marginTop: 0 }}>{b.errorAliases}</p>}
@@ -371,29 +461,68 @@ export default function OntologySavedDataPanel({
           )}
           {!b.loadingAliases && b.aliases.length > 0 && (
             <div style={tableWrap}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
-                    {['alias_text', 'entity_display_name', 'entity_id', 'alias_language', 'alias_type', 'id', 'source_id', 'created_at'].map(
-                      (col) => (
-                        <th key={col} style={thStyle}>
-                          {col}
-                        </th>
-                      )
-                    )}
+                    {['alias_text', 'entity_display_name', 'alias_language', 'alias_type'].map((col) => (
+                      <th key={col} style={{ ...thStyle, width: '25%' }}>
+                        {col === 'alias_text'
+                          ? 'Alias'
+                          : col === 'entity_display_name'
+                            ? 'Entity'
+                            : col === 'alias_language'
+                              ? 'Language'
+                              : 'Type'}
+                      </th>
+                    ))}
                     <th key="_delete" style={thAction} aria-label="Delete" />
                   </tr>
                 </thead>
                 <tbody>
                   {b.aliases.map((row, idx) => (
                     <tr key={cell(row.id) + String(idx)}>
-                      {['alias_text', 'entity_display_name', 'entity_id', 'alias_language', 'alias_type', 'id', 'source_id', 'created_at'].map(
-                        (col) => (
-                          <td key={col} style={tdStyle}>
-                            {cell(row[col])}
-                          </td>
-                        )
-                      )}
+                      {['alias_text', 'entity_display_name', 'alias_language', 'alias_type'].map((col) => (
+                        <td key={col} style={{ ...tdStyle, width: '25%' }}>
+                          {readRowId(row) ? (
+                            col === 'alias_language' || col === 'alias_type' ? (
+                              <EditableOntologyCell
+                                groupId={groupId}
+                                rowId={readRowId(row)!}
+                                resource="alias"
+                                columnKey={col}
+                                value={row[col]}
+                                kind="text"
+                                formatCommit={(d) => d.trim() || null}
+                                disabled={rowDeleteDisabled}
+                                authContext={authContext}
+                                onSaved={() => {
+                                  setEditError(null);
+                                  void refreshAll();
+                                }}
+                                onError={setEditError}
+                              />
+                            ) : (
+                              <EditableOntologyCell
+                                groupId={groupId}
+                                rowId={readRowId(row)!}
+                                resource="alias"
+                                columnKey={col}
+                                value={row[col]}
+                                kind="text"
+                                disabled={rowDeleteDisabled}
+                                authContext={authContext}
+                                onSaved={() => {
+                                  setEditError(null);
+                                  void refreshAll();
+                                }}
+                                onError={setEditError}
+                              />
+                            )
+                          ) : (
+                            <div style={tdInnerStyle}>{cell(row[col])}</div>
+                          )}
+                        </td>
+                      ))}
                       <td style={tdAction}>
                         <button
                           type="button"
@@ -429,34 +558,35 @@ export default function OntologySavedDataPanel({
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '12px', alignItems: 'flex-end' }}>
             <label style={{ display: 'grid', gap: '4px', fontSize: '12px' }}>
               Relation type
-              <select
+              <input
                 value={b.relationType}
                 onChange={(e) => b.setRelationType(e.target.value)}
+                placeholder="Exact match (optional)"
                 style={{
+                  minWidth: '200px',
                   padding: '8px 10px',
                   borderRadius: '8px',
                   border: '1px solid var(--admin-border)',
                   background: 'var(--admin-bg)',
                   color: 'var(--admin-text)',
-                  minWidth: '200px',
                 }}
-              >
-                <option value="">All relation types</option>
-                {ONTOLOGY_RELATION_TYPES_OPTIONS.map((rt) => (
-                  <option key={rt} value={rt}>
-                    {rt}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
             <button
               type="button"
-              className="km-tab"
-              style={{ padding: '8px 12px', cursor: 'pointer' }}
+              className="icon-btn"
               onClick={() => void b.refreshRelationships()}
+              disabled={b.loadingRelationships}
+              title={t('actions.refresh')}
+              aria-label={t('actions.refresh')}
             >
-              Refresh
+              <IconRefresh size={18} className={b.loadingRelationships ? 'animate-spin' : ''} />
             </button>
+            <div style={toolbarRight}>
+              <button type="button" className="dashboard-export-btn" onClick={() => setCreateOpen(true)}>
+                <IconPlus size={14} className="dashboard-export-btn__icon" /> Add
+              </button>
+            </div>
           </div>
           {b.loadingRelationships && <p style={{ color: 'var(--admin-text-muted)' }}>Loading relationships…</p>}
           {b.errorRelationships && (
@@ -470,19 +600,9 @@ export default function OntologySavedDataPanel({
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    {[
-                      'relation_type',
-                      'from_display_name',
-                      'to_display_name',
-                      'status',
-                      'from_entity_id',
-                      'to_entity_id',
-                      'id',
-                      'source_id',
-                      'created_at',
-                    ].map((col) => (
-                      <th key={col} style={thStyle}>
-                        {col}
+                    {['from_display_name', 'relation_type', 'to_display_name'].map((col) => (
+                      <th key={col} style={{ ...thStyle, width: '33.33%' }}>
+                        {col === 'from_display_name' ? 'From Entity' : col === 'relation_type' ? 'Relationship' : 'To Entity'}
                       </th>
                     ))}
                     <th key="_delete" style={thAction} aria-label="Delete" />
@@ -491,19 +611,46 @@ export default function OntologySavedDataPanel({
                 <tbody>
                   {b.relationships.map((row, idx) => (
                     <tr key={cell(row.id) + String(idx)}>
-                      {[
-                        'relation_type',
-                        'from_display_name',
-                        'to_display_name',
-                        'status',
-                        'from_entity_id',
-                        'to_entity_id',
-                        'id',
-                        'source_id',
-                        'created_at',
-                      ].map((col) => (
-                        <td key={col} style={tdStyle}>
-                          {cell(row[col])}
+                      {['from_display_name', 'relation_type', 'to_display_name'].map((col) => (
+                        <td key={col} style={{ ...tdStyle, width: '33.33%' }}>
+                          {readRowId(row) ? (
+                            col === 'relation_type' ? (
+                              <EditableOntologyCell
+                                groupId={groupId}
+                                rowId={readRowId(row)!}
+                                resource="relationship"
+                                columnKey="relation_type"
+                                value={row.relation_type}
+                                kind="text"
+                                formatCommit={(d) => d.trim()}
+                                disabled={rowDeleteDisabled}
+                                authContext={authContext}
+                                onSaved={() => {
+                                  setEditError(null);
+                                  void refreshAll();
+                                }}
+                                onError={setEditError}
+                              />
+                            ) : (
+                              <EditableOntologyCell
+                                groupId={groupId}
+                                rowId={readRowId(row)!}
+                                resource="relationship"
+                                columnKey={col}
+                                value={row[col]}
+                                kind="text"
+                                disabled={rowDeleteDisabled}
+                                authContext={authContext}
+                                onSaved={() => {
+                                  setEditError(null);
+                                  void refreshAll();
+                                }}
+                                onError={setEditError}
+                              />
+                            )
+                          ) : (
+                            <div style={tdInnerStyle}>{cell(row[col])}</div>
+                          )}
                         </td>
                       ))}
                       <td style={tdAction}>
@@ -561,12 +708,19 @@ export default function OntologySavedDataPanel({
             </label>
             <button
               type="button"
-              className="km-tab"
-              style={{ padding: '8px 12px', cursor: 'pointer' }}
+              className="icon-btn"
               onClick={() => void b.refreshProperties()}
+              disabled={b.loadingProperties}
+              title={t('actions.refresh')}
+              aria-label={t('actions.refresh')}
             >
-              Refresh
+              <IconRefresh size={18} className={b.loadingProperties ? 'animate-spin' : ''} />
             </button>
+            <div style={toolbarRight}>
+              <button type="button" className="dashboard-export-btn" onClick={() => setCreateOpen(true)}>
+                <IconPlus size={14} className="dashboard-export-btn__icon" /> Add
+              </button>
+            </div>
           </div>
           {b.loadingProperties && <p style={{ color: 'var(--admin-text-muted)' }}>Loading properties…</p>}
           {b.errorProperties && (
@@ -613,7 +767,62 @@ export default function OntologySavedDataPanel({
                         'created_at',
                       ].map((col) => (
                         <td key={col} style={tdStyle}>
-                          {cell(row[col])}
+                          {readRowId(row) &&
+                          (col === 'property_key' ||
+                            col === 'property_value_text' ||
+                            col === 'entity_display_name') ? (
+                            <EditableOntologyCell
+                              groupId={groupId}
+                              rowId={readRowId(row)!}
+                              resource="property"
+                              columnKey={col}
+                              value={row[col]}
+                              kind="text"
+                              disabled={rowDeleteDisabled}
+                              authContext={authContext}
+                              onSaved={() => {
+                                setEditError(null);
+                                void refreshAll();
+                              }}
+                              onError={setEditError}
+                            />
+                          ) : readRowId(row) && col === 'value_type' ? (
+                            <EditableOntologyCell
+                              groupId={groupId}
+                              rowId={readRowId(row)!}
+                              resource="property"
+                              columnKey="value_type"
+                              value={row.value_type}
+                              kind="select"
+                              selectOptions={PROPERTY_VALUE_TYPES}
+                              disabled={rowDeleteDisabled}
+                              authContext={authContext}
+                              onSaved={() => {
+                                setEditError(null);
+                                void refreshAll();
+                              }}
+                              onError={setEditError}
+                            />
+                          ) : readRowId(row) && col === 'status' ? (
+                            <EditableOntologyCell
+                              groupId={groupId}
+                              rowId={readRowId(row)!}
+                              resource="property"
+                              columnKey="status"
+                              value={row.status}
+                              kind="select"
+                              selectOptions={PROPERTY_STATUS_OPTIONS}
+                              disabled={rowDeleteDisabled}
+                              authContext={authContext}
+                              onSaved={() => {
+                                setEditError(null);
+                                void refreshAll();
+                              }}
+                              onError={setEditError}
+                            />
+                          ) : (
+                            <div style={tdInnerStyle}>{cell(row[col])}</div>
+                          )}
                         </td>
                       ))}
                       <td style={tdAction}>
@@ -644,19 +853,22 @@ export default function OntologySavedDataPanel({
         </div>
       )}
 
+      <OntologyCreateModal
+        open={createOpen}
+        tab={b.subTab}
+        groupId={groupId}
+        authContext={authContext}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => {
+          setEditError(null);
+          void refreshAll();
+        }}
+      />
+
       {deleteDialog && (
         <div
           role="presentation"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 1000,
-            background: 'rgba(0,0,0,0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '24px',
-          }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
           onClick={() => closeDialog()}
         >
           <div
@@ -664,97 +876,125 @@ export default function OntologySavedDataPanel({
             aria-modal="true"
             aria-labelledby="ontology-delete-title"
             aria-describedby="ontology-delete-desc"
+            className="rounded-lg max-w-2xl w-full mx-4"
             style={{
-              background: 'var(--admin-card-bg)',
+              backgroundColor: 'var(--admin-bg-card)',
               border: '1px solid var(--admin-border)',
-              borderRadius: '12px',
-              maxWidth: '480px',
-              width: '100%',
-              padding: '20px',
-              boxShadow: '0 16px 48px rgba(0,0,0,0.2)',
+              maxHeight: '90vh',
+              overflow: 'auto',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 id="ontology-delete-title" style={{ margin: '0 0 12px', fontSize: '18px' }}>
-              {deleteDialog.mode === 'entity'
-                ? 'Delete entity?'
-                : deleteDialog.resource === 'alias'
-                  ? 'Delete alias?'
-                  : deleteDialog.resource === 'relationship'
-                    ? 'Delete relationship?'
-                    : 'Delete property?'}
-            </h2>
-            {deleteDialog.mode === 'entity' ? (
-              <>
-                <p id="ontology-delete-desc" style={{ margin: '0 0 12px', fontSize: '14px', lineHeight: 1.5 }}>
-                  Deleting <strong>{deleteDialog.label}</strong> removes this entity. The database will also remove related rows (cascade):
-                </p>
-                {!deleteDialog.impact ? (
-                  <p style={{ color: 'var(--admin-text-muted)' }}>Loading related row counts…</p>
-                ) : (
-                  <ul style={{ margin: '0 0 12px', paddingLeft: '20px', fontSize: '14px' }}>
-                    <li>{deleteDialog.impact.cascade.aliases} alias row(s) with this entity</li>
-                    <li>
-                      {deleteDialog.impact.cascade.relationships} relationship row(s) where this entity is the source or
-                      target
-                    </li>
-                    <li>{deleteDialog.impact.cascade.properties} property row(s) for this entity</li>
-                  </ul>
-                )}
-                <p style={{ margin: 0, fontSize: '13px', color: 'var(--admin-text-muted)' }}>
-                  Ontology sources and other entities are not deleted. This cannot be undone.
-                </p>
-              </>
-            ) : (
-              <>
-                <p id="ontology-delete-desc" style={{ margin: '0 0 12px', fontSize: '14px', lineHeight: 1.5 }}>
-                  Are you sure you want to delete this row? This cannot be undone.
-                </p>
-                <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.5 }}>
-                  {deleteDialog.resource === 'alias' && (
-                    <>
-                      Only the alias <strong>{deleteDialog.label}</strong> will be removed. The linked entity and
-                      ontology source are not deleted.
-                    </>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <h3 id="ontology-delete-title" className="text-lg font-semibold" style={{ color: 'var(--admin-text)' }}>
+                  {deleteDialog.mode === 'entity'
+                    ? 'Delete entity?'
+                    : deleteDialog.resource === 'alias'
+                      ? 'Delete alias?'
+                      : deleteDialog.resource === 'relationship'
+                        ? 'Delete relationship?'
+                        : 'Delete property?'}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => !deleteBusy && closeDialog()}
+                  className="p-1 hover:bg-gray-100/10 rounded"
+                  style={{ color: 'var(--admin-text-secondary)' }}
+                  aria-label="Close"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+              {deleteDialog.mode === 'entity' ? (
+                <>
+                  <p id="ontology-delete-desc" className="text-sm mb-4" style={{ color: 'var(--admin-text-muted)', lineHeight: 1.5 }}>
+                    Deleting <strong>{deleteDialog.label}</strong> removes this entity. The database will also remove
+                    related rows (cascade):
+                  </p>
+                  {!deleteDialog.impact ? (
+                    <p className="text-sm mb-4" style={{ color: 'var(--admin-text-muted)' }}>
+                      Loading related row counts…
+                    </p>
+                  ) : (
+                    <ul className="text-sm mb-4 pl-5" style={{ lineHeight: 1.5 }}>
+                      <li>{deleteDialog.impact.cascade.aliases} alias row(s) with this entity</li>
+                      <li>
+                        {deleteDialog.impact.cascade.relationships} relationship row(s) where this entity is the source
+                        or target
+                      </li>
+                      <li>{deleteDialog.impact.cascade.properties} property row(s) for this entity</li>
+                    </ul>
                   )}
-                  {deleteDialog.resource === 'relationship' && (
-                    <>
-                      Only this relationship (<strong>{deleteDialog.label}</strong>) will be removed. Connected entities
-                      and ontology sources are not deleted.
-                    </>
-                  )}
-                  {deleteDialog.resource === 'property' && (
-                    <>
-                      Only this property (<strong>{deleteDialog.label}</strong>) will be removed. The entity and ontology
-                      source are not deleted.
-                    </>
-                  )}
+                  <p className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>
+                    Ontology sources and other entities are not deleted. This cannot be undone.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p id="ontology-delete-desc" className="text-sm mb-4" style={{ color: 'var(--admin-text-muted)', lineHeight: 1.5 }}>
+                    Are you sure you want to delete this row? This cannot be undone.
+                  </p>
+                  <p className="text-sm" style={{ lineHeight: 1.5, color: 'var(--admin-text)' }}>
+                    {deleteDialog.resource === 'alias' && (
+                      <>
+                        Only the alias <strong>{deleteDialog.label}</strong> will be removed. The linked entity and
+                        ontology source are not deleted.
+                      </>
+                    )}
+                    {deleteDialog.resource === 'relationship' && (
+                      <>
+                        Only this relationship (<strong>{deleteDialog.label}</strong>) will be removed. Connected entities
+                        and ontology sources are not deleted.
+                      </>
+                    )}
+                    {deleteDialog.resource === 'property' && (
+                      <>
+                        Only this property (<strong>{deleteDialog.label}</strong>) will be removed. The entity and
+                        ontology source are not deleted.
+                      </>
+                    )}
+                  </p>
+                </>
+              )}
+              {deleteError && (
+                <p className="text-sm mt-4" style={{ color: '#ef4444' }}>
+                  {deleteError}
                 </p>
-              </>
-            )}
-            {deleteError && (
-              <p style={{ color: '#ef4444', marginTop: '12px', marginBottom: 0, fontSize: '13px' }}>{deleteError}</p>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-              <button type="button" className="km-tab" disabled={deleteBusy} onClick={closeDialog}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: '#b91c1c',
-                  color: '#fff',
-                  cursor: deleteBusy ? 'wait' : 'pointer',
-                  opacity: deleteBusy ? 0.7 : 1,
-                }}
-                disabled={deleteBusy || (deleteDialog.mode === 'entity' && !deleteDialog.impact)}
-                onClick={() => void confirmDelete()}
-              >
-                {deleteBusy ? 'Deleting…' : 'Delete'}
-              </button>
+              )}
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  disabled={deleteBusy}
+                  onClick={closeDialog}
+                  className="px-4 py-2 text-sm font-medium rounded-md"
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--admin-border)',
+                    color: 'var(--admin-text)',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="px-6 py-2 text-sm font-medium rounded-md"
+                  style={{
+                    background: '#b91c1c',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: deleteBusy ? 'wait' : 'pointer',
+                    opacity: deleteBusy || (deleteDialog.mode === 'entity' && !deleteDialog.impact) ? 0.6 : 1,
+                  }}
+                  disabled={deleteBusy || (deleteDialog.mode === 'entity' && !deleteDialog.impact)}
+                  onClick={() => void confirmDelete()}
+                >
+                  {deleteBusy ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

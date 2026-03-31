@@ -1,6 +1,7 @@
 import { getOntologySupabaseClient, OntologyPersistenceError } from './ontologySupabase.ts';
-import type { OntologyEntityType, OntologyRelationType } from '../types/ontology.ts';
-import { ONTOLOGY_ENTITY_TYPES, ONTOLOGY_RELATION_TYPES } from '../types/ontology.ts';
+import { parseOntologyId } from './ontologyDelete.ts';
+import type { OntologyEntityType } from '../types/ontology.ts';
+import { ONTOLOGY_ENTITY_TYPES } from '../types/ontology.ts';
 
 const DEFAULT_LIMIT = 500;
 const MAX_LIMIT = 2000;
@@ -71,7 +72,7 @@ async function entityDisplayMap(
     );
   }
   for (const row of data ?? []) {
-    const id = row && typeof row === 'object' && typeof (row as { id?: unknown }).id === 'string' ? (row as { id: string }).id : '';
+    const id = row && typeof row === 'object' ? parseOntologyId((row as { id?: unknown }).id) : null;
     const dn =
       row && typeof row === 'object' && typeof (row as { display_name?: unknown }).display_name === 'string'
         ? (row as { display_name: string }).display_name
@@ -161,10 +162,10 @@ export async function listOntologyAliases(params: ListOntologyQueryBase & { q?: 
   }
 
   const rows = (data ?? []) as OntologyStoredAliasRow[];
-  const entityIds = rows.map((r) => (typeof r.entity_id === 'string' ? r.entity_id : '')).filter(Boolean);
+  const entityIds = rows.map((r) => parseOntologyId(r.entity_id)).filter((x): x is string => !!x);
   const labels = await entityDisplayMap(client, params.group_id, entityIds);
   for (const r of rows) {
-    const eid = typeof r.entity_id === 'string' ? r.entity_id : '';
+    const eid = parseOntologyId(r.entity_id);
     r.entity_display_name = eid ? labels.get(eid) ?? null : null;
   }
 
@@ -195,8 +196,8 @@ export async function listOntologyRelationships(params: ListOntologyQueryBase & 
   }
 
   const rt = typeof params.relation_type === 'string' ? params.relation_type.trim() : '';
-  if (rt && (ONTOLOGY_RELATION_TYPES as readonly string[]).includes(rt)) {
-    query = query.eq('relation_type', rt as OntologyRelationType);
+  if (rt) {
+    query = query.eq('relation_type', rt);
   }
 
   const { data, error } = await query;
@@ -211,13 +212,15 @@ export async function listOntologyRelationships(params: ListOntologyQueryBase & 
   const rows = (data ?? []) as OntologyStoredRelationshipRow[];
   const ids: string[] = [];
   for (const r of rows) {
-    if (typeof r.from_entity_id === 'string') ids.push(r.from_entity_id);
-    if (typeof r.to_entity_id === 'string') ids.push(r.to_entity_id);
+    const f = parseOntologyId(r.from_entity_id);
+    const t = parseOntologyId(r.to_entity_id);
+    if (f) ids.push(f);
+    if (t) ids.push(t);
   }
   const labels = await entityDisplayMap(client, params.group_id, ids);
   for (const r of rows) {
-    const from = typeof r.from_entity_id === 'string' ? r.from_entity_id : '';
-    const to = typeof r.to_entity_id === 'string' ? r.to_entity_id : '';
+    const from = parseOntologyId(r.from_entity_id);
+    const to = parseOntologyId(r.to_entity_id);
     r.from_display_name = from ? labels.get(from) ?? null : null;
     r.to_display_name = to ? labels.get(to) ?? null : null;
   }
@@ -264,10 +267,10 @@ export async function listOntologyProperties(params: ListOntologyQueryBase & { q
   }
 
   const rows = (data ?? []) as OntologyStoredPropertyRow[];
-  const entityIds = rows.map((r) => (typeof r.entity_id === 'string' ? r.entity_id : '')).filter(Boolean);
+  const entityIds = rows.map((r) => parseOntologyId(r.entity_id)).filter((x): x is string => !!x);
   const labels = await entityDisplayMap(client, params.group_id, entityIds);
   for (const r of rows) {
-    const eid = typeof r.entity_id === 'string' ? r.entity_id : '';
+    const eid = parseOntologyId(r.entity_id);
     r.entity_display_name = eid ? labels.get(eid) ?? null : null;
   }
 

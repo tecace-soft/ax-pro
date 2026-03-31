@@ -1,0 +1,43 @@
+.dashboard-section-card input[type="text"].ontology-editable-control,
+.dashboard-section-card select.ontology-editable-control,
+.dashboard-section-card textarea.ontology-editable-control {
+  box-sizing: border-box;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 8px;
+  margin: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid #2f426e;
+  border-radius: 10px;
+  color: inherit;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  box-shadow: var(--glass-inner-glow), 0 0 0 1px rgba(147, 197, 253, 0.3), 0 0 12px rgba(147, 197, 253, 0.25);
+}
+
+.dashboard-section-card input[type="text"].ontology-editable-control:hover,
+.dashboard-section-card select.ontology-editable-control:hover,
+.dashboard-section-card textarea.ontology-editable-control:hover {
+  border-color: #2f426e;
+  box-shadow: var(--glass-inner-glow), 0 0 0 1px rgba(147, 197, 253, 0.3), 0 0 12px rgba(147, 197, 253, 0.25);
+}
+
+.dashboard-section-card textarea.ontology-editable-control {
+  resize: none;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Dropdown menu list background/colors by theme */
+[data-theme="dark"] .dashboard-section-card select.ontology-editable-control option {
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+[data-theme="light"] .dashboard-section-card select.ontology-editable-control option {
+  background: #ffffff;
+  color: #111827;
+}

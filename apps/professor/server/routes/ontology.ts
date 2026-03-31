@@ -32,6 +32,16 @@ import {
   parseOntologyId,
   type OntologyDeleteResource,
 } from '../services/ontologyDelete.ts';
+import {
+  applyOntologyUpdate,
+  OntologyUpdateError,
+  type OntologyUpdateResource,
+} from '../services/ontologyUpdate.ts';
+import {
+  applyOntologyCreate,
+  OntologyCreateError,
+  type OntologyCreateResource,
+} from '../services/ontologyCreate.ts';
 
 export interface OntologyRouterDeps {
   /** Cookie demo auth + admin role (same pattern as server/index.ts). */
@@ -230,6 +240,134 @@ export function createOntologyRouter(deps: OntologyRouterDeps): Router {
       }
       const message = err instanceof Error ? err.message : String(err);
       return res.status(500).json({ error: 'Delete failed', message });
+    }
+  });
+
+  router.post('/create', requireAdmin, async (req, res) => {
+    const missing = missingForOntologyPersist();
+    if (missing.length > 0) {
+      return res.status(503).json({
+        error: 'Ontology persistence is not configured',
+        missingEnv: missing,
+      });
+    }
+
+    const body = req.body as Record<string, unknown> | undefined;
+    const resource = typeof body?.resource === 'string' ? body.resource.trim() : '';
+    const group_id = typeof body?.group_id === 'string' ? body.group_id.trim() : '';
+    const allowed: OntologyCreateResource[] = ['entity', 'alias', 'relationship', 'property'];
+    if (!allowed.includes(resource as OntologyCreateResource)) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: ['resource must be one of: entity, alias, relationship, property'],
+      });
+    }
+    if (!group_id) {
+      return res.status(400).json({ error: 'Validation failed', details: ['group_id is required'] });
+    }
+    if (!listGroupIdMatchesHeader(req, group_id)) {
+      return res.status(403).json({ error: 'Forbidden', details: 'group_id must match x-ax-group-id header' });
+    }
+
+    const headerUid =
+      typeof (req as { headers?: Record<string, unknown> }).headers?.['x-ax-user-id'] === 'string'
+        ? String((req as { headers: Record<string, string> }).headers['x-ax-user-id']).trim()
+        : '';
+    const reqUid =
+      typeof (req as { userId?: string }).userId === 'string' ? (req as { userId: string }).userId.trim() : '';
+    const created_by = headerUid || reqUid;
+    if (!created_by) {
+      return res.status(400).json({
+        error: 'created_by required',
+        details:
+          'ontology_sources.created_by must be set. Send x-ax-user-id with the logged-in user id (Supabase user_id).',
+      });
+    }
+    if (created_by.includes('@')) {
+      return res.status(400).json({
+        error: 'created_by must be user_id',
+        details: 'Use the Supabase user id, not an email.',
+      });
+    }
+
+    const payload: Record<string, unknown> = { ...(body ?? {}) };
+    delete payload.resource;
+    delete payload.group_id;
+
+    try {
+      const result = await applyOntologyCreate(resource as OntologyCreateResource, group_id, created_by, payload);
+      return res.json(result);
+    } catch (err: unknown) {
+      console.error('[ontology/create]', err);
+      if (err instanceof OntologyCreateError) {
+        if (err.code === 'invalid_payload' || err.code === 'entity_not_found') {
+          return res.status(400).json({ error: err.message, code: err.code });
+        }
+        if (err.code === 'supabase_not_configured') {
+          return res.status(503).json({ error: err.message, code: err.code, missingEnv: missingForOntologyPersist() });
+        }
+        return res.status(502).json({ error: err.message, code: err.code });
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ error: 'Create failed', message });
+    }
+  });
+
+  router.post('/update', requireAdmin, async (req, res) => {
+    const missing = missingForOntologyPersist();
+    if (missing.length > 0) {
+      return res.status(503).json({
+        error: 'Ontology persistence is not configured',
+        missingEnv: missing,
+      });
+    }
+
+    const body = req.body as Record<string, unknown> | undefined;
+    const resource = typeof body?.resource === 'string' ? body.resource.trim() : '';
+    const group_id = typeof body?.group_id === 'string' ? body.group_id.trim() : '';
+    const id = parseOntologyId(body?.id);
+    const patch = body?.patch;
+
+    const allowed: OntologyUpdateResource[] = ['entity', 'alias', 'relationship', 'property'];
+    if (!allowed.includes(resource as OntologyUpdateResource)) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: ['resource must be one of: entity, alias, relationship, property'],
+      });
+    }
+    if (!group_id) {
+      return res.status(400).json({ error: 'Validation failed', details: ['group_id is required'] });
+    }
+    if (!id) {
+      return res.status(400).json({ error: 'Validation failed', details: ['id is required'] });
+    }
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+      return res.status(400).json({ error: 'Validation failed', details: ['patch must be a non-array object'] });
+    }
+
+    if (!listGroupIdMatchesHeader(req, group_id)) {
+      return res.status(403).json({ error: 'Forbidden', details: 'group_id must match x-ax-group-id header' });
+    }
+
+    try {
+      await applyOntologyUpdate(resource as OntologyUpdateResource, group_id, id, patch as Record<string, unknown>);
+      return res.json({ updated: true });
+    } catch (err: unknown) {
+      console.error('[ontology/update]', err);
+      if (err instanceof OntologyUpdateError) {
+        if (err.code === 'not_found') {
+          return res.status(404).json({ error: err.message, code: err.code });
+        }
+        if (err.code === 'supabase_not_configured') {
+          return res.status(503).json({ error: err.message, code: err.code, missingEnv: missingForOntologyPersist() });
+        }
+        if (err.code === 'invalid_patch') {
+          return res.status(400).json({ error: err.message, code: err.code });
+        }
+        return res.status(502).json({ error: err.message, code: err.code });
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ error: 'Update failed', message });
     }
   });
 

@@ -78,7 +78,7 @@ export interface OntologyPreviewAlias {
 export interface OntologyPreviewRelationship {
   id: string;
   subject_entity_id: string;
-  relation_type: OntologyRelationType;
+  relation_type: string;
   object_entity_id: string;
   notes?: string;
 }

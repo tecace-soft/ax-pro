@@ -194,13 +194,22 @@ async function ontologyGet(pathWithQuery: string, authContext?: OntologyRequestA
 }
 
 export async function fetchOntologyEntitiesList(
-  params: { group_id: string; q?: string; entity_type?: string; include_deprecated?: boolean },
+  params: {
+    group_id: string;
+    q?: string;
+    entity_type?: string;
+    include_deprecated?: boolean;
+    limit?: number;
+  },
   authContext?: OntologyRequestAuthContext
 ): Promise<OntologyListResponse> {
   const sp = new URLSearchParams({ group_id: params.group_id });
   if (params.q?.trim()) sp.set('q', params.q.trim());
   if (params.entity_type?.trim()) sp.set('entity_type', params.entity_type.trim());
   if (params.include_deprecated) sp.set('include_deprecated', 'true');
+  if (params.limit != null && Number.isFinite(params.limit) && params.limit > 0) {
+    sp.set('limit', String(Math.min(2000, Math.floor(params.limit))));
+  }
   return ontologyGet(`/api/ontology/entities?${sp.toString()}`, authContext);
 }
 
@@ -264,6 +273,27 @@ export async function fetchEntityDeleteImpact(
 
 export type OntologyDeleteResource = 'entity' | 'alias' | 'relationship' | 'property';
 
+export type OntologyCreateResource = OntologyDeleteResource;
+
+export async function createOntologySavedRow(
+  payload: { resource: OntologyCreateResource; group_id: string } & Record<string, unknown>,
+  authContext?: OntologyRequestAuthContext
+): Promise<{ created: true; id: string }> {
+  const { resource, group_id, ...fields } = payload;
+  const res = await fetch('/api/ontology/create', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...ontologyHeaders(authContext) },
+    body: JSON.stringify({ resource, group_id, ...fields }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = formatOntologyFailureMessage(res.status, data, 'Create failed');
+    throw new OntologyApiError(res.status, message, data);
+  }
+  return data as { created: true; id: string };
+}
+
 export async function deleteOntologySavedRow(
   payload: { resource: OntologyDeleteResource; group_id: string; id: unknown },
   authContext?: OntologyRequestAuthContext
@@ -284,6 +314,38 @@ export async function deleteOntologySavedRow(
     throw new OntologyApiError(res.status, message, data);
   }
   return data as { deleted: true };
+}
+
+export async function patchOntologySavedRow(
+  payload: {
+    resource: OntologyDeleteResource;
+    group_id: string;
+    id: unknown;
+    patch: Record<string, unknown>;
+  },
+  authContext?: OntologyRequestAuthContext
+): Promise<{ updated: true }> {
+  const id = normalizeOntologyId(payload.id);
+  if (!id) {
+    throw new OntologyApiError(400, 'Invalid or missing id', undefined);
+  }
+  const res = await fetch('/api/ontology/update', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...ontologyHeaders(authContext) },
+    body: JSON.stringify({
+      resource: payload.resource,
+      group_id: payload.group_id,
+      id,
+      patch: payload.patch,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = formatOntologyFailureMessage(res.status, data, 'Update failed');
+    throw new OntologyApiError(res.status, message, data);
+  }
+  return data as { updated: true };
 }
 
 /**

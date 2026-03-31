@@ -1,9 +1,6 @@
 import type { CSSProperties, Dispatch, SetStateAction } from 'react';
 import type { OntologyApproveAndSaveResponse, OntologyExtractPreviewResponse } from '../../../services/ontology';
-import {
-  ONTOLOGY_ENTITY_TYPES_OPTIONS,
-  ONTOLOGY_RELATION_TYPES_OPTIONS,
-} from '../../../services/ontology';
+import { ONTOLOGY_ENTITY_TYPES_OPTIONS } from '../../../services/ontology';
 
 export type OntologyExtractWorkspaceProps = {
   groupId: string;
@@ -555,15 +552,9 @@ export default function OntologyExtractWorkspace({
                     </div>
                     <div style={{ display: 'grid', gap: 4 }}>
                       <span style={labelStyle}>Relation</span>
-                      <select
+                      <input
                         style={field}
-                        value={
-                          ONTOLOGY_RELATION_TYPES_OPTIONS.includes(
-                            r.relation_type as (typeof ONTOLOGY_RELATION_TYPES_OPTIONS)[number]
-                          )
-                            ? r.relation_type
-                            : 'related_to'
-                        }
+                        value={r.relation_type ?? ''}
                         onChange={(ev) =>
                           setPreviewDraft((d) => {
                             if (!d) return null;
@@ -572,13 +563,9 @@ export default function OntologyExtractWorkspace({
                             return { ...d, relationships: next };
                           })
                         }
-                      >
-                        {ONTOLOGY_RELATION_TYPES_OPTIONS.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
+                        placeholder="e.g. provided_by or custom label"
+                        autoComplete="off"
+                      />
                     </div>
                     <div style={{ display: 'grid', gap: 4 }}>
                       <span style={labelStyle}>Object entity</span>

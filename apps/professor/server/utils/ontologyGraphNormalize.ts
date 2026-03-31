@@ -6,11 +6,12 @@ import {
   type OntologyPreviewEntity,
   type OntologyPreviewProperty,
   type OntologyPreviewRelationship,
-  type OntologyRelationType,
 } from '../types/ontology.ts';
 
 const ENTITY_TYPE_SET = new Set<string>(ONTOLOGY_ENTITY_TYPES);
 const RELATION_TYPE_SET = new Set<string>(ONTOLOGY_RELATION_TYPES);
+
+const MAX_RELATION_TYPE_LEN = 256;
 
 const DEFAULT_ENTITY_TYPE: OntologyEntityType = 'term';
 
@@ -94,13 +95,14 @@ export function normalizeEntityType(raw: string | undefined | null): OntologyEnt
 }
 
 /**
- * Maps input to an allowed relation_type, or null if unknown.
+ * Maps input to a known snake_case relation_type, or null if not in the canonical enum.
+ * Free-form strings are accepted in {@link normalizeOntologyRelationship} without requiring this.
  */
-export function normalizeRelationType(raw: string | undefined | null): OntologyRelationType | null {
+export function normalizeRelationType(raw: string | undefined | null): string | null {
   if (raw == null || typeof raw !== 'string') return null;
   const s = toSnakeCaseLower(raw);
   if (!s) return null;
-  return RELATION_TYPE_SET.has(s) ? (s as OntologyRelationType) : null;
+  return RELATION_TYPE_SET.has(s) ? s : null;
 }
 
 /**
@@ -320,16 +322,20 @@ export function normalizeOntologyRelationship(
     };
   }
 
-  const relation_type = normalizeRelationType(typeRaw);
+  const relation_type = trimOntologyString(typeRaw);
   if (!relation_type) {
     return {
       accepted: false,
       warnings,
-      rejectReason: `${prefix}.relation_type "${typeRaw}" is not an allowed value`,
+      rejectReason: `${prefix}.relation_type (or predicate) cannot be empty`,
     };
   }
-  if (typeRaw !== relation_type && toSnakeCaseLower(typeRaw) === relation_type) {
-    warnings.push(`${prefix}: relation_type normalized from "${typeRaw}" to "${relation_type}"`);
+  if (relation_type.length > MAX_RELATION_TYPE_LEN) {
+    return {
+      accepted: false,
+      warnings,
+      rejectReason: `${prefix}.relation_type must be at most ${MAX_RELATION_TYPE_LEN} characters`,
+    };
   }
 
   if (!subject_entity_id) {
